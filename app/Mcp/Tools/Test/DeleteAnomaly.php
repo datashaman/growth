@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Mcp\Tools\Test;
+
+use App\Models\Anomaly;
+use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
+use Laravel\Mcp\ResponseFactory;
+use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tool;
+
+#[Description('Delete an anomaly report (verification evidence). The pivot rows linking it to affected requirements are removed.')]
+class DeleteAnomaly extends Tool
+{
+    public function handle(Request $request): ResponseFactory
+    {
+        $data = $request->validate([
+            'id' => 'required|string|owned_anomaly',
+        ]);
+
+        $anomaly = Anomaly::findOrFail($data['id']);
+        $reqs = $anomaly->affectedRequirements()->count();
+        $anomaly->delete();
+
+        return Response::structured([
+            'id' => $data['id'],
+            'deleted' => true,
+            'requirements_unlinked' => $reqs,
+        ]);
+    }
+
+    public function schema(JsonSchema $schema): array
+    {
+        return [
+            'id' => $schema->string()
+                ->description('Anomaly ULID to delete')
+                ->required(),
+        ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'id' => $schema->string()->required(),
+            'deleted' => $schema->boolean()->required(),
+            'requirements_unlinked' => $schema->integer()->required(),
+        ];
+    }
+}
