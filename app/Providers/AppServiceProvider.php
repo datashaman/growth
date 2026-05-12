@@ -36,9 +36,13 @@ use App\Models\TestRun;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
@@ -115,6 +119,12 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        RateLimiter::for('login', function (Request $request): Limit {
+            $email = Str::lower((string) $request->input('email'));
+
+            return Limit::perMinute(5)->by($email.'|'.$request->ip());
+        });
+
         Passport::authorizationView(fn (array $parameters) => view('mcp.authorize', $parameters));
 
         Relation::morphMap(self::MORPH_MAP);
