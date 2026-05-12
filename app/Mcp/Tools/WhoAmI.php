@@ -9,7 +9,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Report the authenticated user for this session, plus the transport in use. Returns `{authenticated: false}` for anonymous local sessions (no GROWTH_TOKEN). Useful for verifying auth state and which user the model owner-scopes will filter against.')]
+#[Description('Report the authenticated user for this session, plus the transport in use. Returns `{authenticated: false}` for anonymous local sessions without GROWTH_USER_EMAIL or GROWTH_USER_ID. Useful for verifying auth state and which user the model owner-scopes will filter against.')]
 class WhoAmI extends Tool
 {
     public function handle(Request $request): ResponseFactory

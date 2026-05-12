@@ -8,7 +8,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
 #[Signature('user:token {email : Email address of the user} {--name=local : Token label}')]
-#[Description('Issue a Sanctum personal access token for a user. Use bearer tokens for HTTP MCP; local stdio should prefer GROWTH_USER_EMAIL or GROWTH_USER_ID.')]
+#[Description('Issue a Passport OAuth personal access token for a user. Use bearer tokens for HTTP MCP; local stdio should prefer GROWTH_USER_EMAIL or GROWTH_USER_ID.')]
 class UserToken extends Command
 {
     public function handle(): int
@@ -22,7 +22,7 @@ class UserToken extends Command
         }
 
         $name = $this->option('name');
-        $token = $user->createToken($name)->plainTextToken;
+        $token = $user->createToken($name, ['mcp:use'])->accessToken;
 
         $this->info("Token issued for {$user->email} (label: {$name}).");
         $this->line('');

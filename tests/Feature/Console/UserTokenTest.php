@@ -1,9 +1,15 @@
 <?php
 
-use App\Mcp\Servers\IntakeServer;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
-use Laravel\Mcp\Server\Transport\FakeTransporter;
+use Laravel\Passport\Client;
+
+beforeEach(function () {
+    Client::factory()->asPersonalAccessTokenClient()->create([
+        'name' => 'Growth Personal Access Client',
+        'provider' => 'users',
+    ]);
+});
 
 it('issues a token for an existing user', function () {
     $user = User::factory()->create(['email' => 'alice@example.com']);
@@ -31,17 +37,13 @@ it('fails for an unknown email', function () {
         ->assertExitCode(1);
 });
 
-it('produces a token that the local auth path will accept', function () {
-    $user = User::factory()->create(['email' => 'alice@example.com']);
+it('produces a Passport access token', function () {
+    User::factory()->create(['email' => 'alice@example.com']);
 
-    // Capture the printed token. The command prints it on its own line.
     Artisan::call('user:token', ['email' => 'alice@example.com']);
     $output = Artisan::output();
 
-    preg_match('/^\d+\|[A-Za-z0-9]+$/m', $output, $matches);
+    preg_match('/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/m', $output, $matches);
     $token = $matches[0] ?? null;
     expect($token)->not->toBeNull();
-
-    $server = app(IntakeServer::class, ['transport' => new FakeTransporter]);
-    expect($server->authenticateLocalSession($token))->toBe($user->id);
 });

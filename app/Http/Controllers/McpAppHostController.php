@@ -24,7 +24,6 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Contracts\HasUriTemplate;
 use Laravel\Mcp\Server\Resource;
 use Laravel\Mcp\Server\Tool;
-use Laravel\Sanctum\PersonalAccessToken;
 use Throwable;
 
 class McpAppHostController extends Controller
@@ -246,13 +245,5 @@ class McpAppHostController extends Controller
             return;
         }
 
-        if (($token = (string) env('GROWTH_TOKEN', '')) === '') {
-            return;
-        }
-
-        $accessToken = PersonalAccessToken::findToken($token);
-        if ($accessToken !== null) {
-            Auth::login($accessToken->tokenable);
-        }
     }
 }

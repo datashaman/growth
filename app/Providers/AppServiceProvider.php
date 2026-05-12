@@ -39,6 +39,7 @@ use App\Models\WorkItemDeliveryLink;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -114,6 +115,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Passport::authorizationView(fn (array $parameters) => view('mcp.authorize', $parameters));
+
         Relation::morphMap(self::MORPH_MAP);
 
         foreach (self::OWNED_RULES as $rule => [$model, $idColumn]) {

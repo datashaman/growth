@@ -18,33 +18,25 @@ use App\Models\Requirement;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
+use Laravel\Passport\Passport;
 
 it('exposes role-specific MCP metadata surfaces', function () {
     $user = User::factory()->create();
-    $token = $user->createToken('role-test')->plainTextToken;
+    Passport::actingAs($user, ['mcp:use']);
 
-    $intakeTools = $this->withHeaders([
-        'Authorization' => "Bearer {$token}",
-        'Accept' => 'application/json',
-    ])->postJson('/mcp/intake', [
+    $intakeTools = $this->postJson('/mcp/intake', [
         'jsonrpc' => '2.0',
         'id' => 1,
         'method' => 'tools/list',
     ])->assertOk()->json('result.tools');
 
-    $planningTools = $this->withHeaders([
-        'Authorization' => "Bearer {$token}",
-        'Accept' => 'application/json',
-    ])->postJson('/mcp/planning', [
+    $planningTools = $this->postJson('/mcp/planning', [
         'jsonrpc' => '2.0',
         'id' => 2,
         'method' => 'tools/list',
     ])->assertOk()->json('result.tools');
 
-    $resources = $this->withHeaders([
-        'Authorization' => "Bearer {$token}",
-        'Accept' => 'application/json',
-    ])->postJson('/mcp/readonly', [
+    $resources = $this->postJson('/mcp/readonly', [
         'jsonrpc' => '2.0',
         'id' => 3,
         'method' => 'resources/templates/list',
@@ -57,14 +49,9 @@ it('exposes role-specific MCP metadata surfaces', function () {
 
 it('exposes the complete MCP surface through the all server', function () {
     $user = User::factory()->create();
-    $token = $user->createToken('all-server-test')->plainTextToken;
+    Passport::actingAs($user, ['mcp:use']);
 
-    $headers = [
-        'Authorization' => "Bearer {$token}",
-        'Accept' => 'application/json',
-    ];
-
-    $tools = $this->withHeaders($headers)->postJson('/mcp/all', [
+    $tools = $this->postJson('/mcp/all', [
         'jsonrpc' => '2.0',
         'id' => 1,
         'method' => 'tools/list',
@@ -73,7 +60,7 @@ it('exposes the complete MCP surface through the all server', function () {
         ],
     ])->assertOk()->json('result.tools');
 
-    $resources = $this->withHeaders($headers)->postJson('/mcp/all', [
+    $resources = $this->postJson('/mcp/all', [
         'jsonrpc' => '2.0',
         'id' => 2,
         'method' => 'resources/templates/list',
@@ -82,7 +69,7 @@ it('exposes the complete MCP surface through the all server', function () {
         ],
     ])->assertOk()->json('result.resourceTemplates');
 
-    $prompts = $this->withHeaders($headers)->postJson('/mcp/all', [
+    $prompts = $this->postJson('/mcp/all', [
         'jsonrpc' => '2.0',
         'id' => 3,
         'method' => 'prompts/list',
@@ -116,14 +103,9 @@ it('exposes the complete MCP surface through the all server', function () {
 
 it('exposes the project dashboard app through readonly and all servers', function () {
     $user = User::factory()->create();
-    $token = $user->createToken('dashboard-app-test')->plainTextToken;
+    Passport::actingAs($user, ['mcp:use']);
 
-    $headers = [
-        'Authorization' => "Bearer {$token}",
-        'Accept' => 'application/json',
-    ];
-
-    $initialize = $this->withHeaders($headers)->postJson('/mcp/readonly', [
+    $initialize = $this->postJson('/mcp/readonly', [
         'jsonrpc' => '2.0',
         'id' => 1,
         'method' => 'initialize',
@@ -137,19 +119,19 @@ it('exposes the project dashboard app through readonly and all servers', functio
         ],
     ])->assertOk()->json('result.capabilities');
 
-    $readonlyTools = $this->withHeaders($headers)->postJson('/mcp/readonly', [
+    $readonlyTools = $this->postJson('/mcp/readonly', [
         'jsonrpc' => '2.0',
         'id' => 2,
         'method' => 'tools/list',
     ])->assertOk()->json('result.tools');
 
-    $readonlyResources = $this->withHeaders($headers)->postJson('/mcp/readonly', [
+    $readonlyResources = $this->postJson('/mcp/readonly', [
         'jsonrpc' => '2.0',
         'id' => 3,
         'method' => 'resources/list',
     ])->assertOk()->json('result.resources');
 
-    $allTools = $this->withHeaders($headers)->postJson('/mcp/all', [
+    $allTools = $this->postJson('/mcp/all', [
         'jsonrpc' => '2.0',
         'id' => 4,
         'method' => 'tools/list',
@@ -404,30 +386,21 @@ it('builds an evidence bundle through the verification server', function () {
 
 it('exposes prompts on the role servers that use them', function () {
     $user = User::factory()->create();
-    $token = $user->createToken('role-test')->plainTextToken;
+    Passport::actingAs($user, ['mcp:use']);
 
-    $intakePrompts = $this->withHeaders([
-        'Authorization' => "Bearer {$token}",
-        'Accept' => 'application/json',
-    ])->postJson('/mcp/intake', [
+    $intakePrompts = $this->postJson('/mcp/intake', [
         'jsonrpc' => '2.0',
         'id' => 1,
         'method' => 'prompts/list',
     ])->assertOk()->json('result.prompts');
 
-    $planningPrompts = $this->withHeaders([
-        'Authorization' => "Bearer {$token}",
-        'Accept' => 'application/json',
-    ])->postJson('/mcp/planning', [
+    $planningPrompts = $this->postJson('/mcp/planning', [
         'jsonrpc' => '2.0',
         'id' => 2,
         'method' => 'prompts/list',
     ])->assertOk()->json('result.prompts');
 
-    $verificationPrompts = $this->withHeaders([
-        'Authorization' => "Bearer {$token}",
-        'Accept' => 'application/json',
-    ])->postJson('/mcp/verification', [
+    $verificationPrompts = $this->postJson('/mcp/verification', [
         'jsonrpc' => '2.0',
         'id' => 3,
         'method' => 'prompts/list',

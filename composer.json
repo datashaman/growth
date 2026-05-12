@@ -13,6 +13,7 @@
         "laravel/framework": "^13.7",
         "laravel/horizon": "^5.46",
         "laravel/mcp": "^0.7.0",
+        "laravel/passport": "^13.0",
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0"
     },

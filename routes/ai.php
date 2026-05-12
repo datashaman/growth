@@ -20,13 +20,15 @@ Mcp::local('verification', VerificationServer::class);
 Mcp::local('governance', GovernanceServer::class);
 Mcp::local('readonly', ReadonlyServer::class);
 
-// HTTP transport — guarded by Sanctum personal access tokens.
-// Clients send `Authorization: Bearer <token>`; the authenticated user
-// scopes every project/child lookup through the model global scopes.
-Mcp::web('/mcp/all', AllServer::class)->middleware('auth:sanctum');
-Mcp::web('/mcp/intake', IntakeServer::class)->middleware('auth:sanctum');
-Mcp::web('/mcp/architecture', ArchitectureServer::class)->middleware('auth:sanctum');
-Mcp::web('/mcp/planning', PlanningServer::class)->middleware('auth:sanctum');
-Mcp::web('/mcp/verification', VerificationServer::class)->middleware('auth:sanctum');
-Mcp::web('/mcp/governance', GovernanceServer::class)->middleware('auth:sanctum');
-Mcp::web('/mcp/readonly', ReadonlyServer::class)->middleware('auth:sanctum');
+Mcp::oauthRoutes();
+
+// HTTP transport — guarded by Passport OAuth access tokens.
+// The OAuth discovery routes advertise the MCP resource metadata and `mcp:use`
+// scope expected by MCP clients.
+Mcp::web('/mcp/all', AllServer::class)->middleware('auth:api');
+Mcp::web('/mcp/intake', IntakeServer::class)->middleware('auth:api');
+Mcp::web('/mcp/architecture', ArchitectureServer::class)->middleware('auth:api');
+Mcp::web('/mcp/planning', PlanningServer::class)->middleware('auth:api');
+Mcp::web('/mcp/verification', VerificationServer::class)->middleware('auth:api');
+Mcp::web('/mcp/governance', GovernanceServer::class)->middleware('auth:api');
+Mcp::web('/mcp/readonly', ReadonlyServer::class)->middleware('auth:api');

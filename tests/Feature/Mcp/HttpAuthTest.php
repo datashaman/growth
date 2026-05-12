@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Laravel\Passport\Passport;
 
 it('rejects unauthenticated POSTs to the MCP HTTP route', function () {
     $this->postJson('/mcp/intake', [
@@ -10,14 +11,11 @@ it('rejects unauthenticated POSTs to the MCP HTTP route', function () {
     ])->assertUnauthorized();
 });
 
-it('accepts a request bearing a valid sanctum token', function () {
+it('accepts a request authenticated by Passport OAuth', function () {
     $user = User::factory()->create();
-    $token = $user->createToken('test')->plainTextToken;
+    Passport::actingAs($user, ['mcp:use']);
 
-    $response = $this->withHeaders([
-        'Authorization' => "Bearer {$token}",
-        'Accept' => 'application/json',
-    ])->postJson('/mcp/intake', [
+    $response = $this->postJson('/mcp/intake', [
         'jsonrpc' => '2.0',
         'id' => 1,
         'method' => 'tools/list',
@@ -29,12 +27,9 @@ it('accepts a request bearing a valid sanctum token', function () {
 
 it('lists the intake authoring toolset without requiring pagination', function () {
     $user = User::factory()->create();
-    $token = $user->createToken('test')->plainTextToken;
+    Passport::actingAs($user, ['mcp:use']);
 
-    $response = $this->withHeaders([
-        'Authorization' => "Bearer {$token}",
-        'Accept' => 'application/json',
-    ])->postJson('/mcp/intake', [
+    $response = $this->postJson('/mcp/intake', [
         'jsonrpc' => '2.0',
         'id' => 1,
         'method' => 'tools/list',
@@ -53,6 +48,27 @@ it('lists the intake authoring toolset without requiring pagination', function (
         'upsert-citation',
         'lookup-term',
     );
+});
+
+it('advertises OAuth resource metadata for unauthenticated MCP requests', function () {
+    $response = $this->postJson('/mcp/intake', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+    ])->assertUnauthorized();
+
+    expect($response->headers->get('WWW-Authenticate'))->toContain('resource_metadata=');
+});
+
+it('exposes MCP OAuth discovery metadata', function () {
+    $this->getJson('/.well-known/oauth-protected-resource/mcp/intake')
+        ->assertOk()
+        ->assertJsonPath('scopes_supported.0', 'mcp:use');
+
+    $this->getJson('/.well-known/oauth-authorization-server/mcp/intake')
+        ->assertOk()
+        ->assertJsonPath('scopes_supported.0', 'mcp:use')
+        ->assertJsonPath('grant_types_supported.0', 'authorization_code');
 });
 
 it('rejects a request with a bogus token', function () {

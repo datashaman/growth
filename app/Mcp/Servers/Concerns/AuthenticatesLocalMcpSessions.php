@@ -5,7 +5,6 @@ namespace App\Mcp\Servers\Concerns;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Mcp\Server\Transport\StdioTransport;
-use Laravel\Sanctum\PersonalAccessToken;
 
 trait AuthenticatesLocalMcpSessions
 {
@@ -39,17 +38,9 @@ trait AuthenticatesLocalMcpSessions
             return null;
         }
 
-        $accessToken = PersonalAccessToken::findToken($token);
+        fwrite(STDERR, '[mcp-server] GROWTH_TOKEN is no longer used for local MCP auth; use GROWTH_USER_EMAIL or GROWTH_USER_ID.'.PHP_EOL);
 
-        if ($accessToken === null) {
-            fwrite(STDERR, '[mcp-server] GROWTH_TOKEN does not match any personal access token; running unauthenticated.'.PHP_EOL);
-
-            return null;
-        }
-
-        Auth::login($accessToken->tokenable);
-
-        return $accessToken->tokenable_id;
+        return null;
     }
 
     private function authenticateLocalUser(?User $user, string $source): ?int
