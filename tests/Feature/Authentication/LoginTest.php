@@ -60,3 +60,34 @@ test('oauth authorization redirects guests to login', function () {
     $this->get("/oauth/authorize?{$query}")
         ->assertRedirect('/login');
 });
+
+test('oauth authorization page is visible for authenticated users', function () {
+    $user = User::factory()->create([
+        'email' => 'alice@example.com',
+    ]);
+    $client = Client::factory()->asPublic()->create([
+        'name' => 'Codex',
+        'redirect_uris' => ['https://client.example/callback'],
+    ]);
+    $verifier = Str::random(64);
+    $challenge = strtr(rtrim(base64_encode(hash('sha256', $verifier, true)), '='), '+/', '-_');
+    $query = http_build_query([
+        'client_id' => $client->id,
+        'redirect_uri' => 'https://client.example/callback',
+        'response_type' => 'code',
+        'scope' => 'mcp:use',
+        'state' => 'test-state',
+        'code_challenge' => $challenge,
+        'code_challenge_method' => 'S256',
+    ]);
+
+    $this->actingAs($user)
+        ->get("/oauth/authorize?{$query}")
+        ->assertOk()
+        ->assertSee('Authorize Codex')
+        ->assertSee('alice@example.com')
+        ->assertSee('Use MCP server')
+        ->assertSee('value="test-state"', false)
+        ->assertDontSee('bg-background')
+        ->assertDontSee('text-muted-foreground');
+});
