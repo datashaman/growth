@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('requirements', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('project_id')->constrained()->cascadeOnDelete();
-            $table->foreignUlid('parent_id')->nullable()->constrained('requirements')->nullOnDelete();
+            $table->foreignUlid('parent_id')->nullable();
             $table->enum('doc', ['strs', 'syrs', 'srs']);
             $table->enum('type', [
                 'functional', 'performance', 'usability', 'interface',
@@ -28,6 +28,10 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['project_id', 'doc']);
+        });
+
+        Schema::table('requirements', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('requirements')->nullOnDelete();
         });
     }
 

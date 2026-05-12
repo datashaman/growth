@@ -11,8 +11,7 @@ return new class extends Migration
         Schema::create('work_items', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('project_id')->constrained()->cascadeOnDelete();
-            $table->foreignUlid('parent_id')->nullable()
-                ->constrained('work_items')->nullOnDelete();
+            $table->foreignUlid('parent_id')->nullable();
             $table->foreignUlid('responsible_role_id')->nullable()
                 ->constrained('roles')->nullOnDelete();
             $table->enum('kind', ['deliverable', 'work_package', 'task']);
@@ -26,6 +25,10 @@ return new class extends Migration
 
             $table->index(['project_id', 'parent_id']);
             $table->index(['project_id', 'status']);
+        });
+
+        Schema::table('work_items', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('work_items')->nullOnDelete();
         });
     }
 

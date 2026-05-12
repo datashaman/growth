@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('review_decision_events', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('review_id')->constrained()->cascadeOnDelete();
-            $table->foreignUlid('recorded_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('recorded_by_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('from_status')->nullable();
             $table->string('to_status')->nullable();
             $table->string('from_decision')->nullable();
