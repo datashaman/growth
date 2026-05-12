@@ -6,12 +6,11 @@ trait RoleServerDefaults
 {
     use AuthenticatesLocalMcpSessions;
 
-    public int $maxPaginationLength = 200;
-
-    public int $defaultPaginationLength = 200;
-
     protected function boot(): void
     {
+        $this->maxPaginationLength = 200;
+        $this->defaultPaginationLength = 200;
+
         $this->bootTrustedLocalSession();
     }
 }
