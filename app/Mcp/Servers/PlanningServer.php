@@ -11,6 +11,7 @@ use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\AssignRole;
 use App\Mcp\Tools\AssignWorkItemRaci;
 use App\Mcp\Tools\BaselinePlan;
+use App\Mcp\Tools\BulkLink;
 use App\Mcp\Tools\ComparePlanBaseline;
 use App\Mcp\Tools\DeleteAgent;
 use App\Mcp\Tools\DeleteDeployment;
@@ -91,6 +92,7 @@ class PlanningServer extends Server
         ListWorkItems::class,
         DeleteWorkItem::class,
         LinkWorkItemToCapabilities::class,
+        BulkLink::class,
         UnlinkWorkItemFromCapability::class,
         LinkWorkItemToMilestone::class,
         UnlinkWorkItemFromMilestone::class,

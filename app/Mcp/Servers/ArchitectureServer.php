@@ -7,6 +7,7 @@ use App\Mcp\Resources\CapabilitiesResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
+use App\Mcp\Tools\BulkLink;
 use App\Mcp\Tools\DeleteArchitectureElement;
 use App\Mcp\Tools\DeleteArchitectureView;
 use App\Mcp\Tools\DeleteArchitectureViewpoint;
@@ -47,6 +48,7 @@ class ArchitectureServer extends Server
         UpsertArchitectureElements::class,
         ListArchitectureElements::class,
         DeleteArchitectureElement::class,
+        BulkLink::class,
         TraceQuery::class,
     ];
 
