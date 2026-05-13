@@ -13,13 +13,15 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Throwable;
 
-#[Description('Create or update one or more work items. Items run independently; per-item failures do not abort the batch.')]
+#[Description('Create or update up to 100 work items in one call. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
 class UpsertWorkItems extends Tool
 {
     public function handle(Request $request): ResponseFactory
     {
         $payload = $request->validate([
-            'items' => 'required|array|min:1',
+            'items' => 'required|array|min:1|max:100',
+        ], [
+            'items.max' => 'Batches are capped at 100 items per call. Split into smaller batches.',
         ]);
 
         $results = [];
@@ -134,7 +136,8 @@ class UpsertWorkItems extends Tool
                     'cost_currency' => $s->string()->description('Three-letter currency code for numeric cost amounts, such as USD'),
                 ]))
                 ->min(1)
-                ->description('One or more work items to create or update. Items are processed independently; per-item failures are reported in the response without aborting the batch.')
+                ->max(100)
+                ->description('Up to 100 work items to create or update. Items are committed independently; per-item failures are reported in the response without aborting the batch.')
                 ->required(),
         ];
     }

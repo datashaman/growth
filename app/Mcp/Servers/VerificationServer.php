@@ -29,7 +29,7 @@ use App\Mcp\Tools\LogVerificationRun;
 use App\Mcp\Tools\Trace\TraceQuery;
 use App\Mcp\Tools\UpsertAnomaly;
 use App\Mcp\Tools\UpsertCheckRun;
-use App\Mcp\Tools\UpsertVerificationCase;
+use App\Mcp\Tools\UpsertVerificationCases;
 use App\Mcp\Tools\UpsertVerificationPlan;
 use App\Mcp\Tools\WhoAmI;
 use Laravel\Mcp\Server;
@@ -51,7 +51,7 @@ class VerificationServer extends Server
         UpsertVerificationPlan::class,
         ListVerificationPlans::class,
         DeleteVerificationPlan::class,
-        UpsertVerificationCase::class,
+        UpsertVerificationCases::class,
         ListVerificationCases::class,
         DeleteVerificationCase::class,
         LogVerificationRun::class,
