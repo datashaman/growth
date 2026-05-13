@@ -7,6 +7,7 @@ use App\Growth\Plan\ScheduleHealthSummarizer;
 use App\Models\Project;
 use App\Support\BadgeVariant;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -27,6 +28,12 @@ new #[Title('Dashboard')] class extends Component {
         if ($this->selectedProjectId !== null && $this->selectedProjectId !== $fromSession) {
             session(['selected_project_id' => $this->selectedProjectId]);
         }
+    }
+
+    #[On('project-saved')]
+    public function refreshProject(): void
+    {
+        unset($this->projects, $this->project);
     }
 
     #[Computed]
@@ -176,9 +183,12 @@ new #[Title('Dashboard')] class extends Component {
         @if ($this->projects->isEmpty())
             <flux:callout icon="information-circle">
                 <flux:callout.heading>{{ __('No projects yet') }}</flux:callout.heading>
-                <flux:callout.text>
-                    {{ __('Create a project via the Growth MCP server to populate this dashboard.') }}
-                </flux:callout.text>
+                <flux:callout.text>{{ __('Create your first project to start tracking stakeholders, requirements, work, and evidence.') }}</flux:callout.text>
+                <div class="mt-3">
+                    <flux:modal.trigger name="create-project">
+                        <flux:button icon="plus" variant="primary">{{ __('New project') }}</flux:button>
+                    </flux:modal.trigger>
+                </div>
             </flux:callout>
         @elseif ($this->project === null)
             <flux:callout icon="cursor-arrow-rays">
@@ -187,14 +197,22 @@ new #[Title('Dashboard')] class extends Component {
             </flux:callout>
         @else
             <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="flex flex-col gap-2">
-                    <div class="flex items-center gap-2">
-                        <flux:heading size="lg">{{ $this->project->name }}</flux:heading>
-                        <flux:badge color="zinc" size="sm">{{ __('Rigor :level', ['level' => $this->project->integrity_level]) }}</flux:badge>
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex flex-col gap-2">
+                        <div class="flex items-center gap-2">
+                            <flux:heading size="lg">{{ $this->project->name }}</flux:heading>
+                            <flux:badge color="zinc" size="sm">{{ __('Rigor :level', ['level' => $this->project->integrity_level]) }}</flux:badge>
+                        </div>
+                        @if ($this->project->description)
+                            <flux:text class="text-zinc-600 dark:text-zinc-400">{{ $this->project->description }}</flux:text>
+                        @endif
                     </div>
-                    @if ($this->project->description)
-                        <flux:text class="text-zinc-600 dark:text-zinc-400">{{ $this->project->description }}</flux:text>
-                    @endif
+                    <div class="flex gap-1">
+                        <flux:button size="sm" icon="pencil-square" variant="ghost" :tooltip="__('Edit project')"
+                            wire:click="$dispatch('edit-project', { projectId: '{{ $this->project->id }}' })" />
+                        <flux:button size="sm" icon="trash" variant="ghost" :tooltip="__('Delete project')"
+                            wire:click="$dispatch('delete-project', { projectId: '{{ $this->project->id }}' })" />
+                    </div>
                 </div>
             </section>
 

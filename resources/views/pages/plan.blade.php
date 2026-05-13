@@ -16,6 +16,12 @@ new #[Title('Plan')] class extends Component {
         unset($this->milestones);
     }
 
+    #[On('role-saved')]
+    public function refreshRoles(): void
+    {
+        unset($this->roles);
+    }
+
     #[Computed]
     public function milestones()
     {
@@ -159,12 +165,18 @@ new #[Title('Plan')] class extends Component {
             :count-label="__('defined')"
             :empty="$this->roles->isEmpty()"
             :empty-message="__('No roles defined.')">
+            <x-slot:actions>
+                <flux:modal.trigger name="create-role">
+                    <flux:button size="sm" icon="plus" variant="primary">{{ __('New role') }}</flux:button>
+                </flux:modal.trigger>
+            </x-slot:actions>
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Role') }}</flux:table.column>
                     <flux:table.column>{{ __('Responsibilities') }}</flux:table.column>
                     <flux:table.column align="end">{{ __('Weekly capacity') }}</flux:table.column>
                     <flux:table.column align="end">{{ __('Hourly rate') }}</flux:table.column>
+                    <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->roles as $role)
@@ -179,10 +191,22 @@ new #[Title('Plan')] class extends Component {
                                     —
                                 @endif
                             </flux:table.cell>
+                            <flux:table.cell>
+                                <div class="flex justify-end gap-1">
+                                    <flux:button size="xs" icon="pencil-square" variant="ghost"
+                                        wire:click="$dispatch('edit-role', { roleId: '{{ $role->id }}' })" />
+                                    <flux:button size="xs" icon="trash" variant="ghost"
+                                        wire:click="$dispatch('delete-role', { roleId: '{{ $role->id }}' })" />
+                                </div>
+                            </flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
+
+        <livewire:pages::roles.create-modal :project-id="$this->selectedProject->id" :key="'create-role-'.$this->selectedProject->id" />
+        <livewire:pages::roles.edit-modal :key="'edit-role-'.$this->selectedProject->id" />
+        <livewire:pages::roles.delete-modal :key="'delete-role-'.$this->selectedProject->id" />
     @endif
 </div>
