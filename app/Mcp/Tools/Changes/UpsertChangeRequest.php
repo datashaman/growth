@@ -104,7 +104,22 @@ class UpsertChangeRequest extends Tool
             'decision' => $schema->string()->description('Decision, when made')->enum(ChangeRequest::DECISIONS),
             'decision_rationale' => $schema->string()->description('Decision rationale'),
             'decided_at' => $schema->string()->description('Decision timestamp'),
-            'impacts' => $schema->array()->description('Impacted artifacts: {type,id,impact_kind,description}'),
+            'impacts' => $schema->array()
+                ->description('Impacted artifacts. Each entry: {type, id, impact_kind, description?}.')
+                ->items($schema->object(fn (JsonSchema $s) => [
+                    'type' => $s->string()
+                        ->description('Artifact type the change touches.')
+                        ->enum(array_keys(ArtifactRegistry::types()))
+                        ->required(),
+                    'id' => $s->string()
+                        ->description('Artifact ULID.')
+                        ->required(),
+                    'impact_kind' => $s->string()
+                        ->description('How this change affects the artifact.')
+                        ->enum(ChangeImpact::KINDS)
+                        ->required(),
+                    'description' => $s->string()->description('Free-form notes on the impact'),
+                ])),
         ];
     }
 
