@@ -24,8 +24,7 @@ new #[Title('Architecture')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-project-page-header
         :title="__('Architecture')"
-        :description="__('Design views and their elements satisfying stakeholder concerns.')"
-        :options="$this->projectOptions" />
+        :description="__('Design views and their elements satisfying stakeholder concerns.')" />
 
     @if ($this->selectedProject === null)
         <flux:callout icon="cursor-arrow-rays">

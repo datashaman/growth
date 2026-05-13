@@ -33,8 +33,7 @@ new #[Title('Verification')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-project-page-header
         :title="__('Verification')"
-        :description="__('Test plans, test cases, and the anomalies they surface.')"
-        :options="$this->projectOptions" />
+        :description="__('Test plans, test cases, and the anomalies they surface.')" />
 
     @if ($this->selectedProject === null)
         <flux:callout icon="cursor-arrow-rays">

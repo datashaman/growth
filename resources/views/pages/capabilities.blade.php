@@ -23,8 +23,7 @@ new #[Title('Capabilities')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-project-page-header
         :title="__('Capabilities')"
-        :description="__('Requirements the system must satisfy.')"
-        :options="$this->projectOptions" />
+        :description="__('Requirements the system must satisfy.')" />
 
     @if ($this->selectedProject === null)
         <flux:callout icon="cursor-arrow-rays">

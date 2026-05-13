@@ -16,10 +16,17 @@ new #[Title('Dashboard')] class extends Component {
     public function mount(): void
     {
         $fromQuery = (string) request()->query('project', '');
+        $fromSession = (string) session('selected_project_id', '');
 
-        $this->selectedProjectId = $fromQuery !== ''
-            ? $fromQuery
-            : Project::query()->orderBy('created_at')->value('id');
+        $this->selectedProjectId = match (true) {
+            $fromQuery !== '' => $fromQuery,
+            $fromSession !== '' => $fromSession,
+            default => Project::query()->orderBy('created_at')->value('id'),
+        };
+
+        if ($this->selectedProjectId !== null && $this->selectedProjectId !== $fromSession) {
+            session(['selected_project_id' => $this->selectedProjectId]);
+        }
     }
 
     #[Computed]
@@ -161,20 +168,9 @@ new #[Title('Dashboard')] class extends Component {
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
-        <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-                <flux:heading size="xl">{{ __('Project Dashboard') }}</flux:heading>
-                <flux:text class="mt-1">
-                    {{ __('Readiness, delivery, and schedule state for your Growth projects.') }}
-                </flux:text>
-            </div>
-            <div class="sm:w-72">
-                <flux:select wire:model.live="selectedProjectId" :placeholder="__('Select a project')">
-                    @foreach ($this->projects as $option)
-                        <flux:select.option :value="$option->id">{{ $option->name }}</flux:select.option>
-                    @endforeach
-                </flux:select>
-            </div>
+        <header class="flex flex-col gap-2">
+            <flux:heading size="xl">{{ __('Project Dashboard') }}</flux:heading>
+            <flux:text>{{ __('Readiness, delivery, and schedule state for your Growth projects.') }}</flux:text>
         </header>
 
         @if ($this->projects->isEmpty())
