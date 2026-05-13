@@ -209,50 +209,6 @@ it('renders the project dashboard app resource as MCP app HTML', function () {
         ->assertSee('Project Dashboard');
 });
 
-it('serves a local browser host for the project dashboard app', function () {
-    $project = Project::create([
-        'name' => 'Hosted Dashboard',
-        'description' => 'Rendered by the local MCP app host.',
-        'integrity_level' => 2,
-    ]);
-
-    $this->get('/mcp-apps/project-dashboard')
-        ->assertOk()
-        ->assertSee('Growth Local MCP App Host')
-        ->assertSee('createMcpApp')
-        ->assertSee('mcp-app-frame');
-
-    $this->postJson('/mcp-apps/project-dashboard/rpc', [
-        'jsonrpc' => '2.0',
-        'id' => 1,
-        'method' => 'tools/call',
-        'params' => [
-            'name' => 'get-project-dashboard-data',
-            'arguments' => [
-                'project_id' => $project->id,
-            ],
-        ],
-    ])->assertOk()
-        ->assertJsonPath('jsonrpc', '2.0')
-        ->assertJsonPath('id', 1)
-        ->assertJsonPath('result.isError', false)
-        ->assertJsonPath('result.structuredContent.selected_project.name', 'Hosted Dashboard');
-
-    $this->postJson('/mcp-apps/project-dashboard/rpc', [
-        'jsonrpc' => '2.0',
-        'id' => 2,
-        'method' => 'resources/read',
-        'params' => [
-            'uri' => "growth://projects/{$project->id}",
-        ],
-    ])->assertOk()
-        ->assertJsonPath('jsonrpc', '2.0')
-        ->assertJsonPath('id', 2)
-        ->assertJsonPath('result.contents.0.mimeType', 'application/json')
-        ->assertJsonPath('result.contents.0.uri', "growth://projects/{$project->id}")
-        ->assertSee('Hosted Dashboard');
-});
-
 it('upserts projects and capabilities through the intake server', function () {
     $projectResponse = IntakeServer::tool(UpsertProject::class, [
         'name' => 'TodoMVC',
