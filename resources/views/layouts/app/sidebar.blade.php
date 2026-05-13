@@ -40,6 +40,9 @@
                     <flux:sidebar.item icon="archive-box" :href="route('evidence')" :current="request()->routeIs('evidence')" wire:navigate>
                         {{ __('Evidence') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="arrows-right-left" :href="route('changes')" :current="request()->routeIs('changes')" wire:navigate>
+                        {{ __('Changes') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 

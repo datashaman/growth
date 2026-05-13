@@ -250,6 +250,41 @@ class BadgeVariant
         };
     }
 
+    public static function changeRequestStatus(string $status): string
+    {
+        return match ($status) {
+            'proposed' => 'sky',
+            'under_review' => 'blue',
+            'approved' => 'teal',
+            'implemented' => 'green',
+            'rejected' => 'red',
+            'deferred' => 'amber',
+            'cancelled' => 'zinc',
+            default => 'zinc',
+        };
+    }
+
+    public static function changeRequestPriority(string $priority): string
+    {
+        return match ($priority) {
+            'critical' => 'red',
+            'high' => 'amber',
+            'medium' => 'blue',
+            'low' => 'sky',
+            default => 'zinc',
+        };
+    }
+
+    public static function changeRequestDecision(?string $decision): string
+    {
+        return match ($decision) {
+            'approved' => 'green',
+            'rejected' => 'red',
+            'deferred' => 'amber',
+            default => 'zinc',
+        };
+    }
+
     public static function checkConclusion(?string $conclusion): string
     {
         return match ($conclusion) {
