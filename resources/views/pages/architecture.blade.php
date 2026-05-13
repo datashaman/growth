@@ -1,0 +1,92 @@
+<?php
+
+use App\Concerns\ProjectScoped;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+
+new #[Title('Architecture')] class extends Component {
+    use ProjectScoped;
+
+    #[Computed]
+    public function designViews()
+    {
+        return $this->selectedProject?->designViews()
+            ->with('elements')
+            ->orderBy('viewpoint')
+            ->orderBy('name')
+            ->get()
+            ?? collect();
+    }
+
+    public function elementKindVariant(string $kind): string
+    {
+        return match ($kind) {
+            'entity' => 'purple',
+            'relationship' => 'indigo',
+            'attribute' => 'blue',
+            'constraint' => 'amber',
+            default => 'zinc',
+        };
+    }
+}; ?>
+
+<div class="flex h-full w-full flex-1 flex-col gap-6">
+    <x-project-page-header
+        :title="__('Architecture')"
+        :description="__('Design views and their elements satisfying stakeholder concerns.')"
+        :options="$this->projectOptions" />
+
+    @if ($this->selectedProject === null)
+        <flux:callout icon="cursor-arrow-rays">
+            <flux:callout.heading>{{ __('Select a project') }}</flux:callout.heading>
+            <flux:callout.text>{{ __('Pick a project to see its design views.') }}</flux:callout.text>
+        </flux:callout>
+    @elseif ($this->designViews->isEmpty())
+        <flux:callout icon="information-circle">
+            <flux:callout.heading>{{ __('No design views yet') }}</flux:callout.heading>
+            <flux:callout.text>{{ __('Create a design view via the architecture MCP server.') }}</flux:callout.text>
+        </flux:callout>
+    @else
+        @foreach ($this->designViews as $view)
+            <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+                <div class="mb-3 flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <flux:heading size="lg">{{ $view->name }}</flux:heading>
+                            <flux:badge color="zinc" size="sm">{{ $view->viewpoint }}</flux:badge>
+                        </div>
+                        @if ($view->description)
+                            <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ $view->description }}</flux:text>
+                        @endif
+                    </div>
+                    <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ $view->elements->count() }} {{ __('elements') }}</flux:text>
+                </div>
+                @if ($view->elements->isEmpty())
+                    <flux:text>{{ __('No elements in this view.') }}</flux:text>
+                @else
+                    <flux:table class="[&_td]:align-top">
+                        <flux:table.columns>
+                            <flux:table.column>{{ __('Element') }}</flux:table.column>
+                            <flux:table.column>{{ __('Kind') }}</flux:table.column>
+                            <flux:table.column>{{ __('Type') }}</flux:table.column>
+                            <flux:table.column>{{ __('Purpose') }}</flux:table.column>
+                        </flux:table.columns>
+                        <flux:table.rows>
+                            @foreach ($view->elements as $element)
+                                <flux:table.row>
+                                    <flux:table.cell class="font-medium">{{ $element->name }}</flux:table.cell>
+                                    <flux:table.cell>
+                                        <flux:badge :color="$this->elementKindVariant($element->kind)" size="sm">{{ $element->kind }}</flux:badge>
+                                    </flux:table.cell>
+                                    <flux:table.cell>{{ $element->type ?? '—' }}</flux:table.cell>
+                                    <flux:table.cell>{{ $element->purpose ?? '—' }}</flux:table.cell>
+                                </flux:table.row>
+                            @endforeach
+                        </flux:table.rows>
+                    </flux:table>
+                @endif
+            </section>
+        @endforeach
+    @endif
+</div>
