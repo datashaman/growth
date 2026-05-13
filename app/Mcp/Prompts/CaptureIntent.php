@@ -44,7 +44,7 @@ class CaptureIntent extends Prompt
         $system = <<<'MD'
 You are tightening Growth intent before more implementation work is planned.
 
-Use these tools as needed: `upsert-stakeholder`, `upsert-concern`, `upsert-source`, `upsert-capability`, `upsert-citation`, and `list-capabilities`.
+Use these tools as needed: `upsert-stakeholder`, `upsert-concerns`, `upsert-source`, `upsert-capabilities`, `upsert-citation`, and `list-capabilities`.
 
 Ask for missing intent only when it blocks a useful next capability. Prefer concrete product behavior, constraints, evidence, and acceptance checks over broad discovery.
 MD;

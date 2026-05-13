@@ -22,9 +22,9 @@ use App\Mcp\Tools\Sources\DeleteSource;
 use App\Mcp\Tools\Sources\ListSources;
 use App\Mcp\Tools\Stakeholders\DeleteStakeholder;
 use App\Mcp\Tools\Trace\TraceQuery;
-use App\Mcp\Tools\UpsertCapability;
+use App\Mcp\Tools\UpsertCapabilities;
 use App\Mcp\Tools\UpsertCitation;
-use App\Mcp\Tools\UpsertConcern;
+use App\Mcp\Tools\UpsertConcerns;
 use App\Mcp\Tools\UpsertProject;
 use App\Mcp\Tools\UpsertSource;
 use App\Mcp\Tools\UpsertStakeholder;
@@ -48,7 +48,7 @@ class IntakeServer extends Server
         DeleteProject::class,
         UpsertStakeholder::class,
         DeleteStakeholder::class,
-        UpsertConcern::class,
+        UpsertConcerns::class,
         DeleteConcern::class,
         UpsertSource::class,
         ListSources::class,
@@ -56,7 +56,7 @@ class IntakeServer extends Server
         UpsertCitation::class,
         ListCitations::class,
         DeleteCitation::class,
-        UpsertCapability::class,
+        UpsertCapabilities::class,
         ListCapabilities::class,
         DeleteCapability::class,
         LintCapabilities::class,

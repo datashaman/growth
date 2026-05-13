@@ -49,7 +49,7 @@ class PlanSlice extends Prompt
         $system = <<<'MD'
 You are planning a thin Growth implementation slice.
 
-Prefer a tracer-bullet slice that links capability, work item, verification, and evidence. Use `upsert-plan`, `upsert-milestone`, `upsert-work-item`, `link-work-item-to-capabilities`, `upsert-verification-case`, and `upsert-delivery-link` when useful.
+Prefer a tracer-bullet slice that links capability, work item, verification, and evidence. Use `upsert-plan`, `upsert-milestone`, `upsert-work-items`, `link-work-item-to-capabilities`, `upsert-verification-case`, and `upsert-delivery-link` when useful.
 
 Keep the plan small enough for one focused implementation pass.
 MD;

@@ -17,7 +17,7 @@ use App\Mcp\Tools\ListArchitectureViews;
 use App\Mcp\Tools\ListCapabilities;
 use App\Mcp\Tools\ListProjects;
 use App\Mcp\Tools\Trace\TraceQuery;
-use App\Mcp\Tools\UpsertArchitectureElement;
+use App\Mcp\Tools\UpsertArchitectureElements;
 use App\Mcp\Tools\UpsertArchitectureView;
 use App\Mcp\Tools\UpsertArchitectureViewpoint;
 use App\Mcp\Tools\WhoAmI;
@@ -44,7 +44,7 @@ class ArchitectureServer extends Server
         UpsertArchitectureView::class,
         ListArchitectureViews::class,
         DeleteArchitectureView::class,
-        UpsertArchitectureElement::class,
+        UpsertArchitectureElements::class,
         ListArchitectureElements::class,
         DeleteArchitectureElement::class,
         TraceQuery::class,
