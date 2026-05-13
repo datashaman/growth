@@ -20,4 +20,19 @@ class ProjectDashboardApp extends AppResource
             'title' => $this->title(),
         ]);
     }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function resolvedAppMeta(): array
+    {
+        $appMeta = parent::resolvedAppMeta();
+
+        // Claude's MCP host expects ui.domain to match "{hash}.claudemcpcontent.com"
+        // (its sandbox-iframe origin). Omit the auto-derived APP_URL host so Claude
+        // assigns its own sandbox origin instead of rejecting ours.
+        unset($appMeta['domain']);
+
+        return $appMeta;
+    }
 }
