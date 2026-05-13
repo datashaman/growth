@@ -1,6 +1,7 @@
 <?php
 
 use App\Concerns\ProjectScoped;
+use App\Support\BadgeVariant;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -17,17 +18,6 @@ new #[Title('Architecture')] class extends Component {
             ->orderBy('name')
             ->get()
             ?? collect();
-    }
-
-    public function elementKindVariant(string $kind): string
-    {
-        return match ($kind) {
-            'entity' => 'purple',
-            'relationship' => 'indigo',
-            'attribute' => 'blue',
-            'constraint' => 'amber',
-            default => 'zinc',
-        };
     }
 }; ?>
 
@@ -49,8 +39,10 @@ new #[Title('Architecture')] class extends Component {
         </flux:callout>
     @else
         @foreach ($this->designViews as $view)
-            <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="mb-3 flex items-center justify-between">
+            <x-data-table
+                :empty="$view->elements->isEmpty()"
+                :empty-message="__('No elements in this view.')">
+                <x-slot:header>
                     <div>
                         <div class="flex items-center gap-2">
                             <flux:heading size="lg">{{ $view->name }}</flux:heading>
@@ -61,32 +53,29 @@ new #[Title('Architecture')] class extends Component {
                         @endif
                     </div>
                     <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ $view->elements->count() }} {{ __('elements') }}</flux:text>
-                </div>
-                @if ($view->elements->isEmpty())
-                    <flux:text>{{ __('No elements in this view.') }}</flux:text>
-                @else
-                    <flux:table class="[&_td]:align-top">
-                        <flux:table.columns>
-                            <flux:table.column>{{ __('Element') }}</flux:table.column>
-                            <flux:table.column>{{ __('Kind') }}</flux:table.column>
-                            <flux:table.column>{{ __('Type') }}</flux:table.column>
-                            <flux:table.column>{{ __('Purpose') }}</flux:table.column>
-                        </flux:table.columns>
-                        <flux:table.rows>
-                            @foreach ($view->elements as $element)
-                                <flux:table.row>
-                                    <flux:table.cell class="font-medium">{{ $element->name }}</flux:table.cell>
-                                    <flux:table.cell>
-                                        <flux:badge :color="$this->elementKindVariant($element->kind)" size="sm">{{ $element->kind }}</flux:badge>
-                                    </flux:table.cell>
-                                    <flux:table.cell>{{ $element->type ?? '—' }}</flux:table.cell>
-                                    <flux:table.cell>{{ $element->purpose ?? '—' }}</flux:table.cell>
-                                </flux:table.row>
-                            @endforeach
-                        </flux:table.rows>
-                    </flux:table>
-                @endif
-            </section>
+                </x-slot:header>
+
+                <flux:table class="[&_td]:align-top">
+                    <flux:table.columns>
+                        <flux:table.column>{{ __('Element') }}</flux:table.column>
+                        <flux:table.column>{{ __('Kind') }}</flux:table.column>
+                        <flux:table.column>{{ __('Type') }}</flux:table.column>
+                        <flux:table.column>{{ __('Purpose') }}</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($view->elements as $element)
+                            <flux:table.row>
+                                <flux:table.cell class="font-medium">{{ $element->name }}</flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge :color="BadgeVariant::designElementKind($element->kind)" size="sm">{{ $element->kind }}</flux:badge>
+                                </flux:table.cell>
+                                <flux:table.cell>{{ $element->type ?? '—' }}</flux:table.cell>
+                                <flux:table.cell>{{ $element->purpose ?? '—' }}</flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            </x-data-table>
         @endforeach
     @endif
 </div>
