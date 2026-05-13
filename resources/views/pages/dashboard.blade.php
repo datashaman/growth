@@ -5,6 +5,7 @@ use App\Growth\Execution\ImplementationStatusSummarizer;
 use App\Growth\Plan\PlanCapacitySummarizer;
 use App\Growth\Plan\ScheduleHealthSummarizer;
 use App\Models\Project;
+use App\Support\BadgeVariant;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -138,178 +139,6 @@ new #[Title('Dashboard')] class extends Component {
         ];
     }
 
-    /*
-     * Semantic colour vocabulary for Flux badges across the dashboard.
-     *
-     *   green  → terminal success         (done, deployed, gate pass, review accepted, anomaly resolved, risk mitigated, review held)
-     *   teal   → intermediate success     (validated, review accepted_with_actions)
-     *   blue   → in-flight work           (in_progress, implemented, risk assessed/mitigating)
-     *   sky    → not yet started / low    (todo, planned, risk identified, anomaly low, low exposure)
-     *   amber  → warning / attention      (gate warn, warning finding, done_without_evidence, risk accepted, anomaly investigating/medium, rework_required, medium exposure)
-     *   red    → blocked / failing        (blocked, gate fail, error finding, blocked_by_checks, risk realized, anomaly open/high/critical, rejected, high exposure)
-     *   zinc   → neutral / inert          (cancelled, closed, deferred, default)
-     *
-     * Categorical (non-status) hierarchy colours:
-     *   purple → deliverable
-     *   indigo → work_package
-     *   zinc   → task
-     *
-     * Flux's free badge component only recognises literal Tailwind colour names,
-     * not semantic aliases like "success" — anything else falls through to zinc.
-     */
-
-    public function gateVariant(string $status): string
-    {
-        return match ($status) {
-            'pass' => 'green',
-            'warn' => 'amber',
-            'fail' => 'red',
-            default => 'zinc',
-        };
-    }
-
-    public function findingVariant(string $severity): string
-    {
-        return match ($severity) {
-            'error' => 'red',
-            'warning' => 'amber',
-            default => 'zinc',
-        };
-    }
-
-    public function workItemStatusVariant(string $status): string
-    {
-        return match ($status) {
-            'done' => 'green',
-            'in_progress' => 'blue',
-            'blocked' => 'red',
-            'todo' => 'sky',
-            'cancelled' => 'zinc',
-            default => 'zinc',
-        };
-    }
-
-    public function workItemKindVariant(string $kind): string
-    {
-        return match ($kind) {
-            'deliverable' => 'purple',
-            'work_package' => 'indigo',
-            default => 'zinc',
-        };
-    }
-
-    public function implementationStateVariant(string $state): string
-    {
-        return match ($state) {
-            'deployed' => 'green',
-            'validated' => 'teal',
-            'implemented' => 'blue',
-            'blocked_by_checks' => 'red',
-            'done_without_evidence' => 'amber',
-            'planned' => 'sky',
-            default => 'zinc',
-        };
-    }
-
-    public function riskStatusVariant(string $status): string
-    {
-        return match ($status) {
-            'identified' => 'sky',
-            'assessed', 'mitigating' => 'blue',
-            'mitigated' => 'green',
-            'accepted' => 'amber',
-            'realized' => 'red',
-            'closed' => 'zinc',
-            default => 'zinc',
-        };
-    }
-
-    public function riskExposureVariant(?string $probability, ?string $impact): string
-    {
-        $score = $this->levelScore($probability) * $this->levelScore($impact);
-
-        return match (true) {
-            $score >= 6 => 'red',
-            $score >= 3 => 'amber',
-            $score >= 1 => 'sky',
-            default => 'zinc',
-        };
-    }
-
-    public function riskExposureLabel(?string $probability, ?string $impact): string
-    {
-        $score = $this->levelScore($probability) * $this->levelScore($impact);
-
-        if ($score === 0) {
-            return '—';
-        }
-
-        return match (true) {
-            $score >= 6 => 'high',
-            $score >= 3 => 'medium',
-            default => 'low',
-        };
-    }
-
-    public function anomalySeverityVariant(string $severity): string
-    {
-        return match ($severity) {
-            'critical', 'high' => 'red',
-            'medium' => 'amber',
-            'low' => 'sky',
-            default => 'zinc',
-        };
-    }
-
-    public function anomalyStatusVariant(string $status): string
-    {
-        return match ($status) {
-            'open' => 'red',
-            'investigating' => 'amber',
-            'resolved' => 'green',
-            'closed' => 'zinc',
-            default => 'zinc',
-        };
-    }
-
-    public function reviewStatusVariant(string $status): string
-    {
-        return match ($status) {
-            'planned' => 'sky',
-            'in_progress' => 'blue',
-            'held' => 'green',
-            'closed', 'cancelled' => 'zinc',
-            default => 'zinc',
-        };
-    }
-
-    public function reviewDecisionVariant(?string $decision): string
-    {
-        return match ($decision) {
-            'accepted' => 'green',
-            'accepted_with_actions' => 'teal',
-            'rework_required' => 'amber',
-            'rejected' => 'red',
-            'deferred' => 'zinc',
-            default => 'zinc',
-        };
-    }
-
-    private function levelScore(?string $level): int
-    {
-        return match ($level) {
-            'high' => 3,
-            'medium' => 2,
-            'low' => 1,
-            default => 0,
-        };
-    }
-
-    public function implementationStateLabel(string $state): string
-    {
-        return str_replace('_', ' ', $state);
-    }
-
     public function formatHours(?float $hours): string
     {
         if ($hours === null || $hours === 0.0) {
@@ -386,348 +215,325 @@ new #[Title('Dashboard')] class extends Component {
             </section>
 
             <section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-                    <div class="mb-3 flex items-center justify-between">
+                <x-data-table
+                    :empty="count($this->readiness['gates']) === 0"
+                    :empty-message="__('No readiness gates defined.')">
+                    <x-slot:header>
                         <flux:heading size="lg">{{ __('Readiness') }}</flux:heading>
-                        <flux:badge :color="$this->gateVariant($this->readiness['status'])">
+                        <flux:badge :color="BadgeVariant::gate($this->readiness['status'])">
                             {{ __(ucfirst($this->readiness['status'])) }}
                         </flux:badge>
-                    </div>
-                    @if (count($this->readiness['gates']) === 0)
-                        <flux:text>{{ __('No readiness gates defined.') }}</flux:text>
-                    @else
-                        <flux:table class="[&_td]:align-top">
-                            <flux:table.columns>
-                                <flux:table.column>{{ __('Gate') }}</flux:table.column>
-                                <flux:table.column>{{ __('Status') }}</flux:table.column>
-                                <flux:table.column align="end">{{ __('Findings') }}</flux:table.column>
-                            </flux:table.columns>
-                            <flux:table.rows>
-                                @foreach ($this->readiness['gates'] as $gate)
-                                    <flux:table.row>
-                                        <flux:table.cell>
-                                            <div class="font-medium">{{ $gate['id'] }}</div>
-                                            <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $gate['description'] }}</div>
-                                        </flux:table.cell>
-                                        <flux:table.cell>
-                                            <flux:badge :color="$this->gateVariant($gate['status'])" size="sm">
-                                                {{ ucfirst($gate['status']) }}
-                                            </flux:badge>
-                                        </flux:table.cell>
-                                        <flux:table.cell align="end">
-                                            {{ count($gate['findings']) }}
-                                        </flux:table.cell>
-                                    </flux:table.row>
-                                @endforeach
-                            </flux:table.rows>
-                        </flux:table>
-                    @endif
-                </div>
+                    </x-slot:header>
 
-                <div class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-                    <div class="mb-3 flex items-center justify-between">
-                        <flux:heading size="lg">{{ __('Schedule health') }}</flux:heading>
-                        <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">
-                            {{ count($this->schedule['findings']) }} {{ __('findings') }}
-                        </flux:text>
-                    </div>
-                    @if (count($this->schedule['findings']) === 0)
-                        <flux:text>{{ __('No schedule issues found.') }}</flux:text>
-                    @else
-                        <ul class="space-y-2">
-                            @foreach ($this->schedule['findings'] as $finding)
-                                <li class="flex items-start gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
-                                    <flux:badge :color="$this->findingVariant($finding['severity'])" size="sm">
-                                        {{ ucfirst($finding['severity']) }}
-                                    </flux:badge>
-                                    <div class="flex-1">
-                                        <div class="text-sm">{{ $finding['message'] }}</div>
-                                        <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $finding['rule'] }}</div>
-                                    </div>
-                                </li>
+                    <flux:table class="[&_td]:align-top">
+                        <flux:table.columns>
+                            <flux:table.column>{{ __('Gate') }}</flux:table.column>
+                            <flux:table.column>{{ __('Status') }}</flux:table.column>
+                            <flux:table.column align="end">{{ __('Findings') }}</flux:table.column>
+                        </flux:table.columns>
+                        <flux:table.rows>
+                            @foreach ($this->readiness['gates'] as $gate)
+                                <flux:table.row>
+                                    <flux:table.cell>
+                                        <div class="font-medium">{{ $gate['id'] }}</div>
+                                        <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $gate['description'] }}</div>
+                                    </flux:table.cell>
+                                    <flux:table.cell>
+                                        <flux:badge :color="BadgeVariant::gate($gate['status'])" size="sm">
+                                            {{ ucfirst($gate['status']) }}
+                                        </flux:badge>
+                                    </flux:table.cell>
+                                    <flux:table.cell align="end">
+                                        {{ count($gate['findings']) }}
+                                    </flux:table.cell>
+                                </flux:table.row>
                             @endforeach
-                        </ul>
-                    @endif
-                </div>
+                        </flux:table.rows>
+                    </flux:table>
+                </x-data-table>
+
+                <x-data-table
+                    :title="__('Schedule health')"
+                    :count="count($this->schedule['findings'])"
+                    :count-label="__('findings')"
+                    :empty="count($this->schedule['findings']) === 0"
+                    :empty-message="__('No schedule issues found.')">
+                    <ul class="space-y-2">
+                        @foreach ($this->schedule['findings'] as $finding)
+                            <li class="flex items-start gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+                                <flux:badge :color="BadgeVariant::finding($finding['severity'])" size="sm">
+                                    {{ ucfirst($finding['severity']) }}
+                                </flux:badge>
+                                <div class="flex-1">
+                                    <div class="text-sm">{{ $finding['message'] }}</div>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $finding['rule'] }}</div>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                </x-data-table>
             </section>
 
-            <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="mb-3 flex items-center justify-between">
+            <x-data-table
+                :empty="count($this->implementation['results']) === 0"
+                :empty-message="__('No work items defined.')">
+                <x-slot:header>
                     <flux:heading size="lg">{{ __('Implementation') }}</flux:heading>
                     <div class="flex flex-wrap gap-3 text-xs text-zinc-500 dark:text-zinc-400">
                         <span>{{ __(':n with evidence', ['n' => $this->implementation['summary']['with_delivery_evidence']]) }}</span>
                         <span>{{ __(':n deployed', ['n' => $this->implementation['summary']['deployed']]) }}</span>
                         <span>{{ __(':n done without evidence', ['n' => $this->implementation['summary']['done_without_delivery_evidence']]) }}</span>
                     </div>
-                </div>
-                @if (count($this->implementation['results']) === 0)
-                    <flux:text>{{ __('No work items defined.') }}</flux:text>
-                @else
-                    <flux:table class="[&_td]:align-top">
-                        <flux:table.columns>
-                            <flux:table.column>{{ __('Work item') }}</flux:table.column>
-                            <flux:table.column>{{ __('Kind') }}</flux:table.column>
-                            <flux:table.column>{{ __('Status') }}</flux:table.column>
-                            <flux:table.column>{{ __('State') }}</flux:table.column>
-                            <flux:table.column align="end">{{ __('Evidence') }}</flux:table.column>
-                            <flux:table.column align="end">{{ __('Checks') }}</flux:table.column>
-                            <flux:table.column align="end">{{ __('Deploys') }}</flux:table.column>
-                        </flux:table.columns>
-                        <flux:table.rows>
-                            @foreach ($this->implementation['results'] as $row)
-                                <flux:table.row>
-                                    <flux:table.cell>
-                                        <div class="font-medium">{{ $row['name'] }}</div>
-                                    </flux:table.cell>
-                                    <flux:table.cell>
-                                        <flux:badge :color="$this->workItemKindVariant($row['kind'])" size="sm">
-                                            {{ str_replace('_', ' ', $row['kind']) }}
-                                        </flux:badge>
-                                    </flux:table.cell>
-                                    <flux:table.cell>
-                                        <flux:badge :color="$this->workItemStatusVariant($row['status'])" size="sm">
-                                            {{ str_replace('_', ' ', $row['status']) }}
-                                        </flux:badge>
-                                    </flux:table.cell>
-                                    <flux:table.cell>
-                                        <flux:badge :color="$this->implementationStateVariant($row['implementation_state'])" size="sm">
-                                            {{ $this->implementationStateLabel($row['implementation_state']) }}
-                                        </flux:badge>
-                                    </flux:table.cell>
-                                    <flux:table.cell align="end" class="tabular-nums">{{ $row['delivery_links'] }}</flux:table.cell>
-                                    <flux:table.cell align="end" class="tabular-nums">
-                                        @if ($row['failed_checks'] > 0)
-                                            <span class="text-red-600 dark:text-red-400">{{ $row['failed_checks'] }} {{ __('fail') }}</span>
-                                            @if ($row['successful_checks'] > 0) / @endif
-                                        @endif
-                                        @if ($row['successful_checks'] > 0)
-                                            <span class="text-emerald-600 dark:text-emerald-400">{{ $row['successful_checks'] }} {{ __('ok') }}</span>
-                                        @endif
-                                        @if ($row['failed_checks'] === 0 && $row['successful_checks'] === 0)
-                                            —
-                                        @endif
-                                    </flux:table.cell>
-                                    <flux:table.cell align="end" class="tabular-nums">
-                                        @if ($row['successful_deployments'] > 0)
-                                            <span class="text-emerald-600 dark:text-emerald-400">{{ $row['successful_deployments'] }}</span>/{{ $row['deployments'] }}
-                                        @elseif ($row['deployments'] > 0)
-                                            {{ $row['deployments'] }}
-                                        @else
-                                            —
-                                        @endif
-                                    </flux:table.cell>
-                                </flux:table.row>
-                            @endforeach
-                        </flux:table.rows>
-                    </flux:table>
-                @endif
-            </section>
+                </x-slot:header>
 
-            <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="mb-3 flex items-center justify-between">
+                <flux:table class="[&_td]:align-top">
+                    <flux:table.columns>
+                        <flux:table.column>{{ __('Work item') }}</flux:table.column>
+                        <flux:table.column>{{ __('Kind') }}</flux:table.column>
+                        <flux:table.column>{{ __('Status') }}</flux:table.column>
+                        <flux:table.column>{{ __('State') }}</flux:table.column>
+                        <flux:table.column align="end">{{ __('Evidence') }}</flux:table.column>
+                        <flux:table.column align="end">{{ __('Checks') }}</flux:table.column>
+                        <flux:table.column align="end">{{ __('Deploys') }}</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($this->implementation['results'] as $row)
+                            <flux:table.row>
+                                <flux:table.cell>
+                                    <div class="font-medium">{{ $row['name'] }}</div>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge :color="BadgeVariant::workItemKind($row['kind'])" size="sm">
+                                        {{ str_replace('_', ' ', $row['kind']) }}
+                                    </flux:badge>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge :color="BadgeVariant::workItemStatus($row['status'])" size="sm">
+                                        {{ str_replace('_', ' ', $row['status']) }}
+                                    </flux:badge>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge :color="BadgeVariant::implementationState($row['implementation_state'])" size="sm">
+                                        {{ str_replace('_', ' ', $row['implementation_state']) }}
+                                    </flux:badge>
+                                </flux:table.cell>
+                                <flux:table.cell align="end" class="tabular-nums">{{ $row['delivery_links'] }}</flux:table.cell>
+                                <flux:table.cell align="end" class="tabular-nums">
+                                    @if ($row['failed_checks'] > 0)
+                                        <span class="text-red-600 dark:text-red-400">{{ $row['failed_checks'] }} {{ __('fail') }}</span>
+                                        @if ($row['successful_checks'] > 0) / @endif
+                                    @endif
+                                    @if ($row['successful_checks'] > 0)
+                                        <span class="text-emerald-600 dark:text-emerald-400">{{ $row['successful_checks'] }} {{ __('ok') }}</span>
+                                    @endif
+                                    @if ($row['failed_checks'] === 0 && $row['successful_checks'] === 0)
+                                        —
+                                    @endif
+                                </flux:table.cell>
+                                <flux:table.cell align="end" class="tabular-nums">
+                                    @if ($row['successful_deployments'] > 0)
+                                        <span class="text-emerald-600 dark:text-emerald-400">{{ $row['successful_deployments'] }}</span>/{{ $row['deployments'] }}
+                                    @elseif ($row['deployments'] > 0)
+                                        {{ $row['deployments'] }}
+                                    @else
+                                        —
+                                    @endif
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            </x-data-table>
+
+            <x-data-table
+                :empty="count($this->capacity['roles']) === 0"
+                :empty-message="__('No roles or work items defined.')">
+                <x-slot:header>
                     <flux:heading size="lg">{{ __('Capacity') }}</flux:heading>
                     <div class="flex flex-wrap gap-3 text-xs text-zinc-500 dark:text-zinc-400">
                         <span>{{ __('Est :h', ['h' => $this->formatHours($this->capacity['totals']['effort_estimate_hours'])]) }}</span>
                         <span>{{ __('Actual :h', ['h' => $this->formatHours($this->capacity['totals']['effort_actual_hours'])]) }}</span>
                         <span>{{ __('Cost est :c', ['c' => $this->formatCurrency($this->capacity['totals']['cost_estimate_amount'])]) }}</span>
                     </div>
-                </div>
-                @if (count($this->capacity['roles']) === 0)
-                    <flux:text>{{ __('No roles or work items defined.') }}</flux:text>
-                @else
-                    <flux:table class="[&_td]:align-top">
-                        <flux:table.columns>
-                            <flux:table.column>{{ __('Role') }}</flux:table.column>
-                            <flux:table.column align="end">{{ __('Items') }}</flux:table.column>
-                            <flux:table.column align="end">{{ __('Est hrs') }}</flux:table.column>
-                            <flux:table.column align="end">{{ __('Actual hrs') }}</flux:table.column>
-                            <flux:table.column align="end">{{ __('Cost est') }}</flux:table.column>
-                            <flux:table.column align="end">{{ __('Cost actual') }}</flux:table.column>
-                            <flux:table.column align="end">{{ __('Utilization') }}</flux:table.column>
-                        </flux:table.columns>
-                        <flux:table.rows>
-                            @foreach ($this->capacity['roles'] as $row)
-                                <flux:table.row>
-                                    <flux:table.cell>
-                                        <div class="font-medium">{{ $row['role'] ?? __('Unassigned') }}</div>
-                                        @if ($row['weekly_capacity_hours'])
-                                            <div class="text-xs text-zinc-500 dark:text-zinc-400">
-                                                {{ __('Capacity :h/wk', ['h' => $this->formatHours($row['weekly_capacity_hours'])]) }}
-                                            </div>
-                                        @endif
-                                    </flux:table.cell>
-                                    <flux:table.cell align="end" class="tabular-nums">{{ $row['work_items'] }}</flux:table.cell>
-                                    <flux:table.cell align="end" class="tabular-nums">{{ $this->formatHours($row['effort_estimate_hours']) }}</flux:table.cell>
-                                    <flux:table.cell align="end" class="tabular-nums">{{ $this->formatHours($row['effort_actual_hours']) }}</flux:table.cell>
-                                    <flux:table.cell align="end" class="tabular-nums">{{ $this->formatCurrency($row['cost_estimate_amount'], $row['rate_currency']) }}</flux:table.cell>
-                                    <flux:table.cell align="end" class="tabular-nums">{{ $this->formatCurrency($row['cost_actual_amount'], $row['rate_currency']) }}</flux:table.cell>
-                                    <flux:table.cell align="end" class="tabular-nums">
-                                        @if ($row['utilization_estimate'] !== null)
-                                            {{ number_format($row['utilization_estimate'] * 100, 0) }}%
-                                        @else
-                                            —
-                                        @endif
-                                    </flux:table.cell>
-                                </flux:table.row>
-                            @endforeach
-                        </flux:table.rows>
-                    </flux:table>
-                @endif
-            </section>
+                </x-slot:header>
 
-            <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="mb-3 flex items-center justify-between">
-                    <flux:heading size="lg">{{ __('Risks') }}</flux:heading>
-                    <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">
-                        {{ $this->risks->count() }} {{ __('tracked') }}
-                    </flux:text>
-                </div>
-                @if ($this->risks->isEmpty())
-                    <flux:text>{{ __('No risks tracked.') }}</flux:text>
-                @else
-                    <flux:table class="[&_td]:align-top">
-                        <flux:table.columns>
-                            <flux:table.column>{{ __('Risk') }}</flux:table.column>
-                            <flux:table.column>{{ __('Category') }}</flux:table.column>
-                            <flux:table.column>{{ __('Exposure') }}</flux:table.column>
-                            <flux:table.column>{{ __('Status') }}</flux:table.column>
-                            <flux:table.column>{{ __('Owner') }}</flux:table.column>
-                        </flux:table.columns>
-                        <flux:table.rows>
-                            @foreach ($this->risks as $risk)
-                                <flux:table.row>
-                                    <flux:table.cell>
-                                        <div class="font-medium">{{ $risk->title }}</div>
-                                        @if ($risk->description)
-                                            <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($risk->description, 80) }}</div>
-                                        @endif
-                                    </flux:table.cell>
-                                    <flux:table.cell>
-                                        <flux:badge color="zinc" size="sm">{{ str_replace('_', ' ', $risk->category) }}</flux:badge>
-                                    </flux:table.cell>
-                                    <flux:table.cell>
-                                        <flux:badge :color="$this->riskExposureVariant($risk->probability, $risk->impact)" size="sm">
-                                            {{ $this->riskExposureLabel($risk->probability, $risk->impact) }}
-                                        </flux:badge>
-                                        <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                                            {{ __('Probability') }}: {{ $risk->probability ?? '—' }} · {{ __('Impact') }}: {{ $risk->impact ?? '—' }}
+                <flux:table class="[&_td]:align-top">
+                    <flux:table.columns>
+                        <flux:table.column>{{ __('Role') }}</flux:table.column>
+                        <flux:table.column align="end">{{ __('Items') }}</flux:table.column>
+                        <flux:table.column align="end">{{ __('Est hrs') }}</flux:table.column>
+                        <flux:table.column align="end">{{ __('Actual hrs') }}</flux:table.column>
+                        <flux:table.column align="end">{{ __('Cost est') }}</flux:table.column>
+                        <flux:table.column align="end">{{ __('Cost actual') }}</flux:table.column>
+                        <flux:table.column align="end">{{ __('Utilization') }}</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($this->capacity['roles'] as $row)
+                            <flux:table.row>
+                                <flux:table.cell>
+                                    <div class="font-medium">{{ $row['role'] ?? __('Unassigned') }}</div>
+                                    @if ($row['weekly_capacity_hours'])
+                                        <div class="text-xs text-zinc-500 dark:text-zinc-400">
+                                            {{ __('Capacity :h/wk', ['h' => $this->formatHours($row['weekly_capacity_hours'])]) }}
                                         </div>
-                                    </flux:table.cell>
-                                    <flux:table.cell>
-                                        <flux:badge :color="$this->riskStatusVariant($risk->status)" size="sm">
-                                            {{ str_replace('_', ' ', $risk->status) }}
-                                        </flux:badge>
-                                    </flux:table.cell>
-                                    <flux:table.cell>{{ $risk->ownerRole?->name ?? '—' }}</flux:table.cell>
-                                </flux:table.row>
-                            @endforeach
-                        </flux:table.rows>
-                    </flux:table>
-                @endif
-            </section>
+                                    @endif
+                                </flux:table.cell>
+                                <flux:table.cell align="end" class="tabular-nums">{{ $row['work_items'] }}</flux:table.cell>
+                                <flux:table.cell align="end" class="tabular-nums">{{ $this->formatHours($row['effort_estimate_hours']) }}</flux:table.cell>
+                                <flux:table.cell align="end" class="tabular-nums">{{ $this->formatHours($row['effort_actual_hours']) }}</flux:table.cell>
+                                <flux:table.cell align="end" class="tabular-nums">{{ $this->formatCurrency($row['cost_estimate_amount'], $row['rate_currency']) }}</flux:table.cell>
+                                <flux:table.cell align="end" class="tabular-nums">{{ $this->formatCurrency($row['cost_actual_amount'], $row['rate_currency']) }}</flux:table.cell>
+                                <flux:table.cell align="end" class="tabular-nums">
+                                    @if ($row['utilization_estimate'] !== null)
+                                        {{ number_format($row['utilization_estimate'] * 100, 0) }}%
+                                    @else
+                                        —
+                                    @endif
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            </x-data-table>
 
-            <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="mb-3 flex items-center justify-between">
-                    <flux:heading size="lg">{{ __('Anomalies') }}</flux:heading>
-                    <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">
-                        {{ $this->anomalies->where('status', '!=', 'closed')->count() }} {{ __('open') }} / {{ $this->anomalies->count() }} {{ __('total') }}
-                    </flux:text>
-                </div>
-                @if ($this->anomalies->isEmpty())
-                    <flux:text>{{ __('No anomalies reported.') }}</flux:text>
-                @else
-                    <flux:table class="[&_td]:align-top">
-                        <flux:table.columns>
-                            <flux:table.column>{{ __('Anomaly') }}</flux:table.column>
-                            <flux:table.column>{{ __('Severity') }}</flux:table.column>
-                            <flux:table.column>{{ __('Status') }}</flux:table.column>
-                            <flux:table.column>{{ __('Environment') }}</flux:table.column>
-                        </flux:table.columns>
-                        <flux:table.rows>
-                            @foreach ($this->anomalies as $anomaly)
-                                <flux:table.row>
-                                    <flux:table.cell>
-                                        <div class="font-medium">{{ $anomaly->summary }}</div>
-                                        @if ($anomaly->description)
-                                            <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($anomaly->description, 80) }}</div>
-                                        @endif
-                                    </flux:table.cell>
-                                    <flux:table.cell>
-                                        <flux:badge :color="$this->anomalySeverityVariant($anomaly->severity)" size="sm">
-                                            {{ $anomaly->severity }}
-                                        </flux:badge>
-                                    </flux:table.cell>
-                                    <flux:table.cell>
-                                        <flux:badge :color="$this->anomalyStatusVariant($anomaly->status)" size="sm">
-                                            {{ $anomaly->status }}
-                                        </flux:badge>
-                                    </flux:table.cell>
-                                    <flux:table.cell>{{ $anomaly->environment ?? '—' }}</flux:table.cell>
-                                </flux:table.row>
-                            @endforeach
-                        </flux:table.rows>
-                    </flux:table>
-                @endif
-            </section>
+            <x-data-table
+                :title="__('Risks')"
+                :count="$this->risks->count()"
+                :count-label="__('tracked')"
+                :empty="$this->risks->isEmpty()"
+                :empty-message="__('No risks tracked.')">
+                <flux:table class="[&_td]:align-top">
+                    <flux:table.columns>
+                        <flux:table.column>{{ __('Risk') }}</flux:table.column>
+                        <flux:table.column>{{ __('Category') }}</flux:table.column>
+                        <flux:table.column>{{ __('Exposure') }}</flux:table.column>
+                        <flux:table.column>{{ __('Status') }}</flux:table.column>
+                        <flux:table.column>{{ __('Owner') }}</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($this->risks as $risk)
+                            <flux:table.row>
+                                <flux:table.cell>
+                                    <div class="font-medium">{{ $risk->title }}</div>
+                                    @if ($risk->description)
+                                        <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($risk->description, 80) }}</div>
+                                    @endif
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge color="zinc" size="sm">{{ str_replace('_', ' ', $risk->category) }}</flux:badge>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge :color="BadgeVariant::riskExposure($risk->probability, $risk->impact)" size="sm">
+                                        {{ BadgeVariant::riskExposureLabel($risk->probability, $risk->impact) }}
+                                    </flux:badge>
+                                    <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                        {{ __('Probability') }}: {{ $risk->probability ?? '—' }} · {{ __('Impact') }}: {{ $risk->impact ?? '—' }}
+                                    </div>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge :color="BadgeVariant::riskStatus($risk->status)" size="sm">
+                                        {{ str_replace('_', ' ', $risk->status) }}
+                                    </flux:badge>
+                                </flux:table.cell>
+                                <flux:table.cell>{{ $risk->ownerRole?->name ?? '—' }}</flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            </x-data-table>
 
-            <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="mb-3 flex items-center justify-between">
-                    <flux:heading size="lg">{{ __('Reviews') }}</flux:heading>
-                    <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">
-                        {{ $this->reviews->where('status', 'held')->count() }} {{ __('held') }} / {{ $this->reviews->count() }} {{ __('total') }}
-                    </flux:text>
-                </div>
-                @if ($this->reviews->isEmpty())
-                    <flux:text>{{ __('No reviews scheduled.') }}</flux:text>
-                @else
-                    <flux:table class="[&_td]:align-top">
-                        <flux:table.columns>
-                            <flux:table.column>{{ __('Review') }}</flux:table.column>
-                            <flux:table.column>{{ __('Type') }}</flux:table.column>
-                            <flux:table.column>{{ __('Status') }}</flux:table.column>
-                            <flux:table.column>{{ __('Decision') }}</flux:table.column>
-                            <flux:table.column>{{ __('When') }}</flux:table.column>
-                        </flux:table.columns>
-                        <flux:table.rows>
-                            @foreach ($this->reviews as $review)
-                                <flux:table.row>
-                                    <flux:table.cell>
-                                        <div class="font-medium">{{ $review->title }}</div>
-                                        @if ($review->objective)
-                                            <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($review->objective, 80) }}</div>
-                                        @endif
-                                    </flux:table.cell>
-                                    <flux:table.cell>
-                                        <flux:badge color="zinc" size="sm">{{ str_replace('_', ' ', $review->type) }}</flux:badge>
-                                    </flux:table.cell>
-                                    <flux:table.cell>
-                                        <flux:badge :color="$this->reviewStatusVariant($review->status)" size="sm">
-                                            {{ str_replace('_', ' ', $review->status) }}
+            <x-data-table
+                :title="__('Anomalies')"
+                :count="$this->anomalies->where('status', '!=', 'closed')->count().' '.__('open').' / '.$this->anomalies->count()"
+                :count-label="__('total')"
+                :empty="$this->anomalies->isEmpty()"
+                :empty-message="__('No anomalies reported.')">
+                <flux:table class="[&_td]:align-top">
+                    <flux:table.columns>
+                        <flux:table.column>{{ __('Anomaly') }}</flux:table.column>
+                        <flux:table.column>{{ __('Severity') }}</flux:table.column>
+                        <flux:table.column>{{ __('Status') }}</flux:table.column>
+                        <flux:table.column>{{ __('Environment') }}</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($this->anomalies as $anomaly)
+                            <flux:table.row>
+                                <flux:table.cell>
+                                    <div class="font-medium">{{ $anomaly->summary }}</div>
+                                    @if ($anomaly->description)
+                                        <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($anomaly->description, 80) }}</div>
+                                    @endif
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge :color="BadgeVariant::anomalySeverity($anomaly->severity)" size="sm">
+                                        {{ $anomaly->severity }}
+                                    </flux:badge>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge :color="BadgeVariant::anomalyStatus($anomaly->status)" size="sm">
+                                        {{ $anomaly->status }}
+                                    </flux:badge>
+                                </flux:table.cell>
+                                <flux:table.cell>{{ $anomaly->environment ?? '—' }}</flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            </x-data-table>
+
+            <x-data-table
+                :title="__('Reviews')"
+                :count="$this->reviews->where('status', 'held')->count().' '.__('held').' / '.$this->reviews->count()"
+                :count-label="__('total')"
+                :empty="$this->reviews->isEmpty()"
+                :empty-message="__('No reviews scheduled.')">
+                <flux:table class="[&_td]:align-top">
+                    <flux:table.columns>
+                        <flux:table.column>{{ __('Review') }}</flux:table.column>
+                        <flux:table.column>{{ __('Type') }}</flux:table.column>
+                        <flux:table.column>{{ __('Status') }}</flux:table.column>
+                        <flux:table.column>{{ __('Decision') }}</flux:table.column>
+                        <flux:table.column>{{ __('When') }}</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($this->reviews as $review)
+                            <flux:table.row>
+                                <flux:table.cell>
+                                    <div class="font-medium">{{ $review->title }}</div>
+                                    @if ($review->objective)
+                                        <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($review->objective, 80) }}</div>
+                                    @endif
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge color="zinc" size="sm">{{ str_replace('_', ' ', $review->type) }}</flux:badge>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge :color="BadgeVariant::reviewStatus($review->status)" size="sm">
+                                        {{ str_replace('_', ' ', $review->status) }}
+                                    </flux:badge>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    @if ($review->decision)
+                                        <flux:badge :color="BadgeVariant::reviewDecision($review->decision)" size="sm">
+                                            {{ str_replace('_', ' ', $review->decision) }}
                                         </flux:badge>
-                                    </flux:table.cell>
-                                    <flux:table.cell>
-                                        @if ($review->decision)
-                                            <flux:badge :color="$this->reviewDecisionVariant($review->decision)" size="sm">
-                                                {{ str_replace('_', ' ', $review->decision) }}
-                                            </flux:badge>
-                                        @else
-                                            —
-                                        @endif
-                                    </flux:table.cell>
-                                    <flux:table.cell>
-                                        @if ($review->held_at)
-                                            {{ __('Held :date', ['date' => $review->held_at->format('Y-m-d')]) }}
-                                        @elseif ($review->planned_at)
-                                            {{ __('Planned :date', ['date' => $review->planned_at->format('Y-m-d')]) }}
-                                        @else
-                                            —
-                                        @endif
-                                    </flux:table.cell>
-                                </flux:table.row>
-                            @endforeach
-                        </flux:table.rows>
-                    </flux:table>
-                @endif
-            </section>
+                                    @else
+                                        —
+                                    @endif
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    @if ($review->held_at)
+                                        {{ __('Held :date', ['date' => $review->held_at->format('Y-m-d')]) }}
+                                    @elseif ($review->planned_at)
+                                        {{ __('Planned :date', ['date' => $review->planned_at->format('Y-m-d')]) }}
+                                    @else
+                                        —
+                                    @endif
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            </x-data-table>
         @endif
 </div>
