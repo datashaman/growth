@@ -47,6 +47,10 @@
     }
 }
 
+ui-modal {
+    display: contents;
+}
+
 [data-flux-field]:not(ui-radio, ui-checkbox) {
     @apply grid gap-2;
 }
