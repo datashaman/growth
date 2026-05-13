@@ -8,7 +8,7 @@ use Laravel\Passport\Client;
 test('login page is available', function () {
     $this->get('/login')
         ->assertOk()
-        ->assertSee('Sign in');
+        ->assertSee('Log in');
 });
 
 test('users can authenticate with email and password', function () {
@@ -20,7 +20,7 @@ test('users can authenticate with email and password', function () {
     $this->post('/login', [
         'email' => 'alice@example.com',
         'password' => 'secret-password',
-    ])->assertRedirect('/');
+    ])->assertRedirect('/dashboard');
 
     $this->assertAuthenticatedAs($user);
 });
