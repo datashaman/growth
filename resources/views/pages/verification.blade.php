@@ -91,6 +91,11 @@ new #[Title('Verification')] class extends Component {
             :count-label="__('total')"
             :empty="$this->anomalies->isEmpty()"
             :empty-message="__('No anomalies reported.')">
+            <x-slot:actions>
+                <flux:modal.trigger name="create-anomaly">
+                    <flux:button size="sm" icon="plus" variant="primary">{{ __('Report anomaly') }}</flux:button>
+                </flux:modal.trigger>
+            </x-slot:actions>
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Anomaly') }}</flux:table.column>
@@ -119,5 +124,7 @@ new #[Title('Verification')] class extends Component {
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
+
+        <livewire:pages::anomalies.create-modal :project-id="$this->selectedProject->id" :key="'create-anomaly-'.$this->selectedProject->id" />
     @endif
 </div>

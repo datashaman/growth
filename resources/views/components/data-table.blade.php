@@ -12,13 +12,18 @@
             {{ $header }}
         </div>
     @else
-        <div class="mb-3 flex items-center justify-between">
-            <flux:heading size="lg">{{ $title }}</flux:heading>
-            @if ($count !== null)
-                <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">
-                    {{ $count }}@if ($countLabel) {{ $countLabel }}@endif
-                </flux:text>
-            @endif
+        <div class="mb-3 flex items-center justify-between gap-4">
+            <div class="flex items-baseline gap-3">
+                <flux:heading size="lg">{{ $title }}</flux:heading>
+                @if ($count !== null)
+                    <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">
+                        {{ $count }}@if ($countLabel) {{ $countLabel }}@endif
+                    </flux:text>
+                @endif
+            </div>
+            @isset($actions)
+                <div class="flex items-center gap-2">{{ $actions }}</div>
+            @endisset
         </div>
     @endisset
 

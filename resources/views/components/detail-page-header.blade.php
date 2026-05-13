@@ -1,12 +1,15 @@
 @props([
     'title',
     'backRoute' => null,
+    'backHref' => null,
     'backLabel' => null,
 ])
 
+@php($backUrl = $backHref ?? ($backRoute ? route($backRoute) : null))
+
 <header class="flex flex-col gap-2">
-    @if ($backRoute)
-        <flux:link :href="route($backRoute)" wire:navigate variant="ghost" class="inline-flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
+    @if ($backUrl)
+        <flux:link :href="$backUrl" wire:navigate variant="ghost" class="inline-flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
             <flux:icon.arrow-left class="size-3" />
             {{ $backLabel ?? __('Back') }}
         </flux:link>

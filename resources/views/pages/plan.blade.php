@@ -3,11 +3,18 @@
 use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Plan')] class extends Component {
     use ProjectScoped;
+
+    #[On('milestone-saved')]
+    public function refreshMilestones(): void
+    {
+        unset($this->milestones);
+    }
 
     #[Computed]
     public function milestones()
@@ -63,12 +70,18 @@ new #[Title('Plan')] class extends Component {
             :count-label="__('planned')"
             :empty="$this->milestones->isEmpty()"
             :empty-message="__('No milestones defined.')">
+            <x-slot:actions>
+                <flux:modal.trigger name="create-milestone">
+                    <flux:button size="sm" icon="plus" variant="primary">{{ __('New milestone') }}</flux:button>
+                </flux:modal.trigger>
+            </x-slot:actions>
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Milestone') }}</flux:table.column>
                     <flux:table.column>{{ __('Target') }}</flux:table.column>
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
                     <flux:table.column>{{ __('Exit criteria') }}</flux:table.column>
+                    <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->milestones as $milestone)
@@ -79,11 +92,23 @@ new #[Title('Plan')] class extends Component {
                                 <flux:badge :color="BadgeVariant::milestoneStatus($milestone->status)" size="sm">{{ $milestone->status }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>{{ \Illuminate\Support\Str::limit($milestone->exit_criteria ?? '—', 100) }}</flux:table.cell>
+                            <flux:table.cell>
+                                <div class="flex justify-end gap-1">
+                                    <flux:button size="xs" icon="pencil-square" variant="ghost"
+                                        wire:click="$dispatch('edit-milestone', { milestoneId: '{{ $milestone->id }}' })" />
+                                    <flux:button size="xs" icon="trash" variant="ghost"
+                                        wire:click="$dispatch('delete-milestone', { milestoneId: '{{ $milestone->id }}' })" />
+                                </div>
+                            </flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
+
+        <livewire:pages::milestones.create-modal :project-id="$this->selectedProject->id" :key="'create-milestone-'.$this->selectedProject->id" />
+        <livewire:pages::milestones.edit-modal :key="'edit-milestone-'.$this->selectedProject->id" />
+        <livewire:pages::milestones.delete-modal :key="'delete-milestone-'.$this->selectedProject->id" />
 
         <x-data-table
             :title="__('Work items')"
@@ -91,6 +116,12 @@ new #[Title('Plan')] class extends Component {
             :count-label="__('items')"
             :empty="$this->workItems->isEmpty()"
             :empty-message="__('No work items defined.')">
+            <x-slot:actions>
+                <flux:button size="sm" icon="plus" variant="primary"
+                    :href="route('work-items.create', ['project' => $this->selectedProject->id])" wire:navigate>
+                    {{ __('New work item') }}
+                </flux:button>
+            </x-slot:actions>
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Work item') }}</flux:table.column>

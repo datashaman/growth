@@ -38,6 +38,12 @@ new #[Title('Capabilities')] class extends Component {
             :count-label="__('captured')"
             :empty="$this->requirements->isEmpty()"
             :empty-message="__('No requirements captured.')">
+            <x-slot:actions>
+                <flux:button size="sm" icon="plus" variant="primary"
+                    :href="route('requirements.create', ['project' => $this->selectedProject->id])" wire:navigate>
+                    {{ __('New requirement') }}
+                </flux:button>
+            </x-slot:actions>
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Requirement') }}</flux:table.column>

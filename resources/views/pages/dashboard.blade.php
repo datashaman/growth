@@ -402,6 +402,13 @@ new #[Title('Dashboard')] class extends Component {
                 :count-label="__('tracked')"
                 :empty="$this->risks->isEmpty()"
                 :empty-message="__('No risks tracked.')">
+                <x-slot:actions>
+                    @if ($this->project)
+                        <flux:modal.trigger name="create-risk">
+                            <flux:button size="sm" icon="plus" variant="primary">{{ __('New risk') }}</flux:button>
+                        </flux:modal.trigger>
+                    @endif
+                </x-slot:actions>
                 <flux:table class="[&_td]:align-top">
                     <flux:table.columns>
                         <flux:table.column>{{ __('Risk') }}</flux:table.column>
@@ -441,6 +448,10 @@ new #[Title('Dashboard')] class extends Component {
                     </flux:table.rows>
                 </flux:table>
             </x-data-table>
+
+            @if ($this->project)
+                <livewire:pages::risks.create-modal :project-id="$this->project->id" :key="'create-risk-'.$this->project->id" />
+            @endif
 
             <x-data-table
                 :title="__('Anomalies')"
@@ -487,6 +498,13 @@ new #[Title('Dashboard')] class extends Component {
                 :count-label="__('total')"
                 :empty="$this->reviews->isEmpty()"
                 :empty-message="__('No reviews scheduled.')">
+                <x-slot:actions>
+                    @if ($this->project)
+                        <flux:modal.trigger name="create-review">
+                            <flux:button size="sm" icon="plus" variant="primary">{{ __('New review') }}</flux:button>
+                        </flux:modal.trigger>
+                    @endif
+                </x-slot:actions>
                 <flux:table class="[&_td]:align-top">
                     <flux:table.columns>
                         <flux:table.column>{{ __('Review') }}</flux:table.column>
@@ -535,5 +553,9 @@ new #[Title('Dashboard')] class extends Component {
                     </flux:table.rows>
                 </flux:table>
             </x-data-table>
+
+            @if ($this->project)
+                <livewire:pages::reviews.create-modal :project-id="$this->project->id" :key="'create-review-'.$this->project->id" />
+            @endif
         @endif
 </div>
