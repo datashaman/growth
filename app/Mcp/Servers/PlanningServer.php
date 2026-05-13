@@ -25,6 +25,7 @@ use App\Mcp\Tools\ListAgents;
 use App\Mcp\Tools\ListCapabilities;
 use App\Mcp\Tools\ListDeliveryLinks;
 use App\Mcp\Tools\ListPlanBaselines;
+use App\Mcp\Tools\ListProjectPlans;
 use App\Mcp\Tools\ListProjects;
 use App\Mcp\Tools\Plan\DeleteMilestone;
 use App\Mcp\Tools\Plan\DeleteRisk;
@@ -73,6 +74,7 @@ class PlanningServer extends Server
         ListCapabilities::class,
         UpsertPlan::class,
         DeletePlan::class,
+        ListProjectPlans::class,
         BaselinePlan::class,
         ComparePlanBaseline::class,
         ListPlanBaselines::class,
