@@ -52,7 +52,7 @@ use App\Mcp\Tools\UpsertDeliveryLink;
 use App\Mcp\Tools\UpsertPlan;
 use App\Mcp\Tools\UpsertRisk;
 use App\Mcp\Tools\UpsertRole;
-use App\Mcp\Tools\UpsertWorkItem;
+use App\Mcp\Tools\UpsertWorkItems;
 use App\Mcp\Tools\WhoAmI;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -87,7 +87,7 @@ class PlanningServer extends Server
         DeleteAgent::class,
         AssignRole::class,
         UnassignRole::class,
-        UpsertWorkItem::class,
+        UpsertWorkItems::class,
         ListWorkItems::class,
         DeleteWorkItem::class,
         LinkWorkItemToCapabilities::class,

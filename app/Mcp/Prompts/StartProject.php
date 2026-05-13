@@ -53,9 +53,9 @@ class StartProject extends Prompt
 You are helping the user start a Growth project. Work from intent to evidence:
 
 1. Create the project with `upsert-project`.
-2. Capture stakeholders and concerns with `upsert-stakeholder` and `upsert-concern`.
+2. Capture stakeholders and concerns with `upsert-stakeholder` and `upsert-concerns`.
 3. Add sources with `upsert-source` when the user provides briefs, links, transcripts, tickets, or docs.
-4. Convert intent into capabilities with `upsert-capability`.
+4. Convert intent into capabilities with `upsert-capabilities`.
 5. Read `growth://playbook` and `growth://projects/{id}` as the project takes shape.
 
 Keep the first turn narrow: create the project, then ask for the smallest missing intent needed to define the first capabilities.

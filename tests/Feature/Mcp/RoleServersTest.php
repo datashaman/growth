@@ -10,7 +10,7 @@ use App\Mcp\Tools\BuildEvidenceBundle;
 use App\Mcp\Tools\DeleteProject;
 use App\Mcp\Tools\GetProjectDashboardData;
 use App\Mcp\Tools\ShowProjectDashboard;
-use App\Mcp\Tools\UpsertCapability;
+use App\Mcp\Tools\UpsertCapabilities;
 use App\Mcp\Tools\UpsertProject;
 use App\Models\CheckRunEvidence;
 use App\Models\Project;
@@ -42,8 +42,8 @@ it('exposes role-specific MCP metadata surfaces', function () {
         'method' => 'resources/templates/list',
     ])->assertOk()->json('result.resourceTemplates');
 
-    expect(collect($intakeTools)->pluck('name')->all())->toContain('upsert-citation', 'upsert-capability')
-        ->and(collect($planningTools)->pluck('name')->all())->toContain('upsert-work-item', 'summarize-plan-capacity')
+    expect(collect($intakeTools)->pluck('name')->all())->toContain('upsert-citation', 'upsert-capabilities')
+        ->and(collect($planningTools)->pluck('name')->all())->toContain('upsert-work-items', 'summarize-plan-capacity')
         ->and(collect($resources)->pluck('uriTemplate')->all())->toContain('growth://projects/{project}/capabilities');
 });
 
@@ -77,9 +77,9 @@ it('exposes the complete MCP surface through the all server', function () {
 
     expect(collect($tools)->pluck('name')->all())->toContain(
         'upsert-project',
-        'upsert-capability',
+        'upsert-capabilities',
         'upsert-architecture-view',
-        'upsert-work-item',
+        'upsert-work-items',
         'upsert-verification-plan',
         'upsert-review',
         'upsert-change-request',
@@ -227,15 +227,19 @@ it('upserts projects and capabilities through the intake server', function () {
     ])->assertOk()
         ->assertSee('TodoMVC v2');
 
-    $capabilityResponse = IntakeServer::tool(UpsertCapability::class, [
-        'project_id' => $projectId,
-        'layer' => 'software',
-        'type' => 'functional',
-        'text' => 'The app shall add a todo when the user submits non-empty text.',
-        'acceptance_checks' => [
-            'Submitting non-empty text creates one active todo.',
+    $capabilityResponse = IntakeServer::tool(UpsertCapabilities::class, [
+        'items' => [
+            [
+                'project_id' => $projectId,
+                'layer' => 'software',
+                'type' => 'functional',
+                'text' => 'The app shall add a todo when the user submits non-empty text.',
+                'acceptance_checks' => [
+                    'Submitting non-empty text creates one active todo.',
+                ],
+                'priority' => 'high',
+            ],
         ],
-        'priority' => 'high',
     ]);
 
     $capabilityResponse->assertOk()
