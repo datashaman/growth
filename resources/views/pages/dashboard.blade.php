@@ -414,7 +414,7 @@ new #[Title('Dashboard')] class extends Component {
                         @foreach ($this->risks as $risk)
                             <flux:table.row>
                                 <flux:table.cell>
-                                    <div class="font-medium">{{ $risk->title }}</div>
+                                    <a href="{{ route('risks.show', $risk) }}" wire:navigate class="font-medium hover:underline">{{ $risk->title }}</a>
                                     @if ($risk->description)
                                         <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($risk->description, 80) }}</div>
                                     @endif

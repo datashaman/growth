@@ -12,6 +12,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('verification', 'pages::verification')->name('verification');
     Route::livewire('plan', 'pages::plan')->name('plan');
     Route::livewire('evidence', 'pages::evidence')->name('evidence');
+    Route::livewire('risks/{risk}', 'pages::risks.show')->name('risks.show');
 });
 
 require __DIR__.'/settings.php';
