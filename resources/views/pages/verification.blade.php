@@ -3,11 +3,19 @@
 use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Verification')] class extends Component {
     use ProjectScoped;
+
+    #[On('test-plan-saved')]
+    #[On('test-case-saved')]
+    public function refreshTestPlans(): void
+    {
+        unset($this->testPlans);
+    }
 
     #[Computed]
     public function testPlans()
@@ -33,7 +41,15 @@ new #[Title('Verification')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-project-page-header
         :title="__('Verification')"
-        :description="__('Test plans, test cases, and the anomalies they surface.')" />
+        :description="__('Test plans, test cases, and the anomalies they surface.')">
+        @if ($this->selectedProject)
+            <x-slot:actions>
+                <flux:modal.trigger name="create-test-plan">
+                    <flux:button size="sm" icon="plus" variant="primary">{{ __('New test plan') }}</flux:button>
+                </flux:modal.trigger>
+            </x-slot:actions>
+        @endif
+    </x-project-page-header>
 
     @if ($this->selectedProject === null)
         <flux:callout icon="cursor-arrow-rays">
@@ -41,6 +57,13 @@ new #[Title('Verification')] class extends Component {
             <flux:callout.text>{{ __('Pick a project to see its verification artefacts.') }}</flux:callout.text>
         </flux:callout>
     @else
+        @if ($this->testPlans->isEmpty())
+            <flux:callout icon="information-circle">
+                <flux:callout.heading>{{ __('No test plans yet') }}</flux:callout.heading>
+                <flux:callout.text>{{ __('Create one with the “New test plan” button above.') }}</flux:callout.text>
+            </flux:callout>
+        @endif
+
         @foreach ($this->testPlans as $plan)
             <x-data-table
                 :empty="$plan->cases->isEmpty()"
@@ -55,7 +78,17 @@ new #[Title('Verification')] class extends Component {
                             <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ $plan->scope }}</flux:text>
                         @endif
                     </div>
-                    <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ $plan->cases->count() }} {{ __('cases') }}</flux:text>
+                    <div class="flex items-center gap-2">
+                        <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ $plan->cases->count() }} {{ __('cases') }}</flux:text>
+                        <flux:button size="xs" icon="plus" variant="primary"
+                            wire:click="$dispatch('create-test-case', { testPlanId: '{{ $plan->id }}' })">
+                            {{ __('Case') }}
+                        </flux:button>
+                        <flux:button size="xs" icon="pencil-square" variant="ghost"
+                            wire:click="$dispatch('edit-test-plan', { testPlanId: '{{ $plan->id }}' })" />
+                        <flux:button size="xs" icon="trash" variant="ghost"
+                            wire:click="$dispatch('delete-test-plan', { testPlanId: '{{ $plan->id }}' })" />
+                    </div>
                 </x-slot:header>
 
                 <flux:table class="[&_td]:align-top">
@@ -63,6 +96,7 @@ new #[Title('Verification')] class extends Component {
                         <flux:table.column>{{ __('Case') }}</flux:table.column>
                         <flux:table.column>{{ __('Objective') }}</flux:table.column>
                         <flux:table.column>{{ __('Environment') }}</flux:table.column>
+                        <flux:table.column></flux:table.column>
                     </flux:table.columns>
                     <flux:table.rows>
                         @foreach ($plan->cases as $case)
@@ -70,6 +104,14 @@ new #[Title('Verification')] class extends Component {
                                 <flux:table.cell class="font-medium">{{ $case->name }}</flux:table.cell>
                                 <flux:table.cell>{{ $case->objective ?? '—' }}</flux:table.cell>
                                 <flux:table.cell>{{ $case->environment ?? '—' }}</flux:table.cell>
+                                <flux:table.cell>
+                                    <div class="flex justify-end gap-1">
+                                        <flux:button size="xs" icon="pencil-square" variant="ghost"
+                                            wire:click="$dispatch('edit-test-case', { testCaseId: '{{ $case->id }}' })" />
+                                        <flux:button size="xs" icon="trash" variant="ghost"
+                                            wire:click="$dispatch('delete-test-case', { testCaseId: '{{ $case->id }}' })" />
+                                    </div>
+                                </flux:table.cell>
                             </flux:table.row>
                         @endforeach
                     </flux:table.rows>
@@ -77,12 +119,13 @@ new #[Title('Verification')] class extends Component {
             </x-data-table>
         @endforeach
 
-        @if ($this->testPlans->isEmpty())
-            <flux:callout icon="information-circle">
-                <flux:callout.heading>{{ __('No test plans yet') }}</flux:callout.heading>
-                <flux:callout.text>{{ __('Create a test plan via the verification MCP server.') }}</flux:callout.text>
-            </flux:callout>
-        @endif
+        <livewire:pages::test-plans.create-modal :project-id="$this->selectedProject->id" :key="'create-test-plan-'.$this->selectedProject->id" />
+        <livewire:pages::test-plans.edit-modal :key="'edit-test-plan-'.$this->selectedProject->id" />
+        <livewire:pages::test-plans.delete-modal :key="'delete-test-plan-'.$this->selectedProject->id" />
+
+        <livewire:pages::test-cases.create-modal :key="'create-test-case-'.$this->selectedProject->id" />
+        <livewire:pages::test-cases.edit-modal :key="'edit-test-case-'.$this->selectedProject->id" />
+        <livewire:pages::test-cases.delete-modal :key="'delete-test-case-'.$this->selectedProject->id" />
 
         <x-data-table
             :title="__('Anomalies')"
