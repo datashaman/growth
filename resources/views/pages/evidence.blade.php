@@ -50,8 +50,7 @@ new #[Title('Evidence')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-project-page-header
         :title="__('Evidence')"
-        :description="__('Releases, deployments, and the delivery artefacts that back them.')"
-        :options="$this->projectOptions" />
+        :description="__('Releases, deployments, and the delivery artefacts that back them.')" />
 
     @if ($this->selectedProject === null)
         <flux:callout icon="cursor-arrow-rays">

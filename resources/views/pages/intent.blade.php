@@ -25,8 +25,7 @@ new #[Title('Intent')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-project-page-header
         :title="__('Intent')"
-        :description="__('Stakeholders raising concerns the project must address.')"
-        :options="$this->projectOptions" />
+        :description="__('Stakeholders raising concerns the project must address.')" />
 
     @if ($this->selectedProject === null)
         <flux:callout icon="cursor-arrow-rays">

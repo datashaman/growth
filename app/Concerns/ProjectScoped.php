@@ -12,18 +12,17 @@ trait ProjectScoped
     public function mountProjectScoped(): void
     {
         $fromQuery = (string) request()->query('project', '');
+        $fromSession = (string) session('selected_project_id', '');
 
-        $this->selectedProjectId = $fromQuery !== ''
-            ? $fromQuery
-            : Project::query()->orderBy('created_at')->value('id');
-    }
+        $this->selectedProjectId = match (true) {
+            $fromQuery !== '' => $fromQuery,
+            $fromSession !== '' => $fromSession,
+            default => Project::query()->orderBy('created_at')->value('id'),
+        };
 
-    #[Computed]
-    public function projectOptions()
-    {
-        return Project::query()
-            ->orderBy('created_at')
-            ->get(['id', 'name']);
+        if ($this->selectedProjectId !== null && $this->selectedProjectId !== $fromSession) {
+            session(['selected_project_id' => $this->selectedProjectId]);
+        }
     }
 
     #[Computed]
