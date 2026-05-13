@@ -2,23 +2,24 @@
     <x-slot:head>
         <style>
             :root {
-                color-scheme: light;
-                --bg: #f7f8fa;
-                --panel: #ffffff;
-                --panel-soft: #f1f4f6;
-                --line: #d9e0e5;
-                --line-soft: #e9edf0;
-                --text: #172026;
-                --muted: #66737d;
-                --muted-2: #8a969f;
-                --accent: #147d64;
-                --accent-soft: #dff4ed;
-                --danger: #b42318;
-                --danger-soft: #fde7e4;
-                --warn: #9a6500;
-                --warn-soft: #fff1cf;
-                --ok: #177245;
-                --ok-soft: #ddf5e7;
+                color-scheme: light dark;
+                --bg: var(--color-background-primary, light-dark(#f7f8fa, #0f1419));
+                --panel: var(--color-background-secondary, light-dark(#ffffff, #1a1f24));
+                --panel-soft: var(--color-background-tertiary, light-dark(#f1f4f6, #232a30));
+                --line: var(--color-border-primary, light-dark(#d9e0e5, #2d3640));
+                --line-soft: var(--color-border-secondary, light-dark(#e9edf0, #242c33));
+                --text: var(--color-text-primary, light-dark(#172026, #f0f3f5));
+                --muted: var(--color-text-secondary, light-dark(#66737d, #94a0a8));
+                --muted-2: var(--color-text-tertiary, light-dark(#8a969f, #6e7a82));
+                --accent: light-dark(#147d64, #2dd3a4);
+                --accent-soft: light-dark(#dff4ed, #163e34);
+                --accent-fg: light-dark(#ffffff, #0f1419);
+                --danger: light-dark(#b42318, #f87171);
+                --danger-soft: light-dark(#fde7e4, #3f1d1d);
+                --warn: light-dark(#9a6500, #f59e0b);
+                --warn-soft: light-dark(#fff1cf, #3a2e0d);
+                --ok: light-dark(#177245, #4ade80);
+                --ok-soft: light-dark(#ddf5e7, #15331f);
             }
 
             * {
@@ -48,7 +49,7 @@
 
             .rail {
                 border-right: 1px solid var(--line);
-                background: #fff;
+                background: var(--panel);
                 padding: 20px;
             }
 
@@ -70,6 +71,29 @@
                 letter-spacing: 0;
             }
 
+            .brand-row {
+                align-items: center;
+                display: flex;
+                gap: 8px;
+                justify-content: space-between;
+            }
+
+            .expand-button {
+                background: transparent;
+                border: 1px solid var(--line);
+                border-radius: 5px;
+                color: var(--muted);
+                cursor: pointer;
+                font-size: 14px;
+                line-height: 1;
+                padding: 4px 7px;
+            }
+
+            .expand-button:hover {
+                background: var(--panel-soft);
+                color: var(--text);
+            }
+
             .field {
                 display: grid;
                 gap: 6px;
@@ -82,7 +106,7 @@
                 min-height: 38px;
                 border: 1px solid var(--line);
                 border-radius: 6px;
-                background: #fff;
+                background: var(--panel);
                 color: var(--text);
                 padding: 0 10px;
             }
@@ -92,7 +116,7 @@
                 min-height: 38px;
                 border: 1px solid var(--line);
                 border-radius: 6px;
-                background: #fff;
+                background: var(--panel);
                 color: var(--text);
                 padding: 0 10px;
             }
@@ -101,7 +125,7 @@
                 border: 1px solid var(--accent);
                 border-radius: 6px;
                 background: var(--accent);
-                color: #fff;
+                color: var(--accent-fg);
                 cursor: pointer;
                 min-height: 38px;
                 padding: 0 12px;
@@ -186,7 +210,7 @@
             .status-box {
                 border: 1px solid var(--line);
                 border-radius: 6px;
-                background: #fff;
+                background: var(--panel);
                 min-width: 154px;
                 padding: 10px 12px;
             }
@@ -221,7 +245,7 @@
             }
 
             .metric {
-                background: #fff;
+                background: var(--panel);
                 min-height: 70px;
                 padding: 12px;
             }
@@ -260,7 +284,7 @@
             .rows {
                 border: 1px solid var(--line);
                 border-radius: 6px;
-                background: #fff;
+                background: var(--panel);
                 overflow: hidden;
             }
 
@@ -444,19 +468,19 @@
             .error-panel {
                 border: 1px solid var(--line);
                 border-radius: 6px;
-                background: #fff;
+                background: var(--panel);
                 color: var(--muted);
                 padding: 16px;
             }
 
             .error-panel {
                 background: var(--danger-soft);
-                border-color: #f4b9b3;
+                border-color: var(--danger);
                 color: var(--danger);
             }
 
             .resource-doc {
-                background: #fff;
+                background: var(--panel);
                 border: 1px solid var(--line);
                 border-radius: 6px;
                 margin-top: 18px;
@@ -515,7 +539,7 @@
                 background: var(--panel-soft);
                 border: 1px solid var(--line-soft);
                 border-radius: 4px;
-                color: #31404a;
+                color: var(--text);
                 font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
                 font-size: 12px;
                 padding: 1px 4px;
@@ -575,6 +599,8 @@
 
             const root = document.getElementById('dashboard');
 
+            app.autoResize();
+
             app.onToolInput((params) => {
                 const projectId = params?.arguments?.project_id ?? params?.project_id ?? null;
                 if (projectId && projectId !== state.selectedProjectId) {
@@ -617,6 +643,11 @@
                     state.page = 'dashboard';
                     state.resource = null;
                     render();
+                    return;
+                }
+
+                if (event.target.closest('[data-expand]')) {
+                    await app.requestDisplayMode('fullscreen');
                 }
             });
 
@@ -804,7 +835,10 @@
                 return `
                     <div class="brand">
                         <div class="eyebrow">Growth</div>
-                        <h1>Project Dashboard</h1>
+                        <div class="brand-row">
+                            <h1>Project Dashboard</h1>
+                            <button type="button" class="expand-button" data-expand title="Open fullscreen" aria-label="Open fullscreen">⛶</button>
+                        </div>
                     </div>
                     <label class="field">
                         <span>Project</span>
