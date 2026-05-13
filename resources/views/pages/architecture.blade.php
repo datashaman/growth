@@ -17,12 +17,27 @@ new #[Title('Architecture')] class extends Component {
         unset($this->designViews);
     }
 
+    #[On('custom-viewpoint-saved')]
+    public function refreshCustomViewpoints(): void
+    {
+        unset($this->customViewpoints);
+    }
+
     #[Computed]
     public function designViews()
     {
         return $this->selectedProject?->designViews()
             ->with('elements')
             ->orderBy('viewpoint')
+            ->orderBy('name')
+            ->get()
+            ?? collect();
+    }
+
+    #[Computed]
+    public function customViewpoints()
+    {
+        return $this->selectedProject?->customViewpoints()
             ->orderBy('name')
             ->get()
             ?? collect();
@@ -114,6 +129,48 @@ new #[Title('Architecture')] class extends Component {
             </x-data-table>
         @endforeach
 
+        <x-data-table
+            :title="__('Custom viewpoints')"
+            :count="$this->customViewpoints->count()"
+            :count-label="__('defined')"
+            :empty="$this->customViewpoints->isEmpty()"
+            :empty-message="__('No custom viewpoints. The 12 built-in viewpoints are always available.')">
+            <x-slot:actions>
+                <flux:modal.trigger name="create-custom-viewpoint">
+                    <flux:button size="sm" icon="plus" variant="primary">{{ __('New viewpoint') }}</flux:button>
+                </flux:modal.trigger>
+            </x-slot:actions>
+            <flux:table class="[&_td]:align-top">
+                <flux:table.columns>
+                    <flux:table.column>{{ __('Name') }}</flux:table.column>
+                    <flux:table.column>{{ __('Concerns') }}</flux:table.column>
+                    <flux:table.column>{{ __('Element types') }}</flux:table.column>
+                    <flux:table.column>{{ __('Languages') }}</flux:table.column>
+                    <flux:table.column>{{ __('Source') }}</flux:table.column>
+                    <flux:table.column></flux:table.column>
+                </flux:table.columns>
+                <flux:table.rows>
+                    @foreach ($this->customViewpoints as $viewpoint)
+                        <flux:table.row>
+                            <flux:table.cell class="font-medium">{{ $viewpoint->name }}</flux:table.cell>
+                            <flux:table.cell>{{ implode(', ', $viewpoint->concerns ?? []) }}</flux:table.cell>
+                            <flux:table.cell>{{ implode(', ', $viewpoint->element_types ?? []) }}</flux:table.cell>
+                            <flux:table.cell>{{ implode(', ', $viewpoint->languages ?? []) }}</flux:table.cell>
+                            <flux:table.cell>{{ $viewpoint->source ?? '—' }}</flux:table.cell>
+                            <flux:table.cell>
+                                <div class="flex justify-end gap-1">
+                                    <flux:button size="xs" icon="pencil-square" variant="ghost"
+                                        wire:click="$dispatch('edit-custom-viewpoint', { customViewpointId: '{{ $viewpoint->id }}' })" />
+                                    <flux:button size="xs" icon="trash" variant="ghost"
+                                        wire:click="$dispatch('delete-custom-viewpoint', { customViewpointId: '{{ $viewpoint->id }}' })" />
+                                </div>
+                            </flux:table.cell>
+                        </flux:table.row>
+                    @endforeach
+                </flux:table.rows>
+            </flux:table>
+        </x-data-table>
+
         <livewire:pages::design-views.create-modal :project-id="$this->selectedProject->id" :key="'create-design-view-'.$this->selectedProject->id" />
         <livewire:pages::design-views.edit-modal :key="'edit-design-view-'.$this->selectedProject->id" />
         <livewire:pages::design-views.delete-modal :key="'delete-design-view-'.$this->selectedProject->id" />
@@ -121,5 +178,9 @@ new #[Title('Architecture')] class extends Component {
         <livewire:pages::design-elements.create-modal :key="'create-design-element-'.$this->selectedProject->id" />
         <livewire:pages::design-elements.edit-modal :key="'edit-design-element-'.$this->selectedProject->id" />
         <livewire:pages::design-elements.delete-modal :key="'delete-design-element-'.$this->selectedProject->id" />
+
+        <livewire:pages::custom-viewpoints.create-modal :project-id="$this->selectedProject->id" :key="'create-custom-viewpoint-'.$this->selectedProject->id" />
+        <livewire:pages::custom-viewpoints.edit-modal :key="'edit-custom-viewpoint-'.$this->selectedProject->id" />
+        <livewire:pages::custom-viewpoints.delete-modal :key="'delete-custom-viewpoint-'.$this->selectedProject->id" />
     @endif
 </div>
