@@ -36,7 +36,10 @@ test('dashboard renders sections for the selected project', function () {
         ->assertSee('Readiness')
         ->assertSee('Schedule health')
         ->assertSee('Implementation')
-        ->assertSee('Capacity');
+        ->assertSee('Capacity')
+        ->assertSee('Risks')
+        ->assertSee('Anomalies')
+        ->assertSee('Reviews');
 });
 
 test('dashboard implementation table lists work items', function () {
@@ -79,6 +82,45 @@ test('dashboard capacity table groups work items by role', function () {
         ->assertOk()
         ->assertSee('Capacity')
         ->assertSee('Unassigned');
+});
+
+test('dashboard surfaces risks, anomalies, and reviews', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'user_id' => $user->id,
+        'name' => 'Lunar Lander',
+        'integrity_level' => 2,
+    ]);
+
+    $project->risks()->create([
+        'title' => 'Heat shield delamination',
+        'category' => 'technical',
+        'probability' => 'high',
+        'impact' => 'high',
+        'status' => 'mitigating',
+    ]);
+    $project->anomalies()->create([
+        'severity' => 'high',
+        'status' => 'open',
+        'summary' => 'Telemetry sync drift',
+        'description' => 'Subseconds desync between burst windows.',
+        'environment' => 'staging',
+    ]);
+    $project->reviews()->create([
+        'type' => 'technical_review',
+        'title' => 'Heat shield design review',
+        'status' => 'held',
+        'decision' => 'accepted_with_actions',
+        'held_at' => now()->subDay(),
+    ]);
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('Heat shield delamination')
+        ->assertSee('Telemetry sync drift')
+        ->assertSee('Heat shield design review')
+        ->assertSee('accepted with actions');
 });
 
 test('dashboard only lists projects owned by the authed user', function () {

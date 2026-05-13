@@ -16,6 +16,27 @@
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
+
+                <flux:sidebar.group :heading="__('Project')" class="grid">
+                    <flux:sidebar.item icon="megaphone" :href="route('intent')" :current="request()->routeIs('intent')" wire:navigate>
+                        {{ __('Intent') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="clipboard-document-list" :href="route('capabilities')" :current="request()->routeIs('capabilities')" wire:navigate>
+                        {{ __('Capabilities') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="cube" :href="route('architecture')" :current="request()->routeIs('architecture')" wire:navigate>
+                        {{ __('Architecture') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="check-badge" :href="route('verification')" :current="request()->routeIs('verification')" wire:navigate>
+                        {{ __('Verification') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="calendar-days" :href="route('plan')" :current="request()->routeIs('plan')" wire:navigate>
+                        {{ __('Plan') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="archive-box" :href="route('evidence')" :current="request()->routeIs('evidence')" wire:navigate>
+                        {{ __('Evidence') }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
             </flux:sidebar.nav>
 
             <flux:spacer />
