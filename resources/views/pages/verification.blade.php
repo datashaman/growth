@@ -102,7 +102,7 @@ new #[Title('Verification')] class extends Component {
                     @foreach ($this->anomalies as $anomaly)
                         <flux:table.row>
                             <flux:table.cell>
-                                <div class="font-medium">{{ $anomaly->summary }}</div>
+                                <a href="{{ route('anomalies.show', $anomaly) }}" wire:navigate class="font-medium hover:underline">{{ $anomaly->summary }}</a>
                                 @if ($anomaly->description)
                                     <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($anomaly->description, 80) }}</div>
                                 @endif

@@ -50,7 +50,7 @@ new #[Title('Capabilities')] class extends Component {
                     @foreach ($this->requirements as $requirement)
                         <flux:table.row>
                             <flux:table.cell>
-                                <div>{{ $requirement->text }}</div>
+                                <a href="{{ route('requirements.show', $requirement) }}" wire:navigate class="hover:underline">{{ $requirement->text }}</a>
                                 @if ($requirement->rationale)
                                     <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($requirement->rationale, 120) }}</div>
                                 @endif

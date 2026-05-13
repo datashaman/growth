@@ -300,7 +300,7 @@ new #[Title('Dashboard')] class extends Component {
                         @foreach ($this->implementation['results'] as $row)
                             <flux:table.row>
                                 <flux:table.cell>
-                                    <div class="font-medium">{{ $row['name'] }}</div>
+                                    <a href="{{ route('work-items.show', $row['id']) }}" wire:navigate class="font-medium hover:underline">{{ $row['name'] }}</a>
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <flux:badge :color="BadgeVariant::workItemKind($row['kind'])" size="sm">
@@ -459,7 +459,7 @@ new #[Title('Dashboard')] class extends Component {
                         @foreach ($this->anomalies as $anomaly)
                             <flux:table.row>
                                 <flux:table.cell>
-                                    <div class="font-medium">{{ $anomaly->summary }}</div>
+                                    <a href="{{ route('anomalies.show', $anomaly) }}" wire:navigate class="font-medium hover:underline">{{ $anomaly->summary }}</a>
                                     @if ($anomaly->description)
                                         <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($anomaly->description, 80) }}</div>
                                     @endif
@@ -499,7 +499,7 @@ new #[Title('Dashboard')] class extends Component {
                         @foreach ($this->reviews as $review)
                             <flux:table.row>
                                 <flux:table.cell>
-                                    <div class="font-medium">{{ $review->title }}</div>
+                                    <a href="{{ route('reviews.show', $review) }}" wire:navigate class="font-medium hover:underline">{{ $review->title }}</a>
                                     @if ($review->objective)
                                         <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($review->objective, 80) }}</div>
                                     @endif
