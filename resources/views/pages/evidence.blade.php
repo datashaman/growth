@@ -4,11 +4,24 @@ use App\Concerns\ProjectScoped;
 use App\Models\WorkItemDeliveryLink;
 use App\Support\BadgeVariant;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Evidence')] class extends Component {
     use ProjectScoped;
+
+    #[On('release-saved')]
+    public function refreshReleases(): void
+    {
+        unset($this->releases);
+    }
+
+    #[On('deployment-saved')]
+    public function refreshDeployments(): void
+    {
+        unset($this->deployments);
+    }
 
     #[Computed]
     public function releases()
@@ -64,6 +77,11 @@ new #[Title('Evidence')] class extends Component {
             :count-label="__('total')"
             :empty="$this->releases->isEmpty()"
             :empty-message="__('No releases recorded.')">
+            <x-slot:actions>
+                <flux:modal.trigger name="create-release">
+                    <flux:button size="sm" icon="plus" variant="primary">{{ __('New release') }}</flux:button>
+                </flux:modal.trigger>
+            </x-slot:actions>
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Version') }}</flux:table.column>
@@ -71,6 +89,7 @@ new #[Title('Evidence')] class extends Component {
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
                     <flux:table.column>{{ __('Released') }}</flux:table.column>
                     <flux:table.column>{{ __('Notes') }}</flux:table.column>
+                    <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->releases as $release)
@@ -82,11 +101,23 @@ new #[Title('Evidence')] class extends Component {
                             </flux:table.cell>
                             <flux:table.cell>{{ $release->released_at?->format('Y-m-d') ?? '—' }}</flux:table.cell>
                             <flux:table.cell>{{ \Illuminate\Support\Str::limit($release->notes ?? '—', 100) }}</flux:table.cell>
+                            <flux:table.cell>
+                                <div class="flex justify-end gap-1">
+                                    <flux:button size="xs" icon="pencil-square" variant="ghost"
+                                        wire:click="$dispatch('edit-release', { releaseId: '{{ $release->id }}' })" />
+                                    <flux:button size="xs" icon="trash" variant="ghost"
+                                        wire:click="$dispatch('delete-release', { releaseId: '{{ $release->id }}' })" />
+                                </div>
+                            </flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
+
+        <livewire:pages::releases.create-modal :project-id="$this->selectedProject->id" :key="'create-release-'.$this->selectedProject->id" />
+        <livewire:pages::releases.edit-modal :key="'edit-release-'.$this->selectedProject->id" />
+        <livewire:pages::releases.delete-modal :key="'delete-release-'.$this->selectedProject->id" />
 
         <x-data-table
             :title="__('Deployments')"
@@ -94,6 +125,11 @@ new #[Title('Evidence')] class extends Component {
             :count-label="__('total')"
             :empty="$this->deployments->isEmpty()"
             :empty-message="__('No deployments recorded.')">
+            <x-slot:actions>
+                <flux:modal.trigger name="create-deployment">
+                    <flux:button size="sm" icon="plus" variant="primary">{{ __('New deployment') }}</flux:button>
+                </flux:modal.trigger>
+            </x-slot:actions>
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Environment') }}</flux:table.column>
@@ -101,6 +137,7 @@ new #[Title('Evidence')] class extends Component {
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
                     <flux:table.column>{{ __('Deployed') }}</flux:table.column>
                     <flux:table.column>{{ __('URL') }}</flux:table.column>
+                    <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->deployments as $deployment)
@@ -118,11 +155,23 @@ new #[Title('Evidence')] class extends Component {
                                     —
                                 @endif
                             </flux:table.cell>
+                            <flux:table.cell>
+                                <div class="flex justify-end gap-1">
+                                    <flux:button size="xs" icon="pencil-square" variant="ghost"
+                                        wire:click="$dispatch('edit-deployment', { deploymentId: '{{ $deployment->id }}' })" />
+                                    <flux:button size="xs" icon="trash" variant="ghost"
+                                        wire:click="$dispatch('delete-deployment', { deploymentId: '{{ $deployment->id }}' })" />
+                                </div>
+                            </flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
+
+        <livewire:pages::deployments.create-modal :project-id="$this->selectedProject->id" :key="'create-deployment-'.$this->selectedProject->id" />
+        <livewire:pages::deployments.edit-modal :key="'edit-deployment-'.$this->selectedProject->id" />
+        <livewire:pages::deployments.delete-modal :key="'delete-deployment-'.$this->selectedProject->id" />
 
         <x-data-table
             :title="__('Delivery links')"
