@@ -35,7 +35,19 @@ new class extends Component {
         <x-slot:description>
             {{ __('Review in project') }} <a href="{{ route('dashboard', ['project' => $review->project_id]) }}" class="underline">{{ $review->project->name }}</a>
         </x-slot:description>
+
+        <x-slot:actions>
+            <flux:modal.trigger name="edit-review">
+                <flux:button size="sm" icon="pencil-square" variant="primary">{{ __('Edit') }}</flux:button>
+            </flux:modal.trigger>
+            <flux:modal.trigger name="delete-review">
+                <flux:button size="sm" icon="trash" variant="danger">{{ __('Delete') }}</flux:button>
+            </flux:modal.trigger>
+        </x-slot:actions>
     </x-detail-page-header>
+
+    <livewire:pages::reviews.edit-modal :review-id="$review->id" :key="'edit-review-'.$review->id" />
+    <livewire:pages::reviews.delete-modal :review-id="$review->id" :key="'delete-review-'.$review->id" />
 
     <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:heading size="lg" class="mb-3">{{ __('Properties') }}</flux:heading>

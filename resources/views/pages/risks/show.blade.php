@@ -35,7 +35,19 @@ new class extends Component {
         <x-slot:description>
             {{ __('Risk in project') }} <a href="{{ route('dashboard', ['project' => $risk->project_id]) }}" class="underline">{{ $risk->project->name }}</a>
         </x-slot:description>
+
+        <x-slot:actions>
+            <flux:modal.trigger name="edit-risk">
+                <flux:button size="sm" icon="pencil-square" variant="primary">{{ __('Edit') }}</flux:button>
+            </flux:modal.trigger>
+            <flux:modal.trigger name="delete-risk">
+                <flux:button size="sm" icon="trash" variant="danger">{{ __('Delete') }}</flux:button>
+            </flux:modal.trigger>
+        </x-slot:actions>
     </x-detail-page-header>
+
+    <livewire:pages::risks.edit-modal :risk-id="$risk->id" :key="'edit-risk-'.$risk->id" />
+    <livewire:pages::risks.delete-modal :risk-id="$risk->id" :key="'delete-risk-'.$risk->id" />
 
     <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:heading size="lg" class="mb-3">{{ __('Properties') }}</flux:heading>
