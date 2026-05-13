@@ -1,6 +1,7 @@
 <?php
 
 use App\Concerns\ProjectScoped;
+use App\Support\BadgeVariant;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -27,37 +28,6 @@ new #[Title('Verification')] class extends Component {
             ->get()
             ?? collect();
     }
-
-    public function levelVariant(string $level): string
-    {
-        return match ($level) {
-            'system' => 'purple',
-            'integration' => 'indigo',
-            'unit' => 'blue',
-            default => 'zinc',
-        };
-    }
-
-    public function anomalySeverityVariant(string $severity): string
-    {
-        return match ($severity) {
-            'critical', 'high' => 'red',
-            'medium' => 'amber',
-            'low' => 'sky',
-            default => 'zinc',
-        };
-    }
-
-    public function anomalyStatusVariant(string $status): string
-    {
-        return match ($status) {
-            'open' => 'red',
-            'investigating' => 'amber',
-            'resolved' => 'green',
-            'closed' => 'zinc',
-            default => 'zinc',
-        };
-    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -73,40 +43,39 @@ new #[Title('Verification')] class extends Component {
         </flux:callout>
     @else
         @foreach ($this->testPlans as $plan)
-            <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="mb-3 flex items-center justify-between">
+            <x-data-table
+                :empty="$plan->cases->isEmpty()"
+                :empty-message="__('No test cases.')">
+                <x-slot:header>
                     <div>
                         <div class="flex items-center gap-2">
                             <flux:heading size="lg">{{ $plan->name }}</flux:heading>
-                            <flux:badge :color="$this->levelVariant($plan->level)" size="sm">{{ $plan->level }}</flux:badge>
+                            <flux:badge :color="BadgeVariant::testLevel($plan->level)" size="sm">{{ $plan->level }}</flux:badge>
                         </div>
                         @if ($plan->scope)
                             <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ $plan->scope }}</flux:text>
                         @endif
                     </div>
                     <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ $plan->cases->count() }} {{ __('cases') }}</flux:text>
-                </div>
-                @if ($plan->cases->isEmpty())
-                    <flux:text>{{ __('No test cases.') }}</flux:text>
-                @else
-                    <flux:table class="[&_td]:align-top">
-                        <flux:table.columns>
-                            <flux:table.column>{{ __('Case') }}</flux:table.column>
-                            <flux:table.column>{{ __('Objective') }}</flux:table.column>
-                            <flux:table.column>{{ __('Environment') }}</flux:table.column>
-                        </flux:table.columns>
-                        <flux:table.rows>
-                            @foreach ($plan->cases as $case)
-                                <flux:table.row>
-                                    <flux:table.cell class="font-medium">{{ $case->name }}</flux:table.cell>
-                                    <flux:table.cell>{{ $case->objective ?? '—' }}</flux:table.cell>
-                                    <flux:table.cell>{{ $case->environment ?? '—' }}</flux:table.cell>
-                                </flux:table.row>
-                            @endforeach
-                        </flux:table.rows>
-                    </flux:table>
-                @endif
-            </section>
+                </x-slot:header>
+
+                <flux:table class="[&_td]:align-top">
+                    <flux:table.columns>
+                        <flux:table.column>{{ __('Case') }}</flux:table.column>
+                        <flux:table.column>{{ __('Objective') }}</flux:table.column>
+                        <flux:table.column>{{ __('Environment') }}</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($plan->cases as $case)
+                            <flux:table.row>
+                                <flux:table.cell class="font-medium">{{ $case->name }}</flux:table.cell>
+                                <flux:table.cell>{{ $case->objective ?? '—' }}</flux:table.cell>
+                                <flux:table.cell>{{ $case->environment ?? '—' }}</flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            </x-data-table>
         @endforeach
 
         @if ($this->testPlans->isEmpty())
@@ -116,44 +85,39 @@ new #[Title('Verification')] class extends Component {
             </flux:callout>
         @endif
 
-        <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-            <div class="mb-3 flex items-center justify-between">
-                <flux:heading size="lg">{{ __('Anomalies') }}</flux:heading>
-                <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">
-                    {{ $this->anomalies->where('status', '!=', 'closed')->count() }} {{ __('open') }} / {{ $this->anomalies->count() }} {{ __('total') }}
-                </flux:text>
-            </div>
-            @if ($this->anomalies->isEmpty())
-                <flux:text>{{ __('No anomalies reported.') }}</flux:text>
-            @else
-                <flux:table class="[&_td]:align-top">
-                    <flux:table.columns>
-                        <flux:table.column>{{ __('Anomaly') }}</flux:table.column>
-                        <flux:table.column>{{ __('Severity') }}</flux:table.column>
-                        <flux:table.column>{{ __('Status') }}</flux:table.column>
-                        <flux:table.column>{{ __('Environment') }}</flux:table.column>
-                    </flux:table.columns>
-                    <flux:table.rows>
-                        @foreach ($this->anomalies as $anomaly)
-                            <flux:table.row>
-                                <flux:table.cell>
-                                    <div class="font-medium">{{ $anomaly->summary }}</div>
-                                    @if ($anomaly->description)
-                                        <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($anomaly->description, 80) }}</div>
-                                    @endif
-                                </flux:table.cell>
-                                <flux:table.cell>
-                                    <flux:badge :color="$this->anomalySeverityVariant($anomaly->severity)" size="sm">{{ $anomaly->severity }}</flux:badge>
-                                </flux:table.cell>
-                                <flux:table.cell>
-                                    <flux:badge :color="$this->anomalyStatusVariant($anomaly->status)" size="sm">{{ $anomaly->status }}</flux:badge>
-                                </flux:table.cell>
-                                <flux:table.cell>{{ $anomaly->environment ?? '—' }}</flux:table.cell>
-                            </flux:table.row>
-                        @endforeach
-                    </flux:table.rows>
-                </flux:table>
-            @endif
-        </section>
+        <x-data-table
+            :title="__('Anomalies')"
+            :count="$this->anomalies->where('status', '!=', 'closed')->count().' '.__('open').' / '.$this->anomalies->count()"
+            :count-label="__('total')"
+            :empty="$this->anomalies->isEmpty()"
+            :empty-message="__('No anomalies reported.')">
+            <flux:table class="[&_td]:align-top">
+                <flux:table.columns>
+                    <flux:table.column>{{ __('Anomaly') }}</flux:table.column>
+                    <flux:table.column>{{ __('Severity') }}</flux:table.column>
+                    <flux:table.column>{{ __('Status') }}</flux:table.column>
+                    <flux:table.column>{{ __('Environment') }}</flux:table.column>
+                </flux:table.columns>
+                <flux:table.rows>
+                    @foreach ($this->anomalies as $anomaly)
+                        <flux:table.row>
+                            <flux:table.cell>
+                                <div class="font-medium">{{ $anomaly->summary }}</div>
+                                @if ($anomaly->description)
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($anomaly->description, 80) }}</div>
+                                @endif
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                <flux:badge :color="BadgeVariant::anomalySeverity($anomaly->severity)" size="sm">{{ $anomaly->severity }}</flux:badge>
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                <flux:badge :color="BadgeVariant::anomalyStatus($anomaly->status)" size="sm">{{ $anomaly->status }}</flux:badge>
+                            </flux:table.cell>
+                            <flux:table.cell>{{ $anomaly->environment ?? '—' }}</flux:table.cell>
+                        </flux:table.row>
+                    @endforeach
+                </flux:table.rows>
+            </flux:table>
+        </x-data-table>
     @endif
 </div>
