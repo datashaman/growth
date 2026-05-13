@@ -420,7 +420,7 @@
             .table th,
             .table td {
                 border-top: 1px solid var(--line-soft);
-                padding: 8px 10px;
+                padding: 8px 11px;
                 text-align: right;
             }
 
@@ -429,7 +429,9 @@
                 text-align: left;
             }
 
-            .table th {
+            .table thead th {
+                background: var(--panel-soft);
+                border-top: 0;
                 color: var(--muted);
                 font-size: 11px;
                 font-weight: 700;
