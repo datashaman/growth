@@ -24,25 +24,41 @@ class TestLinter
 
         $plans = $project->testPlans()->with(['cases.requirements'])->get();
 
+        $hasSubordinatePlan = $plans->where('level', '!=', 'master')->isNotEmpty();
+
         foreach ($plans as $plan) {
+            $isMaster = $plan->level === 'master';
+
             if (empty($plan->scope)) {
                 $findings[] = $this->finding(
                     'plan-no-scope', 'warning',
-                    "rule: test plan [{$plan->name}] has no declared scope",
+                    "rule: verification plan [{$plan->name}] has no declared scope",
                     'test_plan', $plan->id,
                 );
             }
             if (empty($plan->approach)) {
                 $findings[] = $this->finding(
                     'plan-no-approach', 'warning',
-                    "rule: test plan [{$plan->name}] has no declared approach",
+                    "rule: verification plan [{$plan->name}] has no declared approach",
                     'test_plan', $plan->id,
                 );
             }
-            if ($plan->cases->isEmpty()) {
+            // Master plans are organizing documents (strategy, scope, roll-up
+            // criteria) and intentionally hold no test cases. TODO: once
+            // verification plans gain an optional parent_plan_id, replace the
+            // project-wide $hasSubordinatePlan heuristic with a check on the
+            // master plan's actual children.
+            if (! $isMaster && $plan->cases->isEmpty()) {
                 $findings[] = $this->finding(
                     'plan-empty', 'warning',
-                    "rule: test plan [{$plan->name}] has no test cases",
+                    "rule: verification plan [{$plan->name}] has no test cases",
+                    'test_plan', $plan->id,
+                );
+            }
+            if ($isMaster && ! $hasSubordinatePlan) {
+                $findings[] = $this->finding(
+                    'master-no-subordinates', 'warning',
+                    "rule: master verification plan [{$plan->name}] has no subordinate plans",
                     'test_plan', $plan->id,
                 );
             }
@@ -74,13 +90,13 @@ class TestLinter
         if ($plans->isEmpty()) {
             $findings[] = $this->finding(
                 'no-plans', 'error',
-                'rule: project has no test plans',
+                'rule: project has no verification plans',
                 'project', $project->id,
             );
         } elseif ($plans->where('level', 'master')->isEmpty()) {
             $findings[] = $this->finding(
                 'no-master', 'warning',
-                'rule: project has no master test plan',
+                'rule: project has no master verification plan',
                 'project', $project->id,
             );
         }
