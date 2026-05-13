@@ -16,7 +16,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Create or update an review review record. Supports management reviews, technical reviews, inspections, walkthroughs, and audits, with optional reviewed artifact targets.')]
+#[Description('Create or update a review record. Supports management reviews, technical reviews, inspections, walkthroughs, and audits, with optional reviewed artifact targets. The response includes a missing_prerequisites list summarising which lint-reviews readiness checks the review will currently fail (targets, participants, entry/exit criteria, inspection roles, review-plan expected responsibilities) so you can address them before running lint-reviews.')]
 class UpsertReview extends Tool
 {
     use ValidatesReviewArtifacts;
@@ -101,7 +101,49 @@ class UpsertReview extends Tool
             'decision_events' => $review->decisionEvents()->count(),
             'targets' => $review->targets()->count(),
             'created' => $review->wasRecentlyCreated,
+            'missing_prerequisites' => $this->missingPrerequisites($review->fresh(['reviewPlan', 'targets', 'participants'])),
         ]);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function missingPrerequisites(Review $review): array
+    {
+        $missing = [];
+
+        if ($review->targets->isEmpty()) {
+            $missing[] = 'targets: add target artifact(s) via the targets field (lint-reviews rule review.targets.empty is an error).';
+        }
+        if ($review->participants->isEmpty()) {
+            $missing[] = 'participants: add participants via upsert-review-participant (lint-reviews rule review.participants.empty).';
+        }
+        if (empty($review->entry_criteria)) {
+            $missing[] = 'entry_criteria: set the entry checklist; required while status is planned or in_progress (lint-reviews rule review.entry_criteria.empty).';
+        }
+        if (empty($review->exit_criteria)) {
+            $missing[] = 'exit_criteria: set the exit checklist; required before status held or closed (lint-reviews rule review.exit_criteria.empty).';
+        }
+
+        $presentResponsibilities = $review->participants->pluck('responsibility')->all();
+
+        if ($review->type === 'inspection') {
+            foreach (['moderator', 'reviewer', 'recorder'] as $role) {
+                if (! in_array($role, $presentResponsibilities, true)) {
+                    $missing[] = "inspection role: add a {$role} participant (lint-reviews rule review.inspection.role_missing).";
+                }
+            }
+        }
+
+        if ($review->reviewPlan && ! empty($review->reviewPlan->expected_responsibilities)) {
+            foreach ($review->reviewPlan->expected_responsibilities as $role) {
+                if (! in_array($role, $presentResponsibilities, true)) {
+                    $missing[] = "plan expects {$role} participant (lint-reviews rule review.plan_role_missing).";
+                }
+            }
+        }
+
+        return $missing;
     }
 
     public function schema(JsonSchema $schema): array
@@ -139,6 +181,9 @@ class UpsertReview extends Tool
             'decision_events' => $schema->integer()->required(),
             'targets' => $schema->integer()->required(),
             'created' => $schema->boolean()->required(),
+            'missing_prerequisites' => $schema->array()
+                ->description('Lint-reviews readiness checks the review currently fails. Empty when the review is fully set up.')
+                ->required(),
         ];
     }
 
