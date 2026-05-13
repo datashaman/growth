@@ -34,7 +34,51 @@ test('dashboard renders sections for the selected project', function () {
         ->assertSee('Counts')
         ->assertSee('Stakeholders')
         ->assertSee('Readiness')
-        ->assertSee('Schedule health');
+        ->assertSee('Schedule health')
+        ->assertSee('Implementation')
+        ->assertSee('Capacity');
+});
+
+test('dashboard implementation table lists work items', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'user_id' => $user->id,
+        'name' => 'Lunar Lander',
+        'integrity_level' => 2,
+    ]);
+    $project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Wire the descent engine',
+        'status' => 'done',
+        'effort_estimate_hours' => 8,
+    ]);
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('Wire the descent engine')
+        ->assertSee('done without evidence');
+});
+
+test('dashboard capacity table groups work items by role', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'user_id' => $user->id,
+        'name' => 'Lunar Lander',
+        'integrity_level' => 2,
+    ]);
+    $project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Unassigned work',
+        'status' => 'todo',
+        'effort_estimate_hours' => 4,
+    ]);
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('Capacity')
+        ->assertSee('Unassigned');
 });
 
 test('dashboard only lists projects owned by the authed user', function () {
