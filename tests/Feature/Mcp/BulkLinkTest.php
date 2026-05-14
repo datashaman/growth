@@ -1,7 +1,7 @@
 <?php
 
 use App\Mcp\Servers\PlanningServer;
-use App\Mcp\Tools\BulkLink;
+use App\Mcp\Tools\Common\BulkLink;
 use App\Models\Concern;
 use App\Models\DesignView;
 use App\Models\Milestone;

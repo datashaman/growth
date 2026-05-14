@@ -8,31 +8,37 @@ use App\Mcp\Resources\EvidenceResource;
 use App\Mcp\Resources\IntentResource;
 use App\Mcp\Resources\PlanResource;
 use App\Mcp\Resources\PlaybookResource;
+use App\Mcp\Resources\Project\ProjectChangesResource;
+use App\Mcp\Resources\Project\ProjectMtpResource;
+use App\Mcp\Resources\Project\ProjectPmpResource;
+use App\Mcp\Resources\Project\ProjectReviewsResource;
+use App\Mcp\Resources\Project\ProjectSddResource;
+use App\Mcp\Resources\Project\ProjectSourcesResource;
+use App\Mcp\Resources\Project\ProjectSrsResource;
 use App\Mcp\Resources\ProjectDashboardApp;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\ReadinessResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Resources\VerificationResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
+use App\Mcp\Tools\Architecture\ListArchitectureElements;
+use App\Mcp\Tools\Architecture\ListArchitectureViewpoints;
+use App\Mcp\Tools\Architecture\ListArchitectureViews;
 use App\Mcp\Tools\Assurance\BuildEvidenceBundle;
 use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
+use App\Mcp\Tools\Capabilities\ListCapabilities;
 use App\Mcp\Tools\Changes\ListArtifactRelations;
 use App\Mcp\Tools\Changes\ListChangeApprovalEvents;
 use App\Mcp\Tools\Changes\ListChangeRequests;
-use App\Mcp\Tools\GetProjectDashboardData;
-use App\Mcp\Tools\ListAnomalies;
-use App\Mcp\Tools\ListArchitectureElements;
-use App\Mcp\Tools\ListArchitectureViewpoints;
-use App\Mcp\Tools\ListArchitectureViews;
-use App\Mcp\Tools\ListCapabilities;
-use App\Mcp\Tools\ListCheckRuns;
-use App\Mcp\Tools\ListCitations;
-use App\Mcp\Tools\ListDeliveryLinks;
-use App\Mcp\Tools\ListVerificationCases;
-use App\Mcp\Tools\ListVerificationPlans;
-use App\Mcp\Tools\ListVerificationRuns;
-use App\Mcp\Tools\LookupTerm;
+use App\Mcp\Tools\Common\WhoAmI;
+use App\Mcp\Tools\Dashboard\GetProjectDashboardData;
+use App\Mcp\Tools\Dashboard\ShowProjectDashboard;
+use App\Mcp\Tools\Glossary\LookupTerm;
+use App\Mcp\Tools\Lint\LintProject;
+use App\Mcp\Tools\Plan\LintPmp;
 use App\Mcp\Tools\Plan\ListAgents;
+use App\Mcp\Tools\Plan\ListCheckRuns;
+use App\Mcp\Tools\Plan\ListDeliveryLinks;
 use App\Mcp\Tools\Plan\ListDeployments;
 use App\Mcp\Tools\Plan\ListMilestones;
 use App\Mcp\Tools\Plan\ListPlanBaselines;
@@ -49,10 +55,13 @@ use App\Mcp\Tools\Reviews\ListReviewFindings;
 use App\Mcp\Tools\Reviews\ListReviewParticipants;
 use App\Mcp\Tools\Reviews\ListReviewPlans;
 use App\Mcp\Tools\Reviews\ListReviews;
-use App\Mcp\Tools\ShowProjectDashboard;
+use App\Mcp\Tools\Sources\ListCitations;
 use App\Mcp\Tools\Sources\ListSources;
 use App\Mcp\Tools\Trace\TraceQuery;
-use App\Mcp\Tools\WhoAmI;
+use App\Mcp\Tools\Verification\ListAnomalies;
+use App\Mcp\Tools\Verification\ListVerificationCases;
+use App\Mcp\Tools\Verification\ListVerificationPlans;
+use App\Mcp\Tools\Verification\ListVerificationRuns;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -101,6 +110,8 @@ class ReadonlyServer extends Server
         SummarizeScheduleHealth::class,
         BuildEvidenceBundle::class,
         EvaluateReadinessGates::class,
+        LintProject::class,
+        LintPmp::class,
         LookupTerm::class,
         TraceQuery::class,
         ShowProjectDashboard::class,
@@ -119,5 +130,12 @@ class ReadonlyServer extends Server
         PlanResource::class,
         EvidenceResource::class,
         ReadinessResource::class,
+        ProjectSrsResource::class,
+        ProjectSddResource::class,
+        ProjectMtpResource::class,
+        ProjectPmpResource::class,
+        ProjectSourcesResource::class,
+        ProjectChangesResource::class,
+        ProjectReviewsResource::class,
     ];
 }
