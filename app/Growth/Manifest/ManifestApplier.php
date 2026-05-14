@@ -268,8 +268,11 @@ class ManifestApplier
                     );
                 }
             } else {
-                $existing->fill($fields)->save();
-                $counts['project_updated'] = true;
+                $existing->fill($fields);
+                if ($existing->isDirty()) {
+                    $existing->save();
+                    $counts['project_updated'] = true;
+                }
             }
 
             return $existing;
@@ -304,8 +307,11 @@ class ManifestApplier
                 return $existing;
             }
 
-            $existing->fill($fields)->save();
-            $counts['stakeholders_updated']++;
+            $existing->fill($fields);
+            if ($existing->isDirty()) {
+                $existing->save();
+                $counts['stakeholders_updated']++;
+            }
 
             return $existing;
         }
@@ -347,8 +353,11 @@ class ManifestApplier
                 return $existing;
             }
 
-            $existing->fill($fields)->save();
-            $counts['concerns_updated']++;
+            $existing->fill($fields);
+            if ($existing->isDirty()) {
+                $existing->save();
+                $counts['concerns_updated']++;
+            }
 
             return $existing;
         }
@@ -382,8 +391,11 @@ class ManifestApplier
                 return $existing;
             }
 
-            $existing->fill($fields)->save();
-            $counts['capabilities_updated']++;
+            $existing->fill($fields);
+            if ($existing->isDirty()) {
+                $existing->save();
+                $counts['capabilities_updated']++;
+            }
 
             return $existing;
         }
@@ -418,8 +430,11 @@ class ManifestApplier
                 return $existing;
             }
 
-            $existing->fill($fields)->save();
-            $counts['viewpoints_updated']++;
+            $existing->fill($fields);
+            if ($existing->isDirty()) {
+                $existing->save();
+                $counts['viewpoints_updated']++;
+            }
 
             return $existing;
         }
@@ -473,8 +488,11 @@ class ManifestApplier
             if ($mode === 'fail') {
                 $this->failOnCollision('view', $existing, $fields);
             } else {
-                $existing->fill($fields)->save();
-                $counts['views_updated']++;
+                $existing->fill($fields);
+                if ($existing->isDirty()) {
+                    $existing->save();
+                    $counts['views_updated']++;
+                }
             }
 
             if (is_array($concernIds)) {
@@ -514,8 +532,11 @@ class ManifestApplier
                 return $existing;
             }
 
-            $existing->fill($fields)->save();
-            $counts['elements_updated']++;
+            $existing->fill($fields);
+            if ($existing->isDirty()) {
+                $existing->save();
+                $counts['elements_updated']++;
+            }
 
             return $existing;
         }
@@ -550,8 +571,11 @@ class ManifestApplier
                 return $existing;
             }
 
-            $existing->fill($fields)->save();
-            $counts['plan_updated'] = true;
+            $existing->fill($fields);
+            if ($existing->isDirty()) {
+                $existing->save();
+                $counts['plan_updated'] = true;
+            }
 
             return $existing;
         }
@@ -585,8 +609,11 @@ class ManifestApplier
                 return $existing;
             }
 
-            $existing->fill($fields)->save();
-            $counts['roles_updated']++;
+            $existing->fill($fields);
+            if ($existing->isDirty()) {
+                $existing->save();
+                $counts['roles_updated']++;
+            }
 
             return $existing;
         }
@@ -619,8 +646,11 @@ class ManifestApplier
                 return $existing;
             }
 
-            $existing->fill($fields)->save();
-            $counts['milestones_updated']++;
+            $existing->fill($fields);
+            if ($existing->isDirty()) {
+                $existing->save();
+                $counts['milestones_updated']++;
+            }
 
             return $existing;
         }
@@ -669,8 +699,11 @@ class ManifestApplier
                 return $existing;
             }
 
-            $existing->fill($fields)->save();
-            $counts['work_items_updated']++;
+            $existing->fill($fields);
+            if ($existing->isDirty()) {
+                $existing->save();
+                $counts['work_items_updated']++;
+            }
 
             return $existing;
         }
@@ -778,8 +811,11 @@ class ManifestApplier
                 return $existing;
             }
 
-            $existing->fill($fields)->save();
-            $counts['verification_plans_updated']++;
+            $existing->fill($fields);
+            if ($existing->isDirty()) {
+                $existing->save();
+                $counts['verification_plans_updated']++;
+            }
 
             return $existing;
         }
@@ -821,8 +857,11 @@ class ManifestApplier
             if ($mode === 'fail') {
                 $this->failOnCollision('verification_case', $existing, $fields);
             } else {
-                $existing->fill($fields)->save();
-                $counts['verification_cases_updated']++;
+                $existing->fill($fields);
+                if ($existing->isDirty()) {
+                    $existing->save();
+                    $counts['verification_cases_updated']++;
+                }
             }
 
             if (is_array($capabilityIds)) {
