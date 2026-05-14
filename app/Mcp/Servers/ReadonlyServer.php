@@ -21,6 +21,7 @@ use App\Mcp\Resources\ProjectDashboardApp;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\ReadinessResource;
 use App\Mcp\Resources\RigorLevelsResource;
+use App\Mcp\Resources\TraceGraphApp;
 use App\Mcp\Resources\VerificationResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Architecture\ListArchitectureElements;
@@ -122,6 +123,7 @@ class ReadonlyServer extends Server
         ProjectDashboardApp::class,
         GateStatusApp::class,
         CapabilityExplorerApp::class,
+        TraceGraphApp::class,
         PlaybookResource::class,
         RigorLevelsResource::class,
         ProjectIndexResource::class,
