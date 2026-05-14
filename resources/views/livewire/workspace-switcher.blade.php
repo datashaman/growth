@@ -90,19 +90,22 @@ new class extends Component
     }
 }; ?>
 
-<div class="flex w-full flex-col gap-1">
-    <flux:text size="xs" class="px-3 uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Workspace') }}</flux:text>
+<div class="flex w-full flex-col gap-1.5">
     <div class="flex items-center gap-1">
         @if ($this->workspaces->count() <= 1)
-            <flux:text size="sm" class="flex-1 truncate px-3" data-test="single-workspace-name">
-                {{ $this->workspaces->first()?->name }}
-            </flux:text>
+            <div class="flex flex-1 items-center gap-2 truncate px-3">
+                <flux:icon.building-office-2 class="size-4 shrink-0 text-zinc-500 dark:text-zinc-400" />
+                <flux:text size="sm" class="truncate" data-test="single-workspace-name">{{ $this->workspaces->first()?->name }}</flux:text>
+            </div>
         @else
-            <flux:select wire:model.live="selectedWorkspaceId" size="sm" class="flex-1" :placeholder="__('Select a workspace')">
-                @foreach ($this->workspaces as $workspace)
-                    <flux:select.option value="{{ $workspace->id }}">{{ $workspace->name }}</flux:select.option>
-                @endforeach
-            </flux:select>
+            <div class="relative flex-1">
+                <flux:icon.building-office-2 class="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500 dark:text-zinc-400" />
+                <flux:select wire:model.live="selectedWorkspaceId" size="sm" class="w-full ps-8" :placeholder="__('Select a workspace')">
+                    @foreach ($this->workspaces as $workspace)
+                        <flux:select.option value="{{ $workspace->id }}">{{ $workspace->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </div>
         @endif
 
         <flux:modal.trigger name="create-workspace">
