@@ -11,6 +11,7 @@
             </flux:sidebar.header>
 
             @auth
+                <livewire:workspace-switcher />
                 <livewire:project-switcher />
             @endauth
 

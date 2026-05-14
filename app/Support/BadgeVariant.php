@@ -296,6 +296,17 @@ class BadgeVariant
         };
     }
 
+    public static function workspaceRole(string $role): string
+    {
+        return match ($role) {
+            'owner' => 'purple',
+            'admin' => 'indigo',
+            'member' => 'blue',
+            'viewer' => 'zinc',
+            default => 'zinc',
+        };
+    }
+
     private static function levelScore(?string $level): int
     {
         return match ($level) {
