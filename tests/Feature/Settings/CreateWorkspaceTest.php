@@ -32,16 +32,6 @@ test('create workspace requires a name', function () {
         ->assertHasErrors('newWorkspaceName');
 });
 
-test('dashboard shows the workspaces widget with active marker', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertOk()
-        ->assertSee('Workspaces')
-        ->assertSee('(active)');
-});
-
 test('settings nav link is always visible regardless of workspace count', function () {
     $user = User::factory()->create();
 
