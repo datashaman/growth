@@ -14,13 +14,13 @@ it('returns the plan for the given project and excludes plans from other project
     $project = Project::create([
         'user_id' => $user->id,
         'name' => 'Plans',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 
     $other = Project::create([
         'user_id' => $user->id,
         'name' => 'Other',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 
     $plan = ProjectPlan::create([
@@ -54,7 +54,7 @@ it('returns an empty result set when the project has no plan', function () {
     $project = Project::create([
         'user_id' => $user->id,
         'name' => 'Empty',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 
     $response = PlanningServer::tool(ListProjectPlans::class, [
@@ -75,7 +75,7 @@ it('filters by status', function () {
     $project = Project::create([
         'user_id' => $user->id,
         'name' => 'Plans',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 
     ProjectPlan::create([

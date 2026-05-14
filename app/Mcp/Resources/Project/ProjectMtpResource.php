@@ -42,7 +42,7 @@ class ProjectMtpResource extends Resource implements HasUriTemplate
             ->values();
 
         $md = "# Master Test Plan — {$project->name}\n\n";
-        $md .= "_Rigor level {$project->integrity_level}_\n\n";
+        $md .= "_Rigor level {$project->rigor_level}_\n\n";
 
         $md .= "## 2. Master Test Plan\n\n";
         if ($masters->isEmpty()) {

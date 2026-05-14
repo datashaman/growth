@@ -10,7 +10,7 @@ beforeEach(function () {
     $this->project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Lunar Lander',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
     $this->risk = $this->project->risks()->create([
         'title' => 'Heat shield delamination',
@@ -48,7 +48,7 @@ test('edit modal 404s for a risk in another project', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $bobRisk = $bobProject->risks()->create([
         'title' => "Bob's risk",
@@ -69,7 +69,7 @@ test('edit rejects owner_role_id from a different project', function () {
     $otherProject = Project::create([
         'user_id' => $otherUser->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $foreignRole = $otherProject->roles()->create(['name' => 'Spy']);
 
@@ -114,7 +114,7 @@ test('delete modal 404s for a risk in another project', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $bobRisk = $bobProject->risks()->create([
         'title' => "Bob's risk",

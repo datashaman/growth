@@ -11,7 +11,7 @@ beforeEach(function () {
     $this->project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Lunar Lander',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 });
 
@@ -67,7 +67,7 @@ test('owner can edit a stakeholder', function () {
 test('stakeholder edit 404s for another owner', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Other', 'integrity_level' => 1,
+        'user_id' => $bob->id, 'name' => 'Other', 'rigor_level' => 1,
     ]);
     $bobStakeholder = $bobProject->stakeholders()->create(['name' => 'Spy']);
     $this->actingAs($this->user);
@@ -122,7 +122,7 @@ test('owner can create a concern', function () {
 test('concern rejects foreign stakeholder', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Other', 'integrity_level' => 1,
+        'user_id' => $bob->id, 'name' => 'Other', 'rigor_level' => 1,
     ]);
     $foreignStakeholder = $bobProject->stakeholders()->create(['name' => 'Spy']);
     $this->actingAs($this->user);
@@ -150,7 +150,7 @@ test('owner can edit a concern', function () {
 test('concern edit 404s for another owner', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Other', 'integrity_level' => 1,
+        'user_id' => $bob->id, 'name' => 'Other', 'rigor_level' => 1,
     ]);
     $bobConcern = $bobProject->concerns()->create(['text' => 'Bob']);
     $this->actingAs($this->user);

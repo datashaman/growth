@@ -14,14 +14,14 @@ test('owner can create a project', function () {
     Livewire::test('pages::projects.create-modal')
         ->set('name', 'Mars Rover')
         ->set('description', 'Surface operations.')
-        ->set('integrity_level', 3)
+        ->set('rigor_level', 3)
         ->call('save')
         ->assertHasNoErrors();
 
     $project = Project::query()->where('name', 'Mars Rover')->first();
     expect($project)->not->toBeNull()
         ->and($project->user_id)->toBe($this->user->id)
-        ->and($project->integrity_level)->toBe(3)
+        ->and($project->rigor_level)->toBe(3)
         ->and(session('selected_project_id'))->toBe($project->id);
 });
 
@@ -30,9 +30,9 @@ test('create rejects out-of-range integrity level', function () {
 
     Livewire::test('pages::projects.create-modal')
         ->set('name', 'Bad')
-        ->set('integrity_level', 9)
+        ->set('rigor_level', 9)
         ->call('save')
-        ->assertHasErrors('integrity_level');
+        ->assertHasErrors('rigor_level');
 });
 
 test('create requires name', function () {
@@ -48,26 +48,26 @@ test('owner can edit a project', function () {
     $project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Old',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $this->actingAs($this->user);
 
     Livewire::test('pages::projects.edit-modal')
         ->call('load', $project->id)
         ->set('name', 'New')
-        ->set('integrity_level', 4)
+        ->set('rigor_level', 4)
         ->call('save')
         ->assertHasNoErrors();
 
     expect($project->fresh())
         ->name->toBe('New')
-        ->integrity_level->toBe(4);
+        ->rigor_level->toBe(4);
 });
 
 test('project edit 404s for another owner', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Bob project', 'integrity_level' => 2,
+        'user_id' => $bob->id, 'name' => 'Bob project', 'rigor_level' => 2,
     ]);
     $this->actingAs($this->user);
 
@@ -80,7 +80,7 @@ test('owner can delete a project when confirmation matches', function () {
     $project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Doomed',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
     session(['selected_project_id' => $project->id]);
     $this->actingAs($this->user);
@@ -99,7 +99,7 @@ test('delete rejects wrong confirmation text', function () {
     $project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Keep me',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
     $this->actingAs($this->user);
 
@@ -115,7 +115,7 @@ test('delete rejects wrong confirmation text', function () {
 test('project delete 404s for another owner', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Bob project', 'integrity_level' => 2,
+        'user_id' => $bob->id, 'name' => 'Bob project', 'rigor_level' => 2,
     ]);
     $this->actingAs($this->user);
 
@@ -128,7 +128,7 @@ test('delete surfaces dependent counts', function () {
     $project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Busy',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
     $project->stakeholders()->create(['name' => 'Alice', 'role' => 'sponsor']);
     $project->releases()->create(['version' => '1.0']);

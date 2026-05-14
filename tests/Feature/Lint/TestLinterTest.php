@@ -11,7 +11,7 @@ beforeEach(function () {
     $this->project = Project::create([
         'user_id' => User::factory()->create()->id,
         'name' => 'Verif',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 });
 
@@ -91,7 +91,7 @@ it('uses "verification plan" terminology in plan-level rule messages', function 
     $emptyProject = Project::create([
         'user_id' => User::factory()->create()->id,
         'name' => 'Empty',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 
     $messages = collect($this->linter->check($emptyProject))->pluck('message');
@@ -102,7 +102,7 @@ it('uses "verification plan" terminology in plan-level rule messages', function 
     $noMasterProject = Project::create([
         'user_id' => User::factory()->create()->id,
         'name' => 'NoMaster',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
     makePlan($noMasterProject, 'unit', ['scope' => null, 'approach' => null]);
 

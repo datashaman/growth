@@ -9,12 +9,12 @@ beforeEach(function () {
     $this->alpha = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Alpha',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $this->beta = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Beta',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
 });
 

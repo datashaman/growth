@@ -12,7 +12,7 @@ it('exports a project snapshot as markdown and json artifacts', function () {
     $project = Project::create([
         'name' => 'Apollo',
         'description' => 'Lunar mission planning.',
-        'integrity_level' => 3,
+        'rigor_level' => 3,
     ]);
     ProjectPlan::create([
         'project_id' => $project->id,

@@ -34,7 +34,7 @@ class ListProjects extends Tool
         $rows = $query->orderBy('created_at')
             ->limit($limit)
             ->offset($offset)
-            ->get(['id', 'name', 'description', 'integrity_level', 'created_at']);
+            ->get(['id', 'name', 'description', 'rigor_level', 'created_at']);
 
         return Response::structured([
             'total' => $total,
@@ -44,7 +44,7 @@ class ListProjects extends Tool
                 'id' => $p->id,
                 'name' => $p->name,
                 'description' => $p->description,
-                'integrity_level' => $p->integrity_level,
+                'rigor_level' => $p->rigor_level,
                 'created_at' => $p->created_at?->toIso8601String(),
             ])->all(),
         ]);

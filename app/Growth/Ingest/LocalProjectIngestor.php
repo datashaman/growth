@@ -24,7 +24,7 @@ class LocalProjectIngestor
     {
         $repoPath = $this->normalizePath($path);
         $name = $options['name'] ?? $this->projectName($repoPath);
-        $integrityLevel = (int) ($options['integrity_level'] ?? 2);
+        $integrityLevel = (int) ($options['rigor_level'] ?? 2);
         $commitLimit = (int) ($options['commit_limit'] ?? 20);
         $issueLimit = (int) ($options['issue_limit'] ?? 50);
         $prLimit = (int) ($options['pr_limit'] ?? 50);
@@ -38,7 +38,7 @@ class LocalProjectIngestor
                 ['name' => $name],
                 [
                     'description' => $description,
-                    'integrity_level' => $integrityLevel,
+                    'rigor_level' => $integrityLevel,
                 ],
             );
 

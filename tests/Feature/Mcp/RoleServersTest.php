@@ -159,7 +159,7 @@ it('returns read-only data for the project dashboard app', function () {
     $project = Project::create([
         'name' => 'Dashboard Project',
         'description' => 'Visible in the MCP app.',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
     Requirement::create([
         'project_id' => $project->id,
@@ -245,14 +245,14 @@ it('upserts projects and capabilities through the intake server', function () {
     $capabilityResponse->assertOk()
         ->assertSee('software');
 
-    expect(Project::find($projectId)?->integrity_level)->toBe(3)
+    expect(Project::find($projectId)?->rigor_level)->toBe(3)
         ->and(Requirement::where('project_id', $projectId)->first()?->doc)->toBe('srs');
 });
 
 it('deletes projects through the intake server with exact-name confirmation', function () {
     $project = Project::create([
         'name' => 'Disposable',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 
     IntakeServer::tool(DeleteProject::class, [
@@ -275,7 +275,7 @@ it('renders existing project data through readonly resources', function () {
     $project = Project::create([
         'name' => 'TodoMVC',
         'description' => 'Standalone todo app.',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
     Requirement::create([
         'project_id' => $project->id,
@@ -296,7 +296,7 @@ it('renders existing project data through readonly resources', function () {
 it('renders evidence resources with human readable delivery context', function () {
     $project = Project::create([
         'name' => 'TodoMVC',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
     $workItem = WorkItem::create([
         'project_id' => $project->id,
@@ -333,7 +333,7 @@ it('renders evidence resources with human readable delivery context', function (
 it('builds an evidence bundle through the verification server', function () {
     $project = Project::create([
         'name' => 'TodoMVC',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 
     $response = VerificationServer::tool(BuildEvidenceBundle::class, [
@@ -383,7 +383,7 @@ it('returns usable prompt messages from role servers', function () {
 
     $project = Project::create([
         'name' => 'TodoMVC',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 
     VerificationServer::prompt(CheckReadiness::class, [

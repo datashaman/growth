@@ -22,7 +22,7 @@ class PmpLinter
     public function check(Project $project): array
     {
         $findings = [];
-        $il = $project->integrity_level;
+        $il = $project->rigor_level;
 
         $plan = $project->projectPlan;
         if (! $plan) {

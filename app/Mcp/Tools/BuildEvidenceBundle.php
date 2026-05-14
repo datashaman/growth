@@ -41,7 +41,7 @@ class BuildEvidenceBundle extends Tool
         return Response::structured([
             'project_id' => $project->id,
             'project' => $project->name,
-            'rigor_level' => $project->integrity_level,
+            'rigor_level' => $project->rigor_level,
             'readiness_status' => $readiness['status'],
             'resources' => [
                 'index' => "growth://projects/{$project->id}",

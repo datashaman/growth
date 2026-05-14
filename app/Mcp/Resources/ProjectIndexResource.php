@@ -52,7 +52,7 @@ class ProjectIndexResource extends Resource implements HasUriTemplate
                 'id' => $project->id,
                 'name' => $project->name,
                 'description' => $project->description,
-                'rigor_level' => $project->integrity_level,
+                'rigor_level' => $project->rigor_level,
             ],
             'resource_uris' => collect(['intent', 'capabilities', 'architecture', 'verification', 'plan', 'evidence', 'readiness'])
                 ->mapWithKeys(fn (string $resource): array => [$resource => "growth://projects/{$project->id}/{$resource}"])

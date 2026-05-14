@@ -97,7 +97,7 @@ class ProjectExporter
                 'id' => $project->id,
                 'name' => $project->name,
                 'description' => $project->description,
-                'integrity_level' => $project->integrity_level,
+                'rigor_level' => $project->rigor_level,
             ],
             'counts' => [
                 'requirements' => $project->requirements->count(),
@@ -119,7 +119,7 @@ class ProjectExporter
         $plan = $project->projectPlan;
         $md = "# {$project->name}\n\n";
         $md .= "- **Project id:** `{$project->id}`\n";
-        $md .= "- **Rigor level:** {$project->integrity_level}\n";
+        $md .= "- **Rigor level:** {$project->rigor_level}\n";
         $md .= '- **Plan status:** '.($plan?->status ?? 'missing')."\n\n";
 
         if ($project->description) {

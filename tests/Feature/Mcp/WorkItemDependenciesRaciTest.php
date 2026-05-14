@@ -7,7 +7,7 @@ use App\Models\WorkItem;
 beforeEach(function () {
     $this->project = Project::create([
         'name' => 'Apollo',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 });
 

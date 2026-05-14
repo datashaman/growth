@@ -41,7 +41,7 @@ new #[Title('Dashboard')] class extends Component {
     {
         return Project::query()
             ->orderBy('created_at')
-            ->get(['id', 'name', 'description', 'integrity_level']);
+            ->get(['id', 'name', 'description', 'rigor_level']);
     }
 
     #[Computed]
@@ -201,7 +201,7 @@ new #[Title('Dashboard')] class extends Component {
                     <div class="flex flex-col gap-2">
                         <div class="flex items-center gap-2">
                             <flux:heading size="lg">{{ $this->project->name }}</flux:heading>
-                            <flux:badge color="zinc" size="sm">{{ __('Rigor :level', ['level' => $this->project->integrity_level]) }}</flux:badge>
+                            <flux:badge color="zinc" size="sm">{{ __('Rigor :level', ['level' => $this->project->rigor_level]) }}</flux:badge>
                         </div>
                         @if ($this->project->description)
                             <flux:text class="text-zinc-600 dark:text-zinc-400">{{ $this->project->description }}</flux:text>

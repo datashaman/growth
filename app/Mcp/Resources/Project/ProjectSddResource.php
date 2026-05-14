@@ -40,7 +40,7 @@ class ProjectSddResource extends Resource implements HasUriTemplate
         $usedBuiltins = $views->pluck('viewpoint')->intersect(DesignView::BUILTIN_VIEWPOINTS)->unique()->sort()->values();
 
         $md = "# Software Design Description — {$project->name}\n\n";
-        $md .= "_Rigor level {$project->integrity_level}_\n\n";
+        $md .= "_Rigor level {$project->rigor_level}_\n\n";
 
         $md .= "## 3. Viewpoints in use\n\n";
         $md .= "### 3.1 Built-in viewpoints\n\n";

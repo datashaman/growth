@@ -19,7 +19,7 @@ class UpdateProject extends Tool
             'id' => 'required|string|owned_project',
             'name' => 'sometimes|string|max:255',
             'description' => 'sometimes|nullable|string',
-            'integrity_level' => 'sometimes|integer|between:1,4',
+            'rigor_level' => 'sometimes|integer|between:1,4',
         ]);
 
         $project = Project::findOrFail($data['id']);
@@ -30,7 +30,7 @@ class UpdateProject extends Tool
         return Response::structured([
             'id' => $project->id,
             'name' => $project->name,
-            'integrity_level' => $project->integrity_level,
+            'rigor_level' => $project->rigor_level,
         ]);
     }
 
@@ -44,7 +44,7 @@ class UpdateProject extends Tool
                 ->description('New name'),
             'description' => $schema->string()
                 ->description('New description (pass null to clear)'),
-            'integrity_level' => $schema->integer()
+            'rigor_level' => $schema->integer()
                 ->description('New project rigor level (1-4)'),
         ];
     }
@@ -54,7 +54,7 @@ class UpdateProject extends Tool
         return [
             'id' => $schema->string()->required(),
             'name' => $schema->string()->required(),
-            'integrity_level' => $schema->integer()->required(),
+            'rigor_level' => $schema->integer()->required(),
         ];
     }
 }

@@ -11,7 +11,7 @@ new class extends Component {
 
     public string $name = '';
     public string $description = '';
-    public int $integrity_level = 2;
+    public int $rigor_level = 2;
 
     #[On('edit-project')]
     public function load(string $projectId): void
@@ -23,7 +23,7 @@ new class extends Component {
         $this->projectId = $projectId;
         $this->name = $project->name;
         $this->description = (string) $project->description;
-        $this->integrity_level = $project->integrity_level;
+        $this->rigor_level = $project->rigor_level;
 
         $this->modal('edit-project')->show();
     }
@@ -37,13 +37,13 @@ new class extends Component {
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'integrity_level' => ['required', 'integer', 'between:1,4'],
+            'rigor_level' => ['required', 'integer', 'between:1,4'],
         ]);
 
         $project->update([
             'name' => $data['name'],
             'description' => $data['description'] ?: null,
-            'integrity_level' => $data['integrity_level'],
+            'rigor_level' => $data['rigor_level'],
         ]);
 
         $this->modal('edit-project')->close();
@@ -61,7 +61,7 @@ new class extends Component {
 
         <flux:textarea wire:model="description" :label="__('Description')" rows="3" />
 
-        <flux:select wire:model="integrity_level" :label="__('Integrity level')" :description="__('1 = lowest rigor, 4 = highest. Drives readiness gates and review depth.')">
+        <flux:select wire:model="rigor_level" :label="__('Rigor level')" :description="__('1 = lowest rigor, 4 = highest. Drives readiness gates and review depth.')">
             <flux:select.option value="1">{{ __('1 — Minimal rigor') }}</flux:select.option>
             <flux:select.option value="2">{{ __('2 — Standard') }}</flux:select.option>
             <flux:select.option value="3">{{ __('3 — Elevated') }}</flux:select.option>

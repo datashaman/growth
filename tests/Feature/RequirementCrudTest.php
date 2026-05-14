@@ -10,7 +10,7 @@ beforeEach(function () {
     $this->project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Lunar Lander',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 });
 
@@ -42,7 +42,7 @@ test('create page 404s when project does not belong to user', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Hostile',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
 
     $this->actingAs($this->user)
@@ -66,7 +66,7 @@ test('create rejects parent_id from another project', function () {
     $otherProject = Project::create([
         'user_id' => $otherUser->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $foreignParent = $otherProject->requirements()->create([
         'doc' => 'srs', 'type' => 'functional', 'text' => 'Foreign',
@@ -106,7 +106,7 @@ test('edit page 404s for a requirement in another project', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $bobReq = $bobProject->requirements()->create([
         'doc' => 'srs', 'type' => 'functional', 'text' => 'Bob.',
@@ -135,7 +135,7 @@ test('delete modal 404s for a requirement in another project', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $bobReq = $bobProject->requirements()->create([
         'doc' => 'srs', 'type' => 'functional', 'text' => 'Bob.',

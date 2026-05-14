@@ -10,7 +10,7 @@ beforeEach(function () {
     $this->project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Lunar Lander',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 });
 
@@ -94,7 +94,7 @@ test('owner can edit a custom viewpoint', function () {
 test('edit 404s for another owner', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Bob', 'integrity_level' => 1,
+        'user_id' => $bob->id, 'name' => 'Bob', 'rigor_level' => 1,
     ]);
     $bobViewpoint = $bobProject->customViewpoints()->create([
         'name' => 'safety',

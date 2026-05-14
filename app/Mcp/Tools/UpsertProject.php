@@ -25,22 +25,17 @@ class UpsertProject extends Tool
         $id = $data['id'] ?? null;
         unset($data['id']);
 
-        if (array_key_exists('rigor_level', $data)) {
-            $data['integrity_level'] = $data['rigor_level'];
-            unset($data['rigor_level']);
-        }
-
         $project = $id
             ? tap(Project::findOrFail($id))->update($data)
             : Project::create($data + [
-                'integrity_level' => 2,
+                'rigor_level' => 2,
                 'user_id' => auth()->id(),
             ]);
 
         return Response::structured([
             'id' => $project->id,
             'name' => $project->name,
-            'rigor_level' => $project->integrity_level,
+            'rigor_level' => $project->rigor_level,
             'created' => $project->wasRecentlyCreated,
         ]);
     }

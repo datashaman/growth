@@ -62,7 +62,7 @@ class ProjectIndexResource extends Resource implements HasUriTemplate
             $md .= "{$project->description}\n\n";
         }
         $md .= "- **Project id:** `{$project->id}`\n";
-        $md .= "- **Rigor level:** {$project->integrity_level}\n\n";
+        $md .= "- **Rigor level:** {$project->rigor_level}\n\n";
 
         $md .= "## Document URIs\n\n";
         $md .= "- Requirements: `growth://projects/{$project->id}/srs`\n";

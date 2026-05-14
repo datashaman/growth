@@ -32,7 +32,7 @@ class ReviewLinter
             array_push($findings, ...$this->checkPlan($plan));
         }
 
-        if ($project->integrity_level >= 3) {
+        if ($project->rigor_level >= 3) {
             foreach ($project->requirements()->get() as $requirement) {
                 $coverage = $this->requirementCoverage->summarize($requirement);
                 if (! $coverage['covered']) {
@@ -56,11 +56,11 @@ class ReviewLinter
             }
         }
 
-        if ($project->integrity_level >= 3 && $reviews->isEmpty()) {
+        if ($project->rigor_level >= 3 && $reviews->isEmpty()) {
             $findings[] = $this->finding(
                 'review.none',
                 'warning',
-                "review readiness: Rigor level {$project->integrity_level} project has no recorded reviews or audits",
+                "review readiness: Rigor level {$project->rigor_level} project has no recorded reviews or audits",
                 'project',
                 $project->id,
             );

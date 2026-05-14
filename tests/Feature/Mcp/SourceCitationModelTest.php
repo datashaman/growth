@@ -20,12 +20,12 @@ beforeEach(function () {
     $this->aliceProject = Project::create([
         'user_id' => $this->alice->id,
         'name' => 'Apollo',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
     $this->bobProject = Project::create([
         'user_id' => $this->bob->id,
         'name' => 'Bob Project',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 });
 

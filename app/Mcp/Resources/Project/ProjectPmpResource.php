@@ -61,7 +61,7 @@ class ProjectPmpResource extends Resource implements HasUriTemplate
 
         $plan = $project->projectPlan;
         $md = "# Project Management Plan — {$project->name}\n\n";
-        $md .= "_Rigor level {$project->integrity_level}_\n\n";
+        $md .= "_Rigor level {$project->rigor_level}_\n\n";
 
         $md .= "## 1. Project context\n\n";
         if ($project->description) {

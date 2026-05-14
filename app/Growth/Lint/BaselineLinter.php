@@ -30,11 +30,11 @@ class BaselineLinter
             ->first();
 
         if (! $baseline) {
-            if ($project->integrity_level >= 3) {
+            if ($project->rigor_level >= 3) {
                 return [$this->finding(
                     'baseline.none',
                     'warning',
-                    "Rigor level {$project->integrity_level} project has no plan baseline",
+                    "Rigor level {$project->rigor_level} project has no plan baseline",
                     'project_plan',
                     $plan->id,
                 )];

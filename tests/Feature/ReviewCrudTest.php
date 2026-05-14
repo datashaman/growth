@@ -10,7 +10,7 @@ beforeEach(function () {
     $this->project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Lunar Lander',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 });
 
@@ -53,7 +53,7 @@ test('review create rejects foreign owner_role_id', function () {
     $otherProject = Project::create([
         'user_id' => $otherUser->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $foreignRole = $otherProject->roles()->create(['name' => 'Spy']);
 
@@ -73,7 +73,7 @@ test('review create projectId is locked', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Hostile',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
 
     $this->actingAs($this->user);
@@ -113,7 +113,7 @@ test('review edit 404s for another owner', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $bobReview = $bobProject->reviews()->create([
         'title' => 'Bob',
@@ -147,7 +147,7 @@ test('review delete 404s for another owner', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $bobReview = $bobProject->reviews()->create([
         'title' => 'Bob',
