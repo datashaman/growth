@@ -1,6 +1,6 @@
 # apply-manifest Design — 2026-05-14
 
-Design doc for issue #34. Status: **draft, awaiting decisions on the open questions below.**
+Design doc for issue #34. Status: **decisions made on every open question (see below); ready to start slice A.**
 
 ## Goal
 
@@ -175,47 +175,58 @@ so it's diff-friendly in git.
 passes to `apply-manifest`. The tool doesn't read the file — that's the
 client's job. The MCP tool just takes the parsed JSON/YAML as input.
 
-## Open questions
+## Decisions
 
-1. **YAML or JSON in MCP?** MCP transports JSON natively. We could
-   either (a) accept JSON only and leave YAML parsing to the client,
-   or (b) accept either, parsing YAML server-side. Recommendation: (a)
-   — keeps the tool boundary clean, lets clients pick a parser.
+1. **JSON-only at the MCP boundary.** The repo file stays
+   `project.growth.yaml` for humans, but the MCP tool accepts a JSON
+   `manifest` argument. Clients parse YAML themselves before calling.
+   Rationale: MCP transports JSON natively; no server-side YAML
+   dependency; clients pick their own parser.
 
-2. **Transaction granularity.** All-or-nothing per `apply-manifest`
-   call is the safe default but means a partial-success scenario (one
-   capability has a typo, the rest are fine) rejects everything.
-   Alternative: per-entity-type granularity with a `partial: true`
-   response field. Recommendation: all-or-nothing for v1; revisit.
+2. **All-or-nothing transactions.** One `apply-manifest` call = one
+   DB transaction. Any validation or write error rolls back the whole
+   apply. Partial-success would make recovery harder than the typo it
+   masks.
 
-3. **Capability slugs in the DB.** Capabilities (`Requirement` model)
-   currently have no `slug` column — matching is by `(project_id,
-   text)` today, which is fragile. Should we add a `slug` column for
-   manifest re-apply? Adds a migration. Recommendation: yes, in this
-   slice; otherwise `merge` mode can't reliably match.
+3. **Add a `slug` column to capabilities.** The `Requirement` model
+   gains a `slug` string column, unique per project. Folded into
+   **slice A** as part of the schema work — `merge` mode can't
+   reliably match without it. Existing rows backfill a slug derived
+   from `text` on the migration.
 
-4. **Out-of-band changes.** If a project's structure was edited via
-   MCP between `export-manifest` and `apply-manifest`, the next apply
-   in `merge` mode will silently overwrite those edits. Should
-   `merge` warn about updated_at drift? Recommendation: report which
-   entities changed, but proceed.
+4. **Report drift, proceed.** Manifest entries carry an optional
+   `_exported_at` (timestamp from the last `export-manifest`). On
+   apply, the tool compares each entity's current `updated_at` to
+   the manifest's `_exported_at` and includes a `drift` array in the
+   response listing slugs whose `updated_at > _exported_at`. The
+   apply still proceeds — source of truth is the manifest. Callers
+   that want stricter behavior can read the `drift` array and react
+   client-side.
 
-5. **Tool exposure.** `apply-manifest` is a powerful, project-wide
-   mutation. Should it live on the `intake` server only, or also on
-   `planning` and `architecture`? Recommendation: `intake` only, plus
-   `AllServer` via auto-discovery. Other roles can call it through
-   the `all` server.
+5. **New `ManagementServer` role server.** The current servers
+   (`intake`, `planning`, `architecture`, `verification`,
+   `governance`, `readonly`) all operate _within_ a project. Project
+   lifecycle (create, update, archive, delete, manifest apply/export)
+   has no clear home — `Projects/CreateProject` and
+   `Projects/UpdateProject` are currently orphans only reachable
+   through `AllServer` auto-discovery. The new `ManagementServer`
+   registers: `create-project`, `update-project`, `upsert-project`,
+   `delete-project`, `apply-manifest`, `export-manifest`. Adds a
+   `/mcp/management` route and a `Mcp::local('management', …)`
+   binding. `AllServer` continues to auto-discover everything.
 
 ## Slicing plan
 
-1. **Slice A** — schema + dry-run on a minimal subset
-   (project + capabilities + concerns + stakeholders). Validates the
-   slug → ULID resolution and conflict-mode plumbing.
+1. **Slice A** — `ManagementServer` + capability slug migration + the
+   minimal `apply-manifest` (project + stakeholders + concerns +
+   capabilities) with `fail`/`merge`/`replace` modes and dry-run.
+   Establishes the slug → ULID resolver, transaction wrapper, and the
+   drift report.
 2. **Slice B** — architecture (viewpoints, views, elements).
 3. **Slice C** — plan (roles, milestones, work items + links).
 4. **Slice D** — verification (plans, cases).
 5. **Slice E** — `export-manifest` round trip, idempotency proof.
-6. **Slice F** — capability slug migration (open question 3).
-7. **Slice G** — starter templates (issue #40).
+6. **Slice F** — starter templates (issue #40).
 
-Each slice is a separable PR.
+Each slice is a separable PR. Slice A is the riskiest because it
+proves the architecture works; B–D are mechanical extensions.
