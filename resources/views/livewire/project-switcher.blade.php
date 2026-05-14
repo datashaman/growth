@@ -37,7 +37,8 @@ new class extends Component {
     }
 }; ?>
 
-<div class="flex w-full flex-col gap-1.5">
+<div class="flex w-full flex-col gap-1">
+    <flux:text size="xs" class="px-3 uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Project') }}</flux:text>
     <div class="flex items-center gap-1">
         @if ($this->projects->isEmpty())
             <flux:text size="sm" class="flex-1 px-3 text-zinc-500 dark:text-zinc-400">{{ __('No projects') }}</flux:text>
