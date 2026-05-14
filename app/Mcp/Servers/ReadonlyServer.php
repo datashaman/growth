@@ -35,7 +35,10 @@ use App\Mcp\Tools\Changes\ListChangeApprovalEvents;
 use App\Mcp\Tools\Changes\ListChangeRequests;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Dashboard\GetProjectDashboardData;
+use App\Mcp\Tools\Dashboard\ShowCapabilityExplorer;
+use App\Mcp\Tools\Dashboard\ShowGateStatus;
 use App\Mcp\Tools\Dashboard\ShowProjectDashboard;
+use App\Mcp\Tools\Dashboard\ShowTraceGraph;
 use App\Mcp\Tools\Glossary\LookupTerm;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Plan\ListAgents;
@@ -116,6 +119,9 @@ class ReadonlyServer extends Server
         LookupTerm::class,
         TraceQuery::class,
         ShowProjectDashboard::class,
+        ShowGateStatus::class,
+        ShowCapabilityExplorer::class,
+        ShowTraceGraph::class,
         GetProjectDashboardData::class,
     ];
 
