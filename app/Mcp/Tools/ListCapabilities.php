@@ -11,7 +11,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('List capabilities for a project with optional layer, type, priority, and text filters.')]
+#[Description('List capabilities for a project with optional layer, type, priority, and text filters. For relationships across entity types (which design elements, test cases, or work items derive from a capability), use `trace-query` with the capability id.')]
 class ListCapabilities extends Tool
 {
     public function handle(Request $request): ResponseFactory

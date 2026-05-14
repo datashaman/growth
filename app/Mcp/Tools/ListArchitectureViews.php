@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('List architecture views for a project.')]
+#[Description('List architecture views for a project. For the elements and concerns attached to a specific view, use `trace-query` with the view id.')]
 class ListArchitectureViews extends Tool
 {
     public function handle(Request $request): ResponseFactory

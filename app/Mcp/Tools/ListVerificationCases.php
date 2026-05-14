@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('List verification cases for a verification plan.')]
+#[Description('List verification cases for a verification plan. For the capabilities a case verifies and the runs/anomalies it produced, use `trace-query` with the case id.')]
 class ListVerificationCases extends Tool
 {
     public function handle(Request $request): ResponseFactory
