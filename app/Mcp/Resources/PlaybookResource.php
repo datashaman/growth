@@ -23,6 +23,17 @@ class PlaybookResource extends Resource
 
 The MCP layer treats a project definition as the control plane for AI-assisted delivery.
 
+## Bootstrapping a new project
+
+Prefer the manifest workflow over per-entity upserts when starting from scratch:
+
+1. Read a starter at `growth://template/rigor-{1,2,3,4}` matching the target rigor level.
+2. Fill in TODO placeholders (project name/description, scope, capability text, acceptance criteria, verification scope).
+3. Call `apply-manifest` with the filled-in manifest. One call creates the project plus its stakeholders, concerns, capabilities, architecture view, plan, and verification plan/case.
+4. For L3+, follow up with `baseline-plan` and `upsert-review` — baselines and reviews are events, not manifest content.
+
+For existing projects, `export-manifest` round-trips structure to YAML/JSON for version-controlled edits; re-applying an unchanged manifest is a no-op (`merge` mode).
+
 ## Loop
 
 1. Capture intent and sources.
