@@ -19,6 +19,7 @@ class CreateProject extends Tool
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'rigor_level' => 'nullable|integer|between:1,4',
+            'status' => 'nullable|in:'.implode(',', Project::STATUSES),
         ]);
 
         $project = Project::create($data + [
@@ -30,6 +31,7 @@ class CreateProject extends Tool
             'id' => $project->id,
             'name' => $project->name,
             'rigor_level' => $project->rigor_level,
+            'status' => $project->status,
         ]);
     }
 
@@ -43,6 +45,9 @@ class CreateProject extends Tool
                 ->description('Optional project description'),
             'rigor_level' => $schema->integer()
                 ->description('Project rigor level (1–4, default 2). Higher levels activate stricter linter rules: L2 requires milestones + work items; L3 adds RACI roles, plan baseline, recorded reviews, and acceptance criteria on all requirements; L4 is the ceiling (no rules unique to it today). Full activation table at `growth://rigor-levels`.'),
+            'status' => $schema->string()
+                ->description('Project lifecycle status. Defaults to `active`. `draft` for in-progress setup, `active` for ongoing work, `archived` and `closed` are read-only (only status can change after).')
+                ->enum(Project::STATUSES),
         ];
     }
 
@@ -52,6 +57,7 @@ class CreateProject extends Tool
             'id' => $schema->string()->required(),
             'name' => $schema->string()->required(),
             'rigor_level' => $schema->integer()->required(),
+            'status' => $schema->string()->required(),
         ];
     }
 }

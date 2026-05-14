@@ -39,7 +39,7 @@ class GetProjectDashboardData extends Tool
         $projects = Project::query()
             ->orderBy('created_at')
             ->limit(100)
-            ->get(['id', 'name', 'description', 'rigor_level', 'created_at']);
+            ->get(['id', 'name', 'description', 'rigor_level', 'status', 'created_at']);
 
         $selectedProject = null;
         if (isset($data['project_id'])) {
@@ -93,6 +93,7 @@ class GetProjectDashboardData extends Tool
             'name' => $project->name,
             'description' => $project->description,
             'rigor_level' => $project->rigor_level,
+            'status' => $project->status,
             'created_at' => $project->created_at?->toIso8601String(),
         ];
     }

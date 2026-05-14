@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Patch a Growth project — update name, description, and/or project rigor level.')]
+#[Description('Patch a Growth project — update name, description, rigor level, and/or status. A project in `archived` or `closed` status is read-only except for its own `status`; restore it to `draft` or `active` before sending content changes.')]
 class UpdateProject extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -20,10 +20,19 @@ class UpdateProject extends Tool
             'name' => 'sometimes|string|max:255',
             'description' => 'sometimes|nullable|string',
             'rigor_level' => 'sometimes|integer|between:1,4',
+            'status' => 'sometimes|in:'.implode(',', Project::STATUSES),
         ]);
 
         $project = Project::findOrFail($data['id']);
         unset($data['id']);
+
+        $contentFields = array_intersect_key($data, array_flip(['name', 'description', 'rigor_level']));
+
+        if (! $project->isMutable() && $contentFields !== []) {
+            return new ResponseFactory(Response::error(
+                "Project [{$project->name}] is {$project->status} and cannot be edited. Set `status` to `draft` or `active` first, then resend the content changes."
+            ));
+        }
 
         $project->update($data);
 
@@ -31,6 +40,7 @@ class UpdateProject extends Tool
             'id' => $project->id,
             'name' => $project->name,
             'rigor_level' => $project->rigor_level,
+            'status' => $project->status,
         ]);
     }
 
@@ -46,6 +56,9 @@ class UpdateProject extends Tool
                 ->description('New description (pass null to clear)'),
             'rigor_level' => $schema->integer()
                 ->description('Project rigor level (1–4). Higher levels activate stricter linter rules: L2 requires milestones + work items; L3 adds RACI roles, plan baseline, recorded reviews, and acceptance criteria on all requirements; L4 is the ceiling (no rules unique to it today). Full activation table at `growth://rigor-levels`.'),
+            'status' => $schema->string()
+                ->description('New project lifecycle status. `archived`/`closed` make the project read-only.')
+                ->enum(Project::STATUSES),
         ];
     }
 
@@ -55,6 +68,7 @@ class UpdateProject extends Tool
             'id' => $schema->string()->required(),
             'name' => $schema->string()->required(),
             'rigor_level' => $schema->integer()->required(),
+            'status' => $schema->string()->required(),
         ];
     }
 }
