@@ -6,10 +6,14 @@ use App\Models\Concern;
 use App\Models\CustomViewpoint;
 use App\Models\DesignElement;
 use App\Models\DesignView;
+use App\Models\Milestone;
 use App\Models\Project;
+use App\Models\ProjectPlan;
 use App\Models\Requirement;
+use App\Models\Role;
 use App\Models\Stakeholder;
 use App\Models\User;
+use App\Models\WorkItem;
 use Laravel\Passport\Passport;
 
 beforeEach(function () {
@@ -504,6 +508,248 @@ it('reports drift on an architecture view when current updated_at is newer than 
         $json->has('drift.0')
             ->where('drift.0.entity', 'view')
             ->where('drift.0.identifier', 'Top')
+            ->etc();
+    });
+});
+
+it('creates project plan, roles, milestones and work items from scratch', function () {
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['name' => 'Plan', 'rigor_level' => 2, 'status' => 'active'],
+            'capabilities' => [
+                ['slug' => 'add-todo', 'text' => 'Adds a todo.', 'type' => 'functional'],
+            ],
+            'plan' => [
+                'status' => 'draft',
+                'scope_summary' => 'A small todo app.',
+                'roles' => [
+                    ['slug' => 'frontend', 'name' => 'Frontend'],
+                    ['slug' => 'backend', 'name' => 'Backend'],
+                ],
+                'milestones' => [
+                    ['slug' => 'm1', 'name' => 'MVP', 'target_date' => '2026-06-01'],
+                ],
+                'work_items' => [
+                    [
+                        'slug' => 'wi-add',
+                        'name' => 'Implement add-todo',
+                        'kind' => 'task',
+                        'responsible_role' => 'frontend',
+                        'capabilities' => ['add-todo'],
+                        'milestones' => ['m1'],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('counts.plan_created', true)
+            ->where('counts.roles_created', 2)
+            ->where('counts.milestones_created', 1)
+            ->where('counts.work_items_created', 1)
+            ->has('slugs.roles.frontend')
+            ->has('slugs.milestones.m1')
+            ->has('slugs.work_items.wi-add')
+            ->etc();
+    });
+
+    $project = Project::where('name', 'Plan')->first();
+    $plan = ProjectPlan::where('project_id', $project->id)->first();
+    expect($plan->status)->toBe('draft');
+    expect(Role::where('project_id', $project->id)->count())->toBe(2);
+    $milestone = Milestone::where('project_id', $project->id)->where('name', 'MVP')->first();
+    expect($milestone->target_date->toDateString())->toBe('2026-06-01');
+    $workItem = WorkItem::where('project_id', $project->id)->where('name', 'Implement add-todo')->first();
+    expect($workItem->responsibleRole->name)->toBe('Frontend');
+    expect($workItem->requirements()->count())->toBe(1);
+    expect($workItem->milestones()->count())->toBe(1);
+});
+
+it('resolves work-item parent and dependencies declared in the same manifest', function () {
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['name' => 'WiTree', 'rigor_level' => 2, 'status' => 'active'],
+            'plan' => [
+                'work_items' => [
+                    ['slug' => 'parent', 'name' => 'Parent feature', 'kind' => 'deliverable'],
+                    ['slug' => 'child', 'name' => 'Sub task', 'kind' => 'task', 'parent' => 'parent'],
+                    [
+                        'slug' => 'dependent',
+                        'name' => 'Follows after',
+                        'kind' => 'task',
+                        'dependencies' => [
+                            ['work_item' => 'child', 'kind' => 'finish_to_start'],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertOk();
+    $project = Project::where('name', 'WiTree')->first();
+    $parent = WorkItem::where('project_id', $project->id)->where('name', 'Parent feature')->first();
+    $child = WorkItem::where('project_id', $project->id)->where('name', 'Sub task')->first();
+    $dependent = WorkItem::where('project_id', $project->id)->where('name', 'Follows after')->first();
+    expect($child->parent_id)->toBe($parent->id);
+    expect($dependent->dependencies()->pluck('depends_on_id')->all())->toBe([$child->id]);
+});
+
+it('merge mode updates the singleton project plan in place', function () {
+    $project = Project::create(['user_id' => $this->user->id, 'name' => 'PlanMerge', 'rigor_level' => 2]);
+    ProjectPlan::create(['project_id' => $project->id, 'status' => 'draft', 'approach' => 'old']);
+
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['id' => $project->id, 'name' => 'PlanMerge'],
+            'plan' => ['approach' => 'new'],
+        ],
+        'mode' => 'merge',
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('counts.plan_updated', true)
+            ->where('counts.plan_created', false)
+            ->etc();
+    });
+
+    expect(ProjectPlan::where('project_id', $project->id)->value('approach'))->toBe('new');
+});
+
+it('rejects a work item referencing an unknown role', function () {
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['name' => 'BadRole', 'rigor_level' => 2, 'status' => 'active'],
+            'plan' => [
+                'work_items' => [
+                    ['name' => 'Orphan', 'kind' => 'task', 'responsible_role' => 'ghost'],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertHasErrors(['unknown role']);
+});
+
+it('replace mode wipes plan, roles, milestones and work items', function () {
+    $project = Project::create(['user_id' => $this->user->id, 'name' => 'PlanWipe', 'rigor_level' => 2]);
+    ProjectPlan::create(['project_id' => $project->id, 'status' => 'draft']);
+    $role = Role::create(['project_id' => $project->id, 'name' => 'OldRole']);
+    $milestone = Milestone::create(['project_id' => $project->id, 'name' => 'OldMilestone']);
+    WorkItem::create(['project_id' => $project->id, 'name' => 'OldWi', 'kind' => 'task', 'responsible_role_id' => $role->id]);
+
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['id' => $project->id, 'name' => 'PlanWipe'],
+            'plan' => ['status' => 'active'],
+        ],
+        'mode' => 'replace',
+        'confirm' => 'PlanWipe',
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('counts.plan_deleted', true)
+            ->where('counts.roles_deleted', 1)
+            ->where('counts.milestones_deleted', 1)
+            ->where('counts.work_items_deleted', 1)
+            ->where('counts.plan_created', true)
+            ->etc();
+    });
+
+    expect(Role::where('project_id', $project->id)->where('name', 'OldRole')->exists())->toBeFalse();
+    expect(Milestone::where('project_id', $project->id)->where('name', 'OldMilestone')->exists())->toBeFalse();
+    expect(WorkItem::where('project_id', $project->id)->where('name', 'OldWi')->exists())->toBeFalse();
+    expect(ProjectPlan::where('project_id', $project->id)->value('status'))->toBe('active');
+});
+
+it('fail mode aborts when a milestone target_date differs', function () {
+    $project = Project::create(['user_id' => $this->user->id, 'name' => 'DateDiff', 'rigor_level' => 2]);
+    Milestone::create(['project_id' => $project->id, 'name' => 'MVP', 'target_date' => '2026-06-01']);
+
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['id' => $project->id, 'name' => 'DateDiff'],
+            'plan' => [
+                'milestones' => [
+                    ['name' => 'MVP', 'target_date' => '2026-07-15'],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertHasErrors(['fail mode aborts']);
+    expect(Milestone::where('project_id', $project->id)->where('name', 'MVP')->value('target_date')->toDateString())
+        ->toBe('2026-06-01');
+});
+
+it('resolves work-item refs by existing names when no manifest slug matches', function () {
+    $project = Project::create(['user_id' => $this->user->id, 'name' => 'NameRef', 'rigor_level' => 2]);
+    Role::create(['project_id' => $project->id, 'name' => 'Backend']);
+    Milestone::create(['project_id' => $project->id, 'name' => 'Beta']);
+
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['id' => $project->id, 'name' => 'NameRef'],
+            'plan' => [
+                'work_items' => [
+                    [
+                        'name' => 'Deliver',
+                        'kind' => 'task',
+                        'responsible_role' => 'Backend',
+                        'milestones' => ['Beta'],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertOk();
+    $wi = WorkItem::where('project_id', $project->id)->where('name', 'Deliver')->first();
+    expect($wi->responsibleRole->name)->toBe('Backend');
+    expect($wi->milestones()->pluck('name')->all())->toBe(['Beta']);
+});
+
+it('accepts the bare-string dependency form', function () {
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['name' => 'BareDep', 'rigor_level' => 2, 'status' => 'active'],
+            'plan' => [
+                'work_items' => [
+                    ['slug' => 'a', 'name' => 'A', 'kind' => 'task'],
+                    ['slug' => 'b', 'name' => 'B', 'kind' => 'task', 'dependencies' => ['a']],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertOk();
+    $project = Project::where('name', 'BareDep')->first();
+    $b = WorkItem::where('project_id', $project->id)->where('name', 'B')->first();
+    expect($b->dependencies()->pluck('name')->all())->toBe(['A']);
+    expect($b->dependencies()->first()->pivot->kind)->toBe('finish_to_start');
+});
+
+it('reports drift on a work item when updated_at is newer than _exported_at', function () {
+    $project = Project::create(['user_id' => $this->user->id, 'name' => 'WiDrift', 'rigor_level' => 2]);
+    WorkItem::create(['project_id' => $project->id, 'name' => 'Some Task', 'kind' => 'task']);
+
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['id' => $project->id, 'name' => 'WiDrift'],
+            'plan' => [
+                'work_items' => [
+                    ['name' => 'Some Task', 'kind' => 'task', '_exported_at' => '2020-01-01T00:00:00Z'],
+                ],
+            ],
+        ],
+        'mode' => 'merge',
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->has('drift.0')
+            ->where('drift.0.entity', 'work_item')
+            ->where('drift.0.identifier', 'Some Task')
             ->etc();
     });
 });

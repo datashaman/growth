@@ -6,17 +6,22 @@ use App\Models\Concern;
 use App\Models\CustomViewpoint;
 use App\Models\DesignElement;
 use App\Models\DesignView;
+use App\Models\Milestone;
 use App\Models\Project;
+use App\Models\ProjectPlan;
 use App\Models\Requirement;
+use App\Models\Role;
 use App\Models\Stakeholder;
+use App\Models\WorkItem;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
  * Applies a Growth project manifest (project + stakeholders + concerns + capabilities +
- * architecture viewpoints/views/elements) inside a single transaction. Supports three
- * modes (fail | merge | replace) and a dry-run that always rolls back.
+ * architecture viewpoints/views/elements + plan/roles/milestones/work_items) inside a
+ * single transaction. Supports three modes (fail | merge | replace) and a dry-run
+ * that always rolls back.
  *
  * Returned report:
  *   {
@@ -87,15 +92,28 @@ class ManifestApplier
             'viewpoints_created' => 0,   'viewpoints_updated' => 0,   'viewpoints_deleted' => 0,
             'views_created' => 0,        'views_updated' => 0,        'views_deleted' => 0,
             'elements_created' => 0,     'elements_updated' => 0,     'elements_deleted' => 0,
+            'plan_created' => false,     'plan_updated' => false,     'plan_deleted' => false,
+            'roles_created' => 0,        'roles_updated' => 0,        'roles_deleted' => 0,
+            'milestones_created' => 0,   'milestones_updated' => 0,   'milestones_deleted' => 0,
+            'work_items_created' => 0,   'work_items_updated' => 0,   'work_items_deleted' => 0,
         ];
         $slugs = [
             'capabilities' => [], 'stakeholders' => [], 'concerns' => [],
             'viewpoints' => [], 'views' => [], 'elements' => [],
+            'roles' => [], 'milestones' => [], 'work_items' => [],
         ];
 
         $project = $this->applyProject($projectInput, $existingProject, $effectiveMode, $userId, $counts, $drift);
 
         if ($effectiveMode === 'replace') {
+            $counts['work_items_deleted'] = WorkItem::where('project_id', $project->id)->count();
+            WorkItem::where('project_id', $project->id)->delete();
+            $counts['milestones_deleted'] = Milestone::where('project_id', $project->id)->count();
+            Milestone::where('project_id', $project->id)->delete();
+            $counts['roles_deleted'] = Role::where('project_id', $project->id)->count();
+            Role::where('project_id', $project->id)->delete();
+            $counts['plan_deleted'] = ProjectPlan::where('project_id', $project->id)->exists();
+            ProjectPlan::where('project_id', $project->id)->delete();
             $viewIds = DesignView::where('project_id', $project->id)->pluck('id');
             $counts['elements_deleted'] = DesignElement::whereIn('design_view_id', $viewIds)->count();
             DesignElement::whereIn('design_view_id', $viewIds)->delete();
@@ -150,6 +168,41 @@ class ManifestApplier
                 if (! empty($elementRow['slug'])) {
                     $slugs['elements'][$elementRow['slug']] = $element->id;
                 }
+            }
+        }
+
+        $plan = $manifest['plan'] ?? null;
+        if (is_array($plan)) {
+            $this->applyProjectPlan($plan, $project->id, $effectiveMode, $counts, $drift);
+
+            foreach (($plan['roles'] ?? []) as $row) {
+                $role = $this->applyRole($row, $project->id, $effectiveMode, $counts, $drift);
+                if (! empty($row['slug'])) {
+                    $slugs['roles'][$row['slug']] = $role->id;
+                }
+            }
+
+            foreach (($plan['milestones'] ?? []) as $row) {
+                $milestone = $this->applyMilestone($row, $project->id, $effectiveMode, $counts, $drift);
+                if (! empty($row['slug'])) {
+                    $slugs['milestones'][$row['slug']] = $milestone->id;
+                }
+            }
+
+            // Two-pass work items: pass 1 creates/updates without parent/dependency
+            // links; pass 2 resolves parent + dependencies + capability/milestone
+            // pivots once every work item's slug is in the map.
+            $workItemRows = $plan['work_items'] ?? [];
+            $workItems = [];
+            foreach ($workItemRows as $row) {
+                $workItem = $this->applyWorkItem($row, $project->id, $effectiveMode, $slugs, $counts, $drift);
+                $workItems[] = ['row' => $row, 'model' => $workItem];
+                if (! empty($row['slug'])) {
+                    $slugs['work_items'][$row['slug']] = $workItem->id;
+                }
+            }
+            foreach ($workItems as ['row' => $row, 'model' => $workItem]) {
+                $this->linkWorkItem($row, $workItem, $project->id, $slugs);
             }
         }
 
@@ -445,6 +498,257 @@ class ManifestApplier
         $counts['elements_created']++;
 
         return $created;
+    }
+
+    /**
+     * @param  array<string,mixed>  $input
+     * @param  array<string,mixed>  $counts
+     * @param  array<int,array<string,mixed>>  $drift
+     */
+    private function applyProjectPlan(array $input, string $projectId, string $mode, array &$counts, array &$drift): ProjectPlan
+    {
+        $fields = array_intersect_key($input, array_flip([
+            'status', 'scope_summary', 'objectives', 'deliverables_summary',
+            'approach', 'organization_summary', 'assumptions', 'constraints',
+            'budget_summary',
+        ]));
+
+        $existing = ProjectPlan::where('project_id', $projectId)->first();
+
+        if ($existing) {
+            $this->checkDrift('plan', $existing->updated_at, $input['_exported_at'] ?? null, $existing->id, $drift);
+
+            if ($mode === 'fail') {
+                $this->failOnCollision('plan', $existing, $fields);
+
+                return $existing;
+            }
+
+            $existing->fill($fields)->save();
+            $counts['plan_updated'] = true;
+
+            return $existing;
+        }
+
+        $plan = ProjectPlan::create($fields + ['project_id' => $projectId]);
+        $counts['plan_created'] = true;
+
+        return $plan;
+    }
+
+    /**
+     * @param  array<string,mixed>  $input
+     * @param  array<string,mixed>  $counts
+     * @param  array<int,array<string,mixed>>  $drift
+     */
+    private function applyRole(array $input, string $projectId, string $mode, array &$counts, array &$drift): Role
+    {
+        $fields = array_intersect_key($input, array_flip([
+            'name', 'responsibilities', 'weekly_capacity_hours',
+            'hourly_rate_amount', 'rate_currency',
+        ]));
+
+        $existing = Role::where('project_id', $projectId)->where('name', $fields['name'])->first();
+
+        if ($existing) {
+            $this->checkDrift('role', $existing->updated_at, $input['_exported_at'] ?? null, $existing->name, $drift);
+
+            if ($mode === 'fail') {
+                $this->failOnCollision('role', $existing, $fields);
+
+                return $existing;
+            }
+
+            $existing->fill($fields)->save();
+            $counts['roles_updated']++;
+
+            return $existing;
+        }
+
+        $created = Role::create($fields + ['project_id' => $projectId]);
+        $counts['roles_created']++;
+
+        return $created;
+    }
+
+    /**
+     * @param  array<string,mixed>  $input
+     * @param  array<string,mixed>  $counts
+     * @param  array<int,array<string,mixed>>  $drift
+     */
+    private function applyMilestone(array $input, string $projectId, string $mode, array &$counts, array &$drift): Milestone
+    {
+        $fields = array_intersect_key($input, array_flip([
+            'name', 'target_date', 'exit_criteria', 'status',
+        ]));
+
+        $existing = Milestone::where('project_id', $projectId)->where('name', $fields['name'])->first();
+
+        if ($existing) {
+            $this->checkDrift('milestone', $existing->updated_at, $input['_exported_at'] ?? null, $existing->name, $drift);
+
+            if ($mode === 'fail') {
+                $this->failOnCollisionMilestone($existing, $fields);
+
+                return $existing;
+            }
+
+            $existing->fill($fields)->save();
+            $counts['milestones_updated']++;
+
+            return $existing;
+        }
+
+        $created = Milestone::create($fields + ['project_id' => $projectId]);
+        $counts['milestones_created']++;
+
+        return $created;
+    }
+
+    /**
+     * @param  array<string,mixed>  $input
+     * @param  array<string,array<string,string>>  $slugs
+     * @param  array<string,mixed>  $counts
+     * @param  array<int,array<string,mixed>>  $drift
+     */
+    private function applyWorkItem(array $input, string $projectId, string $mode, array $slugs, array &$counts, array &$drift): WorkItem
+    {
+        $fields = array_intersect_key($input, array_flip([
+            'kind', 'name', 'description', 'status',
+            'planned_start_date', 'due_date',
+            'effort_estimate', 'effort_actual',
+            'effort_estimate_hours', 'effort_actual_hours',
+            'cost_estimate_amount', 'cost_actual_amount', 'cost_currency',
+        ]));
+
+        if (isset($input['responsible_role'])) {
+            $ref = $input['responsible_role'];
+            $roleId = $slugs['roles'][$ref]
+                ?? Role::where('project_id', $projectId)->where('name', $ref)->value('id');
+
+            if ($roleId === null) {
+                throw new RuntimeException("Work item [{$input['name']}] references unknown role [{$ref}].");
+            }
+            $fields['responsible_role_id'] = $roleId;
+        }
+
+        $existing = WorkItem::where('project_id', $projectId)->where('name', $fields['name'])->first();
+
+        if ($existing) {
+            $this->checkDrift('work_item', $existing->updated_at, $input['_exported_at'] ?? null, $existing->name, $drift);
+
+            if ($mode === 'fail') {
+                $this->failOnCollision('work_item', $existing, $fields);
+
+                return $existing;
+            }
+
+            $existing->fill($fields)->save();
+            $counts['work_items_updated']++;
+
+            return $existing;
+        }
+
+        $created = WorkItem::create($fields + ['project_id' => $projectId]);
+        $counts['work_items_created']++;
+
+        return $created;
+    }
+
+    /**
+     * Pass 2 of work item application: resolves parent slug, dependencies,
+     * and pivot links to capabilities + milestones once every work item in
+     * the manifest has an ULID.
+     *
+     * @param  array<string,mixed>  $input
+     * @param  array<string,array<string,string>>  $slugs
+     */
+    private function linkWorkItem(array $input, WorkItem $workItem, string $projectId, array $slugs): void
+    {
+        $dirty = false;
+
+        if (array_key_exists('parent', $input)) {
+            if ($input['parent'] === null) {
+                $workItem->parent_id = null;
+                $dirty = true;
+            } else {
+                $ref = $input['parent'];
+                $parentId = $slugs['work_items'][$ref]
+                    ?? WorkItem::where('project_id', $projectId)->where('name', $ref)->value('id');
+
+                if ($parentId === null) {
+                    throw new RuntimeException("Work item [{$workItem->name}] references unknown parent [{$ref}].");
+                }
+                if ($parentId === $workItem->id) {
+                    throw new RuntimeException("Work item [{$workItem->name}] cannot be its own parent.");
+                }
+                $workItem->parent_id = $parentId;
+                $dirty = true;
+            }
+        }
+
+        if ($dirty) {
+            $workItem->save();
+        }
+
+        if (array_key_exists('capabilities', $input)) {
+            $ids = [];
+            foreach ((array) $input['capabilities'] as $ref) {
+                $ids[] = $slugs['capabilities'][$ref]
+                    ?? Requirement::where('project_id', $projectId)->where('slug', $ref)->value('id')
+                    ?? throw new RuntimeException("Work item [{$workItem->name}] references unknown capability [{$ref}].");
+            }
+            $workItem->requirements()->sync($ids);
+        }
+
+        if (array_key_exists('milestones', $input)) {
+            $ids = [];
+            foreach ((array) $input['milestones'] as $ref) {
+                $ids[] = $slugs['milestones'][$ref]
+                    ?? Milestone::where('project_id', $projectId)->where('name', $ref)->value('id')
+                    ?? throw new RuntimeException("Work item [{$workItem->name}] references unknown milestone [{$ref}].");
+            }
+            $workItem->milestones()->sync($ids);
+        }
+
+        if (array_key_exists('dependencies', $input)) {
+            $deps = [];
+            foreach ((array) $input['dependencies'] as $depInput) {
+                $depRef = is_array($depInput) ? ($depInput['work_item'] ?? null) : $depInput;
+                $depKind = is_array($depInput) ? ($depInput['kind'] ?? 'finish_to_start') : 'finish_to_start';
+
+                if ($depRef === null) {
+                    throw new RuntimeException("Work item [{$workItem->name}] has a dependency entry missing `work_item`.");
+                }
+                $depId = $slugs['work_items'][$depRef]
+                    ?? WorkItem::where('project_id', $projectId)->where('name', $depRef)->value('id')
+                    ?? throw new RuntimeException("Work item [{$workItem->name}] references unknown dependency [{$depRef}].");
+
+                $deps[$depId] = ['kind' => $depKind];
+            }
+            $workItem->dependencies()->sync($deps);
+        }
+    }
+
+    /**
+     * Milestone fail-mode comparison normalizes `target_date` (Carbon ↔ string)
+     * before delegating to the generic collision check.
+     *
+     * @param  array<string,mixed>  $fields
+     */
+    private function failOnCollisionMilestone(Milestone $existing, array $fields): void
+    {
+        if (isset($fields['target_date']) && is_string($fields['target_date'])) {
+            $existingDate = $existing->target_date?->toDateString();
+            $providedDate = Carbon::parse($fields['target_date'])->toDateString();
+            if ($existingDate !== $providedDate) {
+                throw new RuntimeException(
+                    "milestone [{$existing->name}] already exists with different content; fail mode aborts on any difference. Use merge or replace mode to update."
+                );
+            }
+            unset($fields['target_date']);
+        }
+        $this->failOnCollision('milestone', $existing, $fields);
     }
 
     /**
