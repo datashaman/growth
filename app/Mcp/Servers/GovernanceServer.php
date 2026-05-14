@@ -4,6 +4,7 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Prompts\CheckReadiness;
 use App\Mcp\Resources\EvidenceResource;
+use App\Mcp\Resources\GateStatusApp;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\ReadinessResource;
@@ -88,6 +89,7 @@ class GovernanceServer extends Server
         ProjectIndexResource::class,
         EvidenceResource::class,
         ReadinessResource::class,
+        GateStatusApp::class,
     ];
 
     protected array $prompts = [

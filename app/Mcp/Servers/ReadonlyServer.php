@@ -5,6 +5,7 @@ namespace App\Mcp\Servers;
 use App\Mcp\Resources\ArchitectureResource;
 use App\Mcp\Resources\CapabilitiesResource;
 use App\Mcp\Resources\EvidenceResource;
+use App\Mcp\Resources\GateStatusApp;
 use App\Mcp\Resources\IntentResource;
 use App\Mcp\Resources\PlanResource;
 use App\Mcp\Resources\PlaybookResource;
@@ -118,6 +119,7 @@ class ReadonlyServer extends Server
 
     protected array $resources = [
         ProjectDashboardApp::class,
+        GateStatusApp::class,
         PlaybookResource::class,
         RigorLevelsResource::class,
         ProjectIndexResource::class,
