@@ -16,6 +16,7 @@ use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
 use App\Mcp\Tools\Assurance\ReportEvidenceGaps;
 use App\Mcp\Tools\Capabilities\ListCapabilities;
 use App\Mcp\Tools\Common\WhoAmI;
+use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Plan\ListCheckRuns;
 use App\Mcp\Tools\Plan\UpsertCheckRun;
 use App\Mcp\Tools\Projects\ListProjects;
@@ -24,7 +25,6 @@ use App\Mcp\Tools\Verification\DeleteAnomaly;
 use App\Mcp\Tools\Verification\DeleteVerificationCase;
 use App\Mcp\Tools\Verification\DeleteVerificationPlan;
 use App\Mcp\Tools\Verification\DeleteVerificationRun;
-use App\Mcp\Tools\Verification\LintVerification;
 use App\Mcp\Tools\Verification\ListAnomalies;
 use App\Mcp\Tools\Verification\ListVerificationCases;
 use App\Mcp\Tools\Verification\ListVerificationPlans;
@@ -63,10 +63,10 @@ class VerificationServer extends Server
         DeleteAnomaly::class,
         UpsertCheckRun::class,
         ListCheckRuns::class,
-        LintVerification::class,
         EvaluateReadinessGates::class,
         BuildEvidenceBundle::class,
         ReportEvidenceGaps::class,
+        LintProject::class,
         TraceQuery::class,
     ];
 

@@ -11,13 +11,13 @@ use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Capabilities\DeleteCapability;
-use App\Mcp\Tools\Capabilities\LintCapabilities;
 use App\Mcp\Tools\Capabilities\ListCapabilities;
 use App\Mcp\Tools\Capabilities\UpsertCapabilities;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Concerns\DeleteConcern;
 use App\Mcp\Tools\Concerns\UpsertConcerns;
 use App\Mcp\Tools\Glossary\LookupTerm;
+use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\DeleteProject;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Projects\UpsertProject;
@@ -64,8 +64,8 @@ class IntakeServer extends Server
         UpsertCapabilities::class,
         ListCapabilities::class,
         DeleteCapability::class,
-        LintCapabilities::class,
         LookupTerm::class,
+        LintProject::class,
         TraceQuery::class,
     ];
 

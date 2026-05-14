@@ -11,7 +11,6 @@ use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Architecture\DeleteArchitectureElement;
 use App\Mcp\Tools\Architecture\DeleteArchitectureView;
 use App\Mcp\Tools\Architecture\DeleteArchitectureViewpoint;
-use App\Mcp\Tools\Architecture\LintArchitecture;
 use App\Mcp\Tools\Architecture\ListArchitectureElements;
 use App\Mcp\Tools\Architecture\ListArchitectureViewpoints;
 use App\Mcp\Tools\Architecture\ListArchitectureViews;
@@ -21,6 +20,7 @@ use App\Mcp\Tools\Architecture\UpsertArchitectureViewpoint;
 use App\Mcp\Tools\Capabilities\ListCapabilities;
 use App\Mcp\Tools\Common\BulkLink;
 use App\Mcp\Tools\Common\WhoAmI;
+use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Trace\TraceQuery;
 use Laravel\Mcp\Server;
@@ -39,7 +39,6 @@ class ArchitectureServer extends Server
         WhoAmI::class,
         ListProjects::class,
         ListCapabilities::class,
-        LintArchitecture::class,
         UpsertArchitectureViewpoint::class,
         ListArchitectureViewpoints::class,
         DeleteArchitectureViewpoint::class,
@@ -50,6 +49,7 @@ class ArchitectureServer extends Server
         ListArchitectureElements::class,
         DeleteArchitectureElement::class,
         BulkLink::class,
+        LintProject::class,
         TraceQuery::class,
     ];
 

@@ -12,6 +12,7 @@ use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Capabilities\ListCapabilities;
 use App\Mcp\Tools\Common\BulkLink;
 use App\Mcp\Tools\Common\WhoAmI;
+use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Plan\AssignRole;
 use App\Mcp\Tools\Plan\AssignWorkItemRaci;
 use App\Mcp\Tools\Plan\BaselinePlan;
@@ -27,8 +28,6 @@ use App\Mcp\Tools\Plan\DeleteWorkItem;
 use App\Mcp\Tools\Plan\LinkWorkItemDependency;
 use App\Mcp\Tools\Plan\LinkWorkItemToCapabilities;
 use App\Mcp\Tools\Plan\LinkWorkItemToMilestone;
-use App\Mcp\Tools\Plan\LintBaselines;
-use App\Mcp\Tools\Plan\LintPmp;
 use App\Mcp\Tools\Plan\ListAgents;
 use App\Mcp\Tools\Plan\ListDeliveryLinks;
 use App\Mcp\Tools\Plan\ListDeployments;
@@ -80,8 +79,6 @@ class PlanningServer extends Server
         BaselinePlan::class,
         ComparePlanBaseline::class,
         ListPlanBaselines::class,
-        LintBaselines::class,
-        LintPmp::class,
         UpsertMilestone::class,
         ListMilestones::class,
         DeleteMilestone::class,
@@ -119,6 +116,7 @@ class PlanningServer extends Server
         SummarizeImplementationStatus::class,
         SummarizePlanCapacity::class,
         SummarizeScheduleHealth::class,
+        LintProject::class,
         TraceQuery::class,
     ];
 
