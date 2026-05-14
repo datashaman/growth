@@ -5,6 +5,7 @@ namespace App\Mcp\Servers;
 use App\Mcp\Prompts\CaptureIntent;
 use App\Mcp\Prompts\StartProject;
 use App\Mcp\Resources\CapabilitiesResource;
+use App\Mcp\Resources\CapabilityExplorerApp;
 use App\Mcp\Resources\IntentResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
@@ -75,6 +76,7 @@ class IntakeServer extends Server
         ProjectIndexResource::class,
         IntentResource::class,
         CapabilitiesResource::class,
+        CapabilityExplorerApp::class,
     ];
 
     protected array $prompts = [
