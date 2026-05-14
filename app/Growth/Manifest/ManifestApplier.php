@@ -3,6 +3,9 @@
 namespace App\Growth\Manifest;
 
 use App\Models\Concern;
+use App\Models\CustomViewpoint;
+use App\Models\DesignElement;
+use App\Models\DesignView;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\Stakeholder;
@@ -11,23 +14,19 @@ use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
- * Applies a Growth project manifest (project + stakeholders + concerns + capabilities)
- * inside a single transaction. Supports three modes (fail | merge | replace) and a
- * dry-run that always rolls back.
+ * Applies a Growth project manifest (project + stakeholders + concerns + capabilities +
+ * architecture viewpoints/views/elements) inside a single transaction. Supports three
+ * modes (fail | merge | replace) and a dry-run that always rolls back.
  *
  * Returned report:
  *   {
  *     'project_id': string,
  *     'mode': 'fail'|'merge'|'replace',
  *     'dry_run': bool,
- *     'counts': {
- *       'project_created': bool, 'project_updated': bool,
- *       'stakeholders_created': int, 'stakeholders_updated': int, 'stakeholders_deleted': int,
- *       'concerns_created': int,     'concerns_updated': int,     'concerns_deleted': int,
- *       'capabilities_created': int, 'capabilities_updated': int, 'capabilities_deleted': int,
- *     },
- *     'slugs': { 'capabilities': { '<slug>': '<ulid>', ... }, 'stakeholders': {...}, 'concerns': {...} },
- *     'drift': [ {'entity': 'capability', 'slug': '...', 'exported_at': '...', 'current_at': '...'} ],
+ *     'counts': { '<entity>_created|_updated|_deleted': int|bool, ... },
+ *     'slugs': { 'capabilities': {...}, 'stakeholders': {...}, 'concerns': {...},
+ *                'viewpoints': {...}, 'views': {...}, 'elements': {...} },
+ *     'drift': [ {'entity': '...', 'identifier': '...', 'exported_at': '...', 'current_at': '...'} ],
  *   }
  */
 class ManifestApplier
@@ -85,12 +84,25 @@ class ManifestApplier
             'stakeholders_created' => 0, 'stakeholders_updated' => 0, 'stakeholders_deleted' => 0,
             'concerns_created' => 0,     'concerns_updated' => 0,     'concerns_deleted' => 0,
             'capabilities_created' => 0, 'capabilities_updated' => 0, 'capabilities_deleted' => 0,
+            'viewpoints_created' => 0,   'viewpoints_updated' => 0,   'viewpoints_deleted' => 0,
+            'views_created' => 0,        'views_updated' => 0,        'views_deleted' => 0,
+            'elements_created' => 0,     'elements_updated' => 0,     'elements_deleted' => 0,
         ];
-        $slugs = ['capabilities' => [], 'stakeholders' => [], 'concerns' => []];
+        $slugs = [
+            'capabilities' => [], 'stakeholders' => [], 'concerns' => [],
+            'viewpoints' => [], 'views' => [], 'elements' => [],
+        ];
 
         $project = $this->applyProject($projectInput, $existingProject, $effectiveMode, $userId, $counts, $drift);
 
         if ($effectiveMode === 'replace') {
+            $viewIds = DesignView::where('project_id', $project->id)->pluck('id');
+            $counts['elements_deleted'] = DesignElement::whereIn('design_view_id', $viewIds)->count();
+            DesignElement::whereIn('design_view_id', $viewIds)->delete();
+            $counts['views_deleted'] = DesignView::where('project_id', $project->id)->count();
+            DesignView::where('project_id', $project->id)->delete();
+            $counts['viewpoints_deleted'] = CustomViewpoint::where('project_id', $project->id)->count();
+            CustomViewpoint::where('project_id', $project->id)->delete();
             $counts['capabilities_deleted'] = Requirement::where('project_id', $project->id)->count();
             Requirement::where('project_id', $project->id)->delete();
             $counts['concerns_deleted'] = Concern::where('project_id', $project->id)->count();
@@ -116,6 +128,29 @@ class ManifestApplier
         foreach (($manifest['capabilities'] ?? []) as $row) {
             $capability = $this->applyCapability($row, $project->id, $effectiveMode, $counts, $drift);
             $slugs['capabilities'][$capability->slug] = $capability->id;
+        }
+
+        $architecture = $manifest['architecture'] ?? [];
+
+        foreach (($architecture['viewpoints'] ?? []) as $row) {
+            $viewpoint = $this->applyArchitectureViewpoint($row, $project->id, $effectiveMode, $counts, $drift);
+            if (! empty($row['slug'])) {
+                $slugs['viewpoints'][$row['slug']] = $viewpoint->id;
+            }
+        }
+
+        foreach (($architecture['views'] ?? []) as $row) {
+            $view = $this->applyArchitectureView($row, $project->id, $effectiveMode, $slugs, $counts, $drift);
+            if (! empty($row['slug'])) {
+                $slugs['views'][$row['slug']] = $view->id;
+            }
+
+            foreach (($row['elements'] ?? []) as $elementRow) {
+                $element = $this->applyArchitectureElement($elementRow, $view->id, $effectiveMode, $counts, $drift);
+                if (! empty($elementRow['slug'])) {
+                    $slugs['elements'][$elementRow['slug']] = $element->id;
+                }
+            }
         }
 
         return [
@@ -281,6 +316,138 @@ class ManifestApplier
     }
 
     /**
+     * @param  array<string,mixed>  $input
+     * @param  array<string,mixed>  $counts
+     * @param  array<int,array<string,mixed>>  $drift
+     */
+    private function applyArchitectureViewpoint(array $input, string $projectId, string $mode, array &$counts, array &$drift): CustomViewpoint
+    {
+        $fields = array_intersect_key($input, array_flip(['name', 'concerns', 'element_types', 'languages', 'source']));
+
+        if (in_array($fields['name'] ?? null, DesignView::BUILTIN_VIEWPOINTS, true)) {
+            throw new RuntimeException("Viewpoint [{$fields['name']}] collides with a built-in viewpoint name; use a different name for the custom viewpoint.");
+        }
+
+        $existing = CustomViewpoint::where('project_id', $projectId)->where('name', $fields['name'])->first();
+
+        if ($existing) {
+            $this->checkDrift('viewpoint', $existing->updated_at, $input['_exported_at'] ?? null, $existing->name, $drift);
+
+            if ($mode === 'fail') {
+                $this->failOnCollision('viewpoint', $existing, $fields);
+
+                return $existing;
+            }
+
+            $existing->fill($fields)->save();
+            $counts['viewpoints_updated']++;
+
+            return $existing;
+        }
+
+        $created = CustomViewpoint::create($fields + ['project_id' => $projectId]);
+        $counts['viewpoints_created']++;
+
+        return $created;
+    }
+
+    /**
+     * @param  array<string,mixed>  $input
+     * @param  array<string,array<string,string>>  $slugs
+     * @param  array<string,mixed>  $counts
+     * @param  array<int,array<string,mixed>>  $drift
+     */
+    private function applyArchitectureView(array $input, string $projectId, string $mode, array $slugs, array &$counts, array &$drift): DesignView
+    {
+        $fields = array_intersect_key($input, array_flip(['viewpoint', 'name', 'description']));
+
+        $viewpointRef = $input['viewpoint'] ?? null;
+        if ($viewpointRef === null) {
+            throw new RuntimeException("View [{$input['name']}] is missing a `viewpoint` reference.");
+        }
+
+        if (in_array($viewpointRef, DesignView::BUILTIN_VIEWPOINTS, true)) {
+            $fields['viewpoint'] = $viewpointRef;
+        } elseif (isset($slugs['viewpoints'][$viewpointRef])) {
+            $fields['viewpoint'] = CustomViewpoint::whereKey($slugs['viewpoints'][$viewpointRef])->value('name');
+        } elseif (CustomViewpoint::where('project_id', $projectId)->where('name', $viewpointRef)->exists()) {
+            $fields['viewpoint'] = $viewpointRef;
+        } else {
+            throw new RuntimeException("View [{$input['name']}] references unknown viewpoint [{$viewpointRef}]. Declare a custom viewpoint with that slug/name or use a built-in viewpoint.");
+        }
+
+        $concernIds = null;
+        if (array_key_exists('addresses_concerns', $input)) {
+            $concernIds = [];
+            foreach ((array) $input['addresses_concerns'] as $ref) {
+                $concernIds[] = $slugs['concerns'][$ref]
+                    ?? Concern::where('project_id', $projectId)->where('text', $ref)->value('id')
+                    ?? throw new RuntimeException("View [{$input['name']}] references unknown concern [{$ref}].");
+            }
+        }
+
+        $existing = DesignView::where('project_id', $projectId)->where('name', $fields['name'])->first();
+
+        if ($existing) {
+            $this->checkDrift('view', $existing->updated_at, $input['_exported_at'] ?? null, $existing->name, $drift);
+
+            if ($mode === 'fail') {
+                $this->failOnCollision('view', $existing, $fields);
+            } else {
+                $existing->fill($fields)->save();
+                $counts['views_updated']++;
+            }
+
+            if (is_array($concernIds)) {
+                $existing->concerns()->sync($concernIds);
+            }
+
+            return $existing;
+        }
+
+        $created = DesignView::create($fields + ['project_id' => $projectId]);
+        $counts['views_created']++;
+
+        if (is_array($concernIds)) {
+            $created->concerns()->sync($concernIds);
+        }
+
+        return $created;
+    }
+
+    /**
+     * @param  array<string,mixed>  $input
+     * @param  array<string,mixed>  $counts
+     * @param  array<int,array<string,mixed>>  $drift
+     */
+    private function applyArchitectureElement(array $input, string $viewId, string $mode, array &$counts, array &$drift): DesignElement
+    {
+        $fields = array_intersect_key($input, array_flip(['kind', 'name', 'type', 'purpose', 'properties']));
+
+        $existing = DesignElement::where('design_view_id', $viewId)->where('name', $fields['name'])->first();
+
+        if ($existing) {
+            $this->checkDrift('element', $existing->updated_at, $input['_exported_at'] ?? null, $existing->name, $drift);
+
+            if ($mode === 'fail') {
+                $this->failOnCollision('element', $existing, $fields);
+
+                return $existing;
+            }
+
+            $existing->fill($fields)->save();
+            $counts['elements_updated']++;
+
+            return $existing;
+        }
+
+        $created = DesignElement::create($fields + ['design_view_id' => $viewId]);
+        $counts['elements_created']++;
+
+        return $created;
+    }
+
+    /**
      * @param  array<string,mixed>  $fields
      */
     private function failOnCollision(string $entity, $existing, array $fields): void
@@ -289,6 +456,14 @@ class ManifestApplier
         foreach ($fields as $k => $v) {
             $current = $existing->{$k};
             if ($current instanceof \DateTimeInterface) {
+                continue;
+            }
+            if (is_array($current) || is_array($v)) {
+                if (json_encode($current) !== json_encode($v)) {
+                    $differs = true;
+                    break;
+                }
+
                 continue;
             }
             if ($current !== $v) {
