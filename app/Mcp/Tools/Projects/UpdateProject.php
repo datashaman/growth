@@ -45,7 +45,7 @@ class UpdateProject extends Tool
             'description' => $schema->string()
                 ->description('New description (pass null to clear)'),
             'rigor_level' => $schema->integer()
-                ->description('New project rigor level (1-4)'),
+                ->description('Project rigor level (1–4). Higher levels activate stricter linter rules: L2 requires milestones + work items; L3 adds RACI roles, plan baseline, recorded reviews, and acceptance criteria on all requirements; L4 is the ceiling (no rules unique to it today). Full activation table at `growth://rigor-levels`.'),
         ];
     }
 

@@ -6,6 +6,7 @@ use App\Mcp\Resources\ArchitectureResource;
 use App\Mcp\Resources\CapabilitiesResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
+use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\BulkLink;
 use App\Mcp\Tools\DeleteArchitectureElement;
@@ -54,6 +55,7 @@ class ArchitectureServer extends Server
 
     protected array $resources = [
         PlaybookResource::class,
+        RigorLevelsResource::class,
         ProjectIndexResource::class,
         CapabilitiesResource::class,
         ArchitectureResource::class,

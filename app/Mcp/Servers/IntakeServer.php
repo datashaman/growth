@@ -8,6 +8,7 @@ use App\Mcp\Resources\CapabilitiesResource;
 use App\Mcp\Resources\IntentResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
+use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Concerns\DeleteConcern;
 use App\Mcp\Tools\DeleteCapability;
@@ -66,6 +67,7 @@ class IntakeServer extends Server
 
     protected array $resources = [
         PlaybookResource::class,
+        RigorLevelsResource::class,
         ProjectIndexResource::class,
         IntentResource::class,
         CapabilitiesResource::class,
