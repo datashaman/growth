@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Lint;
 
+use App\Growth\Alignment\AlignmentText;
 use App\Growth\Lint\BaselineLinter;
 use App\Growth\Lint\ChangeLinter;
 use App\Growth\Lint\DesignLinter;
@@ -17,7 +18,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Run all project linters (requirements quality, design coverage, verification coverage, delivery planning, review readiness, baselines, and change control) and return a combined report.')]
+#[Description('Run all Growth quality checks for a project. Returns findings grouped into sections (capabilities, architecture, verification, planning, reviews, baselines, changes). Each section is the same data the per-section linter would return on its own — e.g. sections.planning matches lint-pmp, sections.verification matches lint-verification, sections.architecture matches lint-architecture, sections.reviews matches lint-reviews, sections.baselines matches lint-baselines, sections.capabilities matches lint-capabilities, and sections.changes matches lint-changes. Use this when you want everything; use the per-section tools when you only want one slice.')]
 class LintProject extends Tool
 {
     public function __construct(
@@ -26,7 +27,7 @@ class LintProject extends Tool
         private readonly RequirementLinter $requirementLinter,
         private readonly DesignLinter $designLinter,
         private readonly TestLinter $testLinter,
-        private readonly PmpLinter $pmpLinter,
+        private readonly PmpLinter $planLinter,
         private readonly ReviewLinter $reviewLinter,
     ) {}
 
@@ -36,41 +37,33 @@ class LintProject extends Tool
             'project_id' => 'required|string|owned_project',
         ]);
 
-        $project = Project::find($data['project_id']);
+        $project = Project::findOrFail($data['project_id']);
 
-        $baselineFindings = $this->baselineLinter->check($project);
-        $changeFindings = $this->changeLinter->check($project);
-
-        $requirementFindings = [];
-        foreach ($project->requirements as $req) {
-            foreach ($this->requirementLinter->check($req) as $f) {
-                $requirementFindings[] = $f + [
-                    'subject_type' => 'requirement',
-                    'subject_id' => $req->id,
+        $capabilityFindings = [];
+        foreach ($project->requirements as $capability) {
+            foreach ($this->requirementLinter->check($capability) as $finding) {
+                $capabilityFindings[] = $finding + [
+                    'subject_type' => 'capability',
+                    'subject_id' => $capability->id,
                 ];
             }
         }
 
-        $designFindings = $this->designLinter->check($project);
-        $testFindings = $this->testLinter->check($project);
-        $pmpFindings = $this->pmpLinter->check($project);
-        $reviewFindings = $this->reviewLinter->check($project);
-
-        $sections = [
-            'baselines' => $baselineFindings,
-            'changes' => $changeFindings,
-            'requirements' => $requirementFindings,
-            'design' => $designFindings,
-            'tests' => $testFindings,
-            'pmp' => $pmpFindings,
-            'reviews' => $reviewFindings,
-        ];
+        $sections = AlignmentText::sanitizeArray([
+            'baselines' => $this->baselineLinter->check($project),
+            'changes' => $this->changeLinter->check($project),
+            'capabilities' => $capabilityFindings,
+            'architecture' => $this->designLinter->check($project),
+            'verification' => $this->testLinter->check($project),
+            'planning' => $this->planLinter->check($project),
+            'reviews' => $this->reviewLinter->check($project),
+        ]);
 
         $errors = 0;
         $warnings = 0;
         foreach ($sections as $findings) {
-            foreach ($findings as $f) {
-                $f['severity'] === 'error' ? $errors++ : $warnings++;
+            foreach ($findings as $finding) {
+                $finding['severity'] === 'error' ? $errors++ : $warnings++;
             }
         }
 
@@ -85,19 +78,7 @@ class LintProject extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'project_id' => $schema->string()
-                ->description('Project ULID')
-                ->required(),
-        ];
-    }
-
-    public function outputSchema(JsonSchema $schema): array
-    {
-        return [
-            'project_id' => $schema->string()->required(),
-            'errors' => $schema->integer()->required(),
-            'warnings' => $schema->integer()->required(),
-            'sections' => $schema->object()->required(),
+            'project_id' => $schema->string()->description('Project ULID')->required(),
         ];
     }
 }

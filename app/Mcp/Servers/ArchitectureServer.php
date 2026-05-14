@@ -17,7 +17,7 @@ use App\Mcp\Tools\ListArchitectureElements;
 use App\Mcp\Tools\ListArchitectureViewpoints;
 use App\Mcp\Tools\ListArchitectureViews;
 use App\Mcp\Tools\ListCapabilities;
-use App\Mcp\Tools\ListProjects;
+use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Trace\TraceQuery;
 use App\Mcp\Tools\UpsertArchitectureElements;
 use App\Mcp\Tools\UpsertArchitectureView;

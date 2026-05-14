@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('List Growth projects with optional name search and pagination. Returns total count alongside the page.')]
+#[Description('List Growth projects with optional name search and pagination.')]
 class ListProjects extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -24,8 +24,8 @@ class ListProjects extends Tool
 
         $limit = $data['limit'] ?? 50;
         $offset = $data['offset'] ?? 0;
-
         $query = Project::query();
+
         if (isset($data['q'])) {
             $query->where('name', 'like', '%'.$data['q'].'%');
         }
@@ -34,7 +34,6 @@ class ListProjects extends Tool
         }
 
         $total = (clone $query)->count();
-
         $rows = $query->orderBy('created_at')
             ->limit($limit)
             ->offset($offset)
@@ -44,13 +43,13 @@ class ListProjects extends Tool
             'total' => $total,
             'limit' => $limit,
             'offset' => $offset,
-            'results' => $rows->map(fn ($p) => [
-                'id' => $p->id,
-                'name' => $p->name,
-                'description' => $p->description,
-                'rigor_level' => $p->rigor_level,
-                'status' => $p->status,
-                'created_at' => $p->created_at?->toIso8601String(),
+            'results' => $rows->map(fn ($project) => [
+                'id' => $project->id,
+                'name' => $project->name,
+                'description' => $project->description,
+                'rigor_level' => $project->rigor_level,
+                'status' => $project->status,
+                'created_at' => $project->created_at?->toIso8601String(),
             ])->all(),
         ]);
     }
@@ -58,25 +57,10 @@ class ListProjects extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'q' => $schema->string()
-                ->description('Substring match on project name'),
-            'status' => $schema->string()
-                ->description('Filter by lifecycle status')
-                ->enum(Project::STATUSES),
-            'limit' => $schema->integer()
-                ->description('Page size (1-200, default 50)'),
-            'offset' => $schema->integer()
-                ->description('Offset for pagination (default 0)'),
-        ];
-    }
-
-    public function outputSchema(JsonSchema $schema): array
-    {
-        return [
-            'total' => $schema->integer()->required(),
-            'limit' => $schema->integer()->required(),
-            'offset' => $schema->integer()->required(),
-            'results' => $schema->array()->required(),
+            'q' => $schema->string()->description('Substring match on project name'),
+            'status' => $schema->string()->description('Filter by lifecycle status')->enum(Project::STATUSES),
+            'limit' => $schema->integer()->description('Page size, default 50'),
+            'offset' => $schema->integer()->description('Pagination offset, default 0'),
         ];
     }
 }

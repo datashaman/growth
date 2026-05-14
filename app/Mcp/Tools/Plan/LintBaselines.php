@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
+use App\Growth\Alignment\AlignmentText;
 use App\Growth\Lint\BaselineLinter;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -11,7 +12,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Lint the latest plan baseline for drift: uncovered added/changed artifacts, removed baseline artifacts, and missing high-integrity baselines.')]
+#[Description('Lint the latest delivery plan baseline for drift and missing change coverage.')]
 class LintBaselines extends Tool
 {
     public function __construct(private readonly BaselineLinter $linter) {}
@@ -22,19 +23,12 @@ class LintBaselines extends Tool
             'project_id' => 'required|string|owned_project',
         ]);
 
-        $project = Project::find($data['project_id']);
-        $findings = $this->linter->check($project);
-
-        $errors = 0;
-        $warnings = 0;
-        foreach ($findings as $finding) {
-            $finding['severity'] === 'error' ? $errors++ : $warnings++;
-        }
+        $findings = AlignmentText::sanitizeArray($this->linter->check(Project::findOrFail($data['project_id'])));
 
         return Response::structured([
-            'project_id' => $project->id,
-            'errors' => $errors,
-            'warnings' => $warnings,
+            'project_id' => $data['project_id'],
+            'errors' => collect($findings)->where('severity', 'error')->count(),
+            'warnings' => collect($findings)->where('severity', '!=', 'error')->count(),
             'findings' => $findings,
         ]);
     }
@@ -42,19 +36,7 @@ class LintBaselines extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'project_id' => $schema->string()
-                ->description('Project ULID')
-                ->required(),
-        ];
-    }
-
-    public function outputSchema(JsonSchema $schema): array
-    {
-        return [
-            'project_id' => $schema->string()->required(),
-            'errors' => $schema->integer()->required(),
-            'warnings' => $schema->integer()->required(),
-            'findings' => $schema->array()->required(),
+            'project_id' => $schema->string()->description('Project ULID')->required(),
         ];
     }
 }
