@@ -12,6 +12,8 @@ use App\Models\ProjectPlan;
 use App\Models\Requirement;
 use App\Models\Role;
 use App\Models\Stakeholder;
+use App\Models\TestCase;
+use App\Models\TestPlan;
 use App\Models\User;
 use App\Models\WorkItem;
 use Laravel\Passport\Passport;
@@ -750,6 +752,235 @@ it('reports drift on a work item when updated_at is newer than _exported_at', fu
         $json->has('drift.0')
             ->where('drift.0.entity', 'work_item')
             ->where('drift.0.identifier', 'Some Task')
+            ->etc();
+    });
+});
+
+it('creates verification plans and nested cases linked to capabilities', function () {
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['name' => 'Verif', 'rigor_level' => 2, 'status' => 'active'],
+            'capabilities' => [
+                ['slug' => 'add-todo', 'text' => 'Adds a todo.', 'type' => 'functional'],
+            ],
+            'verification' => [
+                'plans' => [
+                    [
+                        'slug' => 'unit',
+                        'level' => 'unit',
+                        'name' => 'Unit Verification',
+                        'cases' => [
+                            [
+                                'slug' => 'c-add',
+                                'name' => 'add-todo creates a row',
+                                'expected_results' => 'A new row exists in storage.',
+                                'verifies_capabilities' => ['add-todo'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('counts.verification_plans_created', 1)
+            ->where('counts.verification_cases_created', 1)
+            ->has('slugs.verification_plans.unit')
+            ->has('slugs.verification_cases.c-add')
+            ->etc();
+    });
+
+    $project = Project::where('name', 'Verif')->first();
+    $plan = TestPlan::where('project_id', $project->id)->where('name', 'Unit Verification')->first();
+    expect($plan->level)->toBe('unit');
+    $case = TestCase::where('test_plan_id', $plan->id)->where('name', 'add-todo creates a row')->first();
+    expect($case->requirements()->count())->toBe(1);
+    expect($case->requirements()->first()->slug)->toBe('add-todo');
+});
+
+it('resolves verification case capabilities by existing slug when not in manifest', function () {
+    $project = Project::create(['user_id' => $this->user->id, 'name' => 'ExistingCaps', 'rigor_level' => 2]);
+    $cap = Requirement::create([
+        'project_id' => $project->id,
+        'slug' => 'pre-existing',
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'Pre-existing capability.',
+    ]);
+
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['id' => $project->id, 'name' => 'ExistingCaps'],
+            'verification' => [
+                'plans' => [
+                    [
+                        'level' => 'system',
+                        'name' => 'System',
+                        'cases' => [
+                            [
+                                'name' => 'links existing capability',
+                                'expected_results' => 'ok',
+                                'verifies_capabilities' => ['pre-existing'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertOk();
+    $case = TestCase::where('name', 'links existing capability')->first();
+    expect($case->requirements()->pluck('id')->all())->toBe([$cap->id]);
+});
+
+it('merge mode updates an existing verification plan and case in place', function () {
+    $project = Project::create(['user_id' => $this->user->id, 'name' => 'VerifMerge', 'rigor_level' => 2]);
+    $plan = TestPlan::create([
+        'project_id' => $project->id,
+        'level' => 'unit',
+        'name' => 'UnitV',
+        'scope' => 'old scope',
+    ]);
+    TestCase::create([
+        'test_plan_id' => $plan->id,
+        'name' => 'case-a',
+        'expected_results' => 'old result',
+    ]);
+
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['id' => $project->id, 'name' => 'VerifMerge'],
+            'verification' => [
+                'plans' => [
+                    [
+                        'level' => 'unit',
+                        'name' => 'UnitV',
+                        'scope' => 'new scope',
+                        'cases' => [
+                            ['name' => 'case-a', 'expected_results' => 'new result'],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        'mode' => 'merge',
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('counts.verification_plans_updated', 1)
+            ->where('counts.verification_cases_updated', 1)
+            ->where('counts.verification_plans_created', 0)
+            ->where('counts.verification_cases_created', 0)
+            ->etc();
+    });
+
+    expect(TestPlan::find($plan->id)->scope)->toBe('new scope');
+    expect(TestCase::where('test_plan_id', $plan->id)->where('name', 'case-a')->value('expected_results'))->toBe('new result');
+});
+
+it('replace mode wipes verification plans and cases', function () {
+    $project = Project::create(['user_id' => $this->user->id, 'name' => 'VerifWipe', 'rigor_level' => 2]);
+    $plan = TestPlan::create(['project_id' => $project->id, 'level' => 'unit', 'name' => 'OldPlan']);
+    TestCase::create(['test_plan_id' => $plan->id, 'name' => 'old-case', 'expected_results' => 'x']);
+
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['id' => $project->id, 'name' => 'VerifWipe'],
+            'verification' => [
+                'plans' => [
+                    ['level' => 'unit', 'name' => 'FreshPlan'],
+                ],
+            ],
+        ],
+        'mode' => 'replace',
+        'confirm' => 'VerifWipe',
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('counts.verification_plans_deleted', 1)
+            ->where('counts.verification_cases_deleted', 1)
+            ->where('counts.verification_plans_created', 1)
+            ->etc();
+    });
+
+    expect(TestPlan::where('project_id', $project->id)->where('name', 'OldPlan')->exists())->toBeFalse();
+    expect(TestCase::where('name', 'old-case')->exists())->toBeFalse();
+    expect(TestPlan::where('project_id', $project->id)->where('name', 'FreshPlan')->exists())->toBeTrue();
+});
+
+it('rejects a verification case referencing an unknown capability', function () {
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['name' => 'BadCap', 'rigor_level' => 2, 'status' => 'active'],
+            'verification' => [
+                'plans' => [
+                    [
+                        'level' => 'unit',
+                        'name' => 'U',
+                        'cases' => [
+                            [
+                                'name' => 'orphan',
+                                'expected_results' => 'never matches',
+                                'verifies_capabilities' => ['ghost-cap'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertHasErrors(['unknown capability']);
+});
+
+it('rejects a verification case missing expected_results', function () {
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['name' => 'BadCase', 'rigor_level' => 2, 'status' => 'active'],
+            'verification' => [
+                'plans' => [
+                    ['level' => 'unit', 'name' => 'U', 'cases' => [['name' => 'noresult']]],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertHasErrors(['expected_results']);
+});
+
+it('reports drift on a verification case when updated_at is newer than _exported_at', function () {
+    $project = Project::create(['user_id' => $this->user->id, 'name' => 'VCaseDrift', 'rigor_level' => 2]);
+    $plan = TestPlan::create(['project_id' => $project->id, 'level' => 'unit', 'name' => 'U']);
+    TestCase::create(['test_plan_id' => $plan->id, 'name' => 'CaseX', 'expected_results' => 'now']);
+
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['id' => $project->id, 'name' => 'VCaseDrift'],
+            'verification' => [
+                'plans' => [
+                    [
+                        'level' => 'unit',
+                        'name' => 'U',
+                        'cases' => [
+                            [
+                                'name' => 'CaseX',
+                                'expected_results' => 'now',
+                                '_exported_at' => '2020-01-01T00:00:00Z',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        'mode' => 'merge',
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->has('drift.0')
+            ->where('drift.0.entity', 'verification_case')
+            ->where('drift.0.identifier', 'CaseX')
             ->etc();
     });
 });

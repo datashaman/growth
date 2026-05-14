@@ -12,6 +12,8 @@ use App\Models\ProjectPlan;
 use App\Models\Requirement;
 use App\Models\Role;
 use App\Models\Stakeholder;
+use App\Models\TestCase;
+use App\Models\TestPlan;
 use App\Models\WorkItem;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -19,9 +21,9 @@ use RuntimeException;
 
 /**
  * Applies a Growth project manifest (project + stakeholders + concerns + capabilities +
- * architecture viewpoints/views/elements + plan/roles/milestones/work_items) inside a
- * single transaction. Supports three modes (fail | merge | replace) and a dry-run
- * that always rolls back.
+ * architecture viewpoints/views/elements + plan/roles/milestones/work_items +
+ * verification plans/cases) inside a single transaction. Supports three modes
+ * (fail | merge | replace) and a dry-run that always rolls back.
  *
  * Returned report:
  *   {
@@ -96,16 +98,24 @@ class ManifestApplier
             'roles_created' => 0,        'roles_updated' => 0,        'roles_deleted' => 0,
             'milestones_created' => 0,   'milestones_updated' => 0,   'milestones_deleted' => 0,
             'work_items_created' => 0,   'work_items_updated' => 0,   'work_items_deleted' => 0,
+            'verification_plans_created' => 0, 'verification_plans_updated' => 0, 'verification_plans_deleted' => 0,
+            'verification_cases_created' => 0, 'verification_cases_updated' => 0, 'verification_cases_deleted' => 0,
         ];
         $slugs = [
             'capabilities' => [], 'stakeholders' => [], 'concerns' => [],
             'viewpoints' => [], 'views' => [], 'elements' => [],
             'roles' => [], 'milestones' => [], 'work_items' => [],
+            'verification_plans' => [], 'verification_cases' => [],
         ];
 
         $project = $this->applyProject($projectInput, $existingProject, $effectiveMode, $userId, $counts, $drift);
 
         if ($effectiveMode === 'replace') {
+            $planIds = TestPlan::where('project_id', $project->id)->pluck('id');
+            $counts['verification_cases_deleted'] = TestCase::whereIn('test_plan_id', $planIds)->count();
+            TestCase::whereIn('test_plan_id', $planIds)->delete();
+            $counts['verification_plans_deleted'] = TestPlan::where('project_id', $project->id)->count();
+            TestPlan::where('project_id', $project->id)->delete();
             $counts['work_items_deleted'] = WorkItem::where('project_id', $project->id)->count();
             WorkItem::where('project_id', $project->id)->delete();
             $counts['milestones_deleted'] = Milestone::where('project_id', $project->id)->count();
@@ -203,6 +213,22 @@ class ManifestApplier
             }
             foreach ($workItems as ['row' => $row, 'model' => $workItem]) {
                 $this->linkWorkItem($row, $workItem, $project->id, $slugs);
+            }
+        }
+
+        $verification = $manifest['verification'] ?? [];
+
+        foreach (($verification['plans'] ?? []) as $row) {
+            $plan = $this->applyVerificationPlan($row, $project->id, $effectiveMode, $counts, $drift);
+            if (! empty($row['slug'])) {
+                $slugs['verification_plans'][$row['slug']] = $plan->id;
+            }
+
+            foreach (($row['cases'] ?? []) as $caseRow) {
+                $case = $this->applyVerificationCase($caseRow, $plan->id, $project->id, $effectiveMode, $slugs, $counts, $drift);
+                if (! empty($caseRow['slug'])) {
+                    $slugs['verification_cases'][$caseRow['slug']] = $case->id;
+                }
             }
         }
 
@@ -728,6 +754,92 @@ class ManifestApplier
             }
             $workItem->dependencies()->sync($deps);
         }
+    }
+
+    /**
+     * @param  array<string,mixed>  $input
+     * @param  array<string,mixed>  $counts
+     * @param  array<int,array<string,mixed>>  $drift
+     */
+    private function applyVerificationPlan(array $input, string $projectId, string $mode, array &$counts, array &$drift): TestPlan
+    {
+        $fields = array_intersect_key($input, array_flip([
+            'level', 'name', 'scope', 'approach', 'pass_fail_criteria',
+        ]));
+
+        $existing = TestPlan::where('project_id', $projectId)->where('name', $fields['name'])->first();
+
+        if ($existing) {
+            $this->checkDrift('verification_plan', $existing->updated_at, $input['_exported_at'] ?? null, $existing->name, $drift);
+
+            if ($mode === 'fail') {
+                $this->failOnCollision('verification_plan', $existing, $fields);
+
+                return $existing;
+            }
+
+            $existing->fill($fields)->save();
+            $counts['verification_plans_updated']++;
+
+            return $existing;
+        }
+
+        $created = TestPlan::create($fields + ['project_id' => $projectId]);
+        $counts['verification_plans_created']++;
+
+        return $created;
+    }
+
+    /**
+     * @param  array<string,mixed>  $input
+     * @param  array<string,array<string,string>>  $slugs
+     * @param  array<string,mixed>  $counts
+     * @param  array<int,array<string,mixed>>  $drift
+     */
+    private function applyVerificationCase(array $input, string $planId, string $projectId, string $mode, array $slugs, array &$counts, array &$drift): TestCase
+    {
+        $fields = array_intersect_key($input, array_flip([
+            'name', 'objective', 'preconditions', 'inputs',
+            'expected_results', 'environment',
+        ]));
+
+        $capabilityIds = null;
+        if (array_key_exists('verifies_capabilities', $input)) {
+            $capabilityIds = [];
+            foreach ((array) $input['verifies_capabilities'] as $ref) {
+                $capabilityIds[] = $slugs['capabilities'][$ref]
+                    ?? Requirement::where('project_id', $projectId)->where('slug', $ref)->value('id')
+                    ?? throw new RuntimeException("Verification case [{$input['name']}] references unknown capability [{$ref}].");
+            }
+        }
+
+        $existing = TestCase::where('test_plan_id', $planId)->where('name', $fields['name'])->first();
+
+        if ($existing) {
+            $this->checkDrift('verification_case', $existing->updated_at, $input['_exported_at'] ?? null, $existing->name, $drift);
+
+            if ($mode === 'fail') {
+                $this->failOnCollision('verification_case', $existing, $fields);
+            } else {
+                $existing->fill($fields)->save();
+                $counts['verification_cases_updated']++;
+            }
+
+            if (is_array($capabilityIds)) {
+                $existing->requirements()->sync($capabilityIds);
+            }
+
+            return $existing;
+        }
+
+        $created = TestCase::create($fields + ['test_plan_id' => $planId]);
+        $counts['verification_cases_created']++;
+
+        if (is_array($capabilityIds)) {
+            $created->requirements()->sync($capabilityIds);
+        }
+
+        return $created;
     }
 
     /**
