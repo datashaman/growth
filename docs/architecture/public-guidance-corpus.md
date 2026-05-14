@@ -19,13 +19,14 @@ posture, and likely rule-pack opportunities.
 
 ## Runtime Surface
 
-The public guidance catalog is currently an internal source for approved
-rule-pack extraction. It is not exposed through the role-based MCP servers by
-default.
+The public guidance catalog is an internal source for approved rule-pack
+extraction. It is not exposed through any MCP server.
 
-The legacy guidance resource and search/list tools still exist in code for
-future use, but they are not registered on `intake`, `architecture`,
-`planning`, `verification`, `governance`, or `readonly`.
+The legacy MCP guidance resource and search/list tools have been removed —
+they produced empty payloads because the corpus bodies are not bundled with
+the application. If MCP-facing guidance access is needed in future, wire
+fresh tools against `App\Growth\Guidance\PublicGuidanceCatalog` and register
+them explicitly on the relevant role servers (not via auto-discovery).
 
 ## Ingestion
 
