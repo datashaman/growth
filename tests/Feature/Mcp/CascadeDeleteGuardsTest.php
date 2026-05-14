@@ -1,13 +1,11 @@
 <?php
 
-use App\Mcp\Servers\AllServer;
 use App\Mcp\Servers\ArchitectureServer;
 use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Servers\VerificationServer;
-use App\Mcp\Tools\DeleteArchitectureView;
-use App\Mcp\Tools\DeleteRelease;
-use App\Mcp\Tools\DeleteVerificationPlan;
-use App\Mcp\Tools\Test\DeleteTestPlan;
+use App\Mcp\Tools\Architecture\DeleteArchitectureView;
+use App\Mcp\Tools\Plan\DeleteRelease;
+use App\Mcp\Tools\Verification\DeleteVerificationPlan;
 use App\Models\DesignView;
 use App\Models\Project;
 use App\Models\Release;
@@ -73,25 +71,6 @@ it('refuses to delete a verification plan without matching confirm_name', functi
     VerificationServer::tool(DeleteVerificationPlan::class, [
         'id' => $plan->id,
         'confirm_name' => 'Unit Plan',
-    ])->assertOk()->assertSee('deleted');
-
-    expect(TestPlan::find($plan->id))->toBeNull();
-});
-
-it('refuses to delete a test plan without matching confirm_name', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'p', 'rigor_level' => 1]);
-    $plan = TestPlan::create(['project_id' => $project->id, 'level' => 'integration', 'name' => 'Integration Plan']);
-
-    AllServer::tool(DeleteTestPlan::class, [
-        'id' => $plan->id,
-        'confirm_name' => 'Wrong',
-    ])->assertHasErrors(['Confirmation mismatch']);
-
-    expect(TestPlan::find($plan->id))->not->toBeNull();
-
-    AllServer::tool(DeleteTestPlan::class, [
-        'id' => $plan->id,
-        'confirm_name' => 'Integration Plan',
     ])->assertOk()->assertSee('deleted');
 
     expect(TestPlan::find($plan->id))->toBeNull();

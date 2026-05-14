@@ -1,7 +1,7 @@
 <?php
 
 use App\Mcp\Servers\IntakeServer;
-use App\Mcp\Tools\WhoAmI;
+use App\Mcp\Tools\Common\WhoAmI;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;

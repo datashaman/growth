@@ -3,18 +3,11 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
-use Laravel\Mcp\Server\Primitive;
-use Laravel\Mcp\Server\Prompt;
-use Laravel\Mcp\Server\Resource;
-use Laravel\Mcp\Server\Tool;
 use ReflectionClass;
-use Symfony\Component\Finder\SplFileInfo;
 
 #[Name('All Server')]
 #[Version('0.1.0')]
@@ -25,47 +18,40 @@ class AllServer extends Server
         boot as bootRoleServerDefaults;
     }
 
+    private const ROLE_SERVERS = [
+        ManagementServer::class,
+        IntakeServer::class,
+        ArchitectureServer::class,
+        PlanningServer::class,
+        VerificationServer::class,
+        GovernanceServer::class,
+        ReadonlyServer::class,
+    ];
+
     protected function boot(): void
     {
-        $this->tools = $this->discoverPrimitives(app_path('Mcp/Tools'), Tool::class);
-        $this->resources = $this->discoverPrimitives(app_path('Mcp/Resources'), Resource::class);
-        $this->prompts = $this->discoverPrimitives(app_path('Mcp/Prompts'), Prompt::class);
+        $this->tools = $this->unionFromRoleServers('tools');
+        $this->resources = $this->unionFromRoleServers('resources');
+        $this->prompts = $this->unionFromRoleServers('prompts');
 
         $this->bootRoleServerDefaults();
     }
 
     /**
-     * @template T of Primitive
+     * Deduplicated union of one primitive array across all role servers.
      *
-     * @param  class-string<T>  $baseClass
-     * @return array<int, class-string<T>>
+     * @return array<int, class-string>
      */
-    private function discoverPrimitives(string $path, string $baseClass): array
+    private function unionFromRoleServers(string $property): array
     {
-        if (! File::isDirectory($path)) {
-            return [];
+        $seen = [];
+        foreach (self::ROLE_SERVERS as $server) {
+            $values = (new ReflectionClass($server))->getDefaultProperties()[$property] ?? [];
+            foreach ($values as $class) {
+                $seen[$class] = true;
+            }
         }
 
-        return collect(File::allFiles($path))
-            ->map(fn (SplFileInfo $file): string => $this->classNameFor($file))
-            ->filter(fn (string $class): bool => class_exists($class))
-            ->filter(function (string $class) use ($baseClass): bool {
-                if (! is_subclass_of($class, $baseClass)) {
-                    return false;
-                }
-
-                return ! (new ReflectionClass($class))->isAbstract();
-            })
-            ->sort()
-            ->values()
-            ->all();
-    }
-
-    private function classNameFor(SplFileInfo $file): string
-    {
-        return 'App\\'.Str::of($file->getPathname())
-            ->after(app_path().DIRECTORY_SEPARATOR)
-            ->beforeLast('.php')
-            ->replace(DIRECTORY_SEPARATOR, '\\');
+        return array_keys($seen);
     }
 }

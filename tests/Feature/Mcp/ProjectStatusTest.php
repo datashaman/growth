@@ -4,7 +4,7 @@ use App\Mcp\Servers\AllServer;
 use App\Mcp\Servers\IntakeServer;
 use App\Mcp\Tools\Projects\CreateProject;
 use App\Mcp\Tools\Projects\UpdateProject;
-use App\Mcp\Tools\UpsertProject;
+use App\Mcp\Tools\Projects\UpsertProject;
 use App\Models\Project;
 use App\Models\User;
 use Laravel\Passport\Passport;

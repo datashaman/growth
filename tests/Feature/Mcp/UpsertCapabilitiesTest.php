@@ -1,7 +1,7 @@
 <?php
 
 use App\Mcp\Servers\IntakeServer;
-use App\Mcp\Tools\UpsertCapabilities;
+use App\Mcp\Tools\Capabilities\UpsertCapabilities;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\User;

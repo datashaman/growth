@@ -1,7 +1,7 @@
 <?php
 
 use App\Mcp\Servers\PlanningServer;
-use App\Mcp\Tools\ListProjectPlans;
+use App\Mcp\Tools\Plan\ListProjectPlans;
 use App\Models\Project;
 use App\Models\ProjectPlan;
 use App\Models\User;
