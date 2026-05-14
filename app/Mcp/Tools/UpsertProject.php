@@ -51,7 +51,7 @@ class UpsertProject extends Tool
             'id' => $schema->string()->description('Existing project ULID. Omit to create new.'),
             'name' => $schema->string()->description('Project name. Required when creating.'),
             'description' => $schema->string()->description('Optional project description'),
-            'rigor_level' => $schema->integer()->description('AI-delivery rigor level: 1 low to 4 high. Defaults to 2 on create.'),
+            'rigor_level' => $schema->integer()->description('AI-delivery rigor level (1–4, default 2). Higher levels activate stricter linter rules: L2 requires milestones + work items; L3 adds RACI roles, plan baseline, recorded reviews, and acceptance criteria on all requirements; L4 is the ceiling (no rules unique to it today). Full activation table at `growth://rigor-levels`.'),
         ];
     }
 
