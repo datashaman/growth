@@ -8,7 +8,7 @@ use Livewire\Livewire;
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Lunar Lander',
         'rigor_level' => 2,
     ]);
@@ -46,7 +46,7 @@ test('owner can edit a risk via the modal', function () {
 test('edit modal 404s for a risk in another project', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id,
+        'workspace_id' => $bob->active_workspace_id,
         'name' => 'Other',
         'rigor_level' => 1,
     ]);
@@ -67,7 +67,7 @@ test('edit modal 404s for a risk in another project', function () {
 test('edit rejects owner_role_id from a different project', function () {
     $otherUser = User::factory()->create();
     $otherProject = Project::create([
-        'user_id' => $otherUser->id,
+        'workspace_id' => $otherUser->active_workspace_id,
         'name' => 'Other',
         'rigor_level' => 1,
     ]);
@@ -112,7 +112,7 @@ test('owner can delete a risk via the modal', function () {
 test('delete modal 404s for a risk in another project', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id,
+        'workspace_id' => $bob->active_workspace_id,
         'name' => 'Other',
         'rigor_level' => 1,
     ]);

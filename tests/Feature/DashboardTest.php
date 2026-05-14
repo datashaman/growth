@@ -20,7 +20,7 @@ test('dashboard renders for an authed user with no projects', function () {
 test('dashboard renders sections for the selected project', function () {
     $user = User::factory()->create();
     $project = Project::create([
-        'user_id' => $user->id,
+        'workspace_id' => $user->active_workspace_id,
         'name' => 'Lunar Lander',
         'description' => 'Mission control.',
         'rigor_level' => 3,
@@ -45,7 +45,7 @@ test('dashboard renders sections for the selected project', function () {
 test('dashboard implementation table lists work items', function () {
     $user = User::factory()->create();
     $project = Project::create([
-        'user_id' => $user->id,
+        'workspace_id' => $user->active_workspace_id,
         'name' => 'Lunar Lander',
         'rigor_level' => 2,
     ]);
@@ -66,7 +66,7 @@ test('dashboard implementation table lists work items', function () {
 test('dashboard capacity table groups work items by role', function () {
     $user = User::factory()->create();
     $project = Project::create([
-        'user_id' => $user->id,
+        'workspace_id' => $user->active_workspace_id,
         'name' => 'Lunar Lander',
         'rigor_level' => 2,
     ]);
@@ -87,7 +87,7 @@ test('dashboard capacity table groups work items by role', function () {
 test('dashboard surfaces risks, anomalies, and reviews', function () {
     $user = User::factory()->create();
     $project = Project::create([
-        'user_id' => $user->id,
+        'workspace_id' => $user->active_workspace_id,
         'name' => 'Lunar Lander',
         'rigor_level' => 2,
     ]);
@@ -128,12 +128,12 @@ test('dashboard only lists projects owned by the authed user', function () {
     $bob = User::factory()->create();
 
     Project::create([
-        'user_id' => $alice->id,
+        'workspace_id' => $alice->active_workspace_id,
         'name' => 'Alice project',
         'rigor_level' => 1,
     ]);
     Project::create([
-        'user_id' => $bob->id,
+        'workspace_id' => $bob->active_workspace_id,
         'name' => 'Bob project',
         'rigor_level' => 1,
     ]);

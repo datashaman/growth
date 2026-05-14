@@ -9,7 +9,7 @@ use Livewire\Livewire;
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Lunar Lander',
         'rigor_level' => 2,
     ]);
@@ -56,7 +56,7 @@ test('owner can edit a test plan', function () {
 test('test plan edit 404s for another owner', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Other', 'rigor_level' => 1,
+        'workspace_id' => $bob->active_workspace_id, 'name' => 'Other', 'rigor_level' => 1,
     ]);
     $bobPlan = $bobProject->testPlans()->create(['name' => 'Bob', 'level' => 'unit']);
     $this->actingAs($this->user);
@@ -123,7 +123,7 @@ test('test case requires expected_results', function () {
 test('test case create 404s for a plan in another project', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Other', 'rigor_level' => 1,
+        'workspace_id' => $bob->active_workspace_id, 'name' => 'Other', 'rigor_level' => 1,
     ]);
     $bobPlan = $bobProject->testPlans()->create(['name' => 'Bob', 'level' => 'unit']);
     $this->actingAs($this->user);

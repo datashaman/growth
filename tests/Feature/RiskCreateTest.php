@@ -8,7 +8,7 @@ use Livewire\Livewire;
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Lunar Lander',
         'rigor_level' => 2,
     ]);
@@ -60,7 +60,7 @@ test('category must be from the allowed list', function () {
 test('owner_role_id from another project is rejected', function () {
     $otherUser = User::factory()->create();
     $otherProject = Project::create([
-        'user_id' => $otherUser->id,
+        'workspace_id' => $otherUser->active_workspace_id,
         'name' => 'Other',
         'rigor_level' => 1,
     ]);
@@ -80,7 +80,7 @@ test('owner_role_id from another project is rejected', function () {
 test('project_id is locked and cannot be set from the client', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id,
+        'workspace_id' => $bob->active_workspace_id,
         'name' => 'Hostile',
         'rigor_level' => 1,
     ]);
@@ -97,7 +97,7 @@ test('role options are scoped to the selected project', function () {
 
     $otherUser = User::factory()->create();
     $otherProject = Project::create([
-        'user_id' => $otherUser->id,
+        'workspace_id' => $otherUser->active_workspace_id,
         'name' => 'Other',
         'rigor_level' => 1,
     ]);

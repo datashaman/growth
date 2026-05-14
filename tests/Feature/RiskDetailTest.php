@@ -6,7 +6,7 @@ use App\Models\User;
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Lunar Lander',
         'rigor_level' => 2,
     ]);

@@ -36,6 +36,7 @@ use App\Models\TestRun;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
+use App\Support\WorkspaceContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
@@ -114,7 +115,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function register(): void
     {
-        //
+        $this->app->singleton(WorkspaceContext::class);
     }
 
     public function boot(): void

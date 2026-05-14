@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Project;
+use App\Support\WorkspaceContext;
 use Livewire\Component;
 
 new class extends Component {
@@ -17,7 +18,8 @@ new class extends Component {
         ]);
 
         $project = Project::create([
-            'user_id' => auth()->id(),
+            'workspace_id' => app(WorkspaceContext::class)->requireId(),
+            'created_by_user_id' => auth()->id(),
             'name' => $data['name'],
             'description' => $data['description'] ?: null,
             'rigor_level' => $data['rigor_level'],

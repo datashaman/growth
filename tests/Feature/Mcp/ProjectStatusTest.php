@@ -25,7 +25,7 @@ it('defaults new projects to active status', function () {
 });
 
 it('refuses content edits on an archived project but allows status to change', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'P', 'rigor_level' => 1, 'status' => 'archived']);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'P', 'rigor_level' => 1, 'status' => 'archived']);
 
     IntakeServer::tool(UpsertProject::class, [
         'id' => $project->id,
@@ -51,7 +51,7 @@ it('refuses content edits on an archived project but allows status to change', f
 });
 
 it('blocks update-project content edits on closed projects', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'P', 'rigor_level' => 1, 'status' => 'closed']);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'P', 'rigor_level' => 1, 'status' => 'closed']);
 
     AllServer::tool(UpdateProject::class, [
         'id' => $project->id,

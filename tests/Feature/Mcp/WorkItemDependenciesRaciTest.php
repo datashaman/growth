@@ -2,10 +2,13 @@
 
 use App\Models\Project;
 use App\Models\Role;
+use App\Models\User;
 use App\Models\WorkItem;
 
 beforeEach(function () {
+    $user = User::factory()->create();
     $this->project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
         'name' => 'Apollo',
         'rigor_level' => 2,
     ]);

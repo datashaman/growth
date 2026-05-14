@@ -15,6 +15,7 @@ use App\Models\Stakeholder;
 use App\Models\TestCase;
 use App\Models\TestPlan;
 use App\Models\WorkItem;
+use App\Support\WorkspaceContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -281,7 +282,8 @@ class ManifestApplier
         $project = Project::create($fields + [
             'rigor_level' => $fields['rigor_level'] ?? 2,
             'status' => $fields['status'] ?? 'active',
-            'user_id' => $userId,
+            'workspace_id' => app(WorkspaceContext::class)->requireId(),
+            'created_by_user_id' => $userId,
         ]);
         $counts['project_created'] = true;
 

@@ -8,7 +8,7 @@ use Livewire\Livewire;
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Lunar Lander',
         'rigor_level' => 2,
     ]);
@@ -40,7 +40,7 @@ test('owner can create a requirement from the create page', function () {
 test('create page 404s when project does not belong to user', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id,
+        'workspace_id' => $bob->active_workspace_id,
         'name' => 'Hostile',
         'rigor_level' => 1,
     ]);
@@ -64,7 +64,7 @@ test('create requires text', function () {
 test('create rejects parent_id from another project', function () {
     $otherUser = User::factory()->create();
     $otherProject = Project::create([
-        'user_id' => $otherUser->id,
+        'workspace_id' => $otherUser->active_workspace_id,
         'name' => 'Other',
         'rigor_level' => 1,
     ]);
@@ -104,7 +104,7 @@ test('owner can edit a requirement', function () {
 test('edit page 404s for a requirement in another project', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id,
+        'workspace_id' => $bob->active_workspace_id,
         'name' => 'Other',
         'rigor_level' => 1,
     ]);
@@ -133,7 +133,7 @@ test('owner can delete a requirement', function () {
 test('delete modal 404s for a requirement in another project', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id,
+        'workspace_id' => $bob->active_workspace_id,
         'name' => 'Other',
         'rigor_level' => 1,
     ]);

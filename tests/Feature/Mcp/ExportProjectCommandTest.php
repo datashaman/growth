@@ -4,12 +4,15 @@ use App\Models\Project;
 use App\Models\ProjectPlan;
 use App\Models\Requirement;
 use App\Models\Source;
+use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
 use Illuminate\Support\Facades\File;
 
 it('exports a project snapshot as markdown and json artifacts', function () {
+    $user = User::factory()->create();
     $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
         'name' => 'Apollo',
         'description' => 'Lunar mission planning.',
         'rigor_level' => 3,

@@ -51,7 +51,7 @@ it('lists the show-* app tools on the right servers with the right resourceUri',
 
 it('returns a confirmation payload from each show tool with the selected project_id', function () {
     $project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Show app tools project',
         'description' => 'Used to verify show-* tool payloads.',
         'rigor_level' => 2,
