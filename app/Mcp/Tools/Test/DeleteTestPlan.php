@@ -11,16 +11,24 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Delete a test plan (verification evidence). Its test cases cascade-delete; each case takes its runs with it. Anomalies whose test_run_id pointed at a deleted run have that field set to null.')]
+#[Description('Delete a test plan (verification evidence). Cascades: test cases delete, each case takes its runs; anomalies whose test_run_id pointed at a deleted run have that field nulled. Requires confirm_name to match the test plan name exactly.')]
 class DeleteTestPlan extends Tool
 {
     public function handle(Request $request): ResponseFactory
     {
         $data = $request->validate([
             'id' => 'required|string|owned_test_plan',
+            'confirm_name' => 'required|string',
         ]);
 
         $plan = TestPlan::findOrFail($data['id']);
+
+        if ($data['confirm_name'] !== $plan->name) {
+            return new ResponseFactory(Response::error(
+                "Confirmation mismatch. Pass the test plan's exact name in `confirm_name` to delete it. Test plan is named [{$plan->name}]."
+            ));
+        }
+
         $caseCount = $plan->cases()->count();
         $runCount = TestRun::whereIn('test_case_id', $plan->cases()->select('id'))->count();
         $plan->delete();
@@ -38,6 +46,9 @@ class DeleteTestPlan extends Tool
         return [
             'id' => $schema->string()
                 ->description('Test plan ULID to delete')
+                ->required(),
+            'confirm_name' => $schema->string()
+                ->description('Must match the test plan name exactly to guard against accidental deletion')
                 ->required(),
         ];
     }
