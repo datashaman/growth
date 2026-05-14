@@ -90,7 +90,7 @@ it('rolls back when dry_run is true', function () {
 });
 
 it('fail mode aborts when existing entity differs', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'Existing', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'Existing', 'rigor_level' => 2]);
     Requirement::create([
         'project_id' => $project->id,
         'slug' => 'cap-a',
@@ -113,7 +113,7 @@ it('fail mode aborts when existing entity differs', function () {
 });
 
 it('merge mode updates existing entities by natural key', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'Existing', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'Existing', 'rigor_level' => 2]);
     Requirement::create([
         'project_id' => $project->id,
         'slug' => 'cap-a',
@@ -142,7 +142,7 @@ it('merge mode updates existing entities by natural key', function () {
 });
 
 it('replace mode requires confirm matching project name', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'Production', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'Production', 'rigor_level' => 2]);
 
     $response = ManagementServer::tool(ApplyManifest::class, [
         'manifest' => [
@@ -155,7 +155,7 @@ it('replace mode requires confirm matching project name', function () {
 });
 
 it('replace mode wipes existing child entities and recreates from manifest', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'Wipe', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'Wipe', 'rigor_level' => 2]);
     Requirement::create([
         'project_id' => $project->id,
         'slug' => 'old-cap',
@@ -223,7 +223,7 @@ it('resolves concern raised_by via stakeholder slug declared in the same manifes
 });
 
 it('reports drift when current updated_at is newer than manifest _exported_at', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'Drifty', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'Drifty', 'rigor_level' => 2]);
     Requirement::create([
         'project_id' => $project->id,
         'slug' => 'cap-a',
@@ -277,7 +277,7 @@ it('rejects manifest with stakeholder missing name', function () {
 
 it('rejects applying to a project owned by another user', function () {
     $other = User::factory()->create();
-    $foreign = Project::create(['user_id' => $other->id, 'name' => 'Foreign', 'rigor_level' => 2]);
+    $foreign = Project::create(['workspace_id' => $other->active_workspace_id, 'name' => 'Foreign', 'rigor_level' => 2]);
 
     $response = ManagementServer::tool(ApplyManifest::class, [
         'manifest' => [
@@ -397,7 +397,7 @@ it('rejects a custom viewpoint whose name collides with a built-in', function ()
 });
 
 it('replace mode wipes architecture entities as well', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'Wipe Arch', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'Wipe Arch', 'rigor_level' => 2]);
     $viewpoint = CustomViewpoint::create([
         'project_id' => $project->id,
         'name' => 'Old VP',
@@ -436,7 +436,7 @@ it('replace mode wipes architecture entities as well', function () {
 });
 
 it('merge mode updates an existing view in place by name', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'Merge Arch', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'Merge Arch', 'rigor_level' => 2]);
     DesignView::create(['project_id' => $project->id, 'viewpoint' => 'logical', 'name' => 'Top', 'description' => 'old']);
 
     $response = ManagementServer::tool(ApplyManifest::class, [
@@ -491,7 +491,7 @@ it('fail mode is a no-op when re-applying an identical viewpoint with array fiel
 });
 
 it('reports drift on an architecture view when current updated_at is newer than _exported_at', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'Drift Arch', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'Drift Arch', 'rigor_level' => 2]);
     DesignView::create(['project_id' => $project->id, 'viewpoint' => 'logical', 'name' => 'Top']);
 
     $response = ManagementServer::tool(ApplyManifest::class, [
@@ -599,7 +599,7 @@ it('resolves work-item parent and dependencies declared in the same manifest', f
 });
 
 it('merge mode updates the singleton project plan in place', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'PlanMerge', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'PlanMerge', 'rigor_level' => 2]);
     ProjectPlan::create(['project_id' => $project->id, 'status' => 'draft', 'approach' => 'old']);
 
     $response = ManagementServer::tool(ApplyManifest::class, [
@@ -635,7 +635,7 @@ it('rejects a work item referencing an unknown role', function () {
 });
 
 it('replace mode wipes plan, roles, milestones and work items', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'PlanWipe', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'PlanWipe', 'rigor_level' => 2]);
     ProjectPlan::create(['project_id' => $project->id, 'status' => 'draft']);
     $role = Role::create(['project_id' => $project->id, 'name' => 'OldRole']);
     $milestone = Milestone::create(['project_id' => $project->id, 'name' => 'OldMilestone']);
@@ -666,7 +666,7 @@ it('replace mode wipes plan, roles, milestones and work items', function () {
 });
 
 it('fail mode aborts when a milestone target_date differs', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'DateDiff', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'DateDiff', 'rigor_level' => 2]);
     Milestone::create(['project_id' => $project->id, 'name' => 'MVP', 'target_date' => '2026-06-01']);
 
     $response = ManagementServer::tool(ApplyManifest::class, [
@@ -686,7 +686,7 @@ it('fail mode aborts when a milestone target_date differs', function () {
 });
 
 it('resolves work-item refs by existing names when no manifest slug matches', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'NameRef', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'NameRef', 'rigor_level' => 2]);
     Role::create(['project_id' => $project->id, 'name' => 'Backend']);
     Milestone::create(['project_id' => $project->id, 'name' => 'Beta']);
 
@@ -733,7 +733,7 @@ it('accepts the bare-string dependency form', function () {
 });
 
 it('reports drift on a work item when updated_at is newer than _exported_at', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'WiDrift', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'WiDrift', 'rigor_level' => 2]);
     WorkItem::create(['project_id' => $project->id, 'name' => 'Some Task', 'kind' => 'task']);
 
     $response = ManagementServer::tool(ApplyManifest::class, [
@@ -800,7 +800,7 @@ it('creates verification plans and nested cases linked to capabilities', functio
 });
 
 it('resolves verification case capabilities by existing slug when not in manifest', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'ExistingCaps', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'ExistingCaps', 'rigor_level' => 2]);
     $cap = Requirement::create([
         'project_id' => $project->id,
         'slug' => 'pre-existing',
@@ -836,7 +836,7 @@ it('resolves verification case capabilities by existing slug when not in manifes
 });
 
 it('merge mode updates an existing verification plan and case in place', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'VerifMerge', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'VerifMerge', 'rigor_level' => 2]);
     $plan = TestPlan::create([
         'project_id' => $project->id,
         'level' => 'unit',
@@ -881,7 +881,7 @@ it('merge mode updates an existing verification plan and case in place', functio
 });
 
 it('replace mode wipes verification plans and cases', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'VerifWipe', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'VerifWipe', 'rigor_level' => 2]);
     $plan = TestPlan::create(['project_id' => $project->id, 'level' => 'unit', 'name' => 'OldPlan']);
     TestCase::create(['test_plan_id' => $plan->id, 'name' => 'old-case', 'expected_results' => 'x']);
 
@@ -951,7 +951,7 @@ it('rejects a verification case missing expected_results', function () {
 });
 
 it('reports drift on a verification case when updated_at is newer than _exported_at', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'VCaseDrift', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'VCaseDrift', 'rigor_level' => 2]);
     $plan = TestPlan::create(['project_id' => $project->id, 'level' => 'unit', 'name' => 'U']);
     TestCase::create(['test_plan_id' => $plan->id, 'name' => 'CaseX', 'expected_results' => 'now']);
 

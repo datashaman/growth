@@ -12,13 +12,13 @@ it('returns the plan for the given project and excludes plans from other project
     Passport::actingAs($user, ['mcp:use']);
 
     $project = Project::create([
-        'user_id' => $user->id,
+        'workspace_id' => $user->active_workspace_id,
         'name' => 'Plans',
         'rigor_level' => 2,
     ]);
 
     $other = Project::create([
-        'user_id' => $user->id,
+        'workspace_id' => $user->active_workspace_id,
         'name' => 'Other',
         'rigor_level' => 2,
     ]);
@@ -52,7 +52,7 @@ it('returns an empty result set when the project has no plan', function () {
     Passport::actingAs($user, ['mcp:use']);
 
     $project = Project::create([
-        'user_id' => $user->id,
+        'workspace_id' => $user->active_workspace_id,
         'name' => 'Empty',
         'rigor_level' => 2,
     ]);
@@ -73,7 +73,7 @@ it('filters by status', function () {
     Passport::actingAs($user, ['mcp:use']);
 
     $project = Project::create([
-        'user_id' => $user->id,
+        'workspace_id' => $user->active_workspace_id,
         'name' => 'Plans',
         'rigor_level' => 2,
     ]);

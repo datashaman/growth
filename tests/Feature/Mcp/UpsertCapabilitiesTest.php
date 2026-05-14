@@ -11,7 +11,7 @@ it('upserts multiple capabilities in one batch and reports per-item failures wit
     $user = User::factory()->create();
     Passport::actingAs($user, ['mcp:use']);
 
-    $project = Project::create(['user_id' => $user->id, 'name' => 'Batchy', 'rigor_level' => 2]);
+    $project = Project::create(['workspace_id' => $user->active_workspace_id, 'name' => 'Batchy', 'rigor_level' => 2]);
 
     $response = IntakeServer::tool(UpsertCapabilities::class, [
         'items' => [

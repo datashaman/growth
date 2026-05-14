@@ -20,7 +20,7 @@ beforeEach(function () {
 });
 
 it('refuses to delete a release without matching confirm_name', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'p', 'rigor_level' => 1]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'p', 'rigor_level' => 1]);
     $release = Release::create(['project_id' => $project->id, 'version' => '1.0', 'name' => 'GA', 'status' => 'planned']);
 
     PlanningServer::tool(DeleteRelease::class, [
@@ -39,7 +39,7 @@ it('refuses to delete a release without matching confirm_name', function () {
 });
 
 it('refuses to delete an architecture view without matching confirm_name', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'p', 'rigor_level' => 1]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'p', 'rigor_level' => 1]);
     $view = DesignView::create(['project_id' => $project->id, 'viewpoint' => 'logical', 'name' => 'Top-level']);
 
     ArchitectureServer::tool(DeleteArchitectureView::class, [
@@ -58,7 +58,7 @@ it('refuses to delete an architecture view without matching confirm_name', funct
 });
 
 it('refuses to delete a verification plan without matching confirm_name', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'p', 'rigor_level' => 1]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'p', 'rigor_level' => 1]);
     $plan = TestPlan::create(['project_id' => $project->id, 'level' => 'unit', 'name' => 'Unit Plan']);
 
     VerificationServer::tool(DeleteVerificationPlan::class, [

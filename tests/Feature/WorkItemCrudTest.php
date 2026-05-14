@@ -8,7 +8,7 @@ use Livewire\Livewire;
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Lunar Lander',
         'rigor_level' => 2,
     ]);
@@ -41,7 +41,7 @@ test('owner can create a work item from the create page', function () {
 test('work item create page 404s when project does not belong to user', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id,
+        'workspace_id' => $bob->active_workspace_id,
         'name' => 'Hostile',
         'rigor_level' => 1,
     ]);
@@ -64,7 +64,7 @@ test('work item create requires name', function () {
 test('work item create rejects foreign responsible_role_id', function () {
     $otherUser = User::factory()->create();
     $otherProject = Project::create([
-        'user_id' => $otherUser->id,
+        'workspace_id' => $otherUser->active_workspace_id,
         'name' => 'Other',
         'rigor_level' => 1,
     ]);
@@ -104,7 +104,7 @@ test('owner can edit a work item', function () {
 test('work item edit page 404s for another owner', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id,
+        'workspace_id' => $bob->active_workspace_id,
         'name' => 'Other',
         'rigor_level' => 1,
     ]);
@@ -137,7 +137,7 @@ test('owner can delete a work item', function () {
 test('work item delete modal 404s for another owner', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id,
+        'workspace_id' => $bob->active_workspace_id,
         'name' => 'Other',
         'rigor_level' => 1,
     ]);

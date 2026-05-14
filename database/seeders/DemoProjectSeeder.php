@@ -42,8 +42,8 @@ class DemoProjectSeeder extends Seeder
     {
         $project = Project::withoutGlobalScopes()
             ->firstOrCreate(
-                ['user_id' => $user->id, 'name' => 'Demo: Orbit Telemetry'],
-                ['description' => 'Reference project showing a healthy delivery cadence.', 'rigor_level' => 2],
+                ['workspace_id' => $user->active_workspace_id, 'name' => 'Demo: Orbit Telemetry'],
+                ['description' => 'Reference project showing a healthy delivery cadence.', 'rigor_level' => 2, 'created_by_user_id' => $user->id],
             );
 
         if (! $project->wasRecentlyCreated && $project->workItems()->exists()) {
@@ -275,8 +275,8 @@ class DemoProjectSeeder extends Seeder
     {
         $project = Project::withoutGlobalScopes()
             ->firstOrCreate(
-                ['user_id' => $user->id, 'name' => 'Demo: Legacy Migration'],
-                ['description' => 'Reference project showing schedule and readiness pressure.', 'rigor_level' => 3],
+                ['workspace_id' => $user->active_workspace_id, 'name' => 'Demo: Legacy Migration'],
+                ['description' => 'Reference project showing schedule and readiness pressure.', 'rigor_level' => 3, 'created_by_user_id' => $user->id],
             );
 
         if (! $project->wasRecentlyCreated && $project->workItems()->exists()) {

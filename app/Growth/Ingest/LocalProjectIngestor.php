@@ -8,6 +8,7 @@ use App\Models\Requirement;
 use App\Models\Source;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
+use App\Support\WorkspaceContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -34,8 +35,10 @@ class LocalProjectIngestor
             $description = $this->firstParagraph($readme)
                 ?? "Imported from {$repoPath}.";
 
+            $workspaceId = app(WorkspaceContext::class)->requireId();
+
             $project = Project::query()->updateOrCreate(
-                ['name' => $name],
+                ['name' => $name, 'workspace_id' => $workspaceId],
                 [
                     'description' => $description,
                     'rigor_level' => $integrityLevel,

@@ -20,7 +20,8 @@ test('owner can create a project', function () {
 
     $project = Project::query()->where('name', 'Mars Rover')->first();
     expect($project)->not->toBeNull()
-        ->and($project->user_id)->toBe($this->user->id)
+        ->and($project->workspace_id)->toBe($this->user->active_workspace_id)
+        ->and($project->created_by_user_id)->toBe($this->user->id)
         ->and($project->rigor_level)->toBe(3)
         ->and(session('selected_project_id'))->toBe($project->id);
 });
@@ -46,7 +47,7 @@ test('create requires name', function () {
 
 test('owner can edit a project', function () {
     $project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Old',
         'rigor_level' => 1,
     ]);
@@ -67,7 +68,7 @@ test('owner can edit a project', function () {
 test('project edit 404s for another owner', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Bob project', 'rigor_level' => 2,
+        'workspace_id' => $bob->active_workspace_id, 'name' => 'Bob project', 'rigor_level' => 2,
     ]);
     $this->actingAs($this->user);
 
@@ -78,7 +79,7 @@ test('project edit 404s for another owner', function () {
 
 test('owner can delete a project when confirmation matches', function () {
     $project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Doomed',
         'rigor_level' => 2,
     ]);
@@ -97,7 +98,7 @@ test('owner can delete a project when confirmation matches', function () {
 
 test('delete rejects wrong confirmation text', function () {
     $project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Keep me',
         'rigor_level' => 2,
     ]);
@@ -115,7 +116,7 @@ test('delete rejects wrong confirmation text', function () {
 test('project delete 404s for another owner', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Bob project', 'rigor_level' => 2,
+        'workspace_id' => $bob->active_workspace_id, 'name' => 'Bob project', 'rigor_level' => 2,
     ]);
     $this->actingAs($this->user);
 
@@ -126,7 +127,7 @@ test('project delete 404s for another owner', function () {
 
 test('delete surfaces dependent counts', function () {
     $project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Busy',
         'rigor_level' => 2,
     ]);

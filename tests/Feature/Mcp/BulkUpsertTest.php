@@ -22,7 +22,7 @@ beforeEach(function () {
     Passport::actingAs($this->user, ['mcp:use']);
 
     $this->project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Bulky',
         'rigor_level' => 2,
     ]);

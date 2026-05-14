@@ -7,12 +7,12 @@ use Livewire\Livewire;
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->alpha = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Alpha',
         'rigor_level' => 1,
     ]);
     $this->beta = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Beta',
         'rigor_level' => 1,
     ]);

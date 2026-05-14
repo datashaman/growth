@@ -127,7 +127,7 @@ function applyAndGetProjectId(array $manifest): string
 
 it('exports an empty project shape via the MCP tool', function () {
     $project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Empty',
         'description' => 'Nothing yet.',
         'rigor_level' => 2,
@@ -149,7 +149,7 @@ it('exports an empty project shape via the MCP tool', function () {
 it('rejects a foreign project_id', function () {
     $foreign = User::factory()->create();
     $project = Project::withoutGlobalScopes()->create([
-        'user_id' => $foreign->id,
+        'workspace_id' => $foreign->active_workspace_id,
         'name' => 'Foreign',
         'rigor_level' => 2,
     ]);

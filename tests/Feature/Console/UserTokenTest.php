@@ -47,3 +47,37 @@ it('produces a Passport access token', function () {
     $token = $matches[0] ?? null;
     expect($token)->not->toBeNull();
 });
+
+it('binds the issued token to the user\'s active workspace by default', function () {
+    $user = User::factory()->create(['email' => 'alice@example.com']);
+
+    $this->artisan('user:token', ['email' => 'alice@example.com'])->assertExitCode(0);
+
+    expect($user->fresh()->tokens()->first()->workspace_id)->toBe($user->active_workspace_id);
+});
+
+it('binds the token to a specified workspace by slug', function () {
+    $user = User::factory()->create(['email' => 'alice@example.com']);
+    $personal = $user->personalWorkspace;
+
+    $this->artisan('user:token', [
+        'email' => 'alice@example.com',
+        '--workspace' => $personal->slug,
+    ])->expectsOutputToContain("workspace: {$personal->id}")
+        ->assertExitCode(0);
+
+    expect($user->fresh()->tokens()->first()->workspace_id)->toBe($personal->id);
+});
+
+it('rejects a workspace the user does not belong to', function () {
+    $user = User::factory()->create(['email' => 'alice@example.com']);
+    $other = User::factory()->create();
+
+    $this->artisan('user:token', [
+        'email' => 'alice@example.com',
+        '--workspace' => $other->active_workspace_id,
+    ])->expectsOutputToContain('is not accessible')
+        ->assertExitCode(1);
+
+    expect($user->fresh()->tokens()->count())->toBe(0);
+});

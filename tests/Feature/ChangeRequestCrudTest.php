@@ -9,7 +9,7 @@ use Livewire\Livewire;
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Lunar Lander',
         'rigor_level' => 2,
     ]);
@@ -45,7 +45,7 @@ test('create rejects unknown category', function () {
 test('create rejects requester role from another project', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Other', 'rigor_level' => 1,
+        'workspace_id' => $bob->active_workspace_id, 'name' => 'Other', 'rigor_level' => 1,
     ]);
     $foreignRole = Role::create([
         'project_id' => $bobProject->id, 'name' => 'Foreigner',
@@ -84,7 +84,7 @@ test('owner can edit a change request', function () {
 test('edit 404s for another owner', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Other', 'rigor_level' => 1,
+        'workspace_id' => $bob->active_workspace_id, 'name' => 'Other', 'rigor_level' => 1,
     ]);
     $bobCr = $bobProject->changeRequests()->create([
         'title' => 'Bob CR', 'category' => 'scope',

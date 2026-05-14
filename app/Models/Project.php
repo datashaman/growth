@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\WorkspaceContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +16,7 @@ class Project extends Model
 
     public const STATUSES = ['draft', 'active', 'archived', 'closed'];
 
-    protected $fillable = ['user_id', 'name', 'description', 'rigor_level', 'status'];
+    protected $fillable = ['workspace_id', 'created_by_user_id', 'name', 'description', 'rigor_level', 'status'];
 
     protected $casts = [
         'rigor_level' => 'integer',
@@ -32,16 +33,23 @@ class Project extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope('owner', function (Builder $query): void {
-            if (auth()->check()) {
-                $query->where('projects.user_id', auth()->id());
+        static::addGlobalScope('workspace', function (Builder $query): void {
+            $workspaceId = app(WorkspaceContext::class)->id();
+
+            if ($workspaceId !== null) {
+                $query->where('projects.workspace_id', $workspaceId);
             }
         });
     }
 
-    public function owner(): BelongsTo
+    public function workspace(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Workspace::class);
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
     }
 
     public function requirements(): HasMany

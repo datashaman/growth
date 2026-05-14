@@ -12,7 +12,7 @@ beforeEach(function () {
 });
 
 it('returns all seven sections by default', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'p', 'rigor_level' => 1]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'p', 'rigor_level' => 1]);
 
     $captured = null;
     ReadonlyServer::tool(LintProject::class, ['project_id' => $project->id])
@@ -27,7 +27,7 @@ it('returns all seven sections by default', function () {
 });
 
 it('filters to the requested sections when sections is provided', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'p', 'rigor_level' => 1]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'p', 'rigor_level' => 1]);
 
     $captured = null;
     ReadonlyServer::tool(LintProject::class, [
@@ -43,7 +43,7 @@ it('filters to the requested sections when sections is provided', function () {
 });
 
 it('rejects unknown section names', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'p', 'rigor_level' => 1]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'p', 'rigor_level' => 1]);
 
     ReadonlyServer::tool(LintProject::class, [
         'project_id' => $project->id,
@@ -52,7 +52,7 @@ it('rejects unknown section names', function () {
 });
 
 it('counts errors and warnings only over the returned sections', function () {
-    $project = Project::create(['user_id' => $this->user->id, 'name' => 'p', 'rigor_level' => 1]);
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'p', 'rigor_level' => 1]);
 
     $full = ReadonlyServer::tool(LintProject::class, ['project_id' => $project->id])
         ->assertOk();

@@ -3,12 +3,15 @@
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\Source;
+use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\Process\Process;
 
 it('imports local docs github issues and commit evidence', function () {
+    Auth::login(User::factory()->create());
     $repo = storage_path('framework/testing/local-project');
     $bin = storage_path('framework/testing/bin');
 

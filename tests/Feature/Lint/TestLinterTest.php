@@ -9,7 +9,7 @@ use App\Models\User;
 beforeEach(function () {
     $this->linter = app(TestLinter::class);
     $this->project = Project::create([
-        'user_id' => User::factory()->create()->id,
+        'workspace_id' => User::factory()->create()->active_workspace_id,
         'name' => 'Verif',
         'rigor_level' => 2,
     ]);
@@ -89,7 +89,7 @@ it('returns zero plan-empty or master-no-subordinates warnings for a master plan
 
 it('uses "verification plan" terminology in plan-level rule messages', function () {
     $emptyProject = Project::create([
-        'user_id' => User::factory()->create()->id,
+        'workspace_id' => User::factory()->create()->active_workspace_id,
         'name' => 'Empty',
         'rigor_level' => 2,
     ]);
@@ -100,7 +100,7 @@ it('uses "verification plan" terminology in plan-level rule messages', function 
     expect($messages->filter(fn ($m) => str_contains($m, 'test plan'))->values()->all())->toBe([]);
 
     $noMasterProject = Project::create([
-        'user_id' => User::factory()->create()->id,
+        'workspace_id' => User::factory()->create()->active_workspace_id,
         'name' => 'NoMaster',
         'rigor_level' => 2,
     ]);

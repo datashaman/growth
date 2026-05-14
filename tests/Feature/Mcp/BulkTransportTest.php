@@ -9,7 +9,7 @@ it('round-trips upsert-capabilities through the HTTP MCP transport', function ()
     Passport::actingAs($user, ['mcp:use']);
 
     $project = Project::create([
-        'user_id' => $user->id,
+        'workspace_id' => $user->active_workspace_id,
         'name' => 'Transport',
         'rigor_level' => 2,
     ]);
@@ -55,7 +55,7 @@ it('returns a clear cap error from the HTTP transport when items exceed 100', fu
     Passport::actingAs($user, ['mcp:use']);
 
     $project = Project::create([
-        'user_id' => $user->id,
+        'workspace_id' => $user->active_workspace_id,
         'name' => 'Cap',
         'rigor_level' => 2,
     ]);

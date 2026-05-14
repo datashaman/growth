@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools\Projects;
 
 use App\Models\Project;
+use App\Support\WorkspaceContext;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -41,7 +42,8 @@ class UpsertProject extends Tool
         } else {
             $project = Project::create($data + [
                 'rigor_level' => 2,
-                'user_id' => auth()->id(),
+                'workspace_id' => app(WorkspaceContext::class)->requireId(),
+                'created_by_user_id' => auth()->id(),
             ]);
         }
 

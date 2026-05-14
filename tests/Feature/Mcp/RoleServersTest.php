@@ -157,6 +157,7 @@ it('exposes the project dashboard app through readonly and all servers', functio
 
 it('returns read-only data for the project dashboard app', function () {
     $project = Project::create([
+        'workspace_id' => User::factory()->create()->active_workspace_id,
         'name' => 'Dashboard Project',
         'description' => 'Visible in the MCP app.',
         'rigor_level' => 2,
@@ -210,6 +211,8 @@ it('renders the project dashboard app resource as MCP app HTML', function () {
 });
 
 it('upserts projects and capabilities through the intake server', function () {
+    Passport::actingAs(User::factory()->create(), ['mcp:use']);
+
     $projectResponse = IntakeServer::tool(UpsertProject::class, [
         'name' => 'TodoMVC',
         'description' => 'Standalone todo app.',
@@ -251,6 +254,7 @@ it('upserts projects and capabilities through the intake server', function () {
 
 it('deletes projects through the intake server with exact-name confirmation', function () {
     $project = Project::create([
+        'workspace_id' => User::factory()->create()->active_workspace_id,
         'name' => 'Disposable',
         'rigor_level' => 2,
     ]);
@@ -273,6 +277,7 @@ it('deletes projects through the intake server with exact-name confirmation', fu
 
 it('renders existing project data through readonly resources', function () {
     $project = Project::create([
+        'workspace_id' => User::factory()->create()->active_workspace_id,
         'name' => 'TodoMVC',
         'description' => 'Standalone todo app.',
         'rigor_level' => 2,
@@ -295,6 +300,7 @@ it('renders existing project data through readonly resources', function () {
 
 it('renders evidence resources with human readable delivery context', function () {
     $project = Project::create([
+        'workspace_id' => User::factory()->create()->active_workspace_id,
         'name' => 'TodoMVC',
         'rigor_level' => 2,
     ]);
@@ -332,6 +338,7 @@ it('renders evidence resources with human readable delivery context', function (
 
 it('builds an evidence bundle through the verification server', function () {
     $project = Project::create([
+        'workspace_id' => User::factory()->create()->active_workspace_id,
         'name' => 'TodoMVC',
         'rigor_level' => 2,
     ]);
@@ -382,6 +389,7 @@ it('returns usable prompt messages from role servers', function () {
         ->assertSee('TodoMVC');
 
     $project = Project::create([
+        'workspace_id' => User::factory()->create()->active_workspace_id,
         'name' => 'TodoMVC',
         'rigor_level' => 2,
     ]);

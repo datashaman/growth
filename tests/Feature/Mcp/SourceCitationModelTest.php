@@ -18,12 +18,12 @@ beforeEach(function () {
     $this->alice = User::factory()->create();
     $this->bob = User::factory()->create();
     $this->aliceProject = Project::create([
-        'user_id' => $this->alice->id,
+        'workspace_id' => $this->alice->active_workspace_id,
         'name' => 'Apollo',
         'rigor_level' => 2,
     ]);
     $this->bobProject = Project::create([
-        'user_id' => $this->bob->id,
+        'workspace_id' => $this->bob->active_workspace_id,
         'name' => 'Bob Project',
         'rigor_level' => 2,
     ]);

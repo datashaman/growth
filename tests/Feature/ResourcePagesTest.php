@@ -6,7 +6,7 @@ use App\Models\User;
 beforeEach(function () {
     $this->user = User::factory()->create();
     $this->project = Project::create([
-        'user_id' => $this->user->id,
+        'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Lunar Lander',
         'description' => 'Mission control.',
         'rigor_level' => 2,
@@ -171,7 +171,7 @@ test('resource pages redirect guests to login', function () {
 test('plan page only lists projects owned by the authed user', function () {
     $bob = User::factory()->create();
     Project::create([
-        'user_id' => $bob->id,
+        'workspace_id' => $bob->active_workspace_id,
         'name' => 'Bob project',
         'rigor_level' => 1,
     ]);
