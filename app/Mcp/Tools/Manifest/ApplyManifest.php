@@ -1,0 +1,103 @@
+<?php
+
+namespace App\Mcp\Tools\Manifest;
+
+use App\Growth\Manifest\ManifestApplier;
+use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Laravel\Mcp\Request;
+use Laravel\Mcp\Response;
+use Laravel\Mcp\ResponseFactory;
+use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Tool;
+use RuntimeException;
+
+#[Description('Apply a Growth project manifest (project + stakeholders + concerns + capabilities) in a single transaction. Three modes: `fail` aborts on any difference, `merge` updates by natural keys (project id, stakeholder name, concern text, capability slug), `replace` wipes the project\'s child entities first and requires `confirm` to match the project name. Pass `dry_run: true` to roll back and preview the report.')]
+class ApplyManifest extends Tool
+{
+    public function __construct(private readonly ManifestApplier $applier) {}
+
+    public function handle(Request $request): ResponseFactory
+    {
+        $request->validate([
+            'manifest' => 'required|array',
+            'manifest.project' => 'required|array',
+            'manifest.project.id' => 'nullable|string|owned_project',
+            'manifest.project.name' => 'required_without:manifest.project.id|string|max:255',
+            'manifest.stakeholders' => 'nullable|array',
+            'manifest.stakeholders.*.name' => 'required|string|max:255',
+            'manifest.concerns' => 'nullable|array',
+            'manifest.concerns.*.text' => 'required|string|min:3',
+            'manifest.capabilities' => 'nullable|array',
+            'manifest.capabilities.*.slug' => 'required|string|max:120',
+            'manifest.capabilities.*.text' => 'required|string|min:3',
+            'mode' => 'nullable|in:fail,merge,replace',
+            'dry_run' => 'nullable|boolean',
+            'confirm' => 'nullable|string',
+        ]);
+
+        $raw = $request->all();
+        $manifest = $raw['manifest'];
+        $mode = $raw['mode'] ?? 'fail';
+        $dryRun = (bool) ($raw['dry_run'] ?? false);
+        $confirm = $raw['confirm'] ?? null;
+
+        try {
+            $report = $this->applier->apply($manifest, $mode, $dryRun, $confirm);
+        } catch (RuntimeException $e) {
+            return new ResponseFactory(Response::error($e->getMessage()));
+        }
+
+        return Response::structured($report);
+    }
+
+    public function schema(JsonSchema $schema): array
+    {
+        return [
+            'manifest' => $schema->object(fn (JsonSchema $s) => [
+                'project' => $s->object(fn (JsonSchema $p) => [
+                    'id' => $p->string()->description('Existing project ULID. Omit to create new.'),
+                    'name' => $p->string()->description('Project name. Required when creating.'),
+                    'description' => $p->string()->description('Optional project description'),
+                    'rigor_level' => $p->integer()->description('Project rigor level (1–4, default 2)'),
+                    'status' => $p->string()->description('Project lifecycle status')->enum(['draft', 'active', 'archived', 'closed']),
+                    '_exported_at' => $p->string()->description('Optional ISO-8601 timestamp; if older than the current `updated_at` the report flags drift.'),
+                ])->description('Project record. Required.')->required(),
+                'stakeholders' => $s->array()->description('Optional list. Natural key is `name` within the project. Each item may include `_exported_at` for drift reporting.'),
+                'concerns' => $s->array()->description('Optional list. Natural key is `text` within the project. `raised_by` may reference a stakeholder slug (declared in this manifest) or an existing stakeholder name.'),
+                'capabilities' => $s->array()->description('Optional list. Each item requires a `slug` (kebab-case, unique within the project) which is the natural key for upserts.'),
+            ])->description('The manifest object. Use export-manifest (future slice) to generate one, or hand-author it.')->required(),
+            'mode' => $schema->string()
+                ->description('`fail` (default): abort on any difference. `merge`: update matching records by natural key. `replace`: wipe project\'s stakeholders/concerns/capabilities and re-create from the manifest. `replace` requires `confirm` to match the existing project name.')
+                ->enum(['fail', 'merge', 'replace']),
+            'dry_run' => $schema->boolean()
+                ->description('When true, runs the apply inside a transaction and rolls back before returning. The report is identical to a real run, including `counts` and `drift`.'),
+            'confirm' => $schema->string()
+                ->description('Required when `mode=replace` and the project already exists. Must match the existing project\'s exact name to confirm destructive replacement.'),
+        ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'project_id' => $schema->string()->required(),
+            'mode' => $schema->string()->required()->description('The mode requested by the caller.'),
+            'effective_mode' => $schema->string()->required()->description('The mode actually applied. Differs from `mode` only when `replace` was requested against a non-existent project, in which case it falls back to `fail`.'),
+            'dry_run' => $schema->boolean()->required(),
+            'counts' => $schema->object(fn (JsonSchema $s) => [
+                'project_created' => $s->boolean()->required(),
+                'project_updated' => $s->boolean()->required(),
+                'stakeholders_created' => $s->integer()->required(),
+                'stakeholders_updated' => $s->integer()->required(),
+                'stakeholders_deleted' => $s->integer()->required(),
+                'concerns_created' => $s->integer()->required(),
+                'concerns_updated' => $s->integer()->required(),
+                'concerns_deleted' => $s->integer()->required(),
+                'capabilities_created' => $s->integer()->required(),
+                'capabilities_updated' => $s->integer()->required(),
+                'capabilities_deleted' => $s->integer()->required(),
+            ])->required(),
+            'slugs' => $schema->object()->description('Slug → ULID maps for `capabilities`, `stakeholders`, `concerns`. Useful for follow-up calls referencing the just-applied records.')->required(),
+            'drift' => $schema->array()->description('Entries describing records whose current `updated_at` is newer than the manifest\'s `_exported_at`. Empty when no drift detected.')->required(),
+        ];
+    }
+}
