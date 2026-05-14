@@ -11,7 +11,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use RuntimeException;
 
-#[Description('Apply a Growth project manifest (project + stakeholders + concerns + capabilities + architecture + plan) in a single transaction. Three modes: `fail` aborts on any difference, `merge` updates by natural keys (project id; stakeholder/role/milestone/view/work-item name; concern text; capability slug; element name within view; plan is singleton per project), `replace` wipes the project\'s child entities first and requires `confirm` to match the project name. Pass `dry_run: true` to roll back and preview the report.')]
+#[Description('Apply a Growth project manifest (project + stakeholders + concerns + capabilities + architecture + plan + verification) in a single transaction. Three modes: `fail` aborts on any difference, `merge` updates by natural keys (project id; stakeholder/role/milestone/view/work-item/verification-plan name; concern text; capability slug; element name within view; verification case name within plan; ProjectPlan is singleton per project), `replace` wipes the project\'s child entities first and requires `confirm` to match the project name. Pass `dry_run: true` to roll back and preview the report.')]
 class ApplyManifest extends Tool
 {
     public function __construct(private readonly ManifestApplier $applier) {}
@@ -54,6 +54,13 @@ class ApplyManifest extends Tool
             'manifest.plan.work_items.*.name' => 'required|string|max:255',
             'manifest.plan.work_items.*.kind' => 'required|in:deliverable,work_package,task',
             'manifest.plan.work_items.*.status' => 'nullable|in:todo,in_progress,blocked,done,cancelled',
+            'manifest.verification' => 'nullable|array',
+            'manifest.verification.plans' => 'nullable|array',
+            'manifest.verification.plans.*.name' => 'required|string|max:255',
+            'manifest.verification.plans.*.level' => 'required|in:master,unit,integration,system,acceptance',
+            'manifest.verification.plans.*.cases' => 'nullable|array',
+            'manifest.verification.plans.*.cases.*.name' => 'required|string|max:255',
+            'manifest.verification.plans.*.cases.*.expected_results' => 'required|string',
             'mode' => 'nullable|in:fail,merge,replace',
             'dry_run' => 'nullable|boolean',
             'confirm' => 'nullable|string',
@@ -107,6 +114,9 @@ class ApplyManifest extends Tool
                     'milestones' => $p->array()->description('Optional milestones. Natural key is `name` within the project.'),
                     'work_items' => $p->array()->description('Optional work items. Natural key is `name` within the project. `responsible_role` may reference a role slug declared here or an existing role name. `parent`, `capabilities`, `milestones`, `dependencies` are resolved in a second pass after every work item exists.'),
                 ])->description('Plan section: singleton ProjectPlan + roles, milestones, and work items. Work-item cross-references resolve to slugs declared in this manifest first, then by natural key against existing records.'),
+                'verification' => $s->object(fn (JsonSchema $v) => [
+                    'plans' => $v->array()->description('Optional verification plans. Natural key is `name` within the project. Each plan may embed `cases` as a child list. Case `verifies_capabilities` accepts capability slugs declared in this manifest or existing capability slugs.'),
+                ])->description('Verification section: verification plans (test_plans on the database side) with optional nested cases. Cases link to capabilities via `verifies_capabilities`.'),
             ])->description('The manifest object. Use export-manifest (future slice) to generate one, or hand-author it.')->required(),
             'mode' => $schema->string()
                 ->description('`fail` (default): abort on any difference. `merge`: update matching records by natural key. `replace`: wipe project\'s stakeholders/concerns/capabilities and re-create from the manifest. `replace` requires `confirm` to match the existing project name.')
@@ -158,8 +168,14 @@ class ApplyManifest extends Tool
                 'work_items_created' => $s->integer()->required(),
                 'work_items_updated' => $s->integer()->required(),
                 'work_items_deleted' => $s->integer()->required(),
+                'verification_plans_created' => $s->integer()->required(),
+                'verification_plans_updated' => $s->integer()->required(),
+                'verification_plans_deleted' => $s->integer()->required(),
+                'verification_cases_created' => $s->integer()->required(),
+                'verification_cases_updated' => $s->integer()->required(),
+                'verification_cases_deleted' => $s->integer()->required(),
             ])->required(),
-            'slugs' => $schema->object()->description('Slug → ULID maps for `capabilities`, `stakeholders`, `concerns`, `viewpoints`, `views`, `elements`, `roles`, `milestones`, `work_items`. Useful for follow-up calls referencing the just-applied records.')->required(),
+            'slugs' => $schema->object()->description('Slug → ULID maps for `capabilities`, `stakeholders`, `concerns`, `viewpoints`, `views`, `elements`, `roles`, `milestones`, `work_items`, `verification_plans`, `verification_cases`. Useful for follow-up calls referencing the just-applied records.')->required(),
             'drift' => $schema->array()->description('Entries describing records whose current `updated_at` is newer than the manifest\'s `_exported_at`. Empty when no drift detected.')->required(),
         ];
     }
