@@ -22,13 +22,13 @@ it('cross-references per-section linters from lint-project', function () {
     $description = toolDescription('/mcp/all', 'lint-project');
 
     expect($description)->not->toBeNull()
-        ->and($description)->toContain('sections.planning matches pmp-lint')
+        ->and($description)->toContain('sections.planning matches lint-pmp')
         ->and($description)->toContain('sections.verification matches lint-verification')
         ->and($description)->toContain('sections.architecture matches lint-architecture');
 });
 
-it('cross-references lint-project from pmp-lint', function () {
-    $description = toolDescription('/mcp/all', 'pmp-lint');
+it('cross-references lint-project from lint-pmp', function () {
+    $description = toolDescription('/mcp/all', 'lint-pmp');
 
     expect($description)->not->toBeNull()
         ->and($description)->toContain('lint-project sections.planning');

@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
 #[Description('Lint a project against delivery planning (PMP) completeness rules. Returns the same findings as lint-project sections.planning — use this when you only need planning findings and do not want to filter the full lint-project response. Findings include severity, rule code, message, and the subject artifact.')]
-class PmpLint extends Tool
+class LintPmp extends Tool
 {
     public function __construct(private readonly PmpLinter $linter) {}
 
