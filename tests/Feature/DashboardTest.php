@@ -23,7 +23,7 @@ test('dashboard renders sections for the selected project', function () {
         'user_id' => $user->id,
         'name' => 'Lunar Lander',
         'description' => 'Mission control.',
-        'integrity_level' => 3,
+        'rigor_level' => 3,
     ]);
 
     $this->actingAs($user)
@@ -47,7 +47,7 @@ test('dashboard implementation table lists work items', function () {
     $project = Project::create([
         'user_id' => $user->id,
         'name' => 'Lunar Lander',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
     $project->workItems()->create([
         'kind' => 'task',
@@ -68,7 +68,7 @@ test('dashboard capacity table groups work items by role', function () {
     $project = Project::create([
         'user_id' => $user->id,
         'name' => 'Lunar Lander',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
     $project->workItems()->create([
         'kind' => 'task',
@@ -89,7 +89,7 @@ test('dashboard surfaces risks, anomalies, and reviews', function () {
     $project = Project::create([
         'user_id' => $user->id,
         'name' => 'Lunar Lander',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 
     $project->risks()->create([
@@ -130,12 +130,12 @@ test('dashboard only lists projects owned by the authed user', function () {
     Project::create([
         'user_id' => $alice->id,
         'name' => 'Alice project',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     Project::create([
         'user_id' => $bob->id,
         'name' => 'Bob project',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
 
     $this->actingAs($alice)

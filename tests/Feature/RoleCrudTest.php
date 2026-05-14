@@ -10,7 +10,7 @@ beforeEach(function () {
     $this->project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Lunar Lander',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 });
 
@@ -56,7 +56,7 @@ test('role name uniqueness is scoped to the project', function () {
     $otherProject = Project::create([
         'user_id' => $otherUser->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $otherProject->roles()->create(['name' => 'Lead']);
     $this->actingAs($this->user);
@@ -72,7 +72,7 @@ test('role create projectId is locked', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Hostile',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $this->actingAs($this->user);
 
@@ -99,7 +99,7 @@ test('role edit 404s for another owner', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $bobRole = $bobProject->roles()->create(['name' => 'Spy']);
     $this->actingAs($this->user);
@@ -125,7 +125,7 @@ test('role delete 404s for another owner', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $bobRole = $bobProject->roles()->create(['name' => 'Spy']);
     $this->actingAs($this->user);

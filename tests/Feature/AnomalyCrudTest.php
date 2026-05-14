@@ -10,7 +10,7 @@ beforeEach(function () {
     $this->project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Lunar Lander',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 });
 
@@ -47,7 +47,7 @@ test('anomaly create projectId is locked', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Hostile',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
 
     $this->actingAs($this->user);
@@ -83,7 +83,7 @@ test('anomaly edit 404s for another owner', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $bobAnomaly = $bobProject->anomalies()->create([
         'severity' => 'low',
@@ -119,7 +119,7 @@ test('anomaly delete 404s for another owner', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $bobAnomaly = $bobProject->anomalies()->create([
         'severity' => 'low',

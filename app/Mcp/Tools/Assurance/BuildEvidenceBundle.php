@@ -37,7 +37,7 @@ class BuildEvidenceBundle extends Tool
         return [
             'project_id' => $schema->string()->required(),
             'project' => $schema->string()->required(),
-            'integrity_level' => $schema->integer()->required(),
+            'rigor_level' => $schema->integer()->required(),
             'readiness_status' => $schema->string()->required(),
             'resources' => $schema->object()->required(),
             'counts' => $schema->object()->required(),

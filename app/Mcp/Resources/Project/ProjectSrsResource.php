@@ -39,7 +39,7 @@ class ProjectSrsResource extends Resource implements HasUriTemplate
             ->get();
 
         $md = "# Software Requirements Definition — {$project->name}\n\n";
-        $md .= "_Rigor level {$project->integrity_level}_\n\n";
+        $md .= "_Rigor level {$project->rigor_level}_\n\n";
 
         if ($project->description) {
             $md .= "## 1. Overview\n\n{$project->description}\n\n";

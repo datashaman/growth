@@ -85,7 +85,7 @@ class RequirementLinter
 
         $criteria = array_values(array_filter($requirement->acceptance_criteria ?? []));
 
-        if ($criteria === [] && ($requirement->priority === 'high' || $requirement->project?->integrity_level >= 3)) {
+        if ($criteria === [] && ($requirement->priority === 'high' || $requirement->project?->rigor_level >= 3)) {
             $findings[] = [
                 'rule' => 'acceptance-criteria-missing',
                 'severity' => 'warning',

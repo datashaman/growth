@@ -10,7 +10,7 @@ beforeEach(function () {
     $this->project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Lunar Lander',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 });
 
@@ -43,7 +43,7 @@ test('work item create page 404s when project does not belong to user', function
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Hostile',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
 
     $this->actingAs($this->user)
@@ -66,7 +66,7 @@ test('work item create rejects foreign responsible_role_id', function () {
     $otherProject = Project::create([
         'user_id' => $otherUser->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $foreignRole = $otherProject->roles()->create(['name' => 'Spy']);
 
@@ -106,7 +106,7 @@ test('work item edit page 404s for another owner', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $bobItem = $bobProject->workItems()->create([
         'kind' => 'task',
@@ -139,7 +139,7 @@ test('work item delete modal 404s for another owner', function () {
     $bobProject = Project::create([
         'user_id' => $bob->id,
         'name' => 'Other',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
     $bobItem = $bobProject->workItems()->create([
         'kind' => 'task',

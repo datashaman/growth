@@ -17,7 +17,7 @@ class IngestLocalProjectCommand extends Command
         try {
             $summary = $ingestor->ingest($this->argument('path'), [
                 'name' => $this->option('name'),
-                'integrity_level' => $this->option('integrity'),
+                'rigor_level' => $this->option('integrity'),
                 'issue_limit' => $this->option('limit-issues'),
                 'pr_limit' => $this->option('limit-prs'),
                 'commit_limit' => $this->option('limit-commits'),

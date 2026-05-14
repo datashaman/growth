@@ -9,7 +9,7 @@ beforeEach(function () {
         'user_id' => $this->user->id,
         'name' => 'Lunar Lander',
         'description' => 'Mission control.',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 });
 
@@ -173,7 +173,7 @@ test('plan page only lists projects owned by the authed user', function () {
     Project::create([
         'user_id' => $bob->id,
         'name' => 'Bob project',
-        'integrity_level' => 1,
+        'rigor_level' => 1,
     ]);
 
     $this->actingAs($this->user)

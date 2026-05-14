@@ -11,7 +11,7 @@ beforeEach(function () {
     $this->project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Lunar Lander',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 });
 
@@ -74,7 +74,7 @@ test('owner can edit a design view', function () {
 test('design view edit 404s for another owner', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Other', 'integrity_level' => 1,
+        'user_id' => $bob->id, 'name' => 'Other', 'rigor_level' => 1,
     ]);
     $bobView = $bobProject->designViews()->create([
         'name' => 'Bob', 'viewpoint' => 'logical',
@@ -135,7 +135,7 @@ test('element kind must be valid', function () {
 test('element create 404s for a view in another project', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([
-        'user_id' => $bob->id, 'name' => 'Other', 'integrity_level' => 1,
+        'user_id' => $bob->id, 'name' => 'Other', 'rigor_level' => 1,
     ]);
     $bobView = $bobProject->designViews()->create([
         'name' => 'Bob', 'viewpoint' => 'logical',

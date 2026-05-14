@@ -18,7 +18,7 @@ class EvidenceBundleBuilder
         return [
             'project_id' => $project->id,
             'project' => $project->name,
-            'integrity_level' => $project->integrity_level,
+            'rigor_level' => $project->rigor_level,
             'readiness_status' => $readiness['status'],
             'resources' => [
                 'index' => "growth://projects/{$project->id}",

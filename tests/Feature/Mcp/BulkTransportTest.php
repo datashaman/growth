@@ -11,7 +11,7 @@ it('round-trips upsert-capabilities through the HTTP MCP transport', function ()
     $project = Project::create([
         'user_id' => $user->id,
         'name' => 'Transport',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 
     $response = $this->postJson('/mcp/intake', [
@@ -57,7 +57,7 @@ it('returns a clear cap error from the HTTP transport when items exceed 100', fu
     $project = Project::create([
         'user_id' => $user->id,
         'name' => 'Cap',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 
     $items = array_fill(0, 101, [

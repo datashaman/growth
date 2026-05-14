@@ -59,15 +59,15 @@ it('points each project tool at growth://rigor-levels in the rigor field descrip
         ->toContain('L2')
         ->toContain('L3');
 
-    $createIntegrity = $byName->get('create-project')['inputSchema']['properties']['integrity_level']['description'] ?? null;
-    expect($createIntegrity)
+    $createRigor = $byName->get('create-project')['inputSchema']['properties']['rigor_level']['description'] ?? null;
+    expect($createRigor)
         ->not->toBeNull()
         ->toContain('growth://rigor-levels')
         ->toContain('L2')
         ->toContain('L3');
 
-    $updateIntegrity = $byName->get('update-project')['inputSchema']['properties']['integrity_level']['description'] ?? null;
-    expect($updateIntegrity)
+    $updateRigor = $byName->get('update-project')['inputSchema']['properties']['rigor_level']['description'] ?? null;
+    expect($updateRigor)
         ->not->toBeNull()
         ->toContain('growth://rigor-levels')
         ->toContain('L2')

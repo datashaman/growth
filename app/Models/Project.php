@@ -13,10 +13,10 @@ class Project extends Model
 {
     use HasUlids;
 
-    protected $fillable = ['user_id', 'name', 'description', 'integrity_level'];
+    protected $fillable = ['user_id', 'name', 'description', 'rigor_level'];
 
     protected $casts = [
-        'integrity_level' => 'integer',
+        'rigor_level' => 'integer',
     ];
 
     protected static function booted(): void

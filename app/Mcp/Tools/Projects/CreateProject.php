@@ -18,18 +18,18 @@ class CreateProject extends Tool
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'integrity_level' => 'nullable|integer|between:1,4',
+            'rigor_level' => 'nullable|integer|between:1,4',
         ]);
 
         $project = Project::create($data + [
-            'integrity_level' => 2,
+            'rigor_level' => 2,
             'user_id' => auth()->id(),
         ]);
 
         return Response::structured([
             'id' => $project->id,
             'name' => $project->name,
-            'integrity_level' => $project->integrity_level,
+            'rigor_level' => $project->rigor_level,
         ]);
     }
 
@@ -41,7 +41,7 @@ class CreateProject extends Tool
                 ->required(),
             'description' => $schema->string()
                 ->description('Optional project description'),
-            'integrity_level' => $schema->integer()
+            'rigor_level' => $schema->integer()
                 ->description('Project rigor level (1–4, default 2). Higher levels activate stricter linter rules: L2 requires milestones + work items; L3 adds RACI roles, plan baseline, recorded reviews, and acceptance criteria on all requirements; L4 is the ceiling (no rules unique to it today). Full activation table at `growth://rigor-levels`.'),
         ];
     }
@@ -51,7 +51,7 @@ class CreateProject extends Tool
         return [
             'id' => $schema->string()->required(),
             'name' => $schema->string()->required(),
-            'integrity_level' => $schema->integer()->required(),
+            'rigor_level' => $schema->integer()->required(),
         ];
     }
 }

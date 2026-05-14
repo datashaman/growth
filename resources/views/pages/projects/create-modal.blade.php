@@ -6,26 +6,26 @@ use Livewire\Component;
 new class extends Component {
     public string $name = '';
     public string $description = '';
-    public int $integrity_level = 2;
+    public int $rigor_level = 2;
 
     public function save(): void
     {
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'integrity_level' => ['required', 'integer', 'between:1,4'],
+            'rigor_level' => ['required', 'integer', 'between:1,4'],
         ]);
 
         $project = Project::create([
             'user_id' => auth()->id(),
             'name' => $data['name'],
             'description' => $data['description'] ?: null,
-            'integrity_level' => $data['integrity_level'],
+            'rigor_level' => $data['rigor_level'],
         ]);
 
         session(['selected_project_id' => $project->id]);
 
-        $this->reset(['name', 'description', 'integrity_level']);
+        $this->reset(['name', 'description', 'rigor_level']);
         $this->modal('create-project')->close();
         $this->redirect(route('dashboard'), navigate: true);
     }
@@ -42,7 +42,7 @@ new class extends Component {
 
         <flux:textarea wire:model="description" :label="__('Description')" rows="3" />
 
-        <flux:select wire:model="integrity_level" :label="__('Integrity level')" :description="__('1 = lowest rigor, 4 = highest. Drives readiness gates and review depth.')">
+        <flux:select wire:model="rigor_level" :label="__('Rigor level')" :description="__('1 = lowest rigor, 4 = highest. Drives readiness gates and review depth.')">
             <flux:select.option value="1">{{ __('1 — Minimal rigor') }}</flux:select.option>
             <flux:select.option value="2">{{ __('2 — Standard') }}</flux:select.option>
             <flux:select.option value="3">{{ __('3 — Elevated') }}</flux:select.option>

@@ -18,7 +18,7 @@ beforeEach(function () {
     $this->project = Project::create([
         'user_id' => $this->user->id,
         'name' => 'Reviewy',
-        'integrity_level' => 2,
+        'rigor_level' => 2,
     ]);
 
     $this->requirement = Requirement::create([
