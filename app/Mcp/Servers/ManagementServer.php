@@ -9,6 +9,7 @@ use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\DeleteProject;
 use App\Mcp\Tools\ListProjects;
 use App\Mcp\Tools\Manifest\ApplyManifest;
+use App\Mcp\Tools\Manifest\ExportManifest;
 use App\Mcp\Tools\Projects\CreateProject;
 use App\Mcp\Tools\Projects\UpdateProject;
 use App\Mcp\Tools\UpsertProject;
@@ -33,6 +34,7 @@ class ManagementServer extends Server
         UpsertProject::class,
         DeleteProject::class,
         ApplyManifest::class,
+        ExportManifest::class,
     ];
 
     protected array $resources = [
