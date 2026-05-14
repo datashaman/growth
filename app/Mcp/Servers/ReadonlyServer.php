@@ -11,6 +11,7 @@ use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectDashboardApp;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\ReadinessResource;
+use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Resources\VerificationResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\BuildEvidenceBundle;
@@ -109,6 +110,7 @@ class ReadonlyServer extends Server
     protected array $resources = [
         ProjectDashboardApp::class,
         PlaybookResource::class,
+        RigorLevelsResource::class,
         ProjectIndexResource::class,
         IntentResource::class,
         CapabilitiesResource::class,

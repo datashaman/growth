@@ -8,6 +8,7 @@ use App\Mcp\Resources\EvidenceResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\ReadinessResource;
+use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Resources\VerificationResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Assurance\ReportEvidenceGaps;
@@ -71,6 +72,7 @@ class VerificationServer extends Server
 
     protected array $resources = [
         PlaybookResource::class,
+        RigorLevelsResource::class,
         ProjectIndexResource::class,
         CapabilitiesResource::class,
         VerificationResource::class,

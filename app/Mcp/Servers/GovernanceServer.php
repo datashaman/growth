@@ -7,6 +7,7 @@ use App\Mcp\Resources\EvidenceResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\ReadinessResource;
+use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Assurance\AssessReleaseReadiness;
 use App\Mcp\Tools\Assurance\ReportEvidenceGaps;
@@ -85,6 +86,7 @@ class GovernanceServer extends Server
 
     protected array $resources = [
         PlaybookResource::class,
+        RigorLevelsResource::class,
         ProjectIndexResource::class,
         EvidenceResource::class,
         ReadinessResource::class,
