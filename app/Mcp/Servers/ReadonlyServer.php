@@ -35,7 +35,6 @@ use App\Mcp\Tools\Dashboard\GetProjectDashboardData;
 use App\Mcp\Tools\Dashboard\ShowProjectDashboard;
 use App\Mcp\Tools\Glossary\LookupTerm;
 use App\Mcp\Tools\Lint\LintProject;
-use App\Mcp\Tools\Plan\LintPmp;
 use App\Mcp\Tools\Plan\ListAgents;
 use App\Mcp\Tools\Plan\ListCheckRuns;
 use App\Mcp\Tools\Plan\ListDeliveryLinks;
@@ -111,7 +110,6 @@ class ReadonlyServer extends Server
         BuildEvidenceBundle::class,
         EvaluateReadinessGates::class,
         LintProject::class,
-        LintPmp::class,
         LookupTerm::class,
         TraceQuery::class,
         ShowProjectDashboard::class,

@@ -16,19 +16,18 @@ use App\Mcp\Tools\Assurance\ReportEvidenceGaps;
 use App\Mcp\Tools\Assurance\ScanContradictions;
 use App\Mcp\Tools\Changes\AnalyzeChangeImpact;
 use App\Mcp\Tools\Changes\DeleteChangeRequest;
-use App\Mcp\Tools\Changes\LintChanges;
 use App\Mcp\Tools\Changes\ListArtifactRelations;
 use App\Mcp\Tools\Changes\ListChangeApprovalEvents;
 use App\Mcp\Tools\Changes\ListChangeRequests;
 use App\Mcp\Tools\Changes\UpsertArtifactRelation;
 use App\Mcp\Tools\Changes\UpsertChangeRequest;
 use App\Mcp\Tools\Common\WhoAmI;
+use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Reviews\DeleteReview;
 use App\Mcp\Tools\Reviews\DeleteReviewFinding;
 use App\Mcp\Tools\Reviews\DeleteReviewParticipant;
 use App\Mcp\Tools\Reviews\DeleteReviewPlan;
-use App\Mcp\Tools\Reviews\LintReviews;
 use App\Mcp\Tools\Reviews\ListReviewDecisionEvents;
 use App\Mcp\Tools\Reviews\ListReviewFindings;
 use App\Mcp\Tools\Reviews\ListReviewParticipants;
@@ -67,20 +66,19 @@ class GovernanceServer extends Server
         UpsertReviewFinding::class,
         ListReviewFindings::class,
         DeleteReviewFinding::class,
-        LintReviews::class,
         AnalyzeChangeImpact::class,
         UpsertArtifactRelation::class,
         ListArtifactRelations::class,
         UpsertChangeRequest::class,
         ListChangeRequests::class,
         ListChangeApprovalEvents::class,
-        LintChanges::class,
         DeleteChangeRequest::class,
         AssessReleaseReadiness::class,
         ReportEvidenceGaps::class,
         ScanContradictions::class,
         EvaluateReadinessGates::class,
         BuildEvidenceBundle::class,
+        LintProject::class,
         TraceQuery::class,
     ];
 

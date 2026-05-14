@@ -18,9 +18,19 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Run all Growth quality checks for a project. Returns findings grouped into sections (capabilities, architecture, verification, planning, reviews, baselines, changes). Each section is the same data the per-section linter would return on its own — e.g. sections.planning matches lint-pmp, sections.verification matches lint-verification, sections.architecture matches lint-architecture, sections.reviews matches lint-reviews, sections.baselines matches lint-baselines, sections.capabilities matches lint-capabilities, and sections.changes matches lint-changes. Use this when you want everything; use the per-section tools when you only want one slice.')]
+#[Description('Run Growth quality checks for a project. Returns findings grouped into sections (capabilities, architecture, verification, planning, reviews, baselines, changes). Pass `sections` to compute only the listed sections; omit it to run them all. `errors` and `warnings` counts cover the returned sections only.')]
 class LintProject extends Tool
 {
+    private const SECTIONS = [
+        'baselines',
+        'changes',
+        'capabilities',
+        'architecture',
+        'verification',
+        'planning',
+        'reviews',
+    ];
+
     public function __construct(
         private readonly BaselineLinter $baselineLinter,
         private readonly ChangeLinter $changeLinter,
@@ -35,29 +45,30 @@ class LintProject extends Tool
     {
         $data = $request->validate([
             'project_id' => 'required|string|owned_project',
+            'sections' => 'nullable|array',
+            'sections.*' => 'in:'.implode(',', self::SECTIONS),
         ]);
 
         $project = Project::findOrFail($data['project_id']);
+        $wanted = isset($data['sections']) && $data['sections'] !== []
+            ? array_values(array_unique($data['sections']))
+            : self::SECTIONS;
 
-        $capabilityFindings = [];
-        foreach ($project->requirements as $capability) {
-            foreach ($this->requirementLinter->check($capability) as $finding) {
-                $capabilityFindings[] = $finding + [
-                    'subject_type' => 'capability',
-                    'subject_id' => $capability->id,
-                ];
-            }
+        $compute = [
+            'baselines' => fn () => $this->baselineLinter->check($project),
+            'changes' => fn () => $this->changeLinter->check($project),
+            'capabilities' => fn () => $this->capabilityFindings($project),
+            'architecture' => fn () => $this->designLinter->check($project),
+            'verification' => fn () => $this->testLinter->check($project),
+            'planning' => fn () => $this->planLinter->check($project),
+            'reviews' => fn () => $this->reviewLinter->check($project),
+        ];
+
+        $sections = [];
+        foreach ($wanted as $name) {
+            $sections[$name] = $compute[$name]();
         }
-
-        $sections = AlignmentText::sanitizeArray([
-            'baselines' => $this->baselineLinter->check($project),
-            'changes' => $this->changeLinter->check($project),
-            'capabilities' => $capabilityFindings,
-            'architecture' => $this->designLinter->check($project),
-            'verification' => $this->testLinter->check($project),
-            'planning' => $this->planLinter->check($project),
-            'reviews' => $this->reviewLinter->check($project),
-        ]);
+        $sections = AlignmentText::sanitizeArray($sections);
 
         $errors = 0;
         $warnings = 0;
@@ -75,10 +86,31 @@ class LintProject extends Tool
         ]);
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function capabilityFindings(Project $project): array
+    {
+        $findings = [];
+        foreach ($project->requirements as $capability) {
+            foreach ($this->requirementLinter->check($capability) as $finding) {
+                $findings[] = $finding + [
+                    'subject_type' => 'capability',
+                    'subject_id' => $capability->id,
+                ];
+            }
+        }
+
+        return $findings;
+    }
+
     public function schema(JsonSchema $schema): array
     {
         return [
             'project_id' => $schema->string()->description('Project ULID')->required(),
+            'sections' => $schema->array()
+                ->description('Subset of sections to compute. Defaults to all: '.implode(', ', self::SECTIONS).'.')
+                ->items($schema->string()->enum(self::SECTIONS)),
         ];
     }
 }
