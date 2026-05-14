@@ -13,11 +13,22 @@ class Project extends Model
 {
     use HasUlids;
 
-    protected $fillable = ['user_id', 'name', 'description', 'rigor_level'];
+    public const STATUSES = ['draft', 'active', 'archived', 'closed'];
+
+    protected $fillable = ['user_id', 'name', 'description', 'rigor_level', 'status'];
 
     protected $casts = [
         'rigor_level' => 'integer',
     ];
+
+    protected $attributes = [
+        'status' => 'active',
+    ];
+
+    public function isMutable(): bool
+    {
+        return in_array($this->status, ['draft', 'active'], true);
+    }
 
     protected static function booted(): void
     {

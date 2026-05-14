@@ -17,6 +17,7 @@ class ListProjects extends Tool
     {
         $data = $request->validate([
             'q' => 'nullable|string|max:255',
+            'status' => 'nullable|in:'.implode(',', Project::STATUSES),
             'limit' => 'nullable|integer|min:1|max:200',
             'offset' => 'nullable|integer|min:0',
         ]);
@@ -28,13 +29,16 @@ class ListProjects extends Tool
         if (isset($data['q'])) {
             $query->where('name', 'like', '%'.$data['q'].'%');
         }
+        if (isset($data['status'])) {
+            $query->where('status', $data['status']);
+        }
 
         $total = (clone $query)->count();
 
         $rows = $query->orderBy('created_at')
             ->limit($limit)
             ->offset($offset)
-            ->get(['id', 'name', 'description', 'rigor_level', 'created_at']);
+            ->get(['id', 'name', 'description', 'rigor_level', 'status', 'created_at']);
 
         return Response::structured([
             'total' => $total,
@@ -45,6 +49,7 @@ class ListProjects extends Tool
                 'name' => $p->name,
                 'description' => $p->description,
                 'rigor_level' => $p->rigor_level,
+                'status' => $p->status,
                 'created_at' => $p->created_at?->toIso8601String(),
             ])->all(),
         ]);
@@ -55,6 +60,9 @@ class ListProjects extends Tool
         return [
             'q' => $schema->string()
                 ->description('Substring match on project name'),
+            'status' => $schema->string()
+                ->description('Filter by lifecycle status')
+                ->enum(Project::STATUSES),
             'limit' => $schema->integer()
                 ->description('Page size (1-200, default 50)'),
             'offset' => $schema->integer()
