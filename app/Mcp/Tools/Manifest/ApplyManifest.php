@@ -11,7 +11,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use RuntimeException;
 
-#[Description('Apply a Growth project manifest (project + stakeholders + concerns + capabilities) in a single transaction. Three modes: `fail` aborts on any difference, `merge` updates by natural keys (project id, stakeholder name, concern text, capability slug), `replace` wipes the project\'s child entities first and requires `confirm` to match the project name. Pass `dry_run: true` to roll back and preview the report.')]
+#[Description('Apply a Growth project manifest (project + stakeholders + concerns + capabilities + architecture) in a single transaction. Three modes: `fail` aborts on any difference, `merge` updates by natural keys (project id, stakeholder name, concern text, capability slug, view name, element name within view), `replace` wipes the project\'s child entities first and requires `confirm` to match the project name. Pass `dry_run: true` to roll back and preview the report.')]
 class ApplyManifest extends Tool
 {
     public function __construct(private readonly ManifestApplier $applier) {}
@@ -30,6 +30,18 @@ class ApplyManifest extends Tool
             'manifest.capabilities' => 'nullable|array',
             'manifest.capabilities.*.slug' => 'required|string|max:120',
             'manifest.capabilities.*.text' => 'required|string|min:3',
+            'manifest.architecture' => 'nullable|array',
+            'manifest.architecture.viewpoints' => 'nullable|array',
+            'manifest.architecture.viewpoints.*.name' => 'required|string|max:80',
+            'manifest.architecture.viewpoints.*.concerns' => 'required|array|min:1',
+            'manifest.architecture.viewpoints.*.element_types' => 'required|array|min:1',
+            'manifest.architecture.viewpoints.*.languages' => 'required|array|min:1',
+            'manifest.architecture.views' => 'nullable|array',
+            'manifest.architecture.views.*.name' => 'required|string|max:255',
+            'manifest.architecture.views.*.viewpoint' => 'required|string',
+            'manifest.architecture.views.*.elements' => 'nullable|array',
+            'manifest.architecture.views.*.elements.*.name' => 'required|string|max:255',
+            'manifest.architecture.views.*.elements.*.kind' => 'required|in:entity,relationship,attribute,constraint',
             'mode' => 'nullable|in:fail,merge,replace',
             'dry_run' => 'nullable|boolean',
             'confirm' => 'nullable|string',
@@ -65,6 +77,10 @@ class ApplyManifest extends Tool
                 'stakeholders' => $s->array()->description('Optional list. Natural key is `name` within the project. Each item may include `_exported_at` for drift reporting.'),
                 'concerns' => $s->array()->description('Optional list. Natural key is `text` within the project. `raised_by` may reference a stakeholder slug (declared in this manifest) or an existing stakeholder name.'),
                 'capabilities' => $s->array()->description('Optional list. Each item requires a `slug` (kebab-case, unique within the project) which is the natural key for upserts.'),
+                'architecture' => $s->object(fn (JsonSchema $a) => [
+                    'viewpoints' => $a->array()->description('Optional custom viewpoints. Natural key is `name` within the project; built-in viewpoint names (context, logical, …) are reserved.'),
+                    'views' => $a->array()->description('Optional architecture views. Natural key is `name` within the project. `viewpoint` references a slug declared in this manifest, a custom viewpoint name, or a built-in viewpoint. May embed `elements` as a child list.'),
+                ])->description('Architecture section: viewpoints (custom only — built-ins are referenced by name) and views with optional nested elements.'),
             ])->description('The manifest object. Use export-manifest (future slice) to generate one, or hand-author it.')->required(),
             'mode' => $schema->string()
                 ->description('`fail` (default): abort on any difference. `merge`: update matching records by natural key. `replace`: wipe project\'s stakeholders/concerns/capabilities and re-create from the manifest. `replace` requires `confirm` to match the existing project name.')
@@ -95,8 +111,17 @@ class ApplyManifest extends Tool
                 'capabilities_created' => $s->integer()->required(),
                 'capabilities_updated' => $s->integer()->required(),
                 'capabilities_deleted' => $s->integer()->required(),
+                'viewpoints_created' => $s->integer()->required(),
+                'viewpoints_updated' => $s->integer()->required(),
+                'viewpoints_deleted' => $s->integer()->required(),
+                'views_created' => $s->integer()->required(),
+                'views_updated' => $s->integer()->required(),
+                'views_deleted' => $s->integer()->required(),
+                'elements_created' => $s->integer()->required(),
+                'elements_updated' => $s->integer()->required(),
+                'elements_deleted' => $s->integer()->required(),
             ])->required(),
-            'slugs' => $schema->object()->description('Slug → ULID maps for `capabilities`, `stakeholders`, `concerns`. Useful for follow-up calls referencing the just-applied records.')->required(),
+            'slugs' => $schema->object()->description('Slug → ULID maps for `capabilities`, `stakeholders`, `concerns`, `viewpoints`, `views`, `elements`. Useful for follow-up calls referencing the just-applied records.')->required(),
             'drift' => $schema->array()->description('Entries describing records whose current `updated_at` is newer than the manifest\'s `_exported_at`. Empty when no drift detected.')->required(),
         ];
     }

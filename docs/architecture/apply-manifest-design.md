@@ -58,17 +58,21 @@ capabilities:
 
 architecture:
   viewpoints:
-    - slug: logical
-      name: "Logical"
-      concerns: [persistence]
+    # Custom viewpoints only. Built-in viewpoint names (context, logical,
+    # composition, …) are reserved and referenced directly by views.
+    - slug: custom-logical
+      name: "Custom Logical"
+      concerns: ["scalability"]       # free-text categories stored on the viewpoint
+      element_types: ["component", "connector"]
+      languages: ["mermaid"]
   views:
     - slug: top-level
-      viewpoint: logical
+      viewpoint: custom-logical       # slug or built-in viewpoint name
       name: "Top-level"
-      concerns: [persistence]
+      addresses_concerns: [persistence]  # refs to project concerns (slug or text)
       elements:
         - slug: store
-          kind: component
+          kind: entity                # entity | relationship | attribute | constraint
           name: "TodoStore"
 
 plan:

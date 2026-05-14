@@ -3,6 +3,9 @@
 use App\Mcp\Servers\ManagementServer;
 use App\Mcp\Tools\Manifest\ApplyManifest;
 use App\Models\Concern;
+use App\Models\CustomViewpoint;
+use App\Models\DesignElement;
+use App\Models\DesignView;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\Stakeholder;
@@ -278,4 +281,229 @@ it('rejects applying to a project owned by another user', function () {
 
     $response->assertHasErrors();
     expect(Project::withoutGlobalScopes()->find($foreign->id)->name)->toBe('Foreign');
+});
+
+it('applies architecture viewpoints, views and nested elements from scratch', function () {
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['name' => 'Arch', 'rigor_level' => 2, 'status' => 'active'],
+            'concerns' => [
+                ['slug' => 'persistence', 'text' => 'Data must survive reloads.'],
+            ],
+            'architecture' => [
+                'viewpoints' => [
+                    [
+                        'slug' => 'custom-logical',
+                        'name' => 'Custom Logical',
+                        'concerns' => ['scalability'],
+                        'element_types' => ['component', 'connector'],
+                        'languages' => ['mermaid'],
+                    ],
+                ],
+                'views' => [
+                    [
+                        'slug' => 'top-level',
+                        'viewpoint' => 'custom-logical',
+                        'name' => 'Top-level',
+                        'addresses_concerns' => ['persistence'],
+                        'elements' => [
+                            ['slug' => 'store', 'kind' => 'entity', 'name' => 'TodoStore'],
+                            ['slug' => 'api', 'kind' => 'entity', 'name' => 'TodoApi'],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('counts.viewpoints_created', 1)
+            ->where('counts.views_created', 1)
+            ->where('counts.elements_created', 2)
+            ->has('slugs.viewpoints.custom-logical')
+            ->has('slugs.views.top-level')
+            ->has('slugs.elements.store')
+            ->etc();
+    });
+
+    $project = Project::where('name', 'Arch')->first();
+    expect(CustomViewpoint::where('project_id', $project->id)->where('name', 'Custom Logical')->exists())->toBeTrue();
+    $view = DesignView::where('project_id', $project->id)->where('name', 'Top-level')->first();
+    expect($view->viewpoint)->toBe('Custom Logical');
+    expect($view->concerns()->count())->toBe(1);
+    expect(DesignElement::where('design_view_id', $view->id)->count())->toBe(2);
+});
+
+it('accepts built-in viewpoint names on views without a custom viewpoint declaration', function () {
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['name' => 'BuiltIn', 'rigor_level' => 2, 'status' => 'active'],
+            'architecture' => [
+                'views' => [
+                    ['slug' => 'lv', 'viewpoint' => 'logical', 'name' => 'Logical View'],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('counts.views_created', 1)
+            ->where('counts.viewpoints_created', 0)
+            ->etc();
+    });
+
+    expect(DesignView::where('name', 'Logical View')->first()->viewpoint)->toBe('logical');
+});
+
+it('rejects a view referencing an unknown viewpoint', function () {
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['name' => 'Unknown', 'rigor_level' => 2, 'status' => 'active'],
+            'architecture' => [
+                'views' => [
+                    ['viewpoint' => 'made-up', 'name' => 'Bad View'],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertHasErrors(['unknown viewpoint']);
+});
+
+it('rejects a custom viewpoint whose name collides with a built-in', function () {
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['name' => 'Collide', 'rigor_level' => 2, 'status' => 'active'],
+            'architecture' => [
+                'viewpoints' => [
+                    [
+                        'name' => 'logical',
+                        'concerns' => ['c'],
+                        'element_types' => ['e'],
+                        'languages' => ['l'],
+                    ],
+                ],
+            ],
+        ],
+    ]);
+
+    $response->assertHasErrors(['built-in viewpoint']);
+});
+
+it('replace mode wipes architecture entities as well', function () {
+    $project = Project::create(['user_id' => $this->user->id, 'name' => 'Wipe Arch', 'rigor_level' => 2]);
+    $viewpoint = CustomViewpoint::create([
+        'project_id' => $project->id,
+        'name' => 'Old VP',
+        'concerns' => ['x'],
+        'element_types' => ['e'],
+        'languages' => ['l'],
+    ]);
+    $view = DesignView::create(['project_id' => $project->id, 'viewpoint' => 'Old VP', 'name' => 'Old View']);
+    DesignElement::create(['design_view_id' => $view->id, 'kind' => 'entity', 'name' => 'OldEl']);
+
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['id' => $project->id, 'name' => 'Wipe Arch'],
+            'architecture' => [
+                'views' => [
+                    ['viewpoint' => 'logical', 'name' => 'Fresh View'],
+                ],
+            ],
+        ],
+        'mode' => 'replace',
+        'confirm' => 'Wipe Arch',
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('counts.viewpoints_deleted', 1)
+            ->where('counts.views_deleted', 1)
+            ->where('counts.elements_deleted', 1)
+            ->where('counts.views_created', 1)
+            ->etc();
+    });
+
+    expect(CustomViewpoint::where('project_id', $project->id)->where('name', 'Old VP')->exists())->toBeFalse();
+    expect(DesignView::where('project_id', $project->id)->where('name', 'Old View')->exists())->toBeFalse();
+    expect(DesignElement::where('name', 'OldEl')->exists())->toBeFalse();
+    expect(DesignView::where('project_id', $project->id)->where('name', 'Fresh View')->exists())->toBeTrue();
+});
+
+it('merge mode updates an existing view in place by name', function () {
+    $project = Project::create(['user_id' => $this->user->id, 'name' => 'Merge Arch', 'rigor_level' => 2]);
+    DesignView::create(['project_id' => $project->id, 'viewpoint' => 'logical', 'name' => 'Top', 'description' => 'old']);
+
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['id' => $project->id, 'name' => 'Merge Arch'],
+            'architecture' => [
+                'views' => [
+                    ['viewpoint' => 'logical', 'name' => 'Top', 'description' => 'new'],
+                ],
+            ],
+        ],
+        'mode' => 'merge',
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('counts.views_updated', 1)
+            ->where('counts.views_created', 0)
+            ->etc();
+    });
+
+    expect(DesignView::where('project_id', $project->id)->where('name', 'Top')->first()->description)->toBe('new');
+});
+
+it('fail mode is a no-op when re-applying an identical viewpoint with array fields', function () {
+    $manifest = [
+        'project' => ['name' => 'Idempotent', 'rigor_level' => 2, 'status' => 'active'],
+        'architecture' => [
+            'viewpoints' => [
+                [
+                    'name' => 'Custom Logical',
+                    'concerns' => ['scalability', 'security'],
+                    'element_types' => ['component', 'connector'],
+                    'languages' => ['mermaid'],
+                ],
+            ],
+        ],
+    ];
+
+    ManagementServer::tool(ApplyManifest::class, ['manifest' => $manifest])->assertOk();
+
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => array_merge($manifest, [
+            'project' => ['id' => Project::where('name', 'Idempotent')->value('id'), 'name' => 'Idempotent', 'rigor_level' => 2, 'status' => 'active'],
+        ]),
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('counts.viewpoints_created', 0)
+            ->where('counts.viewpoints_updated', 0)
+            ->etc();
+    });
+});
+
+it('reports drift on an architecture view when current updated_at is newer than _exported_at', function () {
+    $project = Project::create(['user_id' => $this->user->id, 'name' => 'Drift Arch', 'rigor_level' => 2]);
+    DesignView::create(['project_id' => $project->id, 'viewpoint' => 'logical', 'name' => 'Top']);
+
+    $response = ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['id' => $project->id, 'name' => 'Drift Arch'],
+            'architecture' => [
+                'views' => [
+                    ['viewpoint' => 'logical', 'name' => 'Top', '_exported_at' => '2020-01-01T00:00:00Z'],
+                ],
+            ],
+        ],
+        'mode' => 'merge',
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->has('drift.0')
+            ->where('drift.0.entity', 'view')
+            ->where('drift.0.identifier', 'Top')
+            ->etc();
+    });
 });
