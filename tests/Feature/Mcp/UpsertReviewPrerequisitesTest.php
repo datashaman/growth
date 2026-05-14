@@ -1,7 +1,7 @@
 <?php
 
 use App\Mcp\Servers\GovernanceServer;
-use App\Mcp\Tools\UpsertReview;
+use App\Mcp\Tools\Reviews\UpsertReview;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\Review;
