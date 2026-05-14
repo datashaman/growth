@@ -23,6 +23,7 @@ use App\Mcp\Tools\Changes\ListChangeRequests;
 use App\Mcp\Tools\Changes\UpsertArtifactRelation;
 use App\Mcp\Tools\Changes\UpsertChangeRequest;
 use App\Mcp\Tools\Common\WhoAmI;
+use App\Mcp\Tools\Dashboard\ShowGateStatus;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Reviews\DeleteReview;
@@ -81,6 +82,7 @@ class GovernanceServer extends Server
         BuildEvidenceBundle::class,
         LintProject::class,
         TraceQuery::class,
+        ShowGateStatus::class,
     ];
 
     protected array $resources = [

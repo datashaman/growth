@@ -17,6 +17,7 @@ use App\Mcp\Tools\Capabilities\UpsertCapabilities;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Concerns\DeleteConcern;
 use App\Mcp\Tools\Concerns\UpsertConcerns;
+use App\Mcp\Tools\Dashboard\ShowCapabilityExplorer;
 use App\Mcp\Tools\Glossary\LookupTerm;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\DeleteProject;
@@ -68,6 +69,7 @@ class IntakeServer extends Server
         LookupTerm::class,
         LintProject::class,
         TraceQuery::class,
+        ShowCapabilityExplorer::class,
     ];
 
     protected array $resources = [
