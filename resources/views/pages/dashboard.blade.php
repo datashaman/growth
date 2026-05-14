@@ -5,6 +5,7 @@ use App\Growth\Execution\ImplementationStatusSummarizer;
 use App\Growth\Plan\PlanCapacitySummarizer;
 use App\Growth\Plan\ScheduleHealthSummarizer;
 use App\Models\Project;
+use App\Models\User;
 use App\Support\BadgeVariant;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -42,6 +43,17 @@ new #[Title('Dashboard')] class extends Component {
         return Project::query()
             ->orderBy('created_at')
             ->get(['id', 'name', 'description', 'rigor_level']);
+    }
+
+    #[Computed]
+    public function workspaces()
+    {
+        /** @var User $user */
+        $user = auth()->user();
+
+        return $user->workspaces()
+            ->orderBy('name')
+            ->get(['workspaces.id', 'workspaces.name']);
     }
 
     #[Computed]
@@ -179,6 +191,23 @@ new #[Title('Dashboard')] class extends Component {
             <flux:heading size="xl">{{ __('Project Dashboard') }}</flux:heading>
             <flux:text>{{ __('Readiness, delivery, and schedule state for your Growth projects.') }}</flux:text>
         </header>
+
+        <section class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900" data-test="workspaces-widget">
+            <div class="flex items-center justify-between gap-3">
+                <flux:heading size="sm">{{ __('Workspaces') }}</flux:heading>
+                <flux:link :href="route('workspace.edit')" class="text-xs" wire:navigate>{{ __('+ New workspace') }}</flux:link>
+            </div>
+            <ul class="mt-3 flex flex-wrap gap-2">
+                @foreach ($this->workspaces as $workspace)
+                    @php($isActive = $workspace->id === auth()->user()->active_workspace_id)
+                    <li wire:key="dashboard-workspace-{{ $workspace->id }}">
+                        <flux:badge :color="$isActive ? 'blue' : 'zinc'" size="sm">
+                            {{ $workspace->name }}@if ($isActive) <span class="ms-1 text-xs">{{ __('(active)') }}</span>@endif
+                        </flux:badge>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
 
         @if ($this->projects->isEmpty())
             <flux:callout icon="information-circle">
