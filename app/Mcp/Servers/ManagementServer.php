@@ -5,6 +5,10 @@ namespace App\Mcp\Servers;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\RigorLevelsResource;
+use App\Mcp\Resources\StarterTemplate1Resource;
+use App\Mcp\Resources\StarterTemplate2Resource;
+use App\Mcp\Resources\StarterTemplate3Resource;
+use App\Mcp\Resources\StarterTemplate4Resource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\DeleteProject;
 use App\Mcp\Tools\ListProjects;
@@ -41,5 +45,9 @@ class ManagementServer extends Server
         PlaybookResource::class,
         RigorLevelsResource::class,
         ProjectIndexResource::class,
+        StarterTemplate1Resource::class,
+        StarterTemplate2Resource::class,
+        StarterTemplate3Resource::class,
+        StarterTemplate4Resource::class,
     ];
 }
