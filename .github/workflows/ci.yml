@@ -51,6 +51,9 @@ jobs:
       - name: Generate key
         run: php artisan key:generate
 
+      - name: Generate Passport keys
+        run: php artisan passport:keys --no-interaction
+
       - name: Pint
         run: vendor/bin/pint --test --format agent
 
