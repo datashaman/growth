@@ -42,7 +42,7 @@ class User extends Authenticatable implements OAuthenticatable
     {
         static::created(function (User $user): void {
             $workspace = Workspace::create([
-                'name' => $user->name ?: 'Personal',
+                'name' => 'Personal',
                 'slug' => Workspace::uniqueSlug($user->name ?: $user->email ?: 'workspace'),
                 'owner_user_id' => $user->id,
             ]);
