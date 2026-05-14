@@ -18,7 +18,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Run all Growth quality checks for a project. Returns findings grouped into sections (capabilities, architecture, verification, planning, reviews, baselines, changes). Each section is the same data the per-section linter would return on its own — e.g. sections.planning matches pmp-lint, sections.verification matches lint-verification, sections.architecture matches lint-architecture, sections.reviews matches lint-reviews, sections.baselines matches lint-baselines, sections.capabilities matches lint-capabilities, and sections.changes matches lint-changes. Use this when you want everything; use the per-section tools when you only want one slice.')]
+#[Description('Run all Growth quality checks for a project. Returns findings grouped into sections (capabilities, architecture, verification, planning, reviews, baselines, changes). Each section is the same data the per-section linter would return on its own — e.g. sections.planning matches lint-pmp, sections.verification matches lint-verification, sections.architecture matches lint-architecture, sections.reviews matches lint-reviews, sections.baselines matches lint-baselines, sections.capabilities matches lint-capabilities, and sections.changes matches lint-changes. Use this when you want everything; use the per-section tools when you only want one slice.')]
 class LintProject extends Tool
 {
     public function __construct(
