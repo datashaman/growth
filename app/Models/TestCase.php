@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BroadcastsViaProjectRelation;
 use App\Models\Concerns\ScopedByOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -12,10 +13,16 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class TestCase extends Model
 {
+    use BroadcastsViaProjectRelation;
     use HasUlids;
     use ScopedByOwner;
 
     public const OWNER_SCOPE_RELATION = 'plan';
+
+    public function projectIdForBroadcast(): ?string
+    {
+        return $this->plan?->project_id;
+    }
 
     protected $fillable = [
         'test_plan_id', 'name', 'objective', 'preconditions',
