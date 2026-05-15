@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BroadcastsReviewChanges;
+use App\Models\Concerns\BroadcastsViaProjectRelation;
 use App\Models\Concerns\ScopedByOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -13,8 +14,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class ReviewFinding extends Model
 {
     use BroadcastsReviewChanges;
+    use BroadcastsViaProjectRelation;
     use HasUlids;
     use ScopedByOwner;
+
+    public function projectIdForBroadcast(): ?string
+    {
+        return $this->getAttribute('project_id');
+    }
 
     public const SEVERITIES = ['low', 'medium', 'high', 'critical'];
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BroadcastsProjectChanges;
 use App\Models\Concerns\BroadcastsReviewChanges;
 use App\Models\Concerns\ScopedByOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Review extends Model
 {
+    use BroadcastsProjectChanges;
     use BroadcastsReviewChanges;
     use HasUlids;
     use ScopedByOwner;
