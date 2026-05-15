@@ -24,6 +24,25 @@ new #[Title('Evidence')] class extends Component {
         unset($this->deployments);
     }
 
+    /**
+     * @return array<string,string>
+     */
+    public function getListeners(): array
+    {
+        if ($this->selectedProjectId === null) {
+            return [];
+        }
+
+        return [
+            'echo-private:projects.'.$this->selectedProjectId.',ProjectDataChanged' => 'onProjectDataChanged',
+        ];
+    }
+
+    public function onProjectDataChanged(): void
+    {
+        unset($this->releases, $this->deployments, $this->deliveryLinks);
+    }
+
     #[Computed]
     public function releases()
     {

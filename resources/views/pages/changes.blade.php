@@ -17,6 +17,19 @@ new #[Title('Changes')] class extends Component {
         unset($this->changeRequests);
     }
 
+    /**
+     * @return array<string,string>
+     */
+    public function getListeners(): array
+    {
+        return $this->projectScopedListeners();
+    }
+
+    public function onProjectDataChanged(): void
+    {
+        unset($this->changeRequests);
+    }
+
     #[Computed]
     public function changeRequests()
     {
