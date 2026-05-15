@@ -32,4 +32,23 @@ trait ProjectScoped
             ? Project::query()->find($this->selectedProjectId)
             : null;
     }
+
+    /**
+     * Echo subscription to broadcast changes for the currently-selected
+     * project. The consuming component should merge this into its own
+     * getListeners() and define an onProjectDataChanged() method that busts
+     * its computed caches.
+     *
+     * @return array<string,string>
+     */
+    public function projectScopedListeners(): array
+    {
+        if ($this->selectedProjectId === null) {
+            return [];
+        }
+
+        return [
+            'echo-private:projects.'.$this->selectedProjectId.',ProjectDataChanged' => 'onProjectDataChanged',
+        ];
+    }
 }

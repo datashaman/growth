@@ -23,6 +23,19 @@ new #[Title('Plan')] class extends Component {
         unset($this->roles);
     }
 
+    /**
+     * @return array<string,string>
+     */
+    public function getListeners(): array
+    {
+        return $this->projectScopedListeners();
+    }
+
+    public function onProjectDataChanged(): void
+    {
+        unset($this->workItems, $this->milestones);
+    }
+
     #[Computed]
     public function milestones()
     {
