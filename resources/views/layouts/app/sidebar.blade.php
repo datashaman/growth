@@ -16,13 +16,10 @@
             @endauth
 
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
+                <flux:sidebar.group :heading="__('Project')" class="grid">
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         {{ __('Dashboard') }}
                     </flux:sidebar.item>
-                </flux:sidebar.group>
-
-                <flux:sidebar.group :heading="__('Project')" class="grid">
                     <flux:sidebar.item icon="megaphone" :href="route('intent')" :current="request()->routeIs('intent')" wire:navigate>
                         {{ __('Intent') }}
                     </flux:sidebar.item>

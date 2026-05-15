@@ -38,9 +38,15 @@ class User extends Authenticatable implements OAuthenticatable
         ];
     }
 
+    public static bool $suppressDefaultWorkspace = false;
+
     protected static function booted(): void
     {
         static::created(function (User $user): void {
+            if (static::$suppressDefaultWorkspace) {
+                return;
+            }
+
             $workspace = Workspace::create([
                 'name' => 'Personal',
                 'slug' => Workspace::uniqueSlug($user->name ?: $user->email ?: 'workspace'),
@@ -55,6 +61,21 @@ class User extends Authenticatable implements OAuthenticatable
 
             $user->forceFill(['active_workspace_id' => $workspace->id])->save();
         });
+    }
+
+    /**
+     * Run the given callback while suppressing the auto-created personal workspace.
+     */
+    public static function withoutDefaultWorkspace(\Closure $callback): mixed
+    {
+        $previous = static::$suppressDefaultWorkspace;
+        static::$suppressDefaultWorkspace = true;
+
+        try {
+            return $callback();
+        } finally {
+            static::$suppressDefaultWorkspace = $previous;
+        }
     }
 
     public function initials(): string

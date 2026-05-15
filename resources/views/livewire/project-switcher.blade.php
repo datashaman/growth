@@ -40,13 +40,19 @@ new class extends Component {
 <div class="flex w-full flex-col gap-1.5">
     <div class="flex items-center gap-1">
         @if ($this->projects->isEmpty())
-            <flux:text size="sm" class="flex-1 px-3 text-zinc-500 dark:text-zinc-400">{{ __('No projects') }}</flux:text>
+            <div class="flex flex-1 items-center gap-2 px-3 text-zinc-500 dark:text-zinc-400">
+                <flux:icon.folder class="size-4 shrink-0" />
+                <flux:text size="sm">{{ __('No projects') }}</flux:text>
+            </div>
         @else
-            <flux:select wire:model.live="selectedProjectId" size="sm" class="flex-1" :placeholder="__('Select a project')">
-                @foreach ($this->projects as $project)
-                    <flux:select.option value="{{ $project->id }}">{{ $project->name }}</flux:select.option>
-                @endforeach
-            </flux:select>
+            <div class="relative flex-1">
+                <flux:icon.folder class="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500 dark:text-zinc-400" />
+                <flux:select wire:model.live="selectedProjectId" size="sm" class="w-full ps-8" :placeholder="__('Select a project')">
+                    @foreach ($this->projects as $project)
+                        <flux:select.option value="{{ $project->id }}">{{ $project->name }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+            </div>
         @endif
         <flux:modal.trigger name="create-project">
             <flux:button size="sm" variant="ghost" icon="plus" :tooltip="__('New project')" />

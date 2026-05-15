@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', 'dashboard')->name('home');
 
+Route::livewire('invitations/{token}', 'pages::invitations.show')->name('invitations.show');
+
 Route::middleware('auth')->group(function () {
     Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');
     Route::livewire('intent', 'pages::intent')->name('intent');

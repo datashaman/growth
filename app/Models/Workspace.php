@@ -38,6 +38,11 @@ class Workspace extends Model
         return $this->hasMany(Project::class);
     }
 
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(WorkspaceInvitation::class);
+    }
+
     public static function uniqueSlug(string $base): string
     {
         $slug = Str::slug($base) ?: 'workspace';
