@@ -18,11 +18,30 @@ new #[Title('Verification')] class extends Component {
         unset($this->testPlans);
     }
 
+    /**
+     * @return array<string,string>
+     */
+    public function getListeners(): array
+    {
+        if ($this->selectedProjectId === null) {
+            return [];
+        }
+
+        return [
+            'echo-private:projects.'.$this->selectedProjectId.',ProjectDataChanged' => 'onProjectDataChanged',
+        ];
+    }
+
+    public function onProjectDataChanged(): void
+    {
+        unset($this->testPlans, $this->anomalies);
+    }
+
     #[Computed]
     public function testPlans()
     {
         return $this->selectedProject?->testPlans()
-            ->with('cases')
+            ->with(['cases.latestRun'])
             ->orderBy('level')
             ->orderBy('name')
             ->get()
@@ -97,6 +116,7 @@ new #[Title('Verification')] class extends Component {
                         <flux:table.column>{{ __('Case') }}</flux:table.column>
                         <flux:table.column>{{ __('Objective') }}</flux:table.column>
                         <flux:table.column>{{ __('Environment') }}</flux:table.column>
+                        <flux:table.column>{{ __('Latest run') }}</flux:table.column>
                         <flux:table.column></flux:table.column>
                     </flux:table.columns>
                     <flux:table.rows>
@@ -105,6 +125,14 @@ new #[Title('Verification')] class extends Component {
                                 <flux:table.cell class="font-medium">{{ $case->name }}</flux:table.cell>
                                 <flux:table.cell>{{ $case->objective ?? '—' }}</flux:table.cell>
                                 <flux:table.cell>{{ $case->environment ?? '—' }}</flux:table.cell>
+                                <flux:table.cell>
+                                    @if ($case->latestRun)
+                                        <flux:badge :color="BadgeVariant::testRunStatus($case->latestRun->status)" size="sm">{{ EnumLabel::lower($case->latestRun->status) }}</flux:badge>
+                                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{{ $case->latestRun->run_at?->diffForHumans() ?? '—' }}</div>
+                                    @else
+                                        <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('no runs') }}</flux:text>
+                                    @endif
+                                </flux:table.cell>
                                 <flux:table.cell>
                                     <div class="flex justify-end gap-1">
                                         <flux:button size="xs" icon="pencil-square" variant="ghost"
