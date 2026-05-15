@@ -110,8 +110,9 @@ return new class extends Migration
 
         if (Schema::hasColumn('projects', 'user_id')) {
             Schema::table('projects', function (Blueprint $table) {
+                $table->dropForeign(['user_id']);
                 $table->dropIndex('projects_user_id_index');
-                $table->dropConstrainedForeignId('user_id');
+                $table->dropColumn('user_id');
             });
         }
 
