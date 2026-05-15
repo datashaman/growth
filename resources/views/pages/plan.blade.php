@@ -49,6 +49,16 @@ new #[Title('Plan')] class extends Component {
         return $this->selectedProject?->roles()->orderBy('name')->get() ?? collect();
     }
 
+    #[Computed]
+    public function baselines()
+    {
+        $plan = $this->selectedProject?->projectPlan;
+
+        return $plan
+            ? $plan->baselines()->with(['baselinedByUser', 'baselinedByAgent'])->orderByDesc('version')->get()
+            : collect();
+    }
+
     public function formatHours(?float $hours): string
     {
         if ($hours === null || $hours === 0.0) {
@@ -209,5 +219,31 @@ new #[Title('Plan')] class extends Component {
         <livewire:pages::roles.create-modal :project-id="$this->selectedProject->id" :key="'create-role-'.$this->selectedProject->id" />
         <livewire:pages::roles.edit-modal :key="'edit-role-'.$this->selectedProject->id" />
         <livewire:pages::roles.delete-modal :key="'delete-role-'.$this->selectedProject->id" />
+
+        <x-data-table
+            :title="__('Baselines')"
+            :count="$this->baselines->count()"
+            :count-label="__('captured')"
+            :empty="$this->baselines->isEmpty()"
+            :empty-message="__('No baselines captured. Create one via the baseline-plan MCP tool.')">
+            <flux:table class="[&_td]:align-top">
+                <flux:table.columns>
+                    <flux:table.column class="w-20">{{ __('Version') }}</flux:table.column>
+                    <flux:table.column class="w-48">{{ __('Baselined') }}</flux:table.column>
+                    <flux:table.column class="w-48">{{ __('By') }}</flux:table.column>
+                    <flux:table.column>{{ __('Note') }}</flux:table.column>
+                </flux:table.columns>
+                <flux:table.rows>
+                    @foreach ($this->baselines as $baseline)
+                        <flux:table.row>
+                            <flux:table.cell class="font-medium tabular-nums">v{{ $baseline->version }}</flux:table.cell>
+                            <flux:table.cell>{{ $baseline->baselined_at?->format('Y-m-d H:i') ?? '—' }}</flux:table.cell>
+                            <flux:table.cell>{{ $baseline->baselinedByUser?->name ?? $baseline->baselinedByAgent?->name ?? '—' }}</flux:table.cell>
+                            <flux:table.cell class="whitespace-normal break-words">{{ $baseline->note ?? '—' }}</flux:table.cell>
+                        </flux:table.row>
+                    @endforeach
+                </flux:table.rows>
+            </flux:table>
+        </x-data-table>
     @endif
 </div>
