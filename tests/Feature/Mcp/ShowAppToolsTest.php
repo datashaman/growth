@@ -3,8 +3,8 @@
 use App\Mcp\Servers\GovernanceServer;
 use App\Mcp\Servers\IntakeServer;
 use App\Mcp\Servers\ReadonlyServer;
-use App\Mcp\Tools\Dashboard\ShowCapabilityExplorer;
 use App\Mcp\Tools\Dashboard\ShowGateStatus;
+use App\Mcp\Tools\Dashboard\ShowRequirementExplorer;
 use App\Mcp\Tools\Dashboard\ShowTraceGraph;
 use App\Models\Project;
 use App\Models\User;
@@ -39,14 +39,14 @@ it('lists the show-* app tools on the right servers with the right resourceUri',
 
     expect(collect($readonlyTools)->pluck('name')->all())->toContain(
         'show-gate-status',
-        'show-capability-explorer',
+        'show-requirement-explorer',
         'show-trace-graph',
     )
         ->and(collect($readonlyTools)->firstWhere('name', 'show-gate-status')['_meta']['ui']['resourceUri'])->toBe('ui://resources/gate-status')
-        ->and(collect($readonlyTools)->firstWhere('name', 'show-capability-explorer')['_meta']['ui']['resourceUri'])->toBe('ui://resources/capability-explorer')
+        ->and(collect($readonlyTools)->firstWhere('name', 'show-requirement-explorer')['_meta']['ui']['resourceUri'])->toBe('ui://resources/requirement-explorer')
         ->and(collect($readonlyTools)->firstWhere('name', 'show-trace-graph')['_meta']['ui']['resourceUri'])->toBe('ui://resources/trace-graph')
         ->and(collect($governanceTools)->pluck('name')->all())->toContain('show-gate-status')
-        ->and(collect($intakeTools)->pluck('name')->all())->toContain('show-capability-explorer');
+        ->and(collect($intakeTools)->pluck('name')->all())->toContain('show-requirement-explorer');
 });
 
 it('returns a confirmation payload from each show tool with the selected project_id', function () {
@@ -62,9 +62,9 @@ it('returns a confirmation payload from each show tool with the selected project
         ->assertSee('Gate status app loaded.')
         ->assertSee($project->id);
 
-    ReadonlyServer::tool(ShowCapabilityExplorer::class, ['project_id' => $project->id])
+    ReadonlyServer::tool(ShowRequirementExplorer::class, ['project_id' => $project->id])
         ->assertOk()
-        ->assertSee('Capability explorer app loaded.')
+        ->assertSee('Requirement explorer app loaded.')
         ->assertSee($project->id);
 
     ReadonlyServer::tool(ShowTraceGraph::class, ['project_id' => $project->id])
@@ -73,5 +73,5 @@ it('returns a confirmation payload from each show tool with the selected project
         ->assertSee($project->id);
 
     GovernanceServer::tool(ShowGateStatus::class)->assertOk()->assertSee('Gate status app loaded.');
-    IntakeServer::tool(ShowCapabilityExplorer::class)->assertOk()->assertSee('Capability explorer app loaded.');
+    IntakeServer::tool(ShowRequirementExplorer::class)->assertOk()->assertSee('Requirement explorer app loaded.');
 });

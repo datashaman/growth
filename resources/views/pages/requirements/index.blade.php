@@ -6,7 +6,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Capabilities')] class extends Component {
+new #[Title('Requirements')] class extends Component {
     use ProjectScoped;
 
     #[Computed]
@@ -22,7 +22,7 @@ new #[Title('Capabilities')] class extends Component {
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-project-page-header
-        :title="__('Capabilities')"
+        :title="__('Requirements')"
         :description="__('Requirements the system must satisfy.')" />
 
     @if ($this->selectedProject === null)
@@ -32,7 +32,6 @@ new #[Title('Capabilities')] class extends Component {
         </flux:callout>
     @else
         <x-data-table
-            :title="__('Requirements')"
             :count="$this->requirements->count()"
             :count-label="__('captured')"
             :empty="$this->requirements->isEmpty()"
@@ -45,7 +44,7 @@ new #[Title('Capabilities')] class extends Component {
             </x-slot:actions>
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
-                    <flux:table.column>{{ __('Requirement') }}</flux:table.column>
+                    <flux:table.column>{{ __('Statement') }}</flux:table.column>
                     <flux:table.column>{{ __('Doc') }}</flux:table.column>
                     <flux:table.column>{{ __('Type') }}</flux:table.column>
                     <flux:table.column>{{ __('Priority') }}</flux:table.column>

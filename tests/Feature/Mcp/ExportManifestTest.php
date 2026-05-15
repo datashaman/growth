@@ -30,7 +30,7 @@ function fullManifest(): array
             ['slug' => 'perf', 'text' => 'Performance budgets must hold.', 'raised_by' => 'pm'],
             ['slug' => 'auth', 'text' => 'Authentication must be hardened.', 'raised_by' => 'sec'],
         ],
-        'capabilities' => [
+        'requirements' => [
             ['slug' => 'cap-a', 'text' => 'The app shall greet users.', 'type' => 'functional', 'priority' => 'high'],
             ['slug' => 'cap-b', 'text' => 'The app shall persist state.', 'type' => 'functional'],
         ],
@@ -77,7 +77,7 @@ function fullManifest(): array
                     'name' => 'Implement greeting',
                     'kind' => 'deliverable',
                     'status' => 'todo',
-                    'capabilities' => ['cap-a'],
+                    'requirements' => ['cap-a'],
                     'milestones' => ['m1'],
                     'responsible_role' => 'fe',
                 ],
@@ -86,7 +86,7 @@ function fullManifest(): array
                     'name' => 'Wire persistence',
                     'kind' => 'task',
                     'status' => 'todo',
-                    'capabilities' => ['cap-b'],
+                    'requirements' => ['cap-b'],
                     'dependencies' => [['work_item' => 'wi-1', 'kind' => 'finish_to_start']],
                 ],
             ],
@@ -103,7 +103,7 @@ function fullManifest(): array
                             'slug' => 'c-greet',
                             'name' => 'greeting renders',
                             'expected_results' => 'The greeting element is visible after first load.',
-                            'verifies_capabilities' => ['cap-a'],
+                            'verifies_requirements' => ['cap-a'],
                         ],
                     ],
                 ],
@@ -176,8 +176,8 @@ it('round-trips a fully populated project through apply→export→re-apply with
             ->where('counts.stakeholders_updated', 0)
             ->where('counts.concerns_created', 0)
             ->where('counts.concerns_updated', 0)
-            ->where('counts.capabilities_created', 0)
-            ->where('counts.capabilities_updated', 0)
+            ->where('counts.requirements_created', 0)
+            ->where('counts.requirements_updated', 0)
             ->where('counts.viewpoints_created', 0)
             ->where('counts.viewpoints_updated', 0)
             ->where('counts.views_created', 0)

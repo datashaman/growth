@@ -12,7 +12,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Evaluate lifecycle readiness gates across capabilities, architecture, verification, planning, review, change control, and implementation.')]
+#[Description('Evaluate lifecycle readiness gates across requirements, architecture, verification, planning, review, change control, and implementation.')]
 class EvaluateReadinessGates extends Tool
 {
     public function __construct(private readonly ReadinessGateEvaluator $evaluator) {}

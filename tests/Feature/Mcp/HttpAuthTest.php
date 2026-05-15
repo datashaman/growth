@@ -43,7 +43,7 @@ it('lists the intake authoring toolset without requiring pagination', function (
 
     expect($toolNames)->toContain(
         'upsert-project',
-        'upsert-capabilities',
+        'upsert-requirements',
         'upsert-source',
         'upsert-citation',
         'lookup-term',

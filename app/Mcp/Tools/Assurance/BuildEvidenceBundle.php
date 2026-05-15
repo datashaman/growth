@@ -46,7 +46,7 @@ class BuildEvidenceBundle extends Tool
             'resources' => [
                 'index' => "growth://projects/{$project->id}",
                 'intent' => "growth://projects/{$project->id}/intent",
-                'capabilities' => "growth://projects/{$project->id}/capabilities",
+                'requirements' => "growth://projects/{$project->id}/requirements",
                 'architecture' => "growth://projects/{$project->id}/architecture",
                 'verification' => "growth://projects/{$project->id}/verification",
                 'plan' => "growth://projects/{$project->id}/plan",
@@ -56,7 +56,7 @@ class BuildEvidenceBundle extends Tool
             'counts' => [
                 'stakeholders' => $project->stakeholders_count,
                 'concerns' => $project->concerns_count,
-                'capabilities' => $project->requirements_count,
+                'requirements' => $project->requirements_count,
                 'architecture_views' => $project->design_views_count,
                 'verification_plans' => $project->test_plans_count,
                 'work_items' => $project->work_items_count,

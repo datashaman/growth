@@ -1,19 +1,19 @@
 <?php
 
 use App\Mcp\Servers\IntakeServer;
-use App\Mcp\Tools\Capabilities\UpsertCapabilities;
+use App\Mcp\Tools\Requirements\UpsertRequirements;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\User;
 use Laravel\Passport\Passport;
 
-it('upserts multiple capabilities in one batch and reports per-item failures without aborting', function () {
+it('upserts multiple requirements in one batch and reports per-item failures without aborting', function () {
     $user = User::factory()->create();
     Passport::actingAs($user, ['mcp:use']);
 
     $project = Project::create(['workspace_id' => $user->active_workspace_id, 'name' => 'Batchy', 'rigor_level' => 2]);
 
-    $response = IntakeServer::tool(UpsertCapabilities::class, [
+    $response = IntakeServer::tool(UpsertRequirements::class, [
         'items' => [
             [
                 'project_id' => $project->id,

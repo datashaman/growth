@@ -23,7 +23,7 @@ it('returns all seven sections by default', function () {
         });
 
     expect(array_keys($captured['sections']))
-        ->toBe(['baselines', 'changes', 'capabilities', 'architecture', 'verification', 'planning', 'reviews']);
+        ->toBe(['baselines', 'changes', 'requirements', 'architecture', 'verification', 'planning', 'reviews']);
 });
 
 it('filters to the requested sections when sections is provided', function () {

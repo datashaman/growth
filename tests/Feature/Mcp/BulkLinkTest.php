@@ -27,7 +27,7 @@ beforeEach(function () {
         'name' => 'Build it',
     ]);
 
-    $this->capability = Requirement::create([
+    $this->requirement = Requirement::create([
         'project_id' => $this->project->id,
         'doc' => 'srs',
         'type' => 'functional',
@@ -60,7 +60,7 @@ it('attaches work-item to requirements, work-item to milestones, and concerns to
             [
                 'link_type' => 'work_item_to_requirements',
                 'from_id' => $this->workItem->id,
-                'to_ids' => [$this->capability->id],
+                'to_ids' => [$this->requirement->id],
             ],
             [
                 'link_type' => 'work_item_to_milestones',
@@ -100,7 +100,7 @@ it('reports per-tuple errors without aborting the batch', function () {
             [
                 'link_type' => 'work_item_to_requirements',
                 'from_id' => $this->workItem->id,
-                'to_ids' => [$this->capability->id],
+                'to_ids' => [$this->requirement->id],
             ],
             [
                 'link_type' => 'work_item_to_requirements',
@@ -110,7 +110,7 @@ it('reports per-tuple errors without aborting the batch', function () {
             [
                 'link_type' => 'invalid_type',
                 'from_id' => $this->workItem->id,
-                'to_ids' => [$this->capability->id],
+                'to_ids' => [$this->requirement->id],
             ],
         ],
     ]);
@@ -134,7 +134,7 @@ it('rejects more than 100 link items in a single call', function () {
     $items = array_fill(0, 101, [
         'link_type' => 'work_item_to_requirements',
         'from_id' => $this->workItem->id,
-        'to_ids' => [$this->capability->id],
+        'to_ids' => [$this->requirement->id],
     ]);
 
     PlanningServer::tool(BulkLink::class, ['items' => $items])

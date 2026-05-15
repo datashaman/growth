@@ -55,7 +55,7 @@ GROWTH_USER_EMAIL='marlin@example.com' php artisan mcp:start intake
 Available MCP role handles:
 
 - `all` — complete power-user surface with every registered tool, resource, and prompt
-- `intake` — project intent, stakeholders, concerns, sources, citations, and capabilities
+- `intake` — project intent, stakeholders, concerns, sources, citations, and requirements
 - `architecture` — architecture viewpoints, views, elements, and coverage
 - `planning` — delivery plans, roles, agents, milestones, work items, risks, releases, and deployments
 - `verification` — verification plans, cases, runs, anomalies, check evidence, and readiness

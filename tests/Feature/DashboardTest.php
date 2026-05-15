@@ -60,8 +60,8 @@ test('dashboard readiness gates render their findings inline', function () {
         ->assertOk()
         ->assertSee('Readiness')
         ->assertSee('rule: requirement contains TBD/TBS/TBR — not complete')
-        ->assertSee('aria-controls="gate-findings-capabilities"', false)
-        ->assertSee('id="gate-findings-capabilities"', false);
+        ->assertSee('aria-controls="gate-findings-requirements"', false)
+        ->assertSee('id="gate-findings-requirements"', false);
 });
 
 test('dashboard implementation table lists work items', function () {

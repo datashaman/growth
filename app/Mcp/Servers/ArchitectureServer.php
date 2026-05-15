@@ -3,9 +3,9 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Resources\ArchitectureResource;
-use App\Mcp\Resources\CapabilitiesResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
+use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Architecture\DeleteArchitectureElement;
@@ -17,11 +17,11 @@ use App\Mcp\Tools\Architecture\ListArchitectureViews;
 use App\Mcp\Tools\Architecture\UpsertArchitectureElements;
 use App\Mcp\Tools\Architecture\UpsertArchitectureView;
 use App\Mcp\Tools\Architecture\UpsertArchitectureViewpoint;
-use App\Mcp\Tools\Capabilities\ListCapabilities;
 use App\Mcp\Tools\Common\BulkLink;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\ListProjects;
+use App\Mcp\Tools\Requirements\ListRequirements;
 use App\Mcp\Tools\Trace\TraceQuery;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -38,7 +38,7 @@ class ArchitectureServer extends Server
     protected array $tools = [
         WhoAmI::class,
         ListProjects::class,
-        ListCapabilities::class,
+        ListRequirements::class,
         UpsertArchitectureViewpoint::class,
         ListArchitectureViewpoints::class,
         DeleteArchitectureViewpoint::class,
@@ -57,7 +57,7 @@ class ArchitectureServer extends Server
         PlaybookResource::class,
         RigorLevelsResource::class,
         ProjectIndexResource::class,
-        CapabilitiesResource::class,
+        RequirementsResource::class,
         ArchitectureResource::class,
     ];
 }

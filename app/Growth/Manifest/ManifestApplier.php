@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
- * Applies a Growth project manifest (project + stakeholders + concerns + capabilities +
+ * Applies a Growth project manifest (project + stakeholders + concerns + requirements +
  * architecture viewpoints/views/elements + plan/roles/milestones/work_items +
  * verification plans/cases) inside a single transaction. Supports three modes
  * (fail | merge | replace) and a dry-run that always rolls back.
@@ -32,7 +32,7 @@ use RuntimeException;
  *     'mode': 'fail'|'merge'|'replace',
  *     'dry_run': bool,
  *     'counts': { '<entity>_created|_updated|_deleted': int|bool, ... },
- *     'slugs': { 'capabilities': {...}, 'stakeholders': {...}, 'concerns': {...},
+ *     'slugs': { 'requirements': {...}, 'stakeholders': {...}, 'concerns': {...},
  *                'viewpoints': {...}, 'views': {...}, 'elements': {...} },
  *     'drift': [ {'entity': '...', 'identifier': '...', 'exported_at': '...', 'current_at': '...'} ],
  *   }
@@ -91,7 +91,7 @@ class ManifestApplier
             'project_created' => false, 'project_updated' => false,
             'stakeholders_created' => 0, 'stakeholders_updated' => 0, 'stakeholders_deleted' => 0,
             'concerns_created' => 0,     'concerns_updated' => 0,     'concerns_deleted' => 0,
-            'capabilities_created' => 0, 'capabilities_updated' => 0, 'capabilities_deleted' => 0,
+            'requirements_created' => 0, 'requirements_updated' => 0, 'requirements_deleted' => 0,
             'viewpoints_created' => 0,   'viewpoints_updated' => 0,   'viewpoints_deleted' => 0,
             'views_created' => 0,        'views_updated' => 0,        'views_deleted' => 0,
             'elements_created' => 0,     'elements_updated' => 0,     'elements_deleted' => 0,
@@ -103,7 +103,7 @@ class ManifestApplier
             'verification_cases_created' => 0, 'verification_cases_updated' => 0, 'verification_cases_deleted' => 0,
         ];
         $slugs = [
-            'capabilities' => [], 'stakeholders' => [], 'concerns' => [],
+            'requirements' => [], 'stakeholders' => [], 'concerns' => [],
             'viewpoints' => [], 'views' => [], 'elements' => [],
             'roles' => [], 'milestones' => [], 'work_items' => [],
             'verification_plans' => [], 'verification_cases' => [],
@@ -132,7 +132,7 @@ class ManifestApplier
             DesignView::where('project_id', $project->id)->delete();
             $counts['viewpoints_deleted'] = CustomViewpoint::where('project_id', $project->id)->count();
             CustomViewpoint::where('project_id', $project->id)->delete();
-            $counts['capabilities_deleted'] = Requirement::where('project_id', $project->id)->count();
+            $counts['requirements_deleted'] = Requirement::where('project_id', $project->id)->count();
             Requirement::where('project_id', $project->id)->delete();
             $counts['concerns_deleted'] = Concern::where('project_id', $project->id)->count();
             Concern::where('project_id', $project->id)->delete();
@@ -154,9 +154,9 @@ class ManifestApplier
             }
         }
 
-        foreach (($manifest['capabilities'] ?? []) as $row) {
-            $capability = $this->applyCapability($row, $project->id, $effectiveMode, $counts, $drift);
-            $slugs['capabilities'][$capability->slug] = $capability->id;
+        foreach (($manifest['requirements'] ?? []) as $row) {
+            $requirement = $this->applyRequirement($row, $project->id, $effectiveMode, $counts, $drift);
+            $slugs['requirements'][$requirement->slug] = $requirement->id;
         }
 
         $architecture = $manifest['architecture'] ?? [];
@@ -201,7 +201,7 @@ class ManifestApplier
             }
 
             // Two-pass work items: pass 1 creates/updates without parent/dependency
-            // links; pass 2 resolves parent + dependencies + capability/milestone
+            // links; pass 2 resolves parent + dependencies + requirement/milestone
             // pivots once every work item's slug is in the map.
             $workItemRows = $plan['work_items'] ?? [];
             $workItems = [];
@@ -375,7 +375,7 @@ class ManifestApplier
      * @param  array<string,mixed>  $counts
      * @param  array<int,array<string,mixed>>  $drift
      */
-    private function applyCapability(array $input, string $projectId, string $mode, array &$counts, array &$drift): Requirement
+    private function applyRequirement(array $input, string $projectId, string $mode, array &$counts, array &$drift): Requirement
     {
         $fields = array_intersect_key($input, array_flip([
             'slug', 'doc', 'type', 'text', 'rationale', 'acceptance_criteria', 'source', 'priority', 'tags',
@@ -385,10 +385,10 @@ class ManifestApplier
         $existing = Requirement::where('project_id', $projectId)->where('slug', $fields['slug'])->first();
 
         if ($existing) {
-            $this->checkDrift('capability', $existing->updated_at, $input['_exported_at'] ?? null, $existing->slug, $drift);
+            $this->checkDrift('requirement', $existing->updated_at, $input['_exported_at'] ?? null, $existing->slug, $drift);
 
             if ($mode === 'fail') {
-                $this->failOnCollision('capability', $existing, $fields);
+                $this->failOnCollision('requirement', $existing, $fields);
 
                 return $existing;
             }
@@ -396,14 +396,14 @@ class ManifestApplier
             $existing->fill($fields);
             if ($existing->isDirty()) {
                 $existing->save();
-                $counts['capabilities_updated']++;
+                $counts['requirements_updated']++;
             }
 
             return $existing;
         }
 
         $created = Requirement::create($fields + ['project_id' => $projectId]);
-        $counts['capabilities_created']++;
+        $counts['requirements_created']++;
 
         return $created;
     }
@@ -718,7 +718,7 @@ class ManifestApplier
 
     /**
      * Pass 2 of work item application: resolves parent slug, dependencies,
-     * and pivot links to capabilities + milestones once every work item in
+     * and pivot links to requirements + milestones once every work item in
      * the manifest has an ULID.
      *
      * @param  array<string,mixed>  $input
@@ -752,12 +752,12 @@ class ManifestApplier
             $workItem->save();
         }
 
-        if (array_key_exists('capabilities', $input)) {
+        if (array_key_exists('requirements', $input)) {
             $ids = [];
-            foreach ((array) $input['capabilities'] as $ref) {
-                $ids[] = $slugs['capabilities'][$ref]
+            foreach ((array) $input['requirements'] as $ref) {
+                $ids[] = $slugs['requirements'][$ref]
                     ?? Requirement::where('project_id', $projectId)->where('slug', $ref)->value('id')
-                    ?? throw new RuntimeException("Work item [{$workItem->name}] references unknown capability [{$ref}].");
+                    ?? throw new RuntimeException("Work item [{$workItem->name}] references unknown requirement [{$ref}].");
             }
             $workItem->requirements()->sync($ids);
         }
@@ -841,13 +841,13 @@ class ManifestApplier
             'expected_results', 'environment',
         ]));
 
-        $capabilityIds = null;
-        if (array_key_exists('verifies_capabilities', $input)) {
-            $capabilityIds = [];
-            foreach ((array) $input['verifies_capabilities'] as $ref) {
-                $capabilityIds[] = $slugs['capabilities'][$ref]
+        $requirementIds = null;
+        if (array_key_exists('verifies_requirements', $input)) {
+            $requirementIds = [];
+            foreach ((array) $input['verifies_requirements'] as $ref) {
+                $requirementIds[] = $slugs['requirements'][$ref]
                     ?? Requirement::where('project_id', $projectId)->where('slug', $ref)->value('id')
-                    ?? throw new RuntimeException("Verification case [{$input['name']}] references unknown capability [{$ref}].");
+                    ?? throw new RuntimeException("Verification case [{$input['name']}] references unknown requirement [{$ref}].");
             }
         }
 
@@ -866,8 +866,8 @@ class ManifestApplier
                 }
             }
 
-            if (is_array($capabilityIds)) {
-                $existing->requirements()->sync($capabilityIds);
+            if (is_array($requirementIds)) {
+                $existing->requirements()->sync($requirementIds);
             }
 
             return $existing;
@@ -876,8 +876,8 @@ class ManifestApplier
         $created = TestCase::create($fields + ['test_plan_id' => $planId]);
         $counts['verification_cases_created']++;
 
-        if (is_array($capabilityIds)) {
-            $created->requirements()->sync($capabilityIds);
+        if (is_array($requirementIds)) {
+            $created->requirements()->sync($requirementIds);
         }
 
         return $created;

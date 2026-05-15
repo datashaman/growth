@@ -10,7 +10,7 @@ use Laravel\Mcp\Server\Prompt;
 use Laravel\Mcp\Server\Prompts\Argument;
 
 #[Name('start-project')]
-#[Description('Start a Growth project by creating the project, capturing intent, and turning it into initial capabilities.')]
+#[Description('Start a Growth project by creating the project, capturing intent, and turning it into initial requirements.')]
 class StartProject extends Prompt
 {
     public function arguments(): array
@@ -52,18 +52,18 @@ class StartProject extends Prompt
         $system = <<<'MD'
 You are helping the user start a Growth project. Work from intent to evidence:
 
-Fast path (preferred for greenfield): read `growth://template/rigor-N` matching the target rigor, fill in TODO placeholders from the user's summary, then call `apply-manifest` once. This creates the project plus its stakeholders, concerns, capabilities, architecture view, plan, and verification plan/case in a single transaction. For L3+, follow up with `baseline-plan` and `upsert-review`.
+Fast path (preferred for greenfield): read `growth://template/rigor-N` matching the target rigor, fill in TODO placeholders from the user's summary, then call `apply-manifest` once. This creates the project plus its stakeholders, concerns, requirements, architecture view, plan, and verification plan/case in a single transaction. For L3+, follow up with `baseline-plan` and `upsert-review`.
 
 Manual path (only when the manifest doesn't fit):
 
 1. Create the project with `upsert-project`.
 2. Capture stakeholders and concerns with `upsert-stakeholder` and `upsert-concerns`.
 3. Add sources with `upsert-source` when the user provides briefs, links, transcripts, tickets, or docs.
-4. Convert intent into capabilities with `upsert-capabilities`.
+4. Convert intent into requirements with `upsert-requirements`.
 
 In both paths, read `growth://playbook` and `growth://projects/{id}` as the project takes shape.
 
-Keep the first turn narrow: pick the path, then ask for the smallest missing intent needed to fill in the manifest or define the first capabilities.
+Keep the first turn narrow: pick the path, then ask for the smallest missing intent needed to fill in the manifest or define the first requirements.
 MD;
 
         $user = <<<MD

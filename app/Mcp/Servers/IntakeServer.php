@@ -4,25 +4,25 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Prompts\CaptureIntent;
 use App\Mcp\Prompts\StartProject;
-use App\Mcp\Resources\CapabilitiesResource;
-use App\Mcp\Resources\CapabilityExplorerApp;
 use App\Mcp\Resources\IntentResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
+use App\Mcp\Resources\RequirementExplorerApp;
+use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
-use App\Mcp\Tools\Capabilities\DeleteCapability;
-use App\Mcp\Tools\Capabilities\ListCapabilities;
-use App\Mcp\Tools\Capabilities\UpsertCapabilities;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Concerns\DeleteConcern;
 use App\Mcp\Tools\Concerns\UpsertConcerns;
-use App\Mcp\Tools\Dashboard\ShowCapabilityExplorer;
+use App\Mcp\Tools\Dashboard\ShowRequirementExplorer;
 use App\Mcp\Tools\Glossary\LookupTerm;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\DeleteProject;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Projects\UpsertProject;
+use App\Mcp\Tools\Requirements\DeleteRequirement;
+use App\Mcp\Tools\Requirements\ListRequirements;
+use App\Mcp\Tools\Requirements\UpsertRequirements;
 use App\Mcp\Tools\Sources\CiteArtifact;
 use App\Mcp\Tools\Sources\DeleteCitation;
 use App\Mcp\Tools\Sources\DeleteSource;
@@ -41,7 +41,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Intake Server')]
 #[Version('0.1.0')]
-#[Instructions('Capture project intent, stakeholders, concerns, sources, citations, and initial capabilities.')]
+#[Instructions('Capture project intent, stakeholders, concerns, sources, citations, and initial requirements.')]
 class IntakeServer extends Server
 {
     use RoleServerDefaults;
@@ -63,13 +63,13 @@ class IntakeServer extends Server
         DeleteCitation::class,
         CiteArtifact::class,
         UncitArtifact::class,
-        UpsertCapabilities::class,
-        ListCapabilities::class,
-        DeleteCapability::class,
+        UpsertRequirements::class,
+        ListRequirements::class,
+        DeleteRequirement::class,
         LookupTerm::class,
         LintProject::class,
         TraceQuery::class,
-        ShowCapabilityExplorer::class,
+        ShowRequirementExplorer::class,
     ];
 
     protected array $resources = [
@@ -77,8 +77,8 @@ class IntakeServer extends Server
         RigorLevelsResource::class,
         ProjectIndexResource::class,
         IntentResource::class,
-        CapabilitiesResource::class,
-        CapabilityExplorerApp::class,
+        RequirementsResource::class,
+        RequirementExplorerApp::class,
     ];
 
     protected array $prompts = [

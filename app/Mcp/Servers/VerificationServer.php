@@ -3,23 +3,23 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Prompts\CheckReadiness;
-use App\Mcp\Resources\CapabilitiesResource;
 use App\Mcp\Resources\EvidenceResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\ReadinessResource;
+use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Resources\VerificationResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Assurance\BuildEvidenceBundle;
 use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
 use App\Mcp\Tools\Assurance\ReportEvidenceGaps;
-use App\Mcp\Tools\Capabilities\ListCapabilities;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Plan\ListCheckRuns;
 use App\Mcp\Tools\Plan\UpsertCheckRun;
 use App\Mcp\Tools\Projects\ListProjects;
+use App\Mcp\Tools\Requirements\ListRequirements;
 use App\Mcp\Tools\Trace\TraceQuery;
 use App\Mcp\Tools\Verification\DeleteAnomaly;
 use App\Mcp\Tools\Verification\DeleteVerificationCase;
@@ -48,7 +48,7 @@ class VerificationServer extends Server
     protected array $tools = [
         WhoAmI::class,
         ListProjects::class,
-        ListCapabilities::class,
+        ListRequirements::class,
         UpsertVerificationPlan::class,
         ListVerificationPlans::class,
         DeleteVerificationPlan::class,
@@ -74,7 +74,7 @@ class VerificationServer extends Server
         PlaybookResource::class,
         RigorLevelsResource::class,
         ProjectIndexResource::class,
-        CapabilitiesResource::class,
+        RequirementsResource::class,
         VerificationResource::class,
         EvidenceResource::class,
         ReadinessResource::class,

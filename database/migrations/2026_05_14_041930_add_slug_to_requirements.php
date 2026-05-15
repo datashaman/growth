@@ -25,7 +25,7 @@ return new class extends Migration
                 foreach ($rows as $row) {
                     $base = Str::limit(Str::slug((string) $row->text), 100, '');
                     if ($base === '') {
-                        $base = 'capability';
+                        $base = 'requirement';
                     }
                     $used = $usedByProject[$row->project_id] ?? [];
                     $slug = $base;

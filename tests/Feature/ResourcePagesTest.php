@@ -32,7 +32,7 @@ test('intent page renders stakeholders and concerns for the selected project', f
         ->assertSee('Re-entry heating margins');
 });
 
-test('capabilities page renders requirements for the selected project', function () {
+test('requirements page renders requirements for the selected project', function () {
     $this->project->requirements()->create([
         'doc' => 'srs',
         'type' => 'functional',
@@ -41,9 +41,9 @@ test('capabilities page renders requirements for the selected project', function
     ]);
 
     $this->actingAs($this->user)
-        ->get('/capabilities?project='.$this->project->id)
+        ->get('/requirements?project='.$this->project->id)
         ->assertOk()
-        ->assertSee('Capabilities')
+        ->assertSee('Requirements')
         ->assertSee('ignite descent engine')
         ->assertSee('SRS');
 });
@@ -163,7 +163,7 @@ test('evidence page renders releases, deployments, and delivery links', function
 });
 
 test('resource pages redirect guests to login', function () {
-    foreach (['intent', 'capabilities', 'architecture', 'verification', 'plan', 'evidence'] as $path) {
+    foreach (['intent', 'requirements', 'architecture', 'verification', 'plan', 'evidence'] as $path) {
         $this->get('/'.$path)->assertRedirect('/login');
     }
 });

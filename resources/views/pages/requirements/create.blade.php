@@ -114,8 +114,8 @@ new #[Title('New requirement')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-detail-page-header
         :title="__('New requirement')"
-        back-route="capabilities"
-        :back-label="__('Cancel and return to capabilities')">
+        back-route="requirements"
+        :back-label="__('Cancel and return to requirements')">
         <x-slot:description>
             {{ __('In project') }} <a href="{{ route('dashboard', ['project' => $this->project->id]) }}" class="underline">{{ $this->project->name }}</a>
         </x-slot:description>
@@ -123,8 +123,7 @@ new #[Title('New requirement')] class extends Component {
 
     <form wire:submit="save" class="space-y-6">
         <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-            <flux:heading size="lg" class="mb-3">{{ __('Statement') }}</flux:heading>
-            <flux:textarea wire:model="text" :label="__('Text')" rows="4" required />
+            <flux:textarea wire:model="text" :label="__('Statement')" rows="4" required />
             <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <flux:select wire:model="doc" :label="__('Doc')">
                     <flux:select.option value="strs">STRS — {{ __('Stakeholder requirements') }}</flux:select.option>
@@ -172,7 +171,7 @@ new #[Title('New requirement')] class extends Component {
         </section>
 
         <div class="flex justify-end gap-2">
-            <flux:button :href="route('capabilities')" wire:navigate variant="filled">{{ __('Cancel') }}</flux:button>
+            <flux:button :href="route('requirements')" wire:navigate variant="filled">{{ __('Cancel') }}</flux:button>
             <flux:button type="submit" variant="primary">{{ __('Create requirement') }}</flux:button>
         </div>
     </form>

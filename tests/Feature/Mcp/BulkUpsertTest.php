@@ -5,9 +5,9 @@ use App\Mcp\Servers\IntakeServer;
 use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Servers\VerificationServer;
 use App\Mcp\Tools\Architecture\UpsertArchitectureElements;
-use App\Mcp\Tools\Capabilities\UpsertCapabilities;
 use App\Mcp\Tools\Concerns\UpsertConcerns;
 use App\Mcp\Tools\Plan\UpsertWorkItems;
+use App\Mcp\Tools\Requirements\UpsertRequirements;
 use App\Mcp\Tools\Verification\UpsertVerificationCases;
 use App\Models\DesignView;
 use App\Models\Project;
@@ -105,7 +105,7 @@ it('upserts a batch of architecture elements with mixed success and failure', fu
     });
 });
 
-it('upserts a batch of verification cases with mixed success and failure and syncs capabilities', function () {
+it('upserts a batch of verification cases with mixed success and failure and syncs requirements', function () {
     $cap = Requirement::create([
         'project_id' => $this->project->id,
         'doc' => 'srs',
@@ -127,13 +127,13 @@ it('upserts a batch of verification cases with mixed success and failure and syn
                 'test_plan_id' => $plan->id,
                 'name' => 'Happy path',
                 'expected_results' => 'It works.',
-                'verifies_capability_ids' => [$cap->id],
+                'verifies_requirement_ids' => [$cap->id],
             ],
             [
                 'test_plan_id' => $plan->id,
                 'name' => 'No caps',
                 'expected_results' => 'It works.',
-                'verifies_capability_ids' => [],
+                'verifies_requirement_ids' => [],
             ],
         ],
     ]);
@@ -141,15 +141,15 @@ it('upserts a batch of verification cases with mixed success and failure and syn
     $response->assertOk()->assertStructuredContent(function ($json) {
         $json->has('items', 2)
             ->where('items.0.ok', true)
-            ->where('items.0.capabilities_verified', 1)
+            ->where('items.0.requirements_verified', 1)
             ->where('items.1.ok', false)
-            ->has('items.1.errors.verifies_capability_ids')
+            ->has('items.1.errors.verifies_requirement_ids')
             ->etc();
     });
 });
 
 it('rejects an empty items array', function () {
-    IntakeServer::tool(UpsertCapabilities::class, ['items' => []])
+    IntakeServer::tool(UpsertRequirements::class, ['items' => []])
         ->assertHasErrors();
 });
 
@@ -161,6 +161,6 @@ it('rejects more than 100 items in a single call', function () {
         'text' => 'The app shall do the thing repeatedly.',
     ]);
 
-    IntakeServer::tool(UpsertCapabilities::class, ['items' => $items])
+    IntakeServer::tool(UpsertRequirements::class, ['items' => $items])
         ->assertHasErrors(['Batches are capped at 100 items per call. Split into smaller batches.']);
 });

@@ -120,8 +120,7 @@ new #[Title('Edit requirement')] class extends Component {
 
     <form wire:submit="save" class="space-y-6">
         <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-            <flux:heading size="lg" class="mb-3">{{ __('Statement') }}</flux:heading>
-            <flux:textarea wire:model="text" :label="__('Text')" rows="4" required />
+            <flux:textarea wire:model="text" :label="__('Statement')" rows="4" required />
             <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <flux:select wire:model="doc" :label="__('Doc')">
                     <flux:select.option value="strs">STRS — {{ __('Stakeholder requirements') }}</flux:select.option>

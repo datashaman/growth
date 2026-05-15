@@ -10,15 +10,15 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Uri;
 
-#[Name('Capability Explorer')]
-#[Description('Interactive capability browser: filter capabilities by layer/type/priority, drill into acceptance checks, sources, derived design/test/work-item links, and capability lint findings.')]
-#[Uri('ui://resources/capability-explorer')]
+#[Name('Requirement Explorer')]
+#[Description('Interactive requirement browser: filter requirements by layer/type/priority, drill into acceptance checks, sources, derived design/test/work-item links, and requirement lint findings.')]
+#[Uri('ui://resources/requirement-explorer')]
 #[AppMeta]
-class CapabilityExplorerApp extends AppResource
+class RequirementExplorerApp extends AppResource
 {
     public function handle(Request $request): Response
     {
-        return Response::view('mcp.capability-explorer-app', [
+        return Response::view('mcp.requirement-explorer-app', [
             'title' => $this->title(),
         ]);
     }

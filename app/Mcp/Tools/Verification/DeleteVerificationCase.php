@@ -18,10 +18,10 @@ class DeleteVerificationCase extends Tool
         $data = $request->validate(['id' => 'required|string|owned_test_case']);
         $case = TestCaseModel::findOrFail($data['id']);
         $runs = $case->runs()->count();
-        $capabilities = $case->requirements()->count();
+        $requirements = $case->requirements()->count();
         $case->delete();
 
-        return Response::structured(['id' => $data['id'], 'deleted' => true, 'runs_deleted' => $runs, 'capabilities_unlinked' => $capabilities]);
+        return Response::structured(['id' => $data['id'], 'deleted' => true, 'runs_deleted' => $runs, 'requirements_unlinked' => $requirements]);
     }
 
     public function schema(JsonSchema $schema): array

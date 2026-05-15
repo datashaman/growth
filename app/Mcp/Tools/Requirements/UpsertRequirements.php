@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Mcp\Tools\Capabilities;
+namespace App\Mcp\Tools\Requirements;
 
 use App\Growth\Alignment\AlignmentText;
 use App\Growth\Lint\RequirementLinter;
@@ -15,8 +15,8 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Throwable;
 
-#[Description('Create or update up to 100 capabilities in one call. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
-class UpsertCapabilities extends Tool
+#[Description('Create or update up to 100 requirements in one call. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
+class UpsertRequirements extends Tool
 {
     public function __construct(private readonly RequirementLinter $linter) {}
 
@@ -69,17 +69,17 @@ class UpsertCapabilities extends Tool
                 'tags' => $data['tags'] ?? null,
             ];
 
-            $capability = $id
+            $requirement = $id
                 ? tap(Requirement::findOrFail($id))->update($payload)
                 : Requirement::create($payload);
 
             return [
                 'index' => $index,
                 'ok' => true,
-                'id' => $capability->id,
-                'created' => $capability->wasRecentlyCreated,
-                'layer' => AlignmentText::docToLayer($capability->doc),
-                'findings' => AlignmentText::sanitizeArray($this->linter->check($capability->fresh())),
+                'id' => $requirement->id,
+                'created' => $requirement->wasRecentlyCreated,
+                'layer' => AlignmentText::docToLayer($requirement->doc),
+                'findings' => AlignmentText::sanitizeArray($this->linter->check($requirement->fresh())),
             ];
         } catch (Throwable $e) {
             return [
@@ -116,13 +116,13 @@ class UpsertCapabilities extends Tool
         return [
             'items' => $schema->array()
                 ->items($schema->object(fn (JsonSchema $s) => [
-                    'id' => $s->string()->description('Existing capability ULID. Omit to create new.'),
+                    'id' => $s->string()->description('Existing requirement ULID. Omit to create new.'),
                     'project_id' => $s->string()->description('Project ULID')->required(),
-                    'parent_id' => $s->string()->description('Parent capability ULID for derived capabilities'),
-                    'layer' => $s->string()->description('Capability layer')->enum(['stakeholder', 'system', 'software'])->required(),
-                    'type' => $s->string()->description('Capability type')->enum(['functional', 'performance', 'usability', 'interface', 'design_constraint', 'process', 'non_functional'])->required(),
-                    'text' => $s->string()->description('Capability statement')->required(),
-                    'rationale' => $s->string()->description('Why this capability matters'),
+                    'parent_id' => $s->string()->description('Parent requirement ULID for derived requirements'),
+                    'layer' => $s->string()->description('Requirement layer')->enum(['stakeholder', 'system', 'software'])->required(),
+                    'type' => $s->string()->description('Requirement type')->enum(['functional', 'performance', 'usability', 'interface', 'design_constraint', 'process', 'non_functional'])->required(),
+                    'text' => $s->string()->description('Requirement statement')->required(),
+                    'rationale' => $s->string()->description('Why this requirement matters'),
                     'acceptance_checks' => $s->array()->description('Concrete pass/fail checks for acceptance'),
                     'source' => $s->string()->description('Originating stakeholder, source, or decision'),
                     'priority' => $s->string()->description('Delivery priority')->enum(['high', 'medium', 'low']),
@@ -130,7 +130,7 @@ class UpsertCapabilities extends Tool
                 ]))
                 ->min(1)
                 ->max(100)
-                ->description('Up to 100 capabilities to create or update. Items are committed independently; per-item failures are reported in the response without aborting the batch.')
+                ->description('Up to 100 requirements to create or update. Items are committed independently; per-item failures are reported in the response without aborting the batch.')
                 ->required(),
         ];
     }
@@ -145,7 +145,7 @@ class UpsertCapabilities extends Tool
                     'id' => $s->string()->description('Present on success'),
                     'created' => $s->boolean()->description('Present on success'),
                     'layer' => $s->string()->description('Present on success'),
-                    'findings' => $s->array()->description('Capability quality findings; present on success, empty array means clean'),
+                    'findings' => $s->array()->description('Requirement quality findings; present on success, empty array means clean'),
                     'error' => $s->string()->description('Present on unexpected failure'),
                     'errors' => $s->object()->description('Per-field validation errors; present on validation failure'),
                 ]))

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Mcp\Tools\Capabilities;
+namespace App\Mcp\Tools\Requirements;
 
 use App\Growth\Alignment\AlignmentText;
 use App\Models\Requirement;
@@ -11,8 +11,8 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('List capabilities for a project with optional layer, type, priority, and text filters. For relationships across entity types (which design elements, test cases, or work items derive from a capability), use `trace-query` with the capability id.')]
-class ListCapabilities extends Tool
+#[Description('List requirements for a project with optional layer, type, priority, and text filters. For relationships across entity types (which design elements, test cases, or work items derive from a requirement), use `trace-query` with the requirement id.')]
+class ListRequirements extends Tool
 {
     public function handle(Request $request): ResponseFactory
     {
@@ -49,16 +49,16 @@ class ListCapabilities extends Tool
             'total' => $total,
             'limit' => $limit,
             'offset' => $offset,
-            'results' => $rows->map(fn ($capability) => [
-                'id' => $capability->id,
-                'layer' => AlignmentText::docToLayer($capability->doc),
-                'type' => $capability->type,
-                'priority' => $capability->priority,
-                'text' => $capability->text,
-                'acceptance_checks' => $capability->acceptance_criteria ?? [],
-                'source' => $capability->source,
-                'parent_id' => $capability->parent_id,
-                'created_at' => $capability->created_at?->toIso8601String(),
+            'results' => $rows->map(fn ($requirement) => [
+                'id' => $requirement->id,
+                'layer' => AlignmentText::docToLayer($requirement->doc),
+                'type' => $requirement->type,
+                'priority' => $requirement->priority,
+                'text' => $requirement->text,
+                'acceptance_checks' => $requirement->acceptance_criteria ?? [],
+                'source' => $requirement->source,
+                'parent_id' => $requirement->parent_id,
+                'created_at' => $requirement->created_at?->toIso8601String(),
             ])->all(),
         ]);
     }
@@ -67,10 +67,10 @@ class ListCapabilities extends Tool
     {
         return [
             'project_id' => $schema->string()->description('Project ULID')->required(),
-            'layer' => $schema->string()->description('Filter by capability layer')->enum(['stakeholder', 'system', 'software']),
-            'type' => $schema->string()->description('Filter by capability type')->enum(['functional', 'performance', 'usability', 'interface', 'design_constraint', 'process', 'non_functional']),
+            'layer' => $schema->string()->description('Filter by requirement layer')->enum(['stakeholder', 'system', 'software']),
+            'type' => $schema->string()->description('Filter by requirement type')->enum(['functional', 'performance', 'usability', 'interface', 'design_constraint', 'process', 'non_functional']),
             'priority' => $schema->string()->description('Filter by priority')->enum(['high', 'medium', 'low']),
-            'q' => $schema->string()->description('Substring match on capability text'),
+            'q' => $schema->string()->description('Substring match on requirement text'),
             'limit' => $schema->integer()->description('Page size, default 50'),
             'offset' => $schema->integer()->description('Pagination offset, default 0'),
         ];

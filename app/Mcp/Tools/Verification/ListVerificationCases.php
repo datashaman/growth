@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('List verification cases for a verification plan. For the capabilities a case verifies and the runs/anomalies it produced, use `trace-query` with the case id.')]
+#[Description('List verification cases for a verification plan. For the requirements a case verifies and the runs/anomalies it produced, use `trace-query` with the case id.')]
 class ListVerificationCases extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -31,7 +31,7 @@ class ListVerificationCases extends Tool
                 'name' => $case->name,
                 'objective' => $case->objective,
                 'expected_results' => $case->expected_results,
-                'capabilities_count' => $case->requirements_count,
+                'requirements_count' => $case->requirements_count,
                 'runs_count' => $case->runs_count,
             ])->all(),
         ]);

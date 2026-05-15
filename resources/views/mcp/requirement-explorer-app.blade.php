@@ -65,7 +65,7 @@
                 gap: 10px;
             }
 
-            .capability-list {
+            .requirement-list {
                 border: 1px solid var(--line);
                 border-radius: 6px;
                 background: var(--panel);
@@ -76,18 +76,18 @@
                 overflow: hidden;
             }
 
-            .capability-list-head {
+            .requirement-list-head {
                 border-bottom: 1px solid var(--line-soft);
                 color: var(--muted);
                 font-size: 12px;
                 padding: 8px 11px;
             }
 
-            .capability-list-scroll {
+            .requirement-list-scroll {
                 overflow-y: auto;
             }
 
-            .capability-row {
+            .requirement-row {
                 background: transparent;
                 border: 0;
                 border-top: 1px solid var(--line-soft);
@@ -100,19 +100,19 @@
                 width: 100%;
             }
 
-            .capability-row:first-of-type {
+            .requirement-row:first-of-type {
                 border-top: 0;
             }
 
-            .capability-row:hover {
+            .requirement-row:hover {
                 background: var(--panel-soft);
             }
 
-            .capability-row[aria-selected="true"] {
+            .requirement-row[aria-selected="true"] {
                 background: var(--accent-soft);
             }
 
-            .capability-row-meta {
+            .requirement-row-meta {
                 color: var(--muted);
                 display: flex;
                 font-size: 11px;
@@ -121,7 +121,7 @@
                 letter-spacing: .04em;
             }
 
-            .capability-row-text {
+            .requirement-row-text {
                 color: var(--text);
                 font-size: 13px;
                 line-height: 1.35;
@@ -281,25 +281,25 @@
                 { type: 'work_item',      label: 'Work items' },
                 { type: 'source',         label: 'Sources' },
                 { type: 'concern',        label: 'Concerns' },
-                { type: 'requirement',    label: 'Related capabilities' },
+                { type: 'requirement',    label: 'Related requirements' },
             ];
 
             const state = {
                 app,
                 projects: [],
                 selectedProjectId: null,
-                capabilities: [],
-                selectedCapabilityId: null,
+                requirements: [],
+                selectedRequirementId: null,
                 filters: { layer: '', type: '', priority: '', q: '' },
                 trace: null,
                 findings: [],
                 loadingProjects: true,
-                loadingCapabilities: false,
+                loadingRequirements: false,
                 loadingDetail: false,
                 error: null,
             };
 
-            const root = document.getElementById('capability-explorer');
+            const root = document.getElementById('requirement-explorer');
 
             app.autoResize();
 
@@ -307,8 +307,8 @@
                 const projectId = params?.arguments?.project_id ?? params?.project_id ?? null;
                 if (projectId && projectId !== state.selectedProjectId) {
                     state.selectedProjectId = projectId;
-                    state.selectedCapabilityId = null;
-                    loadCapabilities();
+                    state.selectedRequirementId = null;
+                    loadRequirements();
                 }
             });
 
@@ -321,8 +321,8 @@
                     const result = JSON.parse(text);
                     if (result.project_id && result.project_id !== state.selectedProjectId) {
                         state.selectedProjectId = result.project_id;
-                        state.selectedCapabilityId = null;
-                        loadCapabilities();
+                        state.selectedRequirementId = null;
+                        loadRequirements();
                     }
                 } catch {
                     // ignore non-JSON
@@ -333,20 +333,20 @@
                 const target = event.target;
                 if (target.id === 'project-picker') {
                     state.selectedProjectId = target.value || null;
-                    state.selectedCapabilityId = null;
+                    state.selectedRequirementId = null;
                     state.trace = null;
                     state.findings = [];
-                    loadCapabilities();
+                    loadRequirements();
                     return;
                 }
                 if (target.dataset?.filter) {
                     state.filters[target.dataset.filter] = target.value;
-                    loadCapabilities();
+                    loadRequirements();
                 }
             });
 
             root.addEventListener('input', (event) => {
-                if (event.target.id === 'capability-search') {
+                if (event.target.id === 'requirement-search') {
                     state.filters.q = event.target.value;
                     scheduleSearch();
                 }
@@ -357,11 +357,11 @@
                     app.requestDisplayMode('fullscreen');
                     return;
                 }
-                const row = event.target.closest('[data-capability-id]');
+                const row = event.target.closest('[data-requirement-id]');
                 if (row) {
-                    const id = row.dataset.capabilityId;
-                    if (id !== state.selectedCapabilityId) {
-                        state.selectedCapabilityId = id;
+                    const id = row.dataset.requirementId;
+                    if (id !== state.selectedRequirementId) {
+                        state.selectedRequirementId = id;
                         loadDetail();
                     }
                 }
@@ -374,7 +374,7 @@
                 }
                 searchTimer = setTimeout(() => {
                     searchTimer = null;
-                    loadCapabilities();
+                    loadRequirements();
                 }, 250);
             }
 
@@ -406,22 +406,22 @@
                 }
 
                 if (state.selectedProjectId) {
-                    await loadCapabilities();
+                    await loadRequirements();
                 } else {
                     render();
                 }
             }
 
-            async function loadCapabilities() {
+            async function loadRequirements() {
                 if (!state.selectedProjectId) {
-                    state.capabilities = [];
+                    state.requirements = [];
                     state.findings = [];
                     state.trace = null;
                     render();
                     return;
                 }
 
-                state.loadingCapabilities = true;
+                state.loadingRequirements = true;
                 state.error = null;
                 render();
 
@@ -435,42 +435,42 @@
                     }
                 }
 
-                const [capabilitiesResult, lintResult] = await Promise.all([
-                    app.callServerTool({ name: 'list-capabilities', arguments: args }),
+                const [requirementsResult, lintResult] = await Promise.all([
+                    app.callServerTool({ name: 'list-requirements', arguments: args }),
                     app.callServerTool({
                         name: 'lint-project',
-                        arguments: { project_id: state.selectedProjectId, sections: ['capabilities'] },
+                        arguments: { project_id: state.selectedProjectId, sections: ['requirements'] },
                     }),
                 ]);
 
-                if (capabilitiesResult.isError) {
-                    state.error = capabilitiesResult.content?.[0]?.text ?? 'Unable to load capabilities.';
-                    state.capabilities = [];
-                    state.loadingCapabilities = false;
+                if (requirementsResult.isError) {
+                    state.error = requirementsResult.content?.[0]?.text ?? 'Unable to load requirements.';
+                    state.requirements = [];
+                    state.loadingRequirements = false;
                     render();
                     return;
                 }
 
-                const capabilitiesPayload = window.GrowthApp.parseToolPayload(capabilitiesResult);
-                state.capabilities = capabilitiesPayload?.results ?? [];
+                const requirementsPayload = window.GrowthApp.parseToolPayload(requirementsResult);
+                state.requirements = requirementsPayload?.results ?? [];
 
                 const lintPayload = !lintResult.isError ? window.GrowthApp.parseToolPayload(lintResult) : null;
-                state.findings = lintPayload?.sections?.capabilities ?? [];
+                state.findings = lintPayload?.sections?.requirements ?? [];
 
-                state.loadingCapabilities = false;
+                state.loadingRequirements = false;
 
-                if (state.selectedCapabilityId && !state.capabilities.some((cap) => cap.id === state.selectedCapabilityId)) {
-                    state.selectedCapabilityId = null;
+                if (state.selectedRequirementId && !state.requirements.some((cap) => cap.id === state.selectedRequirementId)) {
+                    state.selectedRequirementId = null;
                     state.trace = null;
                 }
 
-                if (!state.selectedCapabilityId && state.capabilities.length > 0) {
-                    state.selectedCapabilityId = state.capabilities[0].id;
+                if (!state.selectedRequirementId && state.requirements.length > 0) {
+                    state.selectedRequirementId = state.requirements[0].id;
                     loadDetail();
                     return;
                 }
 
-                if (state.selectedCapabilityId) {
+                if (state.selectedRequirementId) {
                     loadDetail();
                     return;
                 }
@@ -479,7 +479,7 @@
             }
 
             async function loadDetail() {
-                if (!state.selectedCapabilityId) {
+                if (!state.selectedRequirementId) {
                     state.trace = null;
                     render();
                     return;
@@ -490,7 +490,7 @@
 
                 const result = await app.callServerTool({
                     name: 'trace-query',
-                    arguments: { id: state.selectedCapabilityId, depth: 2, direction: 'down' },
+                    arguments: { id: state.selectedRequirementId, depth: 2, direction: 'down' },
                 });
 
                 state.loadingDetail = false;
@@ -528,7 +528,7 @@
                     <div class="brand">
                         <div class="eyebrow">Growth</div>
                         <div class="brand-row">
-                            <h1>Capabilities</h1>
+                            <h1>Requirements</h1>
                             <button type="button" class="expand-button" data-expand title="Open fullscreen" aria-label="Open fullscreen">⛶</button>
                         </div>
                     </div>
@@ -545,10 +545,10 @@
                         ${filterSelect('priority', 'Priority', ['', 'high', 'medium', 'low'])}
                         <label class="field">
                             <span>Search</span>
-                            <input id="capability-search" class="input" type="search" placeholder="Substring match" value="${escapeHtml(state.filters.q)}">
+                            <input id="requirement-search" class="input" type="search" placeholder="Substring match" value="${escapeHtml(state.filters.q)}">
                         </label>
                     </div>
-                    ${capabilityList()}
+                    ${requirementList()}
                 `;
             }
 
@@ -567,37 +567,37 @@
                 `;
             }
 
-            function capabilityList() {
+            function requirementList() {
                 if (!state.selectedProjectId) {
                     return '';
                 }
 
-                if (state.loadingCapabilities) {
-                    return '<div class="capability-list"><div class="capability-list-head">Loading…</div></div>';
+                if (state.loadingRequirements) {
+                    return '<div class="requirement-list"><div class="requirement-list-head">Loading…</div></div>';
                 }
 
-                if (state.capabilities.length === 0) {
-                    return '<div class="capability-list"><div class="capability-list-head">No capabilities match the filters.</div></div>';
+                if (state.requirements.length === 0) {
+                    return '<div class="requirement-list"><div class="requirement-list-head">No requirements match the filters.</div></div>';
                 }
 
-                const rows = state.capabilities.map((capability) => {
-                    const selected = capability.id === state.selectedCapabilityId;
+                const rows = state.requirements.map((requirement) => {
+                    const selected = requirement.id === state.selectedRequirementId;
                     return `
-                        <button type="button" class="capability-row" data-capability-id="${escapeHtml(capability.id)}" aria-selected="${selected}">
-                            <div class="capability-row-meta">
-                                <span>${escapeHtml(capability.layer ?? '')}</span>
-                                <span>${escapeHtml(capability.type ?? '')}</span>
-                                <span>${escapeHtml(capability.priority ?? '')}</span>
+                        <button type="button" class="requirement-row" data-requirement-id="${escapeHtml(requirement.id)}" aria-selected="${selected}">
+                            <div class="requirement-row-meta">
+                                <span>${escapeHtml(requirement.layer ?? '')}</span>
+                                <span>${escapeHtml(requirement.type ?? '')}</span>
+                                <span>${escapeHtml(requirement.priority ?? '')}</span>
                             </div>
-                            <div class="capability-row-text">${escapeHtml(capability.text ?? capability.id)}</div>
+                            <div class="requirement-row-text">${escapeHtml(requirement.text ?? requirement.id)}</div>
                         </button>
                     `;
                 }).join('');
 
                 return `
-                    <div class="capability-list">
-                        <div class="capability-list-head">${state.capabilities.length} capabilities</div>
-                        <div class="capability-list-scroll">${rows}</div>
+                    <div class="requirement-list">
+                        <div class="requirement-list-head">${state.requirements.length} requirements</div>
+                        <div class="requirement-list-scroll">${rows}</div>
                     </div>
                 `;
             }
@@ -608,54 +608,54 @@
                 }
 
                 if (state.projects.length === 0) {
-                    return emptyPanel('No projects', 'Create a project to explore its capabilities.');
+                    return emptyPanel('No projects', 'Create a project to explore its requirements.');
                 }
 
                 if (!state.selectedProjectId) {
                     return emptyPanel('Select a project', 'Pick a project from the sidebar.');
                 }
 
-                if (state.loadingCapabilities && state.capabilities.length === 0) {
-                    return loadingPanel('Loading capabilities…');
+                if (state.loadingRequirements && state.requirements.length === 0) {
+                    return loadingPanel('Loading requirements…');
                 }
 
-                if (state.capabilities.length === 0) {
-                    return emptyPanel('No capabilities', 'This project has no capabilities matching the current filters.');
+                if (state.requirements.length === 0) {
+                    return emptyPanel('No requirements', 'This project has no requirements matching the current filters.');
                 }
 
-                if (!state.selectedCapabilityId) {
-                    return emptyPanel('Select a capability', 'Pick a capability from the sidebar to see its detail.');
+                if (!state.selectedRequirementId) {
+                    return emptyPanel('Select a requirement', 'Pick a requirement from the sidebar to see its detail.');
                 }
 
-                const capability = state.capabilities.find((cap) => cap.id === state.selectedCapabilityId);
-                if (!capability) {
-                    return emptyPanel('Capability not found', 'It may have been removed. Pick another from the sidebar.');
+                const requirement = state.requirements.find((cap) => cap.id === state.selectedRequirementId);
+                if (!requirement) {
+                    return emptyPanel('Requirement not found', 'It may have been removed. Pick another from the sidebar.');
                 }
 
                 return `
-                    ${header(capability)}
+                    ${header(requirement)}
                     <div class="detail">
-                        ${acceptanceSection(capability)}
+                        ${acceptanceSection(requirement)}
                         ${relatedSection()}
                         ${findingsSection()}
                     </div>
                 `;
             }
 
-            function header(capability) {
+            function header(requirement) {
                 const pills = [
-                    capability.layer && pill(capability.layer),
-                    capability.type && pill(capability.type),
-                    capability.priority && pill(capability.priority, indicatorClass(capability.priority === 'high' ? 'fail' : capability.priority === 'medium' ? 'warn' : 'pass')),
+                    requirement.layer && pill(requirement.layer),
+                    requirement.type && pill(requirement.type),
+                    requirement.priority && pill(requirement.priority, indicatorClass(requirement.priority === 'high' ? 'fail' : requirement.priority === 'medium' ? 'warn' : 'pass')),
                 ].filter(Boolean).join('');
 
                 return `
                     <header class="topbar">
                         <div class="title">
-                            <h2>${escapeHtml(capability.text ?? capability.id)}</h2>
+                            <h2>${escapeHtml(requirement.text ?? requirement.id)}</h2>
                             <div class="title-meta">
                                 ${pills}
-                                <span class="pill">${escapeHtml(capability.id)}</span>
+                                <span class="pill">${escapeHtml(requirement.id)}</span>
                             </div>
                         </div>
                     </header>
@@ -666,8 +666,8 @@
                 return `<span class="pill ${escapeHtml(extraClass)}">${escapeHtml(label)}</span>`;
             }
 
-            function acceptanceSection(capability) {
-                const checks = capability.acceptance_checks ?? [];
+            function acceptanceSection(requirement) {
+                const checks = requirement.acceptance_checks ?? [];
                 const body = checks.length === 0
                     ? '<div class="empty"><span>No acceptance checks recorded.</span></div>'
                     : `<ol class="acceptance">${checks.map((check) => `<li>${escapeHtml(typeof check === 'string' ? check : check?.text ?? JSON.stringify(check))}</li>`).join('')}</ol>`;
@@ -684,7 +684,7 @@
                     return `<section class="section"><h3>Linked artifacts</h3><div class="error-panel">${escapeHtml(state.trace.error)}</div></section>`;
                 }
 
-                const nodes = (state.trace?.nodes ?? []).filter((node) => node.id !== state.selectedCapabilityId);
+                const nodes = (state.trace?.nodes ?? []).filter((node) => node.id !== state.selectedRequirementId);
                 if (nodes.length === 0) {
                     return '<section class="section"><h3>Linked artifacts</h3><div class="empty"><span>No derived artifacts. Try widening direction or depth via <code>trace-query</code>.</span></div></section>';
                 }
@@ -726,7 +726,7 @@
             }
 
             function findingsSection() {
-                const findings = state.findings.filter((finding) => finding.subject_id === state.selectedCapabilityId);
+                const findings = state.findings.filter((finding) => finding.subject_id === state.selectedRequirementId);
 
                 if (findings.length === 0) {
                     return '';
@@ -758,5 +758,5 @@
         </script>
     </x-slot:head>
 
-    <div id="capability-explorer"></div>
+    <div id="requirement-explorer"></div>
 </x-mcp::app>

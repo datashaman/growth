@@ -14,7 +14,9 @@
     @else
         <div class="mb-3 flex items-center justify-between gap-4">
             <div class="flex items-baseline gap-3">
-                <flux:heading size="lg">{{ $title }}</flux:heading>
+                @if ($title)
+                    <flux:heading size="lg">{{ $title }}</flux:heading>
+                @endif
                 @if ($count !== null)
                     <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">
                         {{ $count }}@if ($countLabel) {{ $countLabel }}@endif

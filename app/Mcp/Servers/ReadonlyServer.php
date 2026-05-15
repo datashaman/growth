@@ -3,8 +3,6 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Resources\ArchitectureResource;
-use App\Mcp\Resources\CapabilitiesResource;
-use App\Mcp\Resources\CapabilityExplorerApp;
 use App\Mcp\Resources\EvidenceResource;
 use App\Mcp\Resources\GateStatusApp;
 use App\Mcp\Resources\IntentResource;
@@ -20,6 +18,8 @@ use App\Mcp\Resources\Project\ProjectSrsResource;
 use App\Mcp\Resources\ProjectDashboardApp;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\ReadinessResource;
+use App\Mcp\Resources\RequirementExplorerApp;
+use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Resources\TraceGraphApp;
 use App\Mcp\Resources\VerificationResource;
@@ -29,15 +29,14 @@ use App\Mcp\Tools\Architecture\ListArchitectureViewpoints;
 use App\Mcp\Tools\Architecture\ListArchitectureViews;
 use App\Mcp\Tools\Assurance\BuildEvidenceBundle;
 use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
-use App\Mcp\Tools\Capabilities\ListCapabilities;
 use App\Mcp\Tools\Changes\ListArtifactRelations;
 use App\Mcp\Tools\Changes\ListChangeApprovalEvents;
 use App\Mcp\Tools\Changes\ListChangeRequests;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Dashboard\GetProjectDashboardData;
-use App\Mcp\Tools\Dashboard\ShowCapabilityExplorer;
 use App\Mcp\Tools\Dashboard\ShowGateStatus;
 use App\Mcp\Tools\Dashboard\ShowProjectDashboard;
+use App\Mcp\Tools\Dashboard\ShowRequirementExplorer;
 use App\Mcp\Tools\Dashboard\ShowTraceGraph;
 use App\Mcp\Tools\Glossary\LookupTerm;
 use App\Mcp\Tools\Lint\LintProject;
@@ -55,6 +54,7 @@ use App\Mcp\Tools\Plan\SummarizeImplementationStatus;
 use App\Mcp\Tools\Plan\SummarizePlanCapacity;
 use App\Mcp\Tools\Plan\SummarizeScheduleHealth;
 use App\Mcp\Tools\Projects\ListProjects;
+use App\Mcp\Tools\Requirements\ListRequirements;
 use App\Mcp\Tools\Reviews\ListReviewDecisionEvents;
 use App\Mcp\Tools\Reviews\ListReviewFindings;
 use App\Mcp\Tools\Reviews\ListReviewParticipants;
@@ -82,7 +82,7 @@ class ReadonlyServer extends Server
     protected array $tools = [
         WhoAmI::class,
         ListProjects::class,
-        ListCapabilities::class,
+        ListRequirements::class,
         ListSources::class,
         ListCitations::class,
         ListArchitectureViewpoints::class,
@@ -120,7 +120,7 @@ class ReadonlyServer extends Server
         TraceQuery::class,
         ShowProjectDashboard::class,
         ShowGateStatus::class,
-        ShowCapabilityExplorer::class,
+        ShowRequirementExplorer::class,
         ShowTraceGraph::class,
         GetProjectDashboardData::class,
     ];
@@ -128,13 +128,13 @@ class ReadonlyServer extends Server
     protected array $resources = [
         ProjectDashboardApp::class,
         GateStatusApp::class,
-        CapabilityExplorerApp::class,
+        RequirementExplorerApp::class,
         TraceGraphApp::class,
         PlaybookResource::class,
         RigorLevelsResource::class,
         ProjectIndexResource::class,
         IntentResource::class,
-        CapabilitiesResource::class,
+        RequirementsResource::class,
         ArchitectureResource::class,
         VerificationResource::class,
         PlanResource::class,

@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 /**
  * Produces a manifest array describing a Growth project's full structure
- * (project + stakeholders + concerns + capabilities + architecture + plan +
+ * (project + stakeholders + concerns + requirements + architecture + plan +
  * verification). Output ordering is deterministic (alphabetical by slug
  * within each list) so two exports of the same project produce byte-identical
  * JSON, and re-applying an unchanged export is a no-op.
@@ -52,7 +52,7 @@ class ManifestExporter
             $project->concerns->sortBy(fn ($c) => Str::slug($c->text))->values(),
             fn ($c) => $c->text,
         );
-        $capabilitySlugs = $project->requirements->pluck('slug', 'id')->all();
+        $requirementSlugs = $project->requirements->pluck('slug', 'id')->all();
         $viewpointSlugs = $this->assignSlugs(
             $project->customViewpoints->sortBy(fn ($v) => Str::slug($v->name))->values(),
             fn ($v) => $v->name,
@@ -100,13 +100,13 @@ class ManifestExporter
             $manifest['concerns'] = $concerns;
         }
 
-        $capabilities = $project->requirements
+        $requirements = $project->requirements
             ->sortBy('slug')
-            ->map(fn ($r) => $this->emitCapability($r))
+            ->map(fn ($r) => $this->emitRequirement($r))
             ->values()
             ->all();
-        if ($capabilities) {
-            $manifest['capabilities'] = $capabilities;
+        if ($requirements) {
+            $manifest['requirements'] = $requirements;
         }
 
         $architecture = [];
@@ -136,14 +136,14 @@ class ManifestExporter
                 $roleSlugs,
                 $milestoneSlugs,
                 $workItemSlugs,
-                $capabilitySlugs,
+                $requirementSlugs,
             );
         }
 
         $verification = [];
         $plans = $project->testPlans
             ->sortBy(fn ($p) => $testPlanSlugs[$p->id])
-            ->map(fn ($p) => $this->emitVerificationPlan($p, $testPlanSlugs, $capabilitySlugs))
+            ->map(fn ($p) => $this->emitVerificationPlan($p, $testPlanSlugs, $requirementSlugs))
             ->values()
             ->all();
         if ($plans) {
@@ -232,7 +232,7 @@ class ManifestExporter
     /**
      * @return array<string,mixed>
      */
-    private function emitCapability($requirement): array
+    private function emitRequirement($requirement): array
     {
         return $this->compact([
             'slug' => $requirement->slug,
@@ -315,7 +315,7 @@ class ManifestExporter
      * @param  array<string,string>  $roleSlugs
      * @param  array<string,string>  $milestoneSlugs
      * @param  array<string,string>  $workItemSlugs
-     * @param  array<string,string>  $capabilitySlugs
+     * @param  array<string,string>  $requirementSlugs
      * @return array<string,mixed>
      */
     private function emitPlan(
@@ -323,7 +323,7 @@ class ManifestExporter
         array $roleSlugs,
         array $milestoneSlugs,
         array $workItemSlugs,
-        array $capabilitySlugs,
+        array $requirementSlugs,
     ): array {
         $plan = $project->projectPlan;
 
@@ -375,7 +375,7 @@ class ManifestExporter
 
         $workItems = $project->workItems
             ->sortBy(fn ($w) => $workItemSlugs[$w->id])
-            ->map(fn ($w) => $this->emitWorkItem($w, $workItemSlugs, $roleSlugs, $milestoneSlugs, $capabilitySlugs))
+            ->map(fn ($w) => $this->emitWorkItem($w, $workItemSlugs, $roleSlugs, $milestoneSlugs, $requirementSlugs))
             ->values()
             ->all();
         if ($workItems) {
@@ -389,7 +389,7 @@ class ManifestExporter
      * @param  array<string,string>  $workItemSlugs
      * @param  array<string,string>  $roleSlugs
      * @param  array<string,string>  $milestoneSlugs
-     * @param  array<string,string>  $capabilitySlugs
+     * @param  array<string,string>  $requirementSlugs
      * @return array<string,mixed>
      */
     private function emitWorkItem(
@@ -397,10 +397,10 @@ class ManifestExporter
         array $workItemSlugs,
         array $roleSlugs,
         array $milestoneSlugs,
-        array $capabilitySlugs,
+        array $requirementSlugs,
     ): array {
-        $capabilities = $workItem->requirements
-            ->map(fn ($r) => $capabilitySlugs[$r->id])
+        $requirements = $workItem->requirements
+            ->map(fn ($r) => $requirementSlugs[$r->id])
             ->sort()
             ->values()
             ->all();
@@ -441,7 +441,7 @@ class ManifestExporter
             'parent' => $workItem->parent_id
                 ? ($workItemSlugs[$workItem->parent_id] ?? null)
                 : null,
-            'capabilities' => $capabilities ?: null,
+            'requirements' => $requirements ?: null,
             'milestones' => $milestones ?: null,
             'dependencies' => $dependencies ?: null,
             '_exported_at' => $workItem->updated_at?->toIso8601String(),
@@ -450,10 +450,10 @@ class ManifestExporter
 
     /**
      * @param  array<string,string>  $testPlanSlugs
-     * @param  array<string,string>  $capabilitySlugs
+     * @param  array<string,string>  $requirementSlugs
      * @return array<string,mixed>
      */
-    private function emitVerificationPlan($plan, array $testPlanSlugs, array $capabilitySlugs): array
+    private function emitVerificationPlan($plan, array $testPlanSlugs, array $requirementSlugs): array
     {
         $caseSlugs = $this->assignSlugs(
             $plan->cases->sortBy(fn ($c) => Str::slug($c->name))->values(),
@@ -462,7 +462,7 @@ class ManifestExporter
 
         $cases = $plan->cases
             ->sortBy(fn ($c) => $caseSlugs[$c->id])
-            ->map(fn ($c) => $this->emitVerificationCase($c, $caseSlugs, $capabilitySlugs))
+            ->map(fn ($c) => $this->emitVerificationCase($c, $caseSlugs, $requirementSlugs))
             ->values()
             ->all();
 
@@ -480,13 +480,13 @@ class ManifestExporter
 
     /**
      * @param  array<string,string>  $caseSlugs
-     * @param  array<string,string>  $capabilitySlugs
+     * @param  array<string,string>  $requirementSlugs
      * @return array<string,mixed>
      */
-    private function emitVerificationCase($case, array $caseSlugs, array $capabilitySlugs): array
+    private function emitVerificationCase($case, array $caseSlugs, array $requirementSlugs): array
     {
-        $capabilities = $case->requirements
-            ->map(fn ($r) => $capabilitySlugs[$r->id])
+        $requirements = $case->requirements
+            ->map(fn ($r) => $requirementSlugs[$r->id])
             ->sort()
             ->values()
             ->all();
@@ -499,7 +499,7 @@ class ManifestExporter
             'inputs' => $case->inputs,
             'expected_results' => $case->expected_results,
             'environment' => $case->environment,
-            'verifies_capabilities' => $capabilities ?: null,
+            'verifies_requirements' => $requirements ?: null,
             '_exported_at' => $case->updated_at?->toIso8601String(),
         ]);
     }

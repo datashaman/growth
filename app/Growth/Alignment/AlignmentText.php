@@ -25,13 +25,13 @@ class AlignmentText
     public static function sanitize(string $text): string
     {
         $replacements = [
-            'capability quality' => 'Capability quality',
+            'requirement quality' => 'Requirement quality',
             'architecture coverage' => 'Architecture coverage',
             'verification evidence' => 'Verification evidence',
             'review readiness' => 'Review evidence',
             'risk management' => 'Risk management',
             'delivery planning' => 'Delivery planning',
-            'SRS' => 'capability definition',
+            'SRS' => 'requirement definition',
             'SDD' => 'architecture record',
             'MTP' => 'verification plan',
             'PMP' => 'delivery plan',
