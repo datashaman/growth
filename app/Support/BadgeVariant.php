@@ -153,6 +153,17 @@ class BadgeVariant
         };
     }
 
+    public static function testRunStatus(string $status): string
+    {
+        return match ($status) {
+            'pass' => 'green',
+            'fail' => 'red',
+            'blocked' => 'amber',
+            'skipped' => 'zinc',
+            default => 'zinc',
+        };
+    }
+
     public static function riskStatus(string $status): string
     {
         return match ($status) {
