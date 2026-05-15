@@ -6,6 +6,8 @@ environments:
         memory: 1024
         cli-memory: 1024
         runtime: 'php-8.4:al2'
+        database: growth
+        cache: growth
         build:
             - 'COMPOSER_MIRROR_PATH_REPOS=1 composer install --no-dev'
             - 'php artisan event:cache'
