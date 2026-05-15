@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\WorkspaceContext;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Passport\Contracts\OAuthenticatable;
@@ -59,7 +61,7 @@ class User extends Authenticatable implements OAuthenticatable
                 'role' => WorkspaceMembership::ROLE_OWNER,
             ]);
 
-            $user->forceFill(['active_workspace_id' => $workspace->id])->save();
+            $user->switchWorkspace($workspace);
         });
     }
 
@@ -90,6 +92,22 @@ class User extends Authenticatable implements OAuthenticatable
     public function activeWorkspace(): BelongsTo
     {
         return $this->belongsTo(Workspace::class, 'active_workspace_id');
+    }
+
+    public function switchWorkspace(Workspace|string $workspace): void
+    {
+        $workspaceId = $workspace instanceof Workspace ? $workspace->id : $workspace;
+
+        DB::transaction(function () use ($workspaceId): void {
+            $this->forceFill(['active_workspace_id' => $workspaceId])->save();
+
+            WorkspaceMembership::query()
+                ->where('workspace_id', $workspaceId)
+                ->where('user_id', $this->id)
+                ->update(['last_accessed_at' => now()]);
+        });
+
+        app(WorkspaceContext::class)->forget();
     }
 
     public function ownedWorkspaces(): HasMany

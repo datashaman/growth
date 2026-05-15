@@ -5,7 +5,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Models\WorkspaceMembership;
-use App\Support\WorkspaceContext;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
@@ -24,6 +23,8 @@ new #[Title('Workspace settings')] class extends Component
     public string $inviteRole = WorkspaceMembership::ROLE_MEMBER;
 
     public string $newWorkspaceName = '';
+
+    public string $deleteConfirmation = '';
 
     public function mount(): void
     {
@@ -275,10 +276,104 @@ new #[Title('Workspace settings')] class extends Component
             'role' => WorkspaceMembership::ROLE_OWNER,
         ]);
 
-        $user->forceFill(['active_workspace_id' => $workspace->id])->save();
-        app(WorkspaceContext::class)->forget();
+        $user->switchWorkspace($workspace);
 
         $this->redirect(route('workspace.edit'), navigate: false);
+    }
+
+    #[Computed]
+    public function membershipCount(): int
+    {
+        return WorkspaceMembership::where('user_id', auth()->id())->count();
+    }
+
+    #[Computed]
+    public function canLeave(): bool
+    {
+        if ($this->membershipCount <= 1) {
+            return false;
+        }
+
+        if ($this->viewerRole === WorkspaceMembership::ROLE_OWNER && $this->ownerCount() <= 1) {
+            return false;
+        }
+
+        return true;
+    }
+
+    #[Computed]
+    public function canDelete(): bool
+    {
+        return $this->viewerRole === WorkspaceMembership::ROLE_OWNER
+            && $this->membershipCount > 1;
+    }
+
+    #[Computed]
+    public function cascadeCounts(): array
+    {
+        return [
+            'projects' => \App\Models\Project::where('workspace_id', $this->workspaceId)->count(),
+            'members' => WorkspaceMembership::where('workspace_id', $this->workspaceId)->count(),
+            'invitations' => WorkspaceInvitation::where('workspace_id', $this->workspaceId)
+                ->whereNull('accepted_at')
+                ->count(),
+        ];
+    }
+
+    public function leave(): void
+    {
+        if (! $this->canLeave) {
+            Flux::toast(variant: 'danger', text: __('You cannot leave this workspace.'));
+
+            return;
+        }
+
+        $user = auth()->user();
+        $workspaceId = $this->workspaceId;
+
+        WorkspaceMembership::where('workspace_id', $workspaceId)
+            ->where('user_id', $user->id)
+            ->delete();
+
+        $fallbackId = $this->fallbackWorkspaceId($user->id);
+        $user->switchWorkspace($fallbackId);
+
+        $this->redirect(route('workspace.edit'), navigate: false);
+    }
+
+    public function deleteWorkspace(): void
+    {
+        abort_unless($this->viewerRole === WorkspaceMembership::ROLE_OWNER, 403);
+
+        if ($this->membershipCount <= 1) {
+            Flux::toast(variant: 'danger', text: __('You cannot delete your only workspace.'));
+
+            return;
+        }
+
+        if ($this->deleteConfirmation !== $this->workspace()->name) {
+            Flux::toast(variant: 'danger', text: __('Confirmation does not match the workspace name.'));
+
+            return;
+        }
+
+        $user = auth()->user();
+        $workspaceId = $this->workspaceId;
+
+        Workspace::whereKey($workspaceId)->delete();
+
+        $fallbackId = $this->fallbackWorkspaceId($user->id);
+        $user->switchWorkspace($fallbackId);
+
+        $this->redirect(route('workspace.edit'), navigate: false);
+    }
+
+    private function fallbackWorkspaceId(int $userId): string
+    {
+        return WorkspaceMembership::where('user_id', $userId)
+            ->orderByDesc('last_accessed_at')
+            ->orderByDesc('id')
+            ->value('workspace_id');
     }
 }; ?>
 
@@ -453,5 +548,97 @@ new #[Title('Workspace settings')] class extends Component
                 </div>
             </form>
         </flux:modal>
+
+        @if ($this->canLeave || $this->canDelete)
+            <flux:separator class="my-8" />
+
+            <flux:heading size="lg" class="mb-3 text-red-600 dark:text-red-400">{{ __('Danger zone') }}</flux:heading>
+
+            <div class="space-y-4">
+                @if ($this->canLeave)
+                    <div class="flex flex-col gap-2 rounded-md border border-red-200 p-4 dark:border-red-900 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <flux:heading size="sm">{{ __('Leave workspace') }}</flux:heading>
+                            <flux:subheading>{{ __('Remove yourself from this workspace. You can be re-invited later.') }}</flux:subheading>
+                        </div>
+                        <flux:modal.trigger name="leave-workspace">
+                            <flux:button variant="danger" data-test="leave-workspace-button">{{ __('Leave') }}</flux:button>
+                        </flux:modal.trigger>
+                    </div>
+
+                    <flux:modal name="leave-workspace" class="md:w-96">
+                        <div class="space-y-6">
+                            <div>
+                                <flux:heading size="lg">{{ __('Leave :name', ['name' => $this->workspace()->name]) }}?</flux:heading>
+                                <flux:subheading>{{ __('You will lose access to this workspace and its projects until you are re-invited.') }}</flux:subheading>
+                            </div>
+                            <div class="flex justify-end gap-2">
+                                <flux:modal.close>
+                                    <flux:button variant="ghost">{{ __('Cancel') }}</flux:button>
+                                </flux:modal.close>
+                                <flux:button variant="danger" wire:click="leave" data-test="confirm-leave-workspace">
+                                    {{ __('Leave workspace') }}
+                                </flux:button>
+                            </div>
+                        </div>
+                    </flux:modal>
+                @endif
+
+                @if ($this->canDelete)
+                    @php($counts = $this->cascadeCounts)
+                    <div class="flex flex-col gap-2 rounded-md border border-red-200 p-4 dark:border-red-900 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <flux:heading size="sm">{{ __('Delete workspace') }}</flux:heading>
+                            <flux:subheading>{{ __('Permanently delete this workspace and everything in it.') }}</flux:subheading>
+                        </div>
+                        <flux:modal.trigger name="delete-workspace">
+                            <flux:button variant="danger" data-test="delete-workspace-button">{{ __('Delete') }}</flux:button>
+                        </flux:modal.trigger>
+                    </div>
+
+                    <flux:modal name="delete-workspace" class="md:w-[28rem]">
+                        <form
+                            wire:submit="deleteWorkspace"
+                            class="space-y-6"
+                            x-data="{ confirmation: '', expected: {{ Js::from($this->workspace()->name) }} }"
+                        >
+                            <div>
+                                <flux:heading size="lg">{{ __('Delete :name?', ['name' => $this->workspace()->name]) }}</flux:heading>
+                                <flux:subheading>{{ __('This cannot be undone. The following will be permanently destroyed:') }}</flux:subheading>
+                            </div>
+
+                            <ul class="list-inside list-disc space-y-1 text-sm text-zinc-700 dark:text-zinc-300">
+                                <li>{{ trans_choice(':count project|:count projects', $counts['projects'], ['count' => $counts['projects']]) }}</li>
+                                <li>{{ trans_choice(':count member|:count members', $counts['members'], ['count' => $counts['members']]) }}</li>
+                                <li>{{ trans_choice(':count pending invitation|:count pending invitations', $counts['invitations'], ['count' => $counts['invitations']]) }}</li>
+                            </ul>
+
+                            <flux:input
+                                x-model="confirmation"
+                                wire:model="deleteConfirmation"
+                                :label="__('Type :name to confirm', ['name' => $this->workspace()->name])"
+                                type="text"
+                                required
+                                data-test="delete-workspace-confirmation"
+                            />
+
+                            <div class="flex justify-end gap-2">
+                                <flux:modal.close>
+                                    <flux:button variant="ghost" type="button">{{ __('Cancel') }}</flux:button>
+                                </flux:modal.close>
+                                <flux:button
+                                    variant="danger"
+                                    type="submit"
+                                    x-bind:disabled="confirmation !== expected"
+                                    data-test="confirm-delete-workspace"
+                                >
+                                    {{ __('Delete workspace') }}
+                                </flux:button>
+                            </div>
+                        </form>
+                    </flux:modal>
+                @endif
+            </div>
+        @endif
     </x-pages::settings.layout>
 </section>
