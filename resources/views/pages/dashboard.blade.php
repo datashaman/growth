@@ -50,6 +50,36 @@ new #[Title('Dashboard')] class extends Component {
         unset($this->projects, $this->project);
     }
 
+    /**
+     * @return array<string,string>
+     */
+    public function getListeners(): array
+    {
+        $listeners = [];
+
+        if ($this->selectedProjectId !== null) {
+            $listeners['echo-private:projects.'.$this->selectedProjectId.',ProjectDataChanged'] = 'onProjectDataChanged';
+        }
+
+        return $listeners;
+    }
+
+    public function onProjectDataChanged(): void
+    {
+        unset(
+            $this->project,
+            $this->readiness,
+            $this->schedule,
+            $this->implementation,
+            $this->capacity,
+            $this->risks,
+            $this->anomalies,
+            $this->reviews,
+            $this->countTiles,
+            $this->findingSubjects,
+        );
+    }
+
     #[Computed]
     public function projects()
     {
