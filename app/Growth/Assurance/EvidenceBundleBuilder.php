@@ -22,7 +22,7 @@ class EvidenceBundleBuilder
             'readiness_status' => $readiness['status'],
             'resources' => [
                 'index' => "growth://projects/{$project->id}",
-                'capabilities' => "growth://projects/{$project->id}/capabilities",
+                'requirements' => "growth://projects/{$project->id}/requirements",
                 'architecture' => "growth://projects/{$project->id}/architecture",
                 'verification' => "growth://projects/{$project->id}/verification",
                 'plan' => "growth://projects/{$project->id}/plan",

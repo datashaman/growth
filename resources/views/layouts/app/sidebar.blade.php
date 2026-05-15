@@ -23,8 +23,8 @@
                     <flux:sidebar.item icon="megaphone" :href="route('intent')" :current="request()->routeIs('intent')" wire:navigate>
                         {{ __('Intent') }}
                     </flux:sidebar.item>
-                    <flux:sidebar.item icon="clipboard-document-list" :href="route('capabilities')" :current="request()->routeIs('capabilities')" wire:navigate>
-                        {{ __('Capabilities') }}
+                    <flux:sidebar.item icon="clipboard-document-list" :href="route('requirements')" :current="request()->routeIs('requirements')" wire:navigate>
+                        {{ __('Requirements') }}
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="cube" :href="route('architecture')" :current="request()->routeIs('architecture')" wire:navigate>
                         {{ __('Architecture') }}

@@ -11,7 +11,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
 #[Description('Drop the link between a work item and a single requirement. Neither artifact is deleted.')]
-class UnlinkWorkItemFromCapability extends Tool
+class UnlinkWorkItemFromRequirement extends Tool
 {
     public function handle(Request $request): ResponseFactory
     {

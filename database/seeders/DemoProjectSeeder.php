@@ -310,7 +310,7 @@ class DemoProjectSeeder extends Seeder
                 'project_id' => $project->id,
                 'doc' => 'srs',
                 'type' => 'functional',
-                'text' => "Legacy capability LC-{$i} must be preserved post-migration.",
+                'text' => "Legacy requirement LC-{$i} must be preserved post-migration.",
                 'priority' => 'high',
             ]);
         }

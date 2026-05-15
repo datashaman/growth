@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Throwable;
 
-#[Description('Attach existing artifacts to each other in bulk: up to 100 (link_type, from_id, to_ids[]) tuples in one call. Each tuple is applied independently with syncWithoutDetaching — per-tuple validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied links. Supported link_type values: work_item_to_requirements (capabilities are requirements, so this also covers capability links), work_item_to_milestones, concerns_to_view.')]
+#[Description('Attach existing artifacts to each other in bulk: up to 100 (link_type, from_id, to_ids[]) tuples in one call. Each tuple is applied independently with syncWithoutDetaching — per-tuple validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied links. Supported link_type values: work_item_to_requirements (requirements are requirements, so this also covers requirement links), work_item_to_milestones, concerns_to_view.')]
 class BulkLink extends Tool
 {
     private const LINK_TYPES = [
@@ -165,7 +165,7 @@ class BulkLink extends Tool
             'items' => $schema->array()
                 ->items($schema->object(fn (JsonSchema $s) => [
                     'link_type' => $s->string()
-                        ->description('Which relationship to apply. work_item_to_requirements covers capability links (capabilities are requirements). work_item_to_milestones links a work item to one or more milestones. concerns_to_view attaches concerns to a design/architecture view; from_id is the view id and to_ids are concern ids.')
+                        ->description('Which relationship to apply. work_item_to_requirements covers requirement links (requirements are requirements). work_item_to_milestones links a work item to one or more milestones. concerns_to_view attaches concerns to a design/architecture view; from_id is the view id and to_ids are concern ids.')
                         ->enum(self::LINK_TYPES)
                         ->required(),
                     'from_id' => $s->string()

@@ -14,16 +14,16 @@ use Laravel\Mcp\Server\Contracts\HasUriTemplate;
 use Laravel\Mcp\Server\Resource;
 use Laravel\Mcp\Support\UriTemplate;
 
-#[Name('Capabilities')]
-#[Description('Capabilities and acceptance checks for a project, rendered with AI-aligned terminology.')]
+#[Name('Requirements')]
+#[Description('Requirements and acceptance checks for a project, rendered with AI-aligned terminology.')]
 #[MimeType('application/json')]
-class CapabilitiesResource extends Resource implements HasUriTemplate
+class RequirementsResource extends Resource implements HasUriTemplate
 {
     use ReturnsStructuredJson;
 
     public function uriTemplate(): UriTemplate
     {
-        return new UriTemplate('growth://projects/{project}/capabilities');
+        return new UriTemplate('growth://projects/{project}/requirements');
     }
 
     public function handle(Request $request): Response
@@ -39,8 +39,8 @@ class CapabilitiesResource extends Resource implements HasUriTemplate
         $groups = $project->requirements->groupBy(fn ($requirement) => AlignmentText::docToLayer($requirement->doc));
 
         return $this->json([
-            'type' => 'capabilities',
-            'title' => "Capabilities - {$project->name}",
+            'type' => 'requirements',
+            'title' => "Requirements - {$project->name}",
             'project' => [
                 'id' => $project->id,
                 'name' => $project->name,

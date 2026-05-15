@@ -59,7 +59,7 @@ class ReadinessGateEvaluator
         }
 
         $gates = [
-            $this->gate('capabilities', 'Capabilities are clear, verifiable, and accepted enough to plan.', $requirementFindings),
+            $this->gate('requirements', 'Requirements are clear, verifiable, and accepted enough to plan.', $requirementFindings),
             $this->gate('architecture', 'Design evidence is coherent for the stated concerns.', $this->designLinter->check($project)),
             $this->gate('verification', 'Test plans, cases, runs, and anomaly posture support verification.', $this->testLinter->check($project)),
             $this->gate('planning', 'PMP, WBS, schedule, risks, and responsibilities are ready.', $this->pmpLinter->check($project)),

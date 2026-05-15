@@ -11,7 +11,7 @@ use Laravel\Mcp\Server\Prompt;
 use Laravel\Mcp\Server\Prompts\Argument;
 
 #[Name('capture-intent')]
-#[Description('Review current project intent and ask for the next missing stakeholders, concerns, sources, or capabilities.')]
+#[Description('Review current project intent and ask for the next missing stakeholders, concerns, sources, or requirements.')]
 class CaptureIntent extends Prompt
 {
     public function arguments(): array
@@ -38,15 +38,15 @@ class CaptureIntent extends Prompt
             'stakeholders',
             'concerns',
             'sources',
-            'requirements as capabilities_count',
+            'requirements as requirements_count',
         ])->findOrFail($data['project_id']);
 
         $system = <<<'MD'
 You are tightening Growth intent before more implementation work is planned.
 
-Use these tools as needed: `upsert-stakeholder`, `upsert-concerns`, `upsert-source`, `upsert-capabilities`, `upsert-citation`, and `list-capabilities`.
+Use these tools as needed: `upsert-stakeholder`, `upsert-concerns`, `upsert-source`, `upsert-requirements`, `upsert-citation`, and `list-requirements`.
 
-Ask for missing intent only when it blocks a useful next capability. Prefer concrete product behavior, constraints, evidence, and acceptance checks over broad discovery.
+Ask for missing intent only when it blocks a useful next requirement. Prefer concrete product behavior, constraints, evidence, and acceptance checks over broad discovery.
 MD;
 
         $user = <<<MD
@@ -56,7 +56,7 @@ Current intent coverage:
 - Stakeholders: {$project->stakeholders_count}
 - Concerns: {$project->concerns_count}
 - Sources: {$project->sources_count}
-- Capabilities: {$project->capabilities_count}
+- Requirements: {$project->requirements_count}
 
 Review the current state and propose the next intent-capture step.
 MD;

@@ -21,7 +21,7 @@ new class extends Component {
 
         $requirement->delete();
 
-        $this->redirectRoute('capabilities', navigate: true);
+        $this->redirectRoute('requirements', navigate: true);
     }
 }; ?>
 

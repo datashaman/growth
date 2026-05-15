@@ -11,7 +11,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
 #[Description('Link a work item to one or more requirements ("this work item covers these requirements"). Idempotent — pre-existing links are kept, new ones are added.')]
-class LinkWorkItemToCapabilities extends Tool
+class LinkWorkItemToRequirements extends Tool
 {
     public function handle(Request $request): ResponseFactory
     {

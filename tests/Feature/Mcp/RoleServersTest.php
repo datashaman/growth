@@ -7,11 +7,11 @@ use App\Mcp\Servers\IntakeServer;
 use App\Mcp\Servers\ReadonlyServer;
 use App\Mcp\Servers\VerificationServer;
 use App\Mcp\Tools\Assurance\BuildEvidenceBundle;
-use App\Mcp\Tools\Capabilities\UpsertCapabilities;
 use App\Mcp\Tools\Dashboard\GetProjectDashboardData;
 use App\Mcp\Tools\Dashboard\ShowProjectDashboard;
 use App\Mcp\Tools\Projects\DeleteProject;
 use App\Mcp\Tools\Projects\UpsertProject;
+use App\Mcp\Tools\Requirements\UpsertRequirements;
 use App\Models\CheckRunEvidence;
 use App\Models\Project;
 use App\Models\Requirement;
@@ -42,9 +42,9 @@ it('exposes role-specific MCP metadata surfaces', function () {
         'method' => 'resources/templates/list',
     ])->assertOk()->json('result.resourceTemplates');
 
-    expect(collect($intakeTools)->pluck('name')->all())->toContain('upsert-citation', 'upsert-capabilities')
+    expect(collect($intakeTools)->pluck('name')->all())->toContain('upsert-citation', 'upsert-requirements')
         ->and(collect($planningTools)->pluck('name')->all())->toContain('upsert-work-items', 'summarize-plan-capacity')
-        ->and(collect($resources)->pluck('uriTemplate')->all())->toContain('growth://projects/{project}/capabilities');
+        ->and(collect($resources)->pluck('uriTemplate')->all())->toContain('growth://projects/{project}/requirements');
 });
 
 it('exposes the complete MCP surface through the all server', function () {
@@ -77,7 +77,7 @@ it('exposes the complete MCP surface through the all server', function () {
 
     expect(collect($tools)->pluck('name')->all())->toContain(
         'upsert-project',
-        'upsert-capabilities',
+        'upsert-requirements',
         'upsert-architecture-view',
         'upsert-work-items',
         'upsert-verification-plan',
@@ -85,7 +85,7 @@ it('exposes the complete MCP surface through the all server', function () {
         'upsert-change-request',
         'trace-query',
     )->and(collect($resources)->pluck('uriTemplate')->all())->toContain(
-        'growth://projects/{project}/capabilities',
+        'growth://projects/{project}/requirements',
         'growth://projects/{project}/sdd',
     )->and(collect($prompts)->pluck('name')->all())->toContain(
         'start-project',
@@ -187,7 +187,7 @@ it('returns read-only data for the project dashboard app', function () {
         'project_id' => $project->id,
     ])->assertOk()
         ->assertSee('Dashboard Project')
-        ->assertSee('growth://projects/'.$project->id.'/capabilities')
+        ->assertSee('growth://projects/'.$project->id.'/requirements')
         ->assertSee('readiness')
         ->assertSee('implementation')
         ->assertSee('schedule')
@@ -210,7 +210,7 @@ it('renders the project dashboard app resource as MCP app HTML', function () {
         ->assertSee('Project Dashboard');
 });
 
-it('upserts projects and capabilities through the intake server', function () {
+it('upserts projects and requirements through the intake server', function () {
     Passport::actingAs(User::factory()->create(), ['mcp:use']);
 
     $projectResponse = IntakeServer::tool(UpsertProject::class, [
@@ -230,7 +230,7 @@ it('upserts projects and capabilities through the intake server', function () {
     ])->assertOk()
         ->assertSee('TodoMVC v2');
 
-    $capabilityResponse = IntakeServer::tool(UpsertCapabilities::class, [
+    $requirementResponse = IntakeServer::tool(UpsertRequirements::class, [
         'items' => [
             [
                 'project_id' => $projectId,
@@ -245,7 +245,7 @@ it('upserts projects and capabilities through the intake server', function () {
         ],
     ]);
 
-    $capabilityResponse->assertOk()
+    $requirementResponse->assertOk()
         ->assertSee('software');
 
     expect(Project::find($projectId)?->rigor_level)->toBe(3)
@@ -291,10 +291,10 @@ it('renders existing project data through readonly resources', function () {
         'priority' => 'high',
     ]);
 
-    $resource = readResource(ReadonlyServer::class, "growth://projects/{$project->id}/capabilities");
+    $resource = readResource(ReadonlyServer::class, "growth://projects/{$project->id}/requirements");
 
     $resource->assertOk()
-        ->assertSee('Capabilities - TodoMVC')
+        ->assertSee('Requirements - TodoMVC')
         ->assertSee('The app shall persist todos locally.');
 });
 
@@ -348,7 +348,7 @@ it('builds an evidence bundle through the verification server', function () {
     ]);
 
     $response->assertOk()
-        ->assertSee("growth://projects/{$project->id}/capabilities");
+        ->assertSee("growth://projects/{$project->id}/requirements");
 });
 
 it('exposes prompts on the role servers that use them', function () {

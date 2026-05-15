@@ -107,7 +107,7 @@ class GetProjectDashboardData extends Tool
             'counts' => [
                 'stakeholders' => $project->stakeholders_count,
                 'concerns' => $project->concerns_count,
-                'capabilities' => $project->requirements_count,
+                'requirements' => $project->requirements_count,
                 'architecture_views' => $project->design_views_count,
                 'verification_plans' => $project->test_plans_count,
                 'work_items' => $project->work_items_count,
@@ -129,7 +129,7 @@ class GetProjectDashboardData extends Tool
      */
     private function resourceUris(Project $project): array
     {
-        return collect(['intent', 'capabilities', 'architecture', 'verification', 'plan', 'evidence', 'readiness'])
+        return collect(['intent', 'requirements', 'architecture', 'verification', 'plan', 'evidence', 'readiness'])
             ->mapWithKeys(fn (string $resource): array => [$resource => "growth://projects/{$project->id}/{$resource}"])
             ->prepend("growth://projects/{$project->id}", 'index')
             ->all();

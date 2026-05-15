@@ -114,8 +114,8 @@ new #[Title('New requirement')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-detail-page-header
         :title="__('New requirement')"
-        back-route="capabilities"
-        :back-label="__('Cancel and return to capabilities')">
+        back-route="requirements"
+        :back-label="__('Cancel and return to requirements')">
         <x-slot:description>
             {{ __('In project') }} <a href="{{ route('dashboard', ['project' => $this->project->id]) }}" class="underline">{{ $this->project->name }}</a>
         </x-slot:description>
@@ -172,7 +172,7 @@ new #[Title('New requirement')] class extends Component {
         </section>
 
         <div class="flex justify-end gap-2">
-            <flux:button :href="route('capabilities')" wire:navigate variant="filled">{{ __('Cancel') }}</flux:button>
+            <flux:button :href="route('requirements')" wire:navigate variant="filled">{{ __('Cancel') }}</flux:button>
             <flux:button type="submit" variant="primary">{{ __('Create requirement') }}</flux:button>
         </div>
     </form>

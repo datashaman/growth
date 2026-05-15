@@ -47,7 +47,7 @@ class StarterTemplates
                     'raised_by' => 'primary-user',
                 ],
             ],
-            'capabilities' => [
+            'requirements' => [
                 [
                     'slug' => 'primary-action',
                     'type' => 'functional',
@@ -93,7 +93,7 @@ class StarterTemplates
                                 'slug' => 'primary-action-case',
                                 'name' => 'Primary action produces the expected outcome',
                                 'expected_results' => 'Invoking the primary action produces the expected outcome and writes an audit entry.',
-                                'verifies_capabilities' => ['primary-action'],
+                                'verifies_requirements' => ['primary-action'],
                             ],
                         ],
                     ],
@@ -115,7 +115,7 @@ class StarterTemplates
                     'kind' => 'deliverable',
                     'name' => 'Deliver primary action',
                     'status' => 'todo',
-                    'capabilities' => ['primary-action'],
+                    'requirements' => ['primary-action'],
                     'milestones' => ['first-milestone'],
                 ],
             ];

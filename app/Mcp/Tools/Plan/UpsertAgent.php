@@ -56,7 +56,7 @@ class UpsertAgent extends Tool
                 ->description('Agent name, unique per project (e.g. "qa-bot", "growth-helper-v2")')
                 ->required(),
             'kind' => $schema->string()
-                ->description('Specialty / capability tag (free-form, e.g. "qa", "design", "code-review")'),
+                ->description('Specialty / requirement tag (free-form, e.g. "qa", "design", "code-review")'),
             'description' => $schema->string()
                 ->description('What this agent does and its addressable contract'),
         ];

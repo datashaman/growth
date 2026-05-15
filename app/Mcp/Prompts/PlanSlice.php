@@ -11,7 +11,7 @@ use Laravel\Mcp\Server\Prompt;
 use Laravel\Mcp\Server\Prompts\Argument;
 
 #[Name('plan-slice')]
-#[Description('Plan the next implementation slice from captured capabilities, work items, and delivery evidence.')]
+#[Description('Plan the next implementation slice from captured requirements, work items, and delivery evidence.')]
 class PlanSlice extends Prompt
 {
     public function arguments(): array
@@ -35,21 +35,21 @@ class PlanSlice extends Prompt
         ]);
 
         $project = Project::withCount([
-            'requirements as capabilities_count',
+            'requirements as requirements_count',
             'workItems',
             'milestones',
             'risks',
             'changeRequests',
         ])->findOrFail($data['project_id']);
 
-        $uncoveredCapabilities = $project->requirements()
+        $uncoveredRequirements = $project->requirements()
             ->doesntHave('workItems')
             ->count();
 
         $system = <<<'MD'
 You are planning a thin Growth implementation slice.
 
-Prefer a tracer-bullet slice that links capability, work item, verification, and evidence. Use `upsert-plan`, `upsert-milestone`, `upsert-work-items`, `link-work-item-to-capabilities`, `upsert-verification-cases`, and `upsert-delivery-link` when useful.
+Prefer a tracer-bullet slice that links requirement, work item, verification, and evidence. Use `upsert-plan`, `upsert-milestone`, `upsert-work-items`, `link-work-item-to-requirements`, `upsert-verification-cases`, and `upsert-delivery-link` when useful.
 
 Keep the plan small enough for one focused implementation pass.
 MD;
@@ -58,8 +58,8 @@ MD;
 Project: {$project->name} (`{$project->id}`)
 
 Planning state:
-- Capabilities: {$project->capabilities_count}
-- Capabilities without work items: {$uncoveredCapabilities}
+- Requirements: {$project->requirements_count}
+- Requirements without work items: {$uncoveredRequirements}
 - Work items: {$project->work_items_count}
 - Milestones: {$project->milestones_count}
 - Risks: {$project->risks_count}

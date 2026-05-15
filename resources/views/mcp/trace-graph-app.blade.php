@@ -61,7 +61,7 @@
                 color: var(--text);
             }
 
-            .capability-list {
+            .requirement-list {
                 border: 1px solid var(--line);
                 border-radius: 6px;
                 background: var(--panel);
@@ -71,18 +71,18 @@
                 overflow: hidden;
             }
 
-            .capability-list-head {
+            .requirement-list-head {
                 border-bottom: 1px solid var(--line-soft);
                 color: var(--muted);
                 font-size: 12px;
                 padding: 8px 11px;
             }
 
-            .capability-list-scroll {
+            .requirement-list-scroll {
                 overflow-y: auto;
             }
 
-            .capability-row {
+            .requirement-row {
                 background: transparent;
                 border: 0;
                 border-top: 1px solid var(--line-soft);
@@ -96,19 +96,19 @@
                 width: 100%;
             }
 
-            .capability-row:first-of-type {
+            .requirement-row:first-of-type {
                 border-top: 0;
             }
 
-            .capability-row:hover {
+            .requirement-row:hover {
                 background: var(--panel-soft);
             }
 
-            .capability-row[aria-selected="true"] {
+            .requirement-row[aria-selected="true"] {
                 background: var(--accent-soft);
             }
 
-            .capability-row-meta {
+            .requirement-row-meta {
                 color: var(--muted);
                 font-size: 10px;
                 letter-spacing: .04em;
@@ -264,14 +264,14 @@
                 app,
                 projects: [],
                 selectedProjectId: null,
-                capabilities: [],
+                requirements: [],
                 startingId: '',
                 idInput: '',
                 depth: 3,
                 direction: 'both',
                 trace: null,
                 loadingProjects: true,
-                loadingCapabilities: false,
+                loadingRequirements: false,
                 loadingTrace: false,
                 error: null,
             };
@@ -288,7 +288,7 @@
                     state.startingId = '';
                     state.idInput = '';
                     state.trace = null;
-                    loadCapabilities();
+                    loadRequirements();
                 }
             });
 
@@ -304,7 +304,7 @@
                         state.startingId = '';
                         state.idInput = '';
                         state.trace = null;
-                        loadCapabilities();
+                        loadRequirements();
                     }
                 } catch {
                     // ignore non-JSON
@@ -318,7 +318,7 @@
                     state.startingId = '';
                     state.idInput = '';
                     state.trace = null;
-                    loadCapabilities();
+                    loadRequirements();
                     return;
                 }
                 if (target.id === 'depth-picker') {
@@ -364,9 +364,9 @@
                     }
                     return;
                 }
-                const row = event.target.closest('[data-capability-id]');
+                const row = event.target.closest('[data-requirement-id]');
                 if (row) {
-                    const id = row.dataset.capabilityId;
+                    const id = row.dataset.requirementId;
                     state.startingId = id;
                     state.idInput = id;
                     loadTrace();
@@ -401,41 +401,41 @@
                 }
 
                 if (state.selectedProjectId) {
-                    await loadCapabilities();
+                    await loadRequirements();
                 } else {
                     render();
                 }
             }
 
-            async function loadCapabilities() {
+            async function loadRequirements() {
                 if (!state.selectedProjectId) {
-                    state.capabilities = [];
+                    state.requirements = [];
                     render();
                     return;
                 }
 
-                state.loadingCapabilities = true;
+                state.loadingRequirements = true;
                 render();
 
                 const result = await app.callServerTool({
-                    name: 'list-capabilities',
+                    name: 'list-requirements',
                     arguments: { project_id: state.selectedProjectId, limit: 200 },
                 });
 
-                state.loadingCapabilities = false;
+                state.loadingRequirements = false;
 
                 if (result.isError) {
-                    state.error = result.content?.[0]?.text ?? 'Unable to load capabilities.';
-                    state.capabilities = [];
+                    state.error = result.content?.[0]?.text ?? 'Unable to load requirements.';
+                    state.requirements = [];
                     render();
                     return;
                 }
 
                 const payload = window.GrowthApp.parseToolPayload(result);
-                state.capabilities = payload?.results ?? [];
+                state.requirements = payload?.results ?? [];
 
-                if (!state.startingId && state.capabilities.length > 0) {
-                    state.startingId = state.capabilities[0].id;
+                if (!state.startingId && state.requirements.length > 0) {
+                    state.startingId = state.requirements[0].id;
                     state.idInput = state.startingId;
                     await loadTrace();
                     return;
@@ -517,37 +517,37 @@
                         <input id="starting-id-input" class="input" type="text" placeholder="01HXXXX… (any artifact)" value="${escapeHtml(state.idInput ?? '')}">
                     </label>
                     <button type="button" class="button" data-trace-go>Trace</button>
-                    ${capabilityList()}
+                    ${requirementList()}
                 `;
             }
 
-            function capabilityList() {
+            function requirementList() {
                 if (!state.selectedProjectId) {
                     return '';
                 }
 
-                if (state.loadingCapabilities) {
-                    return '<div class="capability-list"><div class="capability-list-head">Loading capabilities…</div></div>';
+                if (state.loadingRequirements) {
+                    return '<div class="requirement-list"><div class="requirement-list-head">Loading requirements…</div></div>';
                 }
 
-                if (state.capabilities.length === 0) {
-                    return '<div class="capability-list"><div class="capability-list-head">No capabilities — paste any artifact ID above.</div></div>';
+                if (state.requirements.length === 0) {
+                    return '<div class="requirement-list"><div class="requirement-list-head">No requirements — paste any artifact ID above.</div></div>';
                 }
 
-                const rows = state.capabilities.map((capability) => {
-                    const selected = capability.id === state.startingId;
+                const rows = state.requirements.map((requirement) => {
+                    const selected = requirement.id === state.startingId;
                     return `
-                        <button type="button" class="capability-row" data-capability-id="${escapeHtml(capability.id)}" aria-selected="${selected}">
-                            <span class="capability-row-meta">${escapeHtml(capability.layer ?? '')} · ${escapeHtml(capability.type ?? '')}</span>
-                            <span>${escapeHtml(capability.text ?? capability.id)}</span>
+                        <button type="button" class="requirement-row" data-requirement-id="${escapeHtml(requirement.id)}" aria-selected="${selected}">
+                            <span class="requirement-row-meta">${escapeHtml(requirement.layer ?? '')} · ${escapeHtml(requirement.type ?? '')}</span>
+                            <span>${escapeHtml(requirement.text ?? requirement.id)}</span>
                         </button>
                     `;
                 }).join('');
 
                 return `
-                    <div class="capability-list">
-                        <div class="capability-list-head">Capabilities · ${state.capabilities.length}</div>
-                        <div class="capability-list-scroll">${rows}</div>
+                    <div class="requirement-list">
+                        <div class="requirement-list-head">Requirements · ${state.requirements.length}</div>
+                        <div class="requirement-list-scroll">${rows}</div>
                     </div>
                 `;
             }
@@ -566,7 +566,7 @@
                 }
 
                 if (!state.startingId) {
-                    return emptyPanel('Select a starting artifact', 'Pick a capability from the sidebar or paste an artifact ID.');
+                    return emptyPanel('Select a starting artifact', 'Pick a requirement from the sidebar or paste an artifact ID.');
                 }
 
                 return `

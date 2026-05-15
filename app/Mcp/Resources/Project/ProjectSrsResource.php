@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Contracts\HasUriTemplate;
 use Laravel\Mcp\Server\Resource;
 use Laravel\Mcp\Support\UriTemplate;
 
-#[Description('Requirements definition assembled from the project\'s stakeholders, concerns, and capabilities.')]
+#[Description('Requirements definition assembled from the project\'s stakeholders, concerns, and requirements.')]
 #[MimeType('text/markdown')]
 class ProjectSrsResource extends Resource implements HasUriTemplate
 {

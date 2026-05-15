@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Attributes\RendersApp;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Open the Growth trace-graph app: pick a starting artifact (capability from the sidebar or any artifact ULID) and visualize the trace-query nodes and edges as an interactive force-directed graph with adjustable depth and direction. Optionally provide a project_id to preselect a project.')]
+#[Description('Open the Growth trace-graph app: pick a starting artifact (requirement from the sidebar or any artifact ULID) and visualize the trace-query nodes and edges as an interactive force-directed graph with adjustable depth and direction. Optionally provide a project_id to preselect a project.')]
 #[IsReadOnly]
 #[RendersApp(resource: TraceGraphApp::class)]
 class ShowTraceGraph extends Tool

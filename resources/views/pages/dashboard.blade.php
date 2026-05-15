@@ -155,7 +155,7 @@ new #[Title('Dashboard')] class extends Component {
         return [
             ['label' => 'Stakeholders', 'value' => $project->stakeholders_count],
             ['label' => 'Concerns', 'value' => $project->concerns_count],
-            ['label' => 'Capabilities', 'value' => $project->requirements_count],
+            ['label' => 'Requirements', 'value' => $project->requirements_count],
             ['label' => 'Architecture views', 'value' => $project->design_views_count],
             ['label' => 'Verification plans', 'value' => $project->test_plans_count],
             ['label' => 'Work items', 'value' => $project->work_items_count],

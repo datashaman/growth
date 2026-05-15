@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Throwable;
 
-#[Description('Create or update up to 100 verification cases in one call, syncing the capabilities each case verifies. Each item is committed in its own transaction — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
+#[Description('Create or update up to 100 verification cases in one call, syncing the requirements each case verifies. Each item is committed in its own transaction — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
 class UpsertVerificationCases extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -51,15 +51,15 @@ class UpsertVerificationCases extends Tool
 
         try {
             $id = $data['id'] ?? null;
-            $capabilityIds = $data['verifies_capability_ids'];
-            unset($data['id'], $data['verifies_capability_ids']);
+            $requirementIds = $data['verifies_requirement_ids'];
+            unset($data['id'], $data['verifies_requirement_ids']);
 
-            $case = DB::transaction(function () use ($id, $data, $capabilityIds) {
+            $case = DB::transaction(function () use ($id, $data, $requirementIds) {
                 $case = $id
                     ? tap(TestCaseModel::findOrFail($id))->update($data)
                     : TestCaseModel::create($data);
 
-                $case->requirements()->sync($capabilityIds);
+                $case->requirements()->sync($requirementIds);
 
                 return $case;
             });
@@ -69,7 +69,7 @@ class UpsertVerificationCases extends Tool
                 'ok' => true,
                 'id' => $case->id,
                 'name' => $case->name,
-                'capabilities_verified' => count($capabilityIds),
+                'requirements_verified' => count($requirementIds),
                 'created' => $case->wasRecentlyCreated,
             ];
         } catch (Throwable $e) {
@@ -95,8 +95,8 @@ class UpsertVerificationCases extends Tool
             'inputs' => 'nullable|array',
             'expected_results' => 'required|string',
             'environment' => 'nullable|string',
-            'verifies_capability_ids' => 'required|array|min:1',
-            'verifies_capability_ids.*' => 'string|owned_requirement',
+            'verifies_requirement_ids' => 'required|array|min:1',
+            'verifies_requirement_ids.*' => 'string|owned_requirement',
         ];
     }
 
@@ -113,7 +113,7 @@ class UpsertVerificationCases extends Tool
                     'inputs' => $s->array()->description('Inputs used during execution'),
                     'expected_results' => $s->string()->description('Expected outcome')->required(),
                     'environment' => $s->string()->description('Environment notes'),
-                    'verifies_capability_ids' => $s->array()->description('Capability ULIDs verified by this case')->required(),
+                    'verifies_requirement_ids' => $s->array()->description('Requirement ULIDs verified by this case')->required(),
                 ]))
                 ->min(1)
                 ->max(100)

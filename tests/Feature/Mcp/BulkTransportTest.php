@@ -4,7 +4,7 @@ use App\Models\Project;
 use App\Models\User;
 use Laravel\Passport\Passport;
 
-it('round-trips upsert-capabilities through the HTTP MCP transport', function () {
+it('round-trips upsert-requirements through the HTTP MCP transport', function () {
     $user = User::factory()->create();
     Passport::actingAs($user, ['mcp:use']);
 
@@ -19,7 +19,7 @@ it('round-trips upsert-capabilities through the HTTP MCP transport', function ()
         'id' => 1,
         'method' => 'tools/call',
         'params' => [
-            'name' => 'upsert-capabilities',
+            'name' => 'upsert-requirements',
             'arguments' => [
                 'items' => [
                     [
@@ -64,7 +64,7 @@ it('returns a clear cap error from the HTTP transport when items exceed 100', fu
         'project_id' => $project->id,
         'layer' => 'software',
         'type' => 'functional',
-        'text' => 'A capability of sufficient length.',
+        'text' => 'A requirement of sufficient length.',
     ]);
 
     $response = $this->postJson('/mcp/intake', [
@@ -72,7 +72,7 @@ it('returns a clear cap error from the HTTP transport when items exceed 100', fu
         'id' => 1,
         'method' => 'tools/call',
         'params' => [
-            'name' => 'upsert-capabilities',
+            'name' => 'upsert-requirements',
             'arguments' => ['items' => $items],
         ],
     ]);

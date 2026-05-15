@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Mcp\Tools\Capabilities;
+namespace App\Mcp\Tools\Requirements;
 
 use App\Models\Requirement;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -10,8 +10,8 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Delete a capability. Child capabilities are detached from the deleted parent.')]
-class DeleteCapability extends Tool
+#[Description('Delete a requirement. Child requirements are detached from the deleted parent.')]
+class DeleteRequirement extends Tool
 {
     public function handle(Request $request): ResponseFactory
     {
@@ -19,9 +19,9 @@ class DeleteCapability extends Tool
             'id' => 'required|string|owned_requirement',
         ]);
 
-        $capability = Requirement::findOrFail($data['id']);
-        $children = $capability->children()->count();
-        $capability->delete();
+        $requirement = Requirement::findOrFail($data['id']);
+        $children = $requirement->children()->count();
+        $requirement->delete();
 
         return Response::structured([
             'id' => $data['id'],
@@ -33,7 +33,7 @@ class DeleteCapability extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'id' => $schema->string()->description('Capability ULID to delete')->required(),
+            'id' => $schema->string()->description('Requirement ULID to delete')->required(),
         ];
     }
 }

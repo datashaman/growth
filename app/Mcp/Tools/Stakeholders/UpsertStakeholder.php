@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Create or update a stakeholder (capability rules / architecture coverage rules). Stakeholders raise concerns and own requirements.')]
+#[Description('Create or update a stakeholder (requirement rules / architecture coverage rules). Stakeholders raise concerns and own requirements.')]
 class UpsertStakeholder extends Tool
 {
     public function handle(Request $request): ResponseFactory

@@ -24,7 +24,7 @@ it('renders the trace-graph blade with the expected MCP wiring', function () {
     readResource(ReadonlyServer::class, 'ui://resources/trace-graph')
         ->assertOk()
         ->assertSee('createMcpApp')
-        ->assertSee('list-capabilities')
+        ->assertSee('list-requirements')
         ->assertSee('list-projects')
         ->assertSee('trace-query')
         ->assertSee('Trace Graph')

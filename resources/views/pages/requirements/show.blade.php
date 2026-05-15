@@ -23,8 +23,8 @@ new class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-detail-page-header
         :title="\Illuminate\Support\Str::limit($requirement->text, 80)"
-        back-route="capabilities"
-        :back-label="__('Back to capabilities')">
+        back-route="requirements"
+        :back-label="__('Back to requirements')">
         <x-slot:badges>
             <flux:badge :color="BadgeVariant::doc($requirement->doc)" size="sm">{{ strtoupper($requirement->doc) }}</flux:badge>
             <flux:badge color="zinc" size="sm">{{ str_replace('_', ' ', $requirement->type) }}</flux:badge>

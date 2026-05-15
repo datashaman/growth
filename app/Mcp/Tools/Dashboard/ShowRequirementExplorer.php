@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools\Dashboard;
 
-use App\Mcp\Resources\CapabilityExplorerApp;
+use App\Mcp\Resources\RequirementExplorerApp;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -12,10 +12,10 @@ use Laravel\Mcp\Server\Attributes\RendersApp;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Open the Growth capability-explorer app: browse capabilities with layer/type/priority filters, drill into acceptance checks, derived design/test/work-item links, and capability lint findings. Optionally provide a project_id to preselect a project.')]
+#[Description('Open the Growth requirement-explorer app: browse requirements with layer/type/priority filters, drill into acceptance checks, derived design/test/work-item links, and requirement lint findings. Optionally provide a project_id to preselect a project.')]
 #[IsReadOnly]
-#[RendersApp(resource: CapabilityExplorerApp::class)]
-class ShowCapabilityExplorer extends Tool
+#[RendersApp(resource: RequirementExplorerApp::class)]
+class ShowRequirementExplorer extends Tool
 {
     public function handle(Request $request): ResponseFactory
     {
@@ -24,7 +24,7 @@ class ShowCapabilityExplorer extends Tool
         ]);
 
         return Response::structured([
-            'message' => 'Capability explorer app loaded.',
+            'message' => 'Requirement explorer app loaded.',
             'project_id' => $data['project_id'] ?? null,
         ]);
     }
@@ -33,7 +33,7 @@ class ShowCapabilityExplorer extends Tool
     {
         return [
             'project_id' => $schema->string()
-                ->description('Optional project ULID to preselect in the capability-explorer app.'),
+                ->description('Optional project ULID to preselect in the requirement-explorer app.'),
         ];
     }
 

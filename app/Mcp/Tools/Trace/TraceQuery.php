@@ -13,9 +13,9 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Walk the traceability graph from any artifact (requirement, concern, design view/element, test plan/case/run, anomaly, stakeholder). Returns a flat `nodes` + `edges` graph up to a configurable depth — preferred over chained `list-*` calls when you need relationships across entity types.
 
 Common queries:
-- `{id: <capability-id>}` — find every design element, test case, and work item derived from a capability (default depth 3, direction both).
-- `{id: <concern-id>, direction: down}` — find every architecture view and capability that addresses a concern.
-- `{id: <work-item-id>, direction: up}` — find the capabilities, milestones, and roles that justify a work item.
+- `{id: <requirement-id>}` — find every design element, test case, and work item derived from a requirement (default depth 3, direction both).
+- `{id: <concern-id>, direction: down}` — find every architecture view and requirement that addresses a concern.
+- `{id: <work-item-id>, direction: up}` — find the requirements, milestones, and roles that justify a work item.
 - `{id: <anomaly-id>, depth: 2}` — find the failing test run and its plan/case from an anomaly.
 - `{id: <test-plan-id>, direction: down}` — find every case and run produced under a verification plan.
 

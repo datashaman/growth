@@ -11,7 +11,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Uri;
 
 #[Name('Gate Status')]
-#[Description('Interactive readiness gate status board: shows pass/warn/fail per gate (capabilities, architecture, verification, planning, review, change control, implementation) with the blocking findings.')]
+#[Description('Interactive readiness gate status board: shows pass/warn/fail per gate (requirements, architecture, verification, planning, review, change control, implementation) with the blocking findings.')]
 #[Uri('ui://resources/gate-status')]
 #[AppMeta]
 class GateStatusApp extends AppResource

@@ -706,7 +706,7 @@
             }
 
             function resourcesList() {
-                const flow = ['intent', 'capabilities', 'architecture', 'plan', 'verification', 'evidence', 'readiness'];
+                const flow = ['intent', 'requirements', 'architecture', 'plan', 'verification', 'evidence', 'readiness'];
                 const links = flow
                     .filter((label) => state.project.resource_uris[label])
                     .map((label) => {

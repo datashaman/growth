@@ -3,13 +3,12 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Prompts\PlanSlice;
-use App\Mcp\Resources\CapabilitiesResource;
 use App\Mcp\Resources\PlanResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
+use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
-use App\Mcp\Tools\Capabilities\ListCapabilities;
 use App\Mcp\Tools\Common\BulkLink;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Lint\LintProject;
@@ -26,8 +25,8 @@ use App\Mcp\Tools\Plan\DeleteRisk;
 use App\Mcp\Tools\Plan\DeleteRole;
 use App\Mcp\Tools\Plan\DeleteWorkItem;
 use App\Mcp\Tools\Plan\LinkWorkItemDependency;
-use App\Mcp\Tools\Plan\LinkWorkItemToCapabilities;
 use App\Mcp\Tools\Plan\LinkWorkItemToMilestone;
+use App\Mcp\Tools\Plan\LinkWorkItemToRequirements;
 use App\Mcp\Tools\Plan\ListAgents;
 use App\Mcp\Tools\Plan\ListDeliveryLinks;
 use App\Mcp\Tools\Plan\ListDeployments;
@@ -44,8 +43,8 @@ use App\Mcp\Tools\Plan\SummarizeScheduleHealth;
 use App\Mcp\Tools\Plan\UnassignRole;
 use App\Mcp\Tools\Plan\UnassignWorkItemRaci;
 use App\Mcp\Tools\Plan\UnlinkWorkItemDependency;
-use App\Mcp\Tools\Plan\UnlinkWorkItemFromCapability;
 use App\Mcp\Tools\Plan\UnlinkWorkItemFromMilestone;
+use App\Mcp\Tools\Plan\UnlinkWorkItemFromRequirement;
 use App\Mcp\Tools\Plan\UpsertAgent;
 use App\Mcp\Tools\Plan\UpsertDeliveryLink;
 use App\Mcp\Tools\Plan\UpsertDeployment;
@@ -56,6 +55,7 @@ use App\Mcp\Tools\Plan\UpsertRisk;
 use App\Mcp\Tools\Plan\UpsertRole;
 use App\Mcp\Tools\Plan\UpsertWorkItems;
 use App\Mcp\Tools\Projects\ListProjects;
+use App\Mcp\Tools\Requirements\ListRequirements;
 use App\Mcp\Tools\Trace\TraceQuery;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -72,7 +72,7 @@ class PlanningServer extends Server
     protected array $tools = [
         WhoAmI::class,
         ListProjects::class,
-        ListCapabilities::class,
+        ListRequirements::class,
         UpsertPlan::class,
         DeletePlan::class,
         ListProjectPlans::class,
@@ -93,9 +93,9 @@ class PlanningServer extends Server
         UpsertWorkItems::class,
         ListWorkItems::class,
         DeleteWorkItem::class,
-        LinkWorkItemToCapabilities::class,
+        LinkWorkItemToRequirements::class,
         BulkLink::class,
-        UnlinkWorkItemFromCapability::class,
+        UnlinkWorkItemFromRequirement::class,
         LinkWorkItemToMilestone::class,
         UnlinkWorkItemFromMilestone::class,
         LinkWorkItemDependency::class,
@@ -124,7 +124,7 @@ class PlanningServer extends Server
         PlaybookResource::class,
         RigorLevelsResource::class,
         ProjectIndexResource::class,
-        CapabilitiesResource::class,
+        RequirementsResource::class,
         PlanResource::class,
     ];
 

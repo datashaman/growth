@@ -23,17 +23,17 @@ beforeEach(function () {
     Passport::actingAs($this->user, ['mcp:use']);
 });
 
-function manifest(array $project = [], array $stakeholders = [], array $concerns = [], array $capabilities = []): array
+function manifest(array $project = [], array $stakeholders = [], array $concerns = [], array $requirements = []): array
 {
     return [
         'project' => $project + ['name' => 'Imported', 'description' => 'desc', 'rigor_level' => 2, 'status' => 'active'],
         'stakeholders' => $stakeholders,
         'concerns' => $concerns,
-        'capabilities' => $capabilities,
+        'requirements' => $requirements,
     ];
 }
 
-it('creates project, stakeholders, concerns and capabilities from scratch in fail mode', function () {
+it('creates project, stakeholders, concerns and requirements from scratch in fail mode', function () {
     $response = ManagementServer::tool(ApplyManifest::class, [
         'manifest' => manifest(
             stakeholders: [
@@ -42,7 +42,7 @@ it('creates project, stakeholders, concerns and capabilities from scratch in fai
             concerns: [
                 ['text' => 'Performance budgets must hold under load.', 'raised_by' => 'pm'],
             ],
-            capabilities: [
+            requirements: [
                 ['slug' => 'cap-greeting', 'text' => 'The app shall greet the user on first run.', 'type' => 'functional'],
             ],
         ),
@@ -56,8 +56,8 @@ it('creates project, stakeholders, concerns and capabilities from scratch in fai
             ->where('counts.project_created', true)
             ->where('counts.stakeholders_created', 1)
             ->where('counts.concerns_created', 1)
-            ->where('counts.capabilities_created', 1)
-            ->has('slugs.capabilities.cap-greeting')
+            ->where('counts.requirements_created', 1)
+            ->has('slugs.requirements.cap-greeting')
             ->etc();
     });
 
@@ -71,7 +71,7 @@ it('creates project, stakeholders, concerns and capabilities from scratch in fai
 it('rolls back when dry_run is true', function () {
     $response = ManagementServer::tool(ApplyManifest::class, [
         'manifest' => manifest(
-            capabilities: [
+            requirements: [
                 ['slug' => 'cap-x', 'text' => 'The thing.', 'type' => 'functional'],
             ],
         ),
@@ -81,7 +81,7 @@ it('rolls back when dry_run is true', function () {
     $response->assertOk()->assertStructuredContent(function ($json) {
         $json->where('dry_run', true)
             ->where('counts.project_created', true)
-            ->where('counts.capabilities_created', 1)
+            ->where('counts.requirements_created', 1)
             ->etc();
     });
 
@@ -102,7 +102,7 @@ it('fail mode aborts when existing entity differs', function () {
     $response = ManagementServer::tool(ApplyManifest::class, [
         'manifest' => [
             'project' => ['id' => $project->id, 'name' => 'Existing'],
-            'capabilities' => [
+            'requirements' => [
                 ['slug' => 'cap-a', 'text' => 'Different text.', 'type' => 'functional'],
             ],
         ],
@@ -125,7 +125,7 @@ it('merge mode updates existing entities by natural key', function () {
     $response = ManagementServer::tool(ApplyManifest::class, [
         'manifest' => [
             'project' => ['id' => $project->id, 'name' => 'Existing'],
-            'capabilities' => [
+            'requirements' => [
                 ['slug' => 'cap-a', 'text' => 'Updated text.', 'type' => 'functional'],
             ],
         ],
@@ -133,8 +133,8 @@ it('merge mode updates existing entities by natural key', function () {
     ]);
 
     $response->assertOk()->assertStructuredContent(function ($json) {
-        $json->where('counts.capabilities_updated', 1)
-            ->where('counts.capabilities_created', 0)
+        $json->where('counts.requirements_updated', 1)
+            ->where('counts.requirements_created', 0)
             ->etc();
     });
 
@@ -168,7 +168,7 @@ it('replace mode wipes existing child entities and recreates from manifest', fun
     $response = ManagementServer::tool(ApplyManifest::class, [
         'manifest' => [
             'project' => ['id' => $project->id, 'name' => 'Wipe'],
-            'capabilities' => [
+            'requirements' => [
                 ['slug' => 'new-cap', 'text' => 'New.', 'type' => 'functional'],
             ],
         ],
@@ -177,9 +177,9 @@ it('replace mode wipes existing child entities and recreates from manifest', fun
     ]);
 
     $response->assertOk()->assertStructuredContent(function ($json) {
-        $json->where('counts.capabilities_deleted', 1)
+        $json->where('counts.requirements_deleted', 1)
             ->where('counts.stakeholders_deleted', 1)
-            ->where('counts.capabilities_created', 1)
+            ->where('counts.requirements_created', 1)
             ->etc();
     });
 
@@ -191,7 +191,7 @@ it('replace mode wipes existing child entities and recreates from manifest', fun
 it('replace mode falls back to fail when project does not exist', function () {
     $response = ManagementServer::tool(ApplyManifest::class, [
         'manifest' => manifest(
-            capabilities: [['slug' => 'cap-a', 'text' => 'A capability.', 'type' => 'functional']],
+            requirements: [['slug' => 'cap-a', 'text' => 'A requirement.', 'type' => 'functional']],
         ),
         'mode' => 'replace',
     ]);
@@ -235,7 +235,7 @@ it('reports drift when current updated_at is newer than manifest _exported_at', 
     $response = ManagementServer::tool(ApplyManifest::class, [
         'manifest' => [
             'project' => ['id' => $project->id, 'name' => 'Drifty'],
-            'capabilities' => [
+            'requirements' => [
                 [
                     'slug' => 'cap-a',
                     'text' => 'Current.',
@@ -249,16 +249,16 @@ it('reports drift when current updated_at is newer than manifest _exported_at', 
 
     $response->assertOk()->assertStructuredContent(function ($json) {
         $json->has('drift.0')
-            ->where('drift.0.entity', 'capability')
+            ->where('drift.0.entity', 'requirement')
             ->where('drift.0.identifier', 'cap-a')
             ->etc();
     });
 });
 
-it('rejects manifest with missing capability slug', function () {
+it('rejects manifest with missing requirement slug', function () {
     $response = ManagementServer::tool(ApplyManifest::class, [
         'manifest' => manifest(
-            capabilities: [['text' => 'No slug here.', 'type' => 'functional']],
+            requirements: [['text' => 'No slug here.', 'type' => 'functional']],
         ),
     ]);
 
@@ -518,7 +518,7 @@ it('creates project plan, roles, milestones and work items from scratch', functi
     $response = ManagementServer::tool(ApplyManifest::class, [
         'manifest' => [
             'project' => ['name' => 'Plan', 'rigor_level' => 2, 'status' => 'active'],
-            'capabilities' => [
+            'requirements' => [
                 ['slug' => 'add-todo', 'text' => 'Adds a todo.', 'type' => 'functional'],
             ],
             'plan' => [
@@ -537,7 +537,7 @@ it('creates project plan, roles, milestones and work items from scratch', functi
                         'name' => 'Implement add-todo',
                         'kind' => 'task',
                         'responsible_role' => 'frontend',
-                        'capabilities' => ['add-todo'],
+                        'requirements' => ['add-todo'],
                         'milestones' => ['m1'],
                     ],
                 ],
@@ -756,11 +756,11 @@ it('reports drift on a work item when updated_at is newer than _exported_at', fu
     });
 });
 
-it('creates verification plans and nested cases linked to capabilities', function () {
+it('creates verification plans and nested cases linked to requirements', function () {
     $response = ManagementServer::tool(ApplyManifest::class, [
         'manifest' => [
             'project' => ['name' => 'Verif', 'rigor_level' => 2, 'status' => 'active'],
-            'capabilities' => [
+            'requirements' => [
                 ['slug' => 'add-todo', 'text' => 'Adds a todo.', 'type' => 'functional'],
             ],
             'verification' => [
@@ -774,7 +774,7 @@ it('creates verification plans and nested cases linked to capabilities', functio
                                 'slug' => 'c-add',
                                 'name' => 'add-todo creates a row',
                                 'expected_results' => 'A new row exists in storage.',
-                                'verifies_capabilities' => ['add-todo'],
+                                'verifies_requirements' => ['add-todo'],
                             ],
                         ],
                     ],
@@ -799,14 +799,14 @@ it('creates verification plans and nested cases linked to capabilities', functio
     expect($case->requirements()->first()->slug)->toBe('add-todo');
 });
 
-it('resolves verification case capabilities by existing slug when not in manifest', function () {
+it('resolves verification case requirements by existing slug when not in manifest', function () {
     $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'ExistingCaps', 'rigor_level' => 2]);
     $cap = Requirement::create([
         'project_id' => $project->id,
         'slug' => 'pre-existing',
         'doc' => 'srs',
         'type' => 'functional',
-        'text' => 'Pre-existing capability.',
+        'text' => 'Pre-existing requirement.',
     ]);
 
     $response = ManagementServer::tool(ApplyManifest::class, [
@@ -819,9 +819,9 @@ it('resolves verification case capabilities by existing slug when not in manifes
                         'name' => 'System',
                         'cases' => [
                             [
-                                'name' => 'links existing capability',
+                                'name' => 'links existing requirement',
                                 'expected_results' => 'ok',
-                                'verifies_capabilities' => ['pre-existing'],
+                                'verifies_requirements' => ['pre-existing'],
                             ],
                         ],
                     ],
@@ -831,7 +831,7 @@ it('resolves verification case capabilities by existing slug when not in manifes
     ]);
 
     $response->assertOk();
-    $case = TestCase::where('name', 'links existing capability')->first();
+    $case = TestCase::where('name', 'links existing requirement')->first();
     expect($case->requirements()->pluck('id')->all())->toBe([$cap->id]);
 });
 
@@ -910,7 +910,7 @@ it('replace mode wipes verification plans and cases', function () {
     expect(TestPlan::where('project_id', $project->id)->where('name', 'FreshPlan')->exists())->toBeTrue();
 });
 
-it('rejects a verification case referencing an unknown capability', function () {
+it('rejects a verification case referencing an unknown requirement', function () {
     $response = ManagementServer::tool(ApplyManifest::class, [
         'manifest' => [
             'project' => ['name' => 'BadCap', 'rigor_level' => 2, 'status' => 'active'],
@@ -923,7 +923,7 @@ it('rejects a verification case referencing an unknown capability', function () 
                             [
                                 'name' => 'orphan',
                                 'expected_results' => 'never matches',
-                                'verifies_capabilities' => ['ghost-cap'],
+                                'verifies_requirements' => ['ghost-cap'],
                             ],
                         ],
                     ],
@@ -932,7 +932,7 @@ it('rejects a verification case referencing an unknown capability', function () 
         ],
     ]);
 
-    $response->assertHasErrors(['unknown capability']);
+    $response->assertHasErrors(['unknown requirement']);
 });
 
 it('rejects a verification case missing expected_results', function () {

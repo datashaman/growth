@@ -11,7 +11,7 @@ use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Uri;
 
 #[Name('Trace Graph')]
-#[Description('Interactive traceability graph: pick a project + starting artifact (capability or any artifact ID) and visualize the trace-query nodes and edges with adjustable depth and direction.')]
+#[Description('Interactive traceability graph: pick a project + starting artifact (requirement or any artifact ID) and visualize the trace-query nodes and edges with adjustable depth and direction.')]
 #[Uri('ui://resources/trace-graph')]
 #[AppMeta]
 class TraceGraphApp extends AppResource

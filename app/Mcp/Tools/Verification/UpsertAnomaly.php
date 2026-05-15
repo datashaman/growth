@@ -25,13 +25,13 @@ class UpsertAnomaly extends Tool
             'summary' => 'required|string|max:255',
             'description' => 'required|string',
             'environment' => 'nullable|string',
-            'affects_capability_ids' => 'nullable|array',
-            'affects_capability_ids.*' => 'string|owned_requirement',
+            'affects_requirement_ids' => 'nullable|array',
+            'affects_requirement_ids.*' => 'string|owned_requirement',
         ]);
 
         $id = $data['id'] ?? null;
-        $affectedIds = $data['affects_capability_ids'] ?? null;
-        unset($data['id'], $data['affects_capability_ids']);
+        $affectedIds = $data['affects_requirement_ids'] ?? null;
+        unset($data['id'], $data['affects_requirement_ids']);
 
         $anomaly = DB::transaction(function () use ($id, $data, $affectedIds) {
             $anomaly = $id ? tap(Anomaly::findOrFail($id))->update($data) : Anomaly::create($data);
@@ -47,7 +47,7 @@ class UpsertAnomaly extends Tool
             'severity' => $anomaly->severity,
             'status' => $anomaly->status,
             'created' => $anomaly->wasRecentlyCreated,
-            'capabilities_linked' => $anomaly->affectedRequirements()->count(),
+            'requirements_linked' => $anomaly->affectedRequirements()->count(),
         ]);
     }
 
@@ -62,7 +62,7 @@ class UpsertAnomaly extends Tool
             'summary' => $schema->string()->description('Short summary')->required(),
             'description' => $schema->string()->description('Full description')->required(),
             'environment' => $schema->string()->description('Where it was observed'),
-            'affects_capability_ids' => $schema->array()->description('Capability ULIDs affected by this anomaly'),
+            'affects_requirement_ids' => $schema->array()->description('Requirement ULIDs affected by this anomaly'),
         ];
     }
 }

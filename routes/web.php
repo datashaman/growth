@@ -9,7 +9,7 @@ Route::livewire('invitations/{token}', 'pages::invitations.show')->name('invitat
 Route::middleware('auth')->group(function () {
     Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');
     Route::livewire('intent', 'pages::intent')->name('intent');
-    Route::livewire('capabilities', 'pages::capabilities')->name('capabilities');
+    Route::livewire('requirements', 'pages::requirements.index')->name('requirements');
     Route::livewire('architecture', 'pages::architecture')->name('architecture');
     Route::livewire('verification', 'pages::verification')->name('verification');
     Route::livewire('plan', 'pages::plan')->name('plan');

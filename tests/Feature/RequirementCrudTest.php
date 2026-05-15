@@ -150,9 +150,9 @@ test('delete modal 404s for a requirement in another project', function () {
     expect(Requirement::withoutGlobalScopes()->find($bobReq->id))->not->toBeNull();
 });
 
-test('capabilities page renders New requirement button', function () {
+test('requirements page renders New requirement button', function () {
     $this->actingAs($this->user)
-        ->get('/capabilities?project='.$this->project->id)
+        ->get('/requirements?project='.$this->project->id)
         ->assertOk()
         ->assertSee('New requirement');
 });

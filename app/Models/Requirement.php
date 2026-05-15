@@ -40,7 +40,7 @@ class Requirement extends Model
     {
         $base = Str::limit(Str::slug($text), 100, '');
         if ($base === '') {
-            $base = 'capability';
+            $base = 'requirement';
         }
         $slug = $base;
         $n = 2;

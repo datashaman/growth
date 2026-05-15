@@ -18,13 +18,13 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Run Growth quality checks for a project. Returns findings grouped into sections (capabilities, architecture, verification, planning, reviews, baselines, changes). Pass `sections` to compute only the listed sections; omit it to run them all. `errors` and `warnings` counts cover the returned sections only.')]
+#[Description('Run Growth quality checks for a project. Returns findings grouped into sections (requirements, architecture, verification, planning, reviews, baselines, changes). Pass `sections` to compute only the listed sections; omit it to run them all. `errors` and `warnings` counts cover the returned sections only.')]
 class LintProject extends Tool
 {
     private const SECTIONS = [
         'baselines',
         'changes',
-        'capabilities',
+        'requirements',
         'architecture',
         'verification',
         'planning',
@@ -57,7 +57,7 @@ class LintProject extends Tool
         $compute = [
             'baselines' => fn () => $this->baselineLinter->check($project),
             'changes' => fn () => $this->changeLinter->check($project),
-            'capabilities' => fn () => $this->capabilityFindings($project),
+            'requirements' => fn () => $this->requirementFindings($project),
             'architecture' => fn () => $this->designLinter->check($project),
             'verification' => fn () => $this->testLinter->check($project),
             'planning' => fn () => $this->planLinter->check($project),
@@ -89,14 +89,14 @@ class LintProject extends Tool
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function capabilityFindings(Project $project): array
+    private function requirementFindings(Project $project): array
     {
         $findings = [];
-        foreach ($project->requirements as $capability) {
-            foreach ($this->requirementLinter->check($capability) as $finding) {
+        foreach ($project->requirements as $requirement) {
+            foreach ($this->requirementLinter->check($requirement) as $finding) {
                 $findings[] = $finding + [
-                    'subject_type' => 'capability',
-                    'subject_id' => $capability->id,
+                    'subject_type' => 'requirement',
+                    'subject_id' => $requirement->id,
                 ];
             }
         }

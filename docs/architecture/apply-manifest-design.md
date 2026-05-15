@@ -5,7 +5,7 @@ Design doc for issue #34. Status: **decisions made on every open question (see b
 ## Goal
 
 One MCP call applies a YAML/JSON manifest describing a Growth project's full
-structure — capabilities, concerns, views, work items, milestones, roles,
+structure — requirements, concerns, views, work items, milestones, roles,
 baselines, links — and `export-manifest` emits the inverse. The manifest
 becomes a `project.growth.yaml` (or `.json`) committed alongside the code
 it describes, turning Growth from "MCP-only" into "GitOps-compatible."
@@ -17,7 +17,7 @@ version control.
 ## Non-goals
 
 - Re-implementing every single MCP write tool inside the manifest schema.
-  The manifest covers the **structural** entities (project, capabilities,
+  The manifest covers the **structural** entities (project, requirements,
   architecture, plan); it does **not** cover transactional events (test
   runs, verification runs, review decision events, check-run evidence,
   change-approval events). Those stay as live MCP writes.
@@ -47,7 +47,7 @@ concerns:
     text: "Todos persist across reloads."
     stakeholders: [product-owner]
 
-capabilities:
+requirements:
   - slug: add-todo
     layer: software
     type: functional
@@ -89,7 +89,7 @@ plan:
     - slug: wi-1
       name: "Implement add-todo"
       kind: feature
-      capabilities: [add-todo]
+      requirements: [add-todo]
       milestone: m1-mvp
       responsible_role: frontend
 
@@ -101,11 +101,11 @@ verification:
       cases:
         - slug: c-add
           name: "add-todo creates a row"
-          capabilities: [add-todo]
+          requirements: [add-todo]
 ```
 
 Every entity has a **slug** local to the manifest. Cross-references
-(`stakeholders: [product-owner]`, `capabilities: [add-todo]`) resolve to
+(`stakeholders: [product-owner]`, `requirements: [add-todo]`) resolve to
 slugs first, then to ULIDs once the entity is upserted.
 
 ## Identity model
@@ -115,7 +115,7 @@ slugs first, then to ULIDs once the entity is upserted.
 - **Existing project**: if `project.id` is set on the manifest, that
   project is the upsert target. Slugs of existing entities are matched
   by a uniqueness key per entity type (most use `(project_id, name)`;
-  capabilities use `(project_id, slug)` if a slug column is added — see
+  requirements use `(project_id, slug)` if a slug column is added — see
   open question 3 below).
 - **Anonymous project** (no id): a new project is created and every
   entity is created fresh.
@@ -146,15 +146,15 @@ Topological per entity type:
 ```
 project
   → stakeholders, concerns
-  → capabilities (needs concerns)
+  → requirements (needs concerns)
   → architecture viewpoints
   → architecture views (needs viewpoints + concerns)
   → architecture elements (needs views)
   → plan
   → roles, milestones (needs plan)
-  → work items (needs capabilities, milestones, roles)
+  → work items (needs requirements, milestones, roles)
   → verification plans
-  → verification cases (needs capabilities, plans)
+  → verification cases (needs requirements, plans)
 ```
 
 Same-type cycles (e.g. work-item dependencies) resolved by a second
@@ -192,7 +192,7 @@ client's job. The MCP tool just takes the parsed JSON/YAML as input.
    apply. Partial-success would make recovery harder than the typo it
    masks.
 
-3. **Add a `slug` column to capabilities.** The `Requirement` model
+3. **Add a `slug` column to requirements.** The `Requirement` model
    gains a `slug` string column, unique per project. Folded into
    **slice A** as part of the schema work — `merge` mode can't
    reliably match without it. Existing rows backfill a slug derived
@@ -221,9 +221,9 @@ client's job. The MCP tool just takes the parsed JSON/YAML as input.
 
 ## Slicing plan
 
-1. **Slice A** — `ManagementServer` + capability slug migration + the
+1. **Slice A** — `ManagementServer` + requirement slug migration + the
    minimal `apply-manifest` (project + stakeholders + concerns +
-   capabilities) with `fail`/`merge`/`replace` modes and dry-run.
+   requirements) with `fail`/`merge`/`replace` modes and dry-run.
    Establishes the slug → ULID resolver, transaction wrapper, and the
    drift report.
 2. **Slice B** — architecture (viewpoints, views, elements).

@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Attributes\RendersApp;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Description('Open the Growth gate-status app: pass/warn/fail per readiness gate (capabilities, architecture, verification, planning, review, change control, implementation) with the blocking findings. Optionally provide a project_id to preselect a project.')]
+#[Description('Open the Growth gate-status app: pass/warn/fail per readiness gate (requirements, architecture, verification, planning, review, change control, implementation) with the blocking findings. Optionally provide a project_id to preselect a project.')]
 #[IsReadOnly]
 #[RendersApp(resource: GateStatusApp::class)]
 class ShowGateStatus extends Tool
