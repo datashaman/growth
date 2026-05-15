@@ -3,7 +3,6 @@
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Models\WorkspaceMembership;
-use App\Support\WorkspaceContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
@@ -71,14 +70,13 @@ new #[Layout('layouts.auth')] #[Title('Accept invitation')] class extends Compon
             ]));
 
             $this->attachMembership($user);
-            $user->forceFill(['active_workspace_id' => $this->invitation->workspace_id])->save();
+            $user->switchWorkspace($this->invitation->workspace_id);
             $this->invitation->forceFill(['accepted_at' => now()])->save();
 
             return $user;
         });
 
         auth()->login($user);
-        app(WorkspaceContext::class)->forget();
 
         $this->redirect('/dashboard', navigate: false);
     }
@@ -87,11 +85,9 @@ new #[Layout('layouts.auth')] #[Title('Accept invitation')] class extends Compon
     {
         DB::transaction(function () use ($user): void {
             $this->attachMembership($user);
-            $user->forceFill(['active_workspace_id' => $this->invitation->workspace_id])->save();
+            $user->switchWorkspace($this->invitation->workspace_id);
             $this->invitation->forceFill(['accepted_at' => now()])->save();
         });
-
-        app(WorkspaceContext::class)->forget();
     }
 
     private function attachMembership(User $user): void

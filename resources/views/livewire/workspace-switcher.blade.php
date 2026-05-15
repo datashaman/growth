@@ -3,7 +3,6 @@
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
-use App\Support\WorkspaceContext;
 use Flux\Flux;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -50,8 +49,7 @@ new class extends Component
             return;
         }
 
-        $user->forceFill(['active_workspace_id' => $value])->save();
-        app(WorkspaceContext::class)->forget();
+        $user->switchWorkspace($value);
 
         session()->forget('selected_project_id');
 
@@ -79,8 +77,7 @@ new class extends Component
             'role' => WorkspaceMembership::ROLE_OWNER,
         ]);
 
-        $user->forceFill(['active_workspace_id' => $workspace->id])->save();
-        app(WorkspaceContext::class)->forget();
+        $user->switchWorkspace($workspace);
         session()->forget('selected_project_id');
 
         $this->reset(['newWorkspaceName']);

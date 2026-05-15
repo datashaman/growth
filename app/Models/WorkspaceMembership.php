@@ -17,7 +17,14 @@ class WorkspaceMembership extends Model
 
     public const ROLE_VIEWER = 'viewer';
 
-    protected $fillable = ['workspace_id', 'user_id', 'role'];
+    protected $fillable = ['workspace_id', 'user_id', 'role', 'last_accessed_at'];
+
+    protected function casts(): array
+    {
+        return [
+            'last_accessed_at' => 'datetime',
+        ];
+    }
 
     public function workspace(): BelongsTo
     {
