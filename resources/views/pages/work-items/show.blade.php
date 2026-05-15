@@ -23,6 +23,31 @@ new class extends Component {
         ]);
     }
 
+    /**
+     * @return array<string,string>
+     */
+    public function getListeners(): array
+    {
+        return [
+            'echo-private:projects.'.$this->workItem->project_id.',ProjectDataChanged' => 'onProjectDataChanged',
+        ];
+    }
+
+    public function onProjectDataChanged(): void
+    {
+        $this->workItem = $this->workItem->fresh([
+            'project',
+            'parent',
+            'children',
+            'responsibleRole',
+            'requirements',
+            'milestones',
+            'dependencies',
+            'deliveryLinks.checkRuns',
+            'releases',
+        ]);
+    }
+
     public function formatHours(?float $hours): string
     {
         if ($hours === null || $hours === 0.0) {

@@ -18,6 +18,28 @@ new class extends Component {
             'targets',
         ]);
     }
+
+    /**
+     * @return array<string,string>
+     */
+    public function getListeners(): array
+    {
+        return [
+            'echo-private:projects.'.$this->review->project_id.',ProjectDataChanged' => 'onProjectDataChanged',
+        ];
+    }
+
+    public function onProjectDataChanged(): void
+    {
+        $this->review = $this->review->fresh([
+            'project',
+            'ownerRole',
+            'reviewPlan',
+            'participants.role',
+            'findings.ownerRole',
+            'targets',
+        ]);
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
