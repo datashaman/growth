@@ -15,6 +15,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('plan', 'pages::plan')->name('plan');
     Route::livewire('evidence', 'pages::evidence')->name('evidence');
     Route::livewire('changes', 'pages::changes')->name('changes');
+    Route::livewire('change-requests/{changeRequest}', 'pages::change-requests.show')->name('change-requests.show');
     Route::livewire('risks/{risk}', 'pages::risks.show')->name('risks.show');
     Route::livewire('work-items/create', 'pages::work-items.create')->name('work-items.create');
     Route::livewire('work-items/{workItem}', 'pages::work-items.show')->name('work-items.show');
