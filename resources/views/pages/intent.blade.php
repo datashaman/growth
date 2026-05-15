@@ -57,23 +57,23 @@ new #[Title('Intent')] class extends Component {
                     <flux:button size="sm" icon="plus" variant="primary">{{ __('New stakeholder') }}</flux:button>
                 </flux:modal.trigger>
             </x-slot:actions>
-            <flux:table class="[&_td]:align-top">
+            <flux:table class="w-full table-fixed [&_td]:align-top [&_td]:break-words">
                 <flux:table.columns>
-                    <flux:table.column>{{ __('Name') }}</flux:table.column>
-                    <flux:table.column>{{ __('Role') }}</flux:table.column>
-                    <flux:table.column>{{ __('Kind') }}</flux:table.column>
+                    <flux:table.column class="w-40">{{ __('Name') }}</flux:table.column>
+                    <flux:table.column class="w-32">{{ __('Role') }}</flux:table.column>
+                    <flux:table.column class="w-24">{{ __('Kind') }}</flux:table.column>
                     <flux:table.column>{{ __('Description') }}</flux:table.column>
-                    <flux:table.column></flux:table.column>
+                    <flux:table.column class="w-20"></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->stakeholders as $stakeholder)
                         <flux:table.row>
-                            <flux:table.cell class="font-medium">{{ $stakeholder->name }}</flux:table.cell>
-                            <flux:table.cell>{{ $stakeholder->role ?? '—' }}</flux:table.cell>
+                            <flux:table.cell class="font-medium whitespace-normal">{{ $stakeholder->name }}</flux:table.cell>
+                            <flux:table.cell class="whitespace-normal">{{ $stakeholder->role ?? '—' }}</flux:table.cell>
                             <flux:table.cell>
                                 <flux:badge :color="BadgeVariant::stakeholderKind($stakeholder->kind)" size="sm">{{ $stakeholder->kind }}</flux:badge>
                             </flux:table.cell>
-                            <flux:table.cell>{{ $stakeholder->description ?? '—' }}</flux:table.cell>
+                            <flux:table.cell class="whitespace-normal">{{ $stakeholder->description ?? '—' }}</flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex justify-end gap-1">
                                     <flux:button size="xs" icon="pencil-square" variant="ghost"
@@ -103,19 +103,19 @@ new #[Title('Intent')] class extends Component {
                     <flux:button size="sm" icon="plus" variant="primary">{{ __('New concern') }}</flux:button>
                 </flux:modal.trigger>
             </x-slot:actions>
-            <flux:table class="[&_td]:align-top">
+            <flux:table class="w-full table-fixed [&_td]:align-top [&_td]:break-words">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Concern') }}</flux:table.column>
-                    <flux:table.column>{{ __('Raised by') }}</flux:table.column>
-                    <flux:table.column>{{ __('Viewpoint hints') }}</flux:table.column>
-                    <flux:table.column></flux:table.column>
+                    <flux:table.column class="w-40">{{ __('Raised by') }}</flux:table.column>
+                    <flux:table.column class="w-48">{{ __('Viewpoint hints') }}</flux:table.column>
+                    <flux:table.column class="w-20"></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->concerns as $concern)
                         <flux:table.row>
-                            <flux:table.cell>{{ $concern->text }}</flux:table.cell>
-                            <flux:table.cell>{{ $concern->raisedBy?->name ?? '—' }}</flux:table.cell>
-                            <flux:table.cell>
+                            <flux:table.cell class="whitespace-normal">{{ $concern->text }}</flux:table.cell>
+                            <flux:table.cell class="whitespace-normal">{{ $concern->raisedBy?->name ?? '—' }}</flux:table.cell>
+                            <flux:table.cell class="whitespace-normal">
                                 @if ($concern->viewpoint_hints)
                                     {{ is_array($concern->viewpoint_hints) ? implode(', ', $concern->viewpoint_hints) : $concern->viewpoint_hints }}
                                 @else
