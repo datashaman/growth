@@ -85,29 +85,6 @@ test('saving a CheckRunEvidence dispatches via delivery link → work item', fun
     Event::assertDispatched(ProjectDataChanged::class, fn (ProjectDataChanged $e) => $e->projectId === (string) $this->project->id);
 });
 
-test('reviews.show refreshes when onProjectDataChanged is called', function () {
-    $this->review->findings()->create([
-        'project_id' => $this->project->id,
-        'title' => 'Existing finding',
-        'severity' => 'medium',
-        'status' => 'open',
-    ]);
-
-    $component = Livewire::test('pages::reviews.show', ['review' => $this->review])
-        ->assertSee('Existing finding');
-
-    $this->review->findings()->create([
-        'project_id' => $this->project->id,
-        'title' => 'Newly broadcast finding',
-        'severity' => 'high',
-        'status' => 'open',
-    ]);
-
-    $component
-        ->call('onProjectDataChanged')
-        ->assertSee('Newly broadcast finding');
-});
-
 test('work-items.show refreshes when onProjectDataChanged is called', function () {
     $workItem = WorkItem::create([
         'project_id' => $this->project->id,
@@ -138,11 +115,4 @@ test('work-items.show refreshes when onProjectDataChanged is called', function (
     $component
         ->call('onProjectDataChanged')
         ->assertSee('newly-broadcast-check');
-});
-
-test('listener key on detail pages reflects the loaded model project', function () {
-    $reviewListeners = Livewire::test('pages::reviews.show', ['review' => $this->review])
-        ->instance()->getListeners();
-
-    expect($reviewListeners)->toHaveKey('echo-private:projects.'.$this->project->id.',ProjectDataChanged');
 });

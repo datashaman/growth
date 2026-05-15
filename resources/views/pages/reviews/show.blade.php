@@ -25,11 +25,11 @@ new class extends Component {
     public function getListeners(): array
     {
         return [
-            'echo-private:projects.'.$this->review->project_id.',ProjectDataChanged' => 'onProjectDataChanged',
+            'echo-private:reviews.'.$this->review->id.',ReviewDataChanged' => 'onReviewDataChanged',
         ];
     }
 
-    public function onProjectDataChanged(): void
+    public function onReviewDataChanged(): void
     {
         $this->review = $this->review->fresh([
             'project',
