@@ -9,24 +9,26 @@ new class extends Component {
     #[Locked]
     public ?string $changeRequestId = null;
 
+    #[Locked]
+    public ?string $redirectAfter = null;
+
     public string $title = '';
     public int $impactCount = 0;
     public int $approvalCount = 0;
 
+    public function mount(?string $changeRequestId = null, ?string $redirectAfter = null): void
+    {
+        $this->redirectAfter = $redirectAfter;
+
+        if ($changeRequestId !== null) {
+            $this->hydrateFromId($changeRequestId);
+        }
+    }
+
     #[On('delete-change-request')]
     public function load(string $changeRequestId): void
     {
-        $cr = ChangeRequest::query()
-            ->withCount(['impacts', 'approvalEvents'])
-            ->find($changeRequestId);
-
-        abort_if($cr === null, 404);
-
-        $this->changeRequestId = $changeRequestId;
-        $this->title = $cr->title;
-        $this->impactCount = (int) ($cr->impacts_count ?? 0);
-        $this->approvalCount = (int) ($cr->approval_events_count ?? 0);
-
+        $this->hydrateFromId($changeRequestId);
         $this->modal('delete-change-request')->show();
     }
 
@@ -38,9 +40,29 @@ new class extends Component {
 
         $cr->delete();
 
+        if ($this->redirectAfter !== null) {
+            $this->redirectRoute($this->redirectAfter, navigate: true);
+
+            return;
+        }
+
         $this->modal('delete-change-request')->close();
         $this->reset(['changeRequestId', 'title', 'impactCount', 'approvalCount']);
         $this->dispatch('change-request-saved');
+    }
+
+    private function hydrateFromId(string $changeRequestId): void
+    {
+        $cr = ChangeRequest::query()
+            ->withCount(['impacts', 'approvalEvents'])
+            ->find($changeRequestId);
+
+        abort_if($cr === null, 404);
+
+        $this->changeRequestId = $changeRequestId;
+        $this->title = $cr->title;
+        $this->impactCount = (int) ($cr->impacts_count ?? 0);
+        $this->approvalCount = (int) ($cr->approval_events_count ?? 0);
     }
 }; ?>
 

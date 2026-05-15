@@ -111,6 +111,69 @@ test('owner can delete a change request', function () {
     expect(ChangeRequest::find($cr->id))->toBeNull();
 });
 
+test('owner can view a change request show page', function () {
+    $cr = $this->project->changeRequests()->create([
+        'title' => 'Switch to oxygen-rich combustion',
+        'description' => 'Replace existing burner with O2-augmented variant.',
+        'rationale' => 'Improves combustion stability under load.',
+        'category' => 'design',
+        'status' => 'under_review',
+        'priority' => 'high',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get('/change-requests/'.$cr->id)
+        ->assertOk()
+        ->assertSee('Switch to oxygen-rich combustion')
+        ->assertSee('Replace existing burner with O2-augmented variant.')
+        ->assertSee('Improves combustion stability under load.')
+        ->assertSee('under review');
+});
+
+test('changes index links each title to the show page', function () {
+    $cr = $this->project->changeRequests()->create([
+        'title' => 'Initial', 'category' => 'scope',
+        'status' => 'proposed', 'priority' => 'low',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get('/changes?project='.$this->project->id)
+        ->assertOk()
+        ->assertSee(route('change-requests.show', $cr), false);
+});
+
+test('show page 404s for a change request in another project', function () {
+    $bob = User::factory()->create();
+    $bobProject = Project::create([
+        'workspace_id' => $bob->active_workspace_id, 'name' => 'Other', 'rigor_level' => 1,
+    ]);
+    $bobCr = $bobProject->changeRequests()->create([
+        'title' => 'Bob CR', 'category' => 'scope',
+        'status' => 'proposed', 'priority' => 'low',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get('/change-requests/'.$bobCr->id)
+        ->assertNotFound();
+});
+
+test('owner can delete a change request from the show page and is redirected', function () {
+    $cr = $this->project->changeRequests()->create([
+        'title' => 'Doomed', 'category' => 'scope',
+        'status' => 'proposed', 'priority' => 'low',
+    ]);
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::change-requests.delete-modal', [
+        'changeRequestId' => $cr->id,
+        'redirectAfter' => 'changes',
+    ])
+        ->call('delete')
+        ->assertRedirect(route('changes'));
+
+    expect(ChangeRequest::find($cr->id))->toBeNull();
+});
+
 test('changes page renders New change button', function () {
     $this->actingAs($this->user)
         ->get('/changes?project='.$this->project->id)

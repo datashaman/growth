@@ -213,7 +213,7 @@ new #[Title('Dashboard')] class extends Component {
             'project_plan' => [ProjectPlan::class, 'name', null, 'plan'],
             'review' => [Review::class, 'title', 'reviews.show', null],
             'risk' => [Risk::class, 'title', 'risks.show', null],
-            'change_request' => [ChangeRequest::class, 'title', null, 'changes'],
+            'change_request' => [ChangeRequest::class, 'title', 'change-requests.show', null],
         ];
 
         $idsByType = collect($this->readiness['gates'])
