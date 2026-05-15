@@ -191,14 +191,14 @@ new #[Title('Dashboard')] class extends Component {
 
     /**
      * Resolve readable labels (and optional routes) for every (subject_type, subject_id)
-     * referenced by any readiness gate finding, in a single query per type.
+     * referenced by any readiness gate or schedule-health finding, in a single query per type.
      *
      * @return array<string,array{label:string,route:?string}>
      */
     #[Computed]
     public function findingSubjects(): array
     {
-        if ($this->readiness === null) {
+        if ($this->readiness === null && $this->schedule === null) {
             return [];
         }
 
@@ -217,8 +217,12 @@ new #[Title('Dashboard')] class extends Component {
             'change_request' => [ChangeRequest::class, 'title', 'change-requests.show', null],
         ];
 
-        $idsByType = collect($this->readiness['gates'])
-            ->flatMap(fn (array $gate) => $gate['findings'])
+        $gateFindings = collect($this->readiness['gates'] ?? [])
+            ->flatMap(fn (array $gate) => $gate['findings']);
+        $scheduleFindings = collect($this->schedule['findings'] ?? []);
+
+        $idsByType = $gateFindings
+            ->concat($scheduleFindings)
             ->filter(fn (array $f) => isset($f['subject_type'], $f['subject_id']) && isset($map[$f['subject_type']]))
             ->groupBy('subject_type')
             ->map(fn ($group) => $group->pluck('subject_id')->unique()->values()->all())
@@ -437,15 +441,41 @@ new #[Title('Dashboard')] class extends Component {
                     :count-label="__('findings')"
                     :empty="count($this->schedule['findings']) === 0"
                     :empty-message="__('No schedule issues found.')">
+                    @php
+                        $scheduleGrouped = collect($this->schedule['findings'])->groupBy(fn ($f) => $f['rule'].'|'.$f['message']);
+                    @endphp
                     <ul class="space-y-2">
-                        @foreach ($this->schedule['findings'] as $finding)
+                        @foreach ($scheduleGrouped as $group)
+                            @php $head = $group->first(); @endphp
                             <li class="flex items-start gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
-                                <flux:badge :color="BadgeVariant::finding($finding['severity'])" size="sm">
-                                    {{ EnumLabel::lower($finding['severity']) }}
-                                </flux:badge>
-                                <div class="flex-1">
-                                    <div class="text-sm">{{ $finding['message'] }}</div>
-                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ EnumLabel::findingRule($finding['rule']) }}</div>
+                                <div class="w-20 shrink-0">
+                                    <flux:badge :color="BadgeVariant::finding($head['severity'])" size="sm">
+                                        {{ EnumLabel::lower($head['severity']) }}
+                                    </flux:badge>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-sm break-words">{{ $head['message'] }}</div>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400 break-words">{{ EnumLabel::findingRule($head['rule']) }}</div>
+                                    @php
+                                        $subjects = $group
+                                            ->filter(fn ($f) => isset($f['subject_type'], $f['subject_id']))
+                                            ->map(fn ($f) => $this->findingSubjects[$f['subject_type'].':'.$f['subject_id']] ?? null)
+                                            ->filter()
+                                            ->unique(fn ($s) => $s['label'].'|'.($s['route'] ?? ''));
+                                    @endphp
+                                    @if ($subjects->isNotEmpty())
+                                        <ul class="mt-2 space-y-1">
+                                            @foreach ($subjects as $subject)
+                                                <li class="text-xs text-zinc-600 dark:text-zinc-300 break-words">
+                                                    @if ($subject['route'])
+                                                        <a href="{{ $subject['route'] }}" wire:navigate class="hover:underline">{{ $subject['label'] }}</a>
+                                                    @else
+                                                        {{ $subject['label'] }}
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
                                 </div>
                             </li>
                         @endforeach
