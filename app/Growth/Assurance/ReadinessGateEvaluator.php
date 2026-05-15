@@ -37,19 +37,25 @@ class ReadinessGateEvaluator
 
         $implementation = $this->implementationStatus->summarize($project);
         $implementationFindings = [];
-        if (($implementation['summary']['with_failed_checks'] ?? 0) > 0) {
-            $implementationFindings[] = [
-                'rule' => 'implementation.checks.failed',
-                'severity' => 'error',
-                'message' => 'One or more work items have failed, timed-out, or action-required checks.',
-            ];
-        }
-        if (($implementation['summary']['done_without_delivery_evidence'] ?? 0) > 0) {
-            $implementationFindings[] = [
-                'rule' => 'implementation.done_without_evidence',
-                'severity' => 'warning',
-                'message' => 'One or more done work items have no delivery evidence.',
-            ];
+        foreach ($implementation['results'] as $row) {
+            if ($row['failed_checks'] > 0) {
+                $implementationFindings[] = [
+                    'rule' => 'implementation.checks.failed',
+                    'severity' => 'error',
+                    'message' => 'Work item has failed, timed-out, or action-required checks',
+                    'subject_type' => 'work_item',
+                    'subject_id' => $row['id'],
+                ];
+            }
+            if ($row['status'] === 'done' && $row['delivery_links'] === 0) {
+                $implementationFindings[] = [
+                    'rule' => 'implementation.done_without_evidence',
+                    'severity' => 'warning',
+                    'message' => 'Done work item has no delivery evidence',
+                    'subject_type' => 'work_item',
+                    'subject_id' => $row['id'],
+                ];
+            }
         }
 
         $gates = [

@@ -7,7 +7,7 @@ use App\Models\Requirement;
 /**
  * Requirement quality checks.
  *
- * Each finding is an array with: rule, severity, message.
+ * Each finding: array{rule, severity, message, subject_type, subject_id}.
  * Severities: error, warning.
  */
 class RequirementLinter
@@ -41,7 +41,7 @@ class RequirementLinter
     ];
 
     /**
-     * @return list<array{rule:string,severity:string,message:string}>
+     * @return list<array{rule:string,severity:string,message:string,subject_type:string,subject_id:string}>
      */
     public function check(Requirement $requirement): array
     {
@@ -50,59 +50,55 @@ class RequirementLinter
 
         foreach (self::PHRASE_RULES as [$rule, $pattern, $message]) {
             if (preg_match($pattern, $text, $matches)) {
-                $findings[] = [
-                    'rule' => $rule,
-                    'severity' => 'warning',
-                    'message' => $message.' (matched: "'.$matches[0].'")',
-                ];
+                $findings[] = $this->finding($requirement, $rule, 'warning',
+                    $message.' (matched: "'.$matches[0].'")');
             }
         }
 
         if (preg_match('/\b(TBD|TBS|TBR)\b/', $text)) {
-            $findings[] = [
-                'rule' => 'incomplete',
-                'severity' => 'error',
-                'message' => 'rule: requirement contains TBD/TBS/TBR — not complete',
-            ];
+            $findings[] = $this->finding($requirement, 'incomplete', 'error',
+                'rule: requirement contains TBD/TBS/TBR — not complete');
         }
 
         if (preg_match('/\b(and|or)\b.*\bshall\b/i', $text)
             && substr_count(strtolower($text), 'shall') > 1) {
-            $findings[] = [
-                'rule' => 'singular',
-                'severity' => 'warning',
-                'message' => 'rule: multiple "shall" clauses — split into singular requirements',
-            ];
+            $findings[] = $this->finding($requirement, 'singular', 'warning',
+                'rule: multiple "shall" clauses — split into singular requirements');
         }
 
         if (! preg_match('/\b(shall|must|will)\b/i', $text)) {
-            $findings[] = [
-                'rule' => 'mandate-verb',
-                'severity' => 'warning',
-                'message' => 'rule: requirement lacks a mandate verb (shall/must/will)',
-            ];
+            $findings[] = $this->finding($requirement, 'mandate-verb', 'warning',
+                'rule: requirement lacks a mandate verb (shall/must/will)');
         }
 
         $criteria = array_values(array_filter($requirement->acceptance_criteria ?? []));
 
         if ($criteria === [] && ($requirement->priority === 'high' || $requirement->project?->rigor_level >= 3)) {
-            $findings[] = [
-                'rule' => 'acceptance-criteria-missing',
-                'severity' => 'warning',
-                'message' => 'High-priority or high-integrity requirements should define concrete acceptance criteria',
-            ];
+            $findings[] = $this->finding($requirement, 'acceptance-criteria-missing', 'warning',
+                'High-priority or high-integrity requirements should define concrete acceptance criteria');
         }
 
         foreach ($criteria as $criterion) {
             if (preg_match('/\b(TBD|TBS|TBR)\b/', $criterion)) {
-                $findings[] = [
-                    'rule' => 'acceptance-criteria-incomplete',
-                    'severity' => 'error',
-                    'message' => 'Acceptance criterion contains TBD/TBS/TBR and is not verifiable',
-                ];
+                $findings[] = $this->finding($requirement, 'acceptance-criteria-incomplete', 'error',
+                    'Acceptance criterion contains TBD/TBS/TBR and is not verifiable');
             }
         }
 
         return $findings;
+    }
+
+    /**
+     * @return array{rule:string,severity:string,message:string,subject_type:string,subject_id:string}
+     */
+    private function finding(Requirement $requirement, string $rule, string $severity, string $message): array
+    {
+        return [
+            'rule' => $rule,
+            'severity' => $severity,
+            'message' => $message,
+            'subject_type' => 'requirement',
+            'subject_id' => $requirement->id,
+        ];
     }
 }

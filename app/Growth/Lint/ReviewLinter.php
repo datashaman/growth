@@ -39,7 +39,7 @@ class ReviewLinter
                     $findings[] = $this->finding(
                         'requirement.review.missing',
                         'warning',
-                        "review readiness: requirement [{$requirement->id}] has no closed accepted review",
+                        'Requirement has no closed accepted review',
                         'requirement',
                         $requirement->id,
                     );
@@ -48,7 +48,7 @@ class ReviewLinter
                     $findings[] = $this->finding(
                         'requirement.review.findings_open',
                         'warning',
-                        "review readiness: requirement [{$requirement->id}] has {$coverage['open_finding_count']} open review finding(s)",
+                        'Requirement has open review findings',
                         'requirement',
                         $requirement->id,
                     );
@@ -60,7 +60,7 @@ class ReviewLinter
             $findings[] = $this->finding(
                 'review.none',
                 'warning',
-                "review readiness: Rigor level {$project->rigor_level} project has no recorded reviews or audits",
+                "Rigor level {$project->rigor_level} project has no recorded reviews or audits",
                 'project',
                 $project->id,
             );
@@ -84,7 +84,7 @@ class ReviewLinter
             $findings[] = $this->finding(
                 'review_plan.procedure.empty',
                 'warning',
-                "review readiness: review plan [{$plan->name}] has no procedure",
+                'Review plan has no procedure',
                 'review_plan',
                 $plan->id,
             );
@@ -94,7 +94,7 @@ class ReviewLinter
             $findings[] = $this->finding(
                 'review_plan.entry_criteria.empty',
                 'warning',
-                "review readiness: review plan [{$plan->name}] has no entry criteria",
+                'Review plan has no entry criteria',
                 'review_plan',
                 $plan->id,
             );
@@ -104,7 +104,7 @@ class ReviewLinter
             $findings[] = $this->finding(
                 'review_plan.exit_criteria.empty',
                 'warning',
-                "review readiness: review plan [{$plan->name}] has no exit criteria",
+                'Review plan has no exit criteria',
                 'review_plan',
                 $plan->id,
             );
@@ -114,7 +114,7 @@ class ReviewLinter
             $findings[] = $this->finding(
                 'review_plan.responsibilities.empty',
                 'warning',
-                "review readiness: review plan [{$plan->name}] has no expected responsibilities",
+                'Review plan has no expected responsibilities',
                 'review_plan',
                 $plan->id,
             );
@@ -134,7 +134,7 @@ class ReviewLinter
             $findings[] = $this->finding(
                 'review.targets.empty',
                 'error',
-                "review readiness: review [{$review->title}] has no target artifacts",
+                'Review has no target artifacts',
                 'review',
                 $review->id,
             );
@@ -144,7 +144,7 @@ class ReviewLinter
             $findings[] = $this->finding(
                 'review.entry_criteria.empty',
                 'warning',
-                "review readiness: review [{$review->title}] has no entry criteria",
+                'Review has no entry criteria',
                 'review',
                 $review->id,
             );
@@ -154,7 +154,7 @@ class ReviewLinter
             $findings[] = $this->finding(
                 'review.participants.empty',
                 'warning',
-                "review readiness: review [{$review->title}] has no participant roles recorded",
+                'Review has no participant roles recorded',
                 'review',
                 $review->id,
             );
@@ -166,7 +166,7 @@ class ReviewLinter
                     $findings[] = $this->finding(
                         'review.plan_role_missing',
                         'warning',
-                        "review readiness: review [{$review->title}] is missing expected {$responsibility} participant from its review plan",
+                        "Review is missing expected {$responsibility} participant from its review plan",
                         'review',
                         $review->id,
                     );
@@ -180,7 +180,7 @@ class ReviewLinter
                     $findings[] = $this->finding(
                         'review.inspection.role_missing',
                         'warning',
-                        "review readiness: inspection [{$review->title}] has no {$responsibility} participant",
+                        "Inspection has no {$responsibility} participant",
                         'review',
                         $review->id,
                     );
@@ -196,7 +196,7 @@ class ReviewLinter
                 $findings[] = $this->finding(
                     'review.participant.absent_required',
                     'warning',
-                    "review readiness: {$participant->responsibility} participant was absent from review [{$review->title}]",
+                    "{$participant->responsibility} participant was absent",
                     'review_participant',
                     $participant->id,
                 );
@@ -207,7 +207,7 @@ class ReviewLinter
             $findings[] = $this->finding(
                 'review.exit_criteria.empty',
                 'warning',
-                "review readiness: review [{$review->title}] has no exit criteria",
+                'Review has no exit criteria',
                 'review',
                 $review->id,
             );
@@ -217,7 +217,7 @@ class ReviewLinter
             $findings[] = $this->finding(
                 'review.decision.missing',
                 'error',
-                "review readiness: review [{$review->title}] is {$review->status} but has no decision",
+                "Review is {$review->status} but has no decision",
                 'review',
                 $review->id,
             );
@@ -233,7 +233,7 @@ class ReviewLinter
                 $findings[] = $this->finding(
                     'review.approver.signoff_missing',
                     'warning',
-                    "review readiness: closed review [{$review->title}] has no approver signoff",
+                    'Closed review has no approver signoff',
                     'review',
                     $review->id,
                 );
@@ -247,7 +247,7 @@ class ReviewLinter
             $findings[] = $this->finding(
                 'review.finding.severe_unresolved',
                 'error',
-                "review readiness: {$finding->severity} finding [{$finding->title}] is still {$finding->status}",
+                "{$finding->severity} finding is still {$finding->status}",
                 'review_finding',
                 $finding->id,
             );
@@ -260,7 +260,7 @@ class ReviewLinter
                 $findings[] = $this->finding(
                     'review.closed_with_open_findings',
                     'error',
-                    "review readiness: closed review [{$review->title}] still has unresolved finding [{$finding->title}]",
+                    'Closed review still has unresolved findings',
                     'review_finding',
                     $finding->id,
                 );
@@ -290,7 +290,7 @@ class ReviewLinter
             $findings[] = $this->finding(
                 'review.finding.overdue',
                 'warning',
-                "review readiness: finding [{$finding->title}] was due {$finding->due_at->toDateString()} and is still open",
+                'Review finding is overdue and still open',
                 'review_finding',
                 $finding->id,
             );
@@ -302,7 +302,7 @@ class ReviewLinter
                 $findings[] = $this->finding(
                     'review.finding.target_unlinked',
                     'warning',
-                    "review readiness: finding [{$finding->title}] points to an artifact not listed as a review target",
+                    'Review finding points to an artifact not listed as a review target',
                     'review_finding',
                     $finding->id,
                 );

@@ -25,14 +25,14 @@ class DesignLinter
             if ($view->elements->isEmpty()) {
                 $findings[] = $this->finding(
                     'view-empty', 'warning',
-                    "rule: view [{$view->name}] has no design elements",
+                    'Design view has no elements',
                     'design_view', $view->id,
                 );
             }
             if ($view->concerns->isEmpty()) {
                 $findings[] = $this->finding(
                     'view-no-concerns', 'warning',
-                    "rule: view [{$view->name}] does not address any stakeholder concerns",
+                    'Design view does not address any stakeholder concerns',
                     'design_view', $view->id,
                 );
             }
@@ -44,7 +44,7 @@ class DesignLinter
             if (! $usedViewpoints->contains($cv->name)) {
                 $findings[] = $this->finding(
                     'viewpoint-unused', 'warning',
-                    "rule: custom viewpoint [{$cv->name}] is defined but no view instantiates it",
+                    'Custom viewpoint is defined but no view instantiates it',
                     'custom_viewpoint', $cv->id,
                 );
             }
@@ -57,7 +57,7 @@ class DesignLinter
         if ($views->isEmpty() && $concernCount > 0) {
             $findings[] = $this->finding(
                 'no-views', 'error',
-                "rule: project has {$concernCount} concern(s) but no design views — concerns unaddressed",
+                'Project has concerns but no design views — concerns unaddressed',
                 'project', $project->id,
             );
         }

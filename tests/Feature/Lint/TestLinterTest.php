@@ -46,7 +46,7 @@ it('flags plan-empty on a non-master plan with no cases', function () {
 
     expect($empty)->not->toBeNull()
         ->and($empty['subject_id'])->toBe($unit->id)
-        ->and($empty['message'])->toContain('verification plan')
+        ->and($empty['message'])->toContain('Verification plan')
         ->and($empty['message'])->not->toContain('test plan');
 });
 
@@ -59,7 +59,7 @@ it('flags master-no-subordinates when the only plan is a master', function () {
     expect($finding)->not->toBeNull()
         ->and($finding['severity'])->toBe('warning')
         ->and($finding['subject_id'])->toBe($master->id)
-        ->and($finding['message'])->toContain("master verification plan [{$master->name}] has no subordinate plans");
+        ->and($finding['message'])->toContain('Master verification plan has no subordinate plans');
 });
 
 it('does not flag master-no-subordinates when a subordinate plan exists', function () {
@@ -96,7 +96,7 @@ it('uses "verification plan" terminology in plan-level rule messages', function 
 
     $messages = collect($this->linter->check($emptyProject))->pluck('message');
 
-    expect($messages)->toContain('rule: project has no verification plans');
+    expect($messages)->toContain('Project has no verification plans');
     expect($messages->filter(fn ($m) => str_contains($m, 'test plan'))->values()->all())->toBe([]);
 
     $noMasterProject = Project::create([
@@ -108,6 +108,6 @@ it('uses "verification plan" terminology in plan-level rule messages', function 
 
     $messages = collect($this->linter->check($noMasterProject))->pluck('message');
 
-    expect($messages)->toContain('rule: project has no master verification plan');
+    expect($messages)->toContain('Project has no master verification plan');
     expect($messages->filter(fn ($m) => str_contains($m, 'test plan'))->values()->all())->toBe([]);
 });

@@ -58,7 +58,7 @@ class BaselineLinter
                 $findings[] = $this->finding(
                     'baseline.artifact.removed',
                     'warning',
-                    "Baseline v{$baseline->version}: {$delta['artifact_type']} [{$delta['artifact_id']}] was removed after baseline",
+                    "Baseline v{$baseline->version}: artifact was removed after baseline",
                     $delta['artifact_type'],
                     $delta['artifact_id'],
                 );
@@ -70,7 +70,7 @@ class BaselineLinter
                 $findings[] = $this->finding(
                     'baseline.drift.uncovered',
                     'error',
-                    "Baseline v{$baseline->version}: {$delta['artifact_type']} [{$delta['artifact_id']}] changed without approved change coverage",
+                    "Baseline v{$baseline->version}: artifact changed without approved change coverage",
                     $delta['artifact_type'],
                     $delta['artifact_id'],
                 );

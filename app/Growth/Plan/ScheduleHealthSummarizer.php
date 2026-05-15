@@ -21,7 +21,7 @@ class ScheduleHealthSummarizer
                 $findings[] = $this->finding(
                     'schedule.milestone.overdue',
                     'error',
-                    "Milestone [{$milestone->name}] target date {$milestone->target_date->toDateString()} has passed",
+                    'Milestone target date has passed',
                     'milestone',
                     $milestone->id,
                     ['target_date' => $milestone->target_date->toDateString()],
@@ -38,7 +38,7 @@ class ScheduleHealthSummarizer
                 $findings[] = $this->finding(
                     'schedule.work_item.overdue',
                     'error',
-                    "Work item [{$item->name}] due date {$item->due_date->toDateString()} has passed",
+                    'Work item due date has passed',
                     'work_item',
                     $item->id,
                     ['due_date' => $item->due_date->toDateString()],
@@ -50,7 +50,7 @@ class ScheduleHealthSummarizer
                     $findings[] = $this->finding(
                         'schedule.dependency.open',
                         'warning',
-                        "Work item [{$item->name}] depends on unfinished work item [{$dependency->name}]",
+                        'Work item depends on an unfinished work item',
                         'work_item',
                         $item->id,
                         ['depends_on_id' => $dependency->id],
@@ -61,7 +61,7 @@ class ScheduleHealthSummarizer
                     $findings[] = $this->finding(
                         'schedule.dependency.date_risk',
                         'warning',
-                        "Work item [{$item->name}] starts before dependency [{$dependency->name}] is due",
+                        'Work item starts before its dependency is due',
                         'work_item',
                         $item->id,
                         [
