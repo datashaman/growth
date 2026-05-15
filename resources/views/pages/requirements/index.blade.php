@@ -32,7 +32,6 @@ new #[Title('Requirements')] class extends Component {
         </flux:callout>
     @else
         <x-data-table
-            :title="__('Requirements')"
             :count="$this->requirements->count()"
             :count-label="__('captured')"
             :empty="$this->requirements->isEmpty()"
