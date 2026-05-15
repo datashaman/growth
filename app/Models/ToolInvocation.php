@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ToolInvocation extends Model
 {
-    use HasUlids;
+    use HasUlids, MassPrunable;
 
     protected $fillable = [
         'workspace_id',
@@ -52,5 +54,10 @@ class ToolInvocation extends Model
     public function agent(): BelongsTo
     {
         return $this->belongsTo(Agent::class);
+    }
+
+    public function prunable(): Builder
+    {
+        return static::where('started_at', '<', now()->subDays(90));
     }
 }
