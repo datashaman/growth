@@ -9,6 +9,19 @@ use Livewire\Component;
 new #[Title('Requirements')] class extends Component {
     use ProjectScoped;
 
+    /**
+     * @return array<string,string>
+     */
+    public function getListeners(): array
+    {
+        return $this->projectScopedListeners();
+    }
+
+    public function onProjectDataChanged(): void
+    {
+        unset($this->requirements);
+    }
+
     #[Computed]
     public function requirements()
     {
