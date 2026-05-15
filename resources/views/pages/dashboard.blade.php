@@ -5,6 +5,7 @@ use App\Growth\Execution\ImplementationStatusSummarizer;
 use App\Growth\Plan\PlanCapacitySummarizer;
 use App\Growth\Plan\ScheduleHealthSummarizer;
 use App\Models\Project;
+use App\Models\WorkspaceMembership;
 use App\Support\BadgeVariant;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -153,6 +154,28 @@ new #[Title('Dashboard')] class extends Component {
         ];
     }
 
+    #[Computed]
+    public function canMoveProject(): bool
+    {
+        $userId = auth()->id();
+        $mutators = [WorkspaceMembership::ROLE_OWNER, WorkspaceMembership::ROLE_ADMIN];
+
+        $sourceRole = WorkspaceMembership::query()
+            ->where('user_id', $userId)
+            ->where('workspace_id', auth()->user()->active_workspace_id)
+            ->value('role');
+
+        if (! in_array($sourceRole, $mutators, true)) {
+            return false;
+        }
+
+        return WorkspaceMembership::query()
+            ->where('user_id', $userId)
+            ->whereIn('role', $mutators)
+            ->where('workspace_id', '!=', auth()->user()->active_workspace_id)
+            ->exists();
+    }
+
     public function formatHours(?float $hours): string
     {
         if ($hours === null || $hours === 0.0) {
@@ -210,6 +233,11 @@ new #[Title('Dashboard')] class extends Component {
                     <div class="flex gap-1">
                         <flux:button size="sm" icon="pencil-square" variant="ghost" :tooltip="__('Edit project')"
                             wire:click="$dispatch('edit-project', { projectId: '{{ $this->project->id }}' })" />
+                        @if ($this->canMoveProject)
+                            <flux:button size="sm" icon="arrows-right-left" variant="ghost" :tooltip="__('Move to another workspace')"
+                                wire:click="$dispatch('move-project', { projectId: '{{ $this->project->id }}' })"
+                                data-test="move-project-button" />
+                        @endif
                         <flux:button size="sm" icon="trash" variant="ghost" :tooltip="__('Delete project')"
                             wire:click="$dispatch('delete-project', { projectId: '{{ $this->project->id }}' })" />
                     </div>

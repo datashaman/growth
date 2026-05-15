@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\DB;
 
 class Project extends Model
 {
@@ -29,6 +30,33 @@ class Project extends Model
     public function isMutable(): bool
     {
         return in_array($this->status, ['draft', 'active'], true);
+    }
+
+    public function move(Workspace|string $destination, User $user): void
+    {
+        $destinationId = $destination instanceof Workspace ? $destination->id : $destination;
+
+        abort_if($destinationId === $this->workspace_id, 422, 'Destination must differ from source.');
+
+        $mutatorRoles = [WorkspaceMembership::ROLE_OWNER, WorkspaceMembership::ROLE_ADMIN];
+
+        $sourceRole = WorkspaceMembership::query()
+            ->where('workspace_id', $this->workspace_id)
+            ->where('user_id', $user->id)
+            ->value('role');
+
+        abort_unless(in_array($sourceRole, $mutatorRoles, true), 403);
+
+        $destinationRole = WorkspaceMembership::query()
+            ->where('workspace_id', $destinationId)
+            ->where('user_id', $user->id)
+            ->value('role');
+
+        abort_unless(in_array($destinationRole, $mutatorRoles, true), 403);
+
+        DB::transaction(function () use ($destinationId): void {
+            $this->forceFill(['workspace_id' => $destinationId])->save();
+        });
     }
 
     protected static function booted(): void

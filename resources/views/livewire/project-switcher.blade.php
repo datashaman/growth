@@ -61,5 +61,6 @@ new class extends Component {
 
     <livewire:pages::projects.create-modal />
     <livewire:pages::projects.edit-modal />
+    <livewire:pages::projects.move-modal />
     <livewire:pages::projects.delete-modal />
 </div>
