@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BroadcastsWorkspaceChanges;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\MassPrunable;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ToolInvocation extends Model
 {
-    use HasUlids, MassPrunable;
+    use BroadcastsWorkspaceChanges, HasUlids, MassPrunable;
 
     protected $fillable = [
         'workspace_id',
