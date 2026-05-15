@@ -2,6 +2,7 @@
 
 use App\Models\Anomaly;
 use App\Support\BadgeVariant;
+use App\Support\EnumLabel;
 use Livewire\Component;
 
 new class extends Component {
@@ -23,8 +24,8 @@ new class extends Component {
         back-route="verification"
         :back-label="__('Back to verification')">
         <x-slot:badges>
-            <flux:badge :color="BadgeVariant::anomalySeverity($anomaly->severity)" size="sm">{{ $anomaly->severity }}</flux:badge>
-            <flux:badge :color="BadgeVariant::anomalyStatus($anomaly->status)" size="sm">{{ $anomaly->status }}</flux:badge>
+            <flux:badge :color="BadgeVariant::anomalySeverity($anomaly->severity)" size="sm">{{ EnumLabel::lower($anomaly->severity) }}</flux:badge>
+            <flux:badge :color="BadgeVariant::anomalyStatus($anomaly->status)" size="sm">{{ EnumLabel::lower($anomaly->status) }}</flux:badge>
         </x-slot:badges>
         <x-slot:description>
             {{ __('Anomaly in project') }} <a href="{{ route('dashboard', ['project' => $anomaly->project_id]) }}" class="underline">{{ $anomaly->project->name }}</a>

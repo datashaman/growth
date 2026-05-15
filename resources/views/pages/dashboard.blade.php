@@ -19,6 +19,7 @@ use App\Models\TestPlan;
 use App\Models\WorkItem;
 use App\Models\WorkspaceMembership;
 use App\Support\BadgeVariant;
+use App\Support\EnumLabel;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -328,7 +329,7 @@ new #[Title('Dashboard')] class extends Component {
                     <x-slot:header>
                         <flux:heading size="lg">{{ __('Readiness') }}</flux:heading>
                         <flux:badge :color="BadgeVariant::gate($this->readiness['status'])">
-                            {{ __(ucfirst($this->readiness['status'])) }}
+                            {{ EnumLabel::lower($this->readiness['status']) }}
                         </flux:badge>
                     </x-slot:header>
 
@@ -356,12 +357,12 @@ new #[Title('Dashboard')] class extends Component {
                                     x-bind:aria-expanded="openGate === '{{ $gateId }}' ? 'true' : 'false'"
                                 >
                                     <flux:table.cell>
-                                        <div class="font-medium">{{ $gate['id'] }}</div>
+                                        <div class="font-medium">{{ EnumLabel::gate($gate['id']) }}</div>
                                         <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $gate['description'] }}</div>
                                     </flux:table.cell>
                                     <flux:table.cell>
                                         <flux:badge :color="BadgeVariant::gate($gate['status'])" size="sm">
-                                            {{ ucfirst($gate['status']) }}
+                                            {{ EnumLabel::lower($gate['status']) }}
                                         </flux:badge>
                                     </flux:table.cell>
                                     <flux:table.cell align="end">
@@ -392,12 +393,12 @@ new #[Title('Dashboard')] class extends Component {
                                                     <li class="flex items-start gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
                                                         <div class="w-20 shrink-0">
                                                             <flux:badge :color="BadgeVariant::finding($head['severity'])" size="sm">
-                                                                {{ ucfirst($head['severity']) }}
+                                                                {{ EnumLabel::lower($head['severity']) }}
                                                             </flux:badge>
                                                         </div>
                                                         <div class="min-w-0 flex-1">
                                                             <div class="text-sm break-words">{{ $head['message'] }}</div>
-                                                            <div class="text-xs text-zinc-500 dark:text-zinc-400 break-words">{{ $head['rule'] }}</div>
+                                                            <div class="text-xs text-zinc-500 dark:text-zinc-400 break-words">{{ EnumLabel::findingRule($head['rule']) }}</div>
                                                             @php
                                                                 $subjects = $group
                                                                     ->filter(fn ($f) => isset($f['subject_type'], $f['subject_id']))
@@ -440,11 +441,11 @@ new #[Title('Dashboard')] class extends Component {
                         @foreach ($this->schedule['findings'] as $finding)
                             <li class="flex items-start gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
                                 <flux:badge :color="BadgeVariant::finding($finding['severity'])" size="sm">
-                                    {{ ucfirst($finding['severity']) }}
+                                    {{ EnumLabel::lower($finding['severity']) }}
                                 </flux:badge>
                                 <div class="flex-1">
                                     <div class="text-sm">{{ $finding['message'] }}</div>
-                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $finding['rule'] }}</div>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ EnumLabel::findingRule($finding['rule']) }}</div>
                                 </div>
                             </li>
                         @endforeach
@@ -655,12 +656,12 @@ new #[Title('Dashboard')] class extends Component {
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <flux:badge :color="BadgeVariant::anomalySeverity($anomaly->severity)" size="sm">
-                                        {{ $anomaly->severity }}
+                                        {{ EnumLabel::lower($anomaly->severity) }}
                                     </flux:badge>
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <flux:badge :color="BadgeVariant::anomalyStatus($anomaly->status)" size="sm">
-                                        {{ $anomaly->status }}
+                                        {{ EnumLabel::lower($anomaly->status) }}
                                     </flux:badge>
                                 </flux:table.cell>
                                 <flux:table.cell>{{ $anomaly->environment ?? '—' }}</flux:table.cell>

@@ -2,6 +2,7 @@
 
 use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
+use App\Support\EnumLabel;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -72,17 +73,17 @@ new #[Title('Changes')] class extends Component {
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge color="zinc" size="sm">{{ $cr->category }}</flux:badge>
+                                <flux:badge color="zinc" size="sm">{{ EnumLabel::lower($cr->category) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::changeRequestPriority($cr->priority)" size="sm">{{ $cr->priority }}</flux:badge>
+                                <flux:badge :color="BadgeVariant::changeRequestPriority($cr->priority)" size="sm">{{ EnumLabel::lower($cr->priority) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::changeRequestStatus($cr->status)" size="sm">{{ str_replace('_', ' ', $cr->status) }}</flux:badge>
+                                <flux:badge :color="BadgeVariant::changeRequestStatus($cr->status)" size="sm">{{ EnumLabel::lower($cr->status) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>
                                 @if ($cr->decision)
-                                    <flux:badge :color="BadgeVariant::changeRequestDecision($cr->decision)" size="sm">{{ $cr->decision }}</flux:badge>
+                                    <flux:badge :color="BadgeVariant::changeRequestDecision($cr->decision)" size="sm">{{ EnumLabel::lower($cr->decision) }}</flux:badge>
                                     @if ($cr->decided_at)
                                         <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ $cr->decided_at->format('Y-m-d') }}</div>
                                     @endif

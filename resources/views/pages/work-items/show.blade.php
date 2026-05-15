@@ -2,6 +2,7 @@
 
 use App\Models\WorkItem;
 use App\Support\BadgeVariant;
+use App\Support\EnumLabel;
 use Livewire\Component;
 
 new class extends Component {
@@ -180,7 +181,7 @@ new class extends Component {
                             <flux:table.cell class="font-medium">{{ $milestone->name }}</flux:table.cell>
                             <flux:table.cell>{{ $milestone->target_date?->format('Y-m-d') ?? '—' }}</flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::milestoneStatus($milestone->status)" size="sm">{{ $milestone->status }}</flux:badge>
+                                <flux:badge :color="BadgeVariant::milestoneStatus($milestone->status)" size="sm">{{ EnumLabel::lower($milestone->status) }}</flux:badge>
                             </flux:table.cell>
                         </flux:table.row>
                     @endforeach
@@ -277,7 +278,7 @@ new class extends Component {
                             <flux:table.cell class="font-medium tabular-nums">{{ $release->version }}</flux:table.cell>
                             <flux:table.cell>{{ $release->name ?? '—' }}</flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::releaseStatus($release->status)" size="sm">{{ $release->status }}</flux:badge>
+                                <flux:badge :color="BadgeVariant::releaseStatus($release->status)" size="sm">{{ EnumLabel::lower($release->status) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>{{ $release->released_at?->format('Y-m-d') ?? '—' }}</flux:table.cell>
                         </flux:table.row>

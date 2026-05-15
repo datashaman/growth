@@ -2,6 +2,7 @@
 
 use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
+use App\Support\EnumLabel;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -110,7 +111,7 @@ new #[Title('Architecture')] class extends Component {
                             <flux:table.row>
                                 <flux:table.cell class="font-medium">{{ $element->name }}</flux:table.cell>
                                 <flux:table.cell>
-                                    <flux:badge :color="BadgeVariant::designElementKind($element->kind)" size="sm">{{ $element->kind }}</flux:badge>
+                                    <flux:badge :color="BadgeVariant::designElementKind($element->kind)" size="sm">{{ EnumLabel::lower($element->kind) }}</flux:badge>
                                 </flux:table.cell>
                                 <flux:table.cell>{{ $element->type ?? '—' }}</flux:table.cell>
                                 <flux:table.cell>{{ $element->purpose ?? '—' }}</flux:table.cell>
