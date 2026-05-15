@@ -2,6 +2,7 @@
 
 use App\Models\Requirement;
 use App\Support\BadgeVariant;
+use App\Support\EnumLabel;
 use Livewire\Component;
 
 new class extends Component {
@@ -27,9 +28,9 @@ new class extends Component {
         :back-label="__('Back to capabilities')">
         <x-slot:badges>
             <flux:badge :color="BadgeVariant::doc($requirement->doc)" size="sm">{{ strtoupper($requirement->doc) }}</flux:badge>
-            <flux:badge color="zinc" size="sm">{{ str_replace('_', ' ', $requirement->type) }}</flux:badge>
+            <flux:badge color="zinc" size="sm">{{ EnumLabel::lower($requirement->type) }}</flux:badge>
             @if ($requirement->priority)
-                <flux:badge :color="BadgeVariant::priority($requirement->priority)" size="sm">{{ $requirement->priority }}</flux:badge>
+                <flux:badge :color="BadgeVariant::priority($requirement->priority)" size="sm">{{ EnumLabel::lower($requirement->priority) }}</flux:badge>
             @endif
         </x-slot:badges>
         <x-slot:description>
@@ -195,10 +196,10 @@ new class extends Component {
                                 <a href="{{ route('anomalies.show', $anomaly) }}" wire:navigate class="font-medium hover:underline">{{ $anomaly->summary }}</a>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::anomalySeverity($anomaly->severity)" size="sm">{{ $anomaly->severity }}</flux:badge>
+                                <flux:badge :color="BadgeVariant::anomalySeverity($anomaly->severity)" size="sm">{{ EnumLabel::lower($anomaly->severity) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::anomalyStatus($anomaly->status)" size="sm">{{ $anomaly->status }}</flux:badge>
+                                <flux:badge :color="BadgeVariant::anomalyStatus($anomaly->status)" size="sm">{{ EnumLabel::lower($anomaly->status) }}</flux:badge>
                             </flux:table.cell>
                         </flux:table.row>
                     @endforeach

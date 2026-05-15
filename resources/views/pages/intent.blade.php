@@ -2,6 +2,7 @@
 
 use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
+use App\Support\EnumLabel;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -71,7 +72,7 @@ new #[Title('Intent')] class extends Component {
                             <flux:table.cell class="font-medium whitespace-normal">{{ $stakeholder->name }}</flux:table.cell>
                             <flux:table.cell class="whitespace-normal">{{ $stakeholder->role ?? '—' }}</flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::stakeholderKind($stakeholder->kind)" size="sm">{{ $stakeholder->kind }}</flux:badge>
+                                <flux:badge :color="BadgeVariant::stakeholderKind($stakeholder->kind)" size="sm">{{ EnumLabel::lower($stakeholder->kind) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell class="whitespace-normal">{{ $stakeholder->description ?? '—' }}</flux:table.cell>
                             <flux:table.cell>

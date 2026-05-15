@@ -2,6 +2,7 @@
 
 use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
+use App\Support\EnumLabel;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -94,7 +95,7 @@ new #[Title('Plan')] class extends Component {
                             <flux:table.cell class="font-medium">{{ $milestone->name }}</flux:table.cell>
                             <flux:table.cell>{{ $milestone->target_date?->format('Y-m-d') ?? '—' }}</flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::milestoneStatus($milestone->status)" size="sm">{{ $milestone->status }}</flux:badge>
+                                <flux:badge :color="BadgeVariant::milestoneStatus($milestone->status)" size="sm">{{ EnumLabel::lower($milestone->status) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>{{ \Illuminate\Support\Str::limit($milestone->exit_criteria ?? '—', 100) }}</flux:table.cell>
                             <flux:table.cell>

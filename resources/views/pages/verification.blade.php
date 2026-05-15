@@ -2,6 +2,7 @@
 
 use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
+use App\Support\EnumLabel;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -155,10 +156,10 @@ new #[Title('Verification')] class extends Component {
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::anomalySeverity($anomaly->severity)" size="sm">{{ $anomaly->severity }}</flux:badge>
+                                <flux:badge :color="BadgeVariant::anomalySeverity($anomaly->severity)" size="sm">{{ EnumLabel::lower($anomaly->severity) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::anomalyStatus($anomaly->status)" size="sm">{{ $anomaly->status }}</flux:badge>
+                                <flux:badge :color="BadgeVariant::anomalyStatus($anomaly->status)" size="sm">{{ EnumLabel::lower($anomaly->status) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>{{ $anomaly->environment ?? '—' }}</flux:table.cell>
                         </flux:table.row>

@@ -3,6 +3,7 @@
 use App\Concerns\ProjectScoped;
 use App\Models\WorkItemDeliveryLink;
 use App\Support\BadgeVariant;
+use App\Support\EnumLabel;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -97,7 +98,7 @@ new #[Title('Evidence')] class extends Component {
                             <flux:table.cell class="font-medium tabular-nums">{{ $release->version }}</flux:table.cell>
                             <flux:table.cell>{{ $release->name ?? '—' }}</flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::releaseStatus($release->status)" size="sm">{{ $release->status }}</flux:badge>
+                                <flux:badge :color="BadgeVariant::releaseStatus($release->status)" size="sm">{{ EnumLabel::lower($release->status) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>{{ $release->released_at?->format('Y-m-d') ?? '—' }}</flux:table.cell>
                             <flux:table.cell>{{ \Illuminate\Support\Str::limit($release->notes ?? '—', 100) }}</flux:table.cell>
