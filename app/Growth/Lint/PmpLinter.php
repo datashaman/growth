@@ -28,21 +28,21 @@ class PmpLinter
         if (! $plan) {
             $findings[] = $this->finding(
                 'pmp.missing', 'error',
-                'rule: project has no Project Management Plan',
+                'Project has no Project Management Plan',
                 'project', $project->id,
             );
         } else {
             if (trim((string) $plan->scope_summary) === '') {
                 $findings[] = $this->finding(
                     'pmp.scope.empty', 'error',
-                    'rule: PMP has no scope_summary',
+                    'PMP has no scope_summary',
                     'project_plan', $plan->id,
                 );
             }
             if (trim((string) $plan->approach) === '') {
                 $findings[] = $this->finding(
                     'pmp.approach.empty', 'warning',
-                    'rule: PMP has no approach',
+                    'PMP has no approach',
                     'project_plan', $plan->id,
                 );
             }
@@ -54,7 +54,7 @@ class PmpLinter
         if ($milestones->isEmpty() && $il >= 2) {
             $findings[] = $this->finding(
                 'pmp.milestones.empty', 'error',
-                'rule: project has no milestones',
+                'Project has no milestones',
                 'project', $project->id,
             );
         }
@@ -63,13 +63,13 @@ class PmpLinter
             if (! $m->target_date) {
                 $findings[] = $this->finding(
                     'pmp.milestone.no_date', 'warning',
-                    "rule: milestone [{$m->name}] has no target_date",
+                    'Milestone has no target_date',
                     'milestone', $m->id,
                 );
             } elseif ($m->status === 'pending' && $m->target_date->lt($today)) {
                 $findings[] = $this->finding(
                     'pmp.milestone.past_pending', 'error',
-                    "rule: milestone [{$m->name}] target_date {$m->target_date->toDateString()} is in the past and still pending",
+                    'Milestone target_date is in the past and still pending',
                     'milestone', $m->id,
                 );
             }
@@ -80,13 +80,13 @@ class PmpLinter
                 if ($live->isEmpty()) {
                     $findings[] = $this->finding(
                         'pmp.milestone.could_hit', 'warning',
-                        "milestone [{$m->name}] has every linked work item done/cancelled — consider flipping status to hit",
+                        'Milestone has every linked work item done/cancelled — consider flipping status to hit',
                         'milestone', $m->id,
                     );
                 } elseif ($m->target_date && $m->target_date->lt($today)) {
                     $findings[] = $this->finding(
                         'pmp.milestone.could_miss', 'warning',
-                        "milestone [{$m->name}] target_date passed with {$live->count()} work item(s) still open — likely missed",
+                        'Milestone target_date passed with work items still open — likely missed',
                         'milestone', $m->id,
                     );
                 }
@@ -99,13 +99,13 @@ class PmpLinter
         if ($workItems->isEmpty() && $il >= 2) {
             $findings[] = $this->finding(
                 'pmp.wbs.empty', 'error',
-                'rule: project has no work items',
+                'Project has no work items',
                 'project', $project->id,
             );
         } elseif ($workItems->count() > 5 && $workItems->whereNotNull('parent_id')->isEmpty()) {
             $findings[] = $this->finding(
                 'pmp.wbs.flat', 'warning',
-                'rule: WBS is flat — all work items are roots',
+                'WBS is flat — all work items are roots',
                 'project', $project->id,
             );
         }
@@ -113,7 +113,7 @@ class PmpLinter
         foreach ($this->detectDependencyCycles($workItems) as $cycleNode) {
             $findings[] = $this->finding(
                 'pmp.wbs.cycle', 'error',
-                "rule: work item [{$cycleNode->name}] participates in a dependency cycle",
+                'Work item participates in a dependency cycle',
                 'work_item', $cycleNode->id,
             );
         }
@@ -133,7 +133,7 @@ class PmpLinter
                 if (! $w->responsible_role_id) {
                     $findings[] = $this->finding(
                         'pmp.work_item.no_role', 'warning',
-                        "rule: work item [{$w->name}] has no responsible role at Rigor level {$il}",
+                        "Work item has no responsible role at Rigor level {$il}",
                         'work_item', $w->id,
                     );
                 }
@@ -141,7 +141,7 @@ class PmpLinter
             if ($project->roles()->count() === 0) {
                 $findings[] = $this->finding(
                     'pmp.roles.empty', 'warning',
-                    'rule: project has no roles defined at Rigor level '.$il,
+                    'Project has no roles defined at Rigor level '.$il,
                     'project', $project->id,
                 );
             }
@@ -154,7 +154,7 @@ class PmpLinter
         foreach ($uncoveredHigh as $r) {
             $findings[] = $this->finding(
                 'pmp.requirement.uncovered', 'warning',
-                "rule: high-priority requirement [{$r->id}] is not covered by any work item",
+                'High-priority requirement is not covered by any work item',
                 'requirement', $r->id,
             );
         }
@@ -168,7 +168,7 @@ class PmpLinter
         foreach ($highUnmitigatedRisks as $risk) {
             $findings[] = $this->finding(
                 'pmp.risk.high_unmitigated', 'error',
-                "risk management: high-exposure risk [{$risk->title}] has no mitigation plan",
+                'High-exposure risk has no mitigation plan',
                 'risk', $risk->id,
             );
         }

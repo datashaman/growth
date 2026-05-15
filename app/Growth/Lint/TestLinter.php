@@ -32,14 +32,14 @@ class TestLinter
             if (empty($plan->scope)) {
                 $findings[] = $this->finding(
                     'plan-no-scope', 'warning',
-                    "rule: verification plan [{$plan->name}] has no declared scope",
+                    'Verification plan has no declared scope',
                     'test_plan', $plan->id,
                 );
             }
             if (empty($plan->approach)) {
                 $findings[] = $this->finding(
                     'plan-no-approach', 'warning',
-                    "rule: verification plan [{$plan->name}] has no declared approach",
+                    'Verification plan has no declared approach',
                     'test_plan', $plan->id,
                 );
             }
@@ -51,14 +51,14 @@ class TestLinter
             if (! $isMaster && $plan->cases->isEmpty()) {
                 $findings[] = $this->finding(
                     'plan-empty', 'warning',
-                    "rule: verification plan [{$plan->name}] has no test cases",
+                    'Verification plan has no test cases',
                     'test_plan', $plan->id,
                 );
             }
             if ($isMaster && ! $hasSubordinatePlan) {
                 $findings[] = $this->finding(
                     'master-no-subordinates', 'warning',
-                    "rule: master verification plan [{$plan->name}] has no subordinate plans",
+                    'Master verification plan has no subordinate plans',
                     'test_plan', $plan->id,
                 );
             }
@@ -67,7 +67,7 @@ class TestLinter
                 if ($case->requirements->isEmpty()) {
                     $findings[] = $this->finding(
                         'case-untraced', 'warning',
-                        "rule: test case [{$case->name}] is not traced to any requirement",
+                        'Test case is not traced to any requirement',
                         'test_case', $case->id,
                     );
                 }
@@ -82,7 +82,7 @@ class TestLinter
         foreach ($openCritical as $a) {
             $findings[] = $this->finding(
                 'critical-open', 'error',
-                "rule: critical anomaly [{$a->summary}] is still {$a->status}",
+                'Critical anomaly is still open or under investigation',
                 'anomaly', $a->id,
             );
         }
@@ -90,13 +90,13 @@ class TestLinter
         if ($plans->isEmpty()) {
             $findings[] = $this->finding(
                 'no-plans', 'error',
-                'rule: project has no verification plans',
+                'Project has no verification plans',
                 'project', $project->id,
             );
         } elseif ($plans->where('level', 'master')->isEmpty()) {
             $findings[] = $this->finding(
                 'no-master', 'warning',
-                'rule: project has no master verification plan',
+                'Project has no master verification plan',
                 'project', $project->id,
             );
         }

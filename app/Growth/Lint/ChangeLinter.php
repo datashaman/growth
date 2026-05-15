@@ -41,7 +41,7 @@ class ChangeLinter
             $findings[] = $this->finding(
                 'change.impacts.empty',
                 'error',
-                "Change request [{$change->title}] has no impacted artifacts",
+                'Change request has no impacted artifacts',
                 'change_request',
                 $change->id,
             );
@@ -51,7 +51,7 @@ class ChangeLinter
             $findings[] = $this->finding(
                 'change.review.missing',
                 'warning',
-                "Change request [{$change->title}] is {$change->status} but has no linked review",
+                "Change request is {$change->status} but has no linked review",
                 'change_request',
                 $change->id,
             );
@@ -61,7 +61,7 @@ class ChangeLinter
             $findings[] = $this->finding(
                 'change.decision.missing',
                 'error',
-                "Change request [{$change->title}] is {$change->status} but has no decision",
+                "Change request is {$change->status} but has no decision",
                 'change_request',
                 $change->id,
             );
@@ -71,7 +71,7 @@ class ChangeLinter
             $findings[] = $this->finding(
                 'change.decision_rationale.empty',
                 'warning',
-                "Change request [{$change->title}] has a decision without rationale",
+                'Change request has a decision without rationale',
                 'change_request',
                 $change->id,
             );
@@ -81,7 +81,7 @@ class ChangeLinter
             $findings[] = $this->finding(
                 'change.implemented_without_approval',
                 'error',
-                "Change request [{$change->title}] is implemented without an approved decision",
+                'Change request is implemented without an approved decision',
                 'change_request',
                 $change->id,
             );
@@ -91,7 +91,7 @@ class ChangeLinter
             $findings[] = $this->finding(
                 'change.impact.needs_analysis',
                 'warning',
-                "Change request [{$change->title}] still has an unresolved impact-analysis item",
+                'Change request has an unresolved impact-analysis item',
                 'change_impact',
                 $impact->id,
             );
@@ -101,7 +101,7 @@ class ChangeLinter
             $findings[] = $this->finding(
                 'change.rationale.empty',
                 'warning',
-                "High-priority change request [{$change->title}] has no rationale",
+                'High-priority change request has no rationale',
                 'change_request',
                 $change->id,
             );

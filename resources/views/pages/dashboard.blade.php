@@ -4,7 +4,19 @@ use App\Growth\Assurance\ReadinessGateEvaluator;
 use App\Growth\Execution\ImplementationStatusSummarizer;
 use App\Growth\Plan\PlanCapacitySummarizer;
 use App\Growth\Plan\ScheduleHealthSummarizer;
+use App\Models\Anomaly;
+use App\Models\ChangeRequest;
+use App\Models\CustomViewpoint;
+use App\Models\DesignView;
+use App\Models\Milestone;
 use App\Models\Project;
+use App\Models\ProjectPlan;
+use App\Models\Requirement;
+use App\Models\Review;
+use App\Models\Risk;
+use App\Models\TestCase;
+use App\Models\TestPlan;
+use App\Models\WorkItem;
 use App\Models\WorkspaceMembership;
 use App\Support\BadgeVariant;
 use Livewire\Attributes\Computed;
@@ -176,6 +188,59 @@ new #[Title('Dashboard')] class extends Component {
             ->exists();
     }
 
+    /**
+     * Resolve readable labels (and optional routes) for every (subject_type, subject_id)
+     * referenced by any readiness gate finding, in a single query per type.
+     *
+     * @return array<string,array{label:string,route:?string}>
+     */
+    #[Computed]
+    public function findingSubjects(): array
+    {
+        if ($this->readiness === null) {
+            return [];
+        }
+
+        $map = [
+            'requirement' => [Requirement::class, 'text', 'requirements.show', null],
+            'design_view' => [DesignView::class, 'name', null, 'architecture'],
+            'custom_viewpoint' => [CustomViewpoint::class, 'name', null, 'architecture'],
+            'test_plan' => [TestPlan::class, 'name', null, 'verification'],
+            'test_case' => [TestCase::class, 'name', null, 'verification'],
+            'anomaly' => [Anomaly::class, 'summary', 'anomalies.show', null],
+            'milestone' => [Milestone::class, 'name', null, 'plan'],
+            'work_item' => [WorkItem::class, 'name', 'work-items.show', null],
+            'project_plan' => [ProjectPlan::class, 'name', null, 'plan'],
+            'review' => [Review::class, 'title', 'reviews.show', null],
+            'risk' => [Risk::class, 'title', 'risks.show', null],
+            'change_request' => [ChangeRequest::class, 'title', null, 'changes'],
+        ];
+
+        $idsByType = collect($this->readiness['gates'])
+            ->flatMap(fn (array $gate) => $gate['findings'])
+            ->filter(fn (array $f) => isset($f['subject_type'], $f['subject_id']) && isset($map[$f['subject_type']]))
+            ->groupBy('subject_type')
+            ->map(fn ($group) => $group->pluck('subject_id')->unique()->values()->all())
+            ->all();
+
+        $result = [];
+        foreach ($idsByType as $type => $ids) {
+            [$modelClass, $field, $routeName, $indexRouteName] = $map[$type];
+            $fallbackRoute = $indexRouteName ? route($indexRouteName) : null;
+            $modelClass::query()
+                ->whereIn('id', $ids)
+                ->get(['id', $field])
+                ->each(function ($row) use (&$result, $type, $field, $routeName, $fallbackRoute): void {
+                    $result[$type.':'.$row->id] = [
+                        'label' => (string) str((string) $row->{$field})->limit(80),
+                        'route' => $routeName ? route($routeName, $row->id) : $fallbackRoute,
+                    ];
+                });
+        }
+
+        return $result;
+    }
+
     public function formatHours(?float $hours): string
     {
         if ($hours === null || $hours === 0.0) {
@@ -267,15 +332,29 @@ new #[Title('Dashboard')] class extends Component {
                         </flux:badge>
                     </x-slot:header>
 
-                    <flux:table class="[&_td]:align-top">
+                    <flux:table class="w-full table-fixed [&_td]:align-top [&_td]:break-words">
                         <flux:table.columns>
                             <flux:table.column>{{ __('Gate') }}</flux:table.column>
-                            <flux:table.column>{{ __('Status') }}</flux:table.column>
-                            <flux:table.column align="end">{{ __('Findings') }}</flux:table.column>
+                            <flux:table.column class="w-24">{{ __('Status') }}</flux:table.column>
+                            <flux:table.column align="end" class="w-28">{{ __('Findings') }}</flux:table.column>
                         </flux:table.columns>
-                        <flux:table.rows>
+                        <flux:table.rows x-data="{ openGate: null }">
                             @foreach ($this->readiness['gates'] as $gate)
-                                <flux:table.row>
+                                @php
+                                    $hasFindings = count($gate['findings']) > 0;
+                                    $gateId = $gate['id'];
+                                    $toggleExpr = "openGate = openGate === '{$gateId}' ? null : '{$gateId}'";
+                                @endphp
+                                <flux:table.row
+                                    @class(['cursor-pointer' => $hasFindings])
+                                    x-on:click="{{ $hasFindings ? $toggleExpr : '' }}"
+                                    x-on:keydown.enter.prevent="{{ $hasFindings ? $toggleExpr : '' }}"
+                                    x-on:keydown.space.prevent="{{ $hasFindings ? $toggleExpr : '' }}"
+                                    role="{{ $hasFindings ? 'button' : '' }}"
+                                    tabindex="{{ $hasFindings ? '0' : '' }}"
+                                    aria-controls="{{ $hasFindings ? 'gate-findings-'.$gateId : '' }}"
+                                    x-bind:aria-expanded="openGate === '{{ $gateId }}' ? 'true' : 'false'"
+                                >
                                     <flux:table.cell>
                                         <div class="font-medium">{{ $gate['id'] }}</div>
                                         <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $gate['description'] }}</div>
@@ -286,9 +365,66 @@ new #[Title('Dashboard')] class extends Component {
                                         </flux:badge>
                                     </flux:table.cell>
                                     <flux:table.cell align="end">
-                                        {{ count($gate['findings']) }}
+                                        <span class="inline-flex items-center gap-1">
+                                            {{ count($gate['findings']) }}
+                                            @if ($hasFindings)
+                                                <flux:icon.chevron-down
+                                                    class="size-4 transition-transform"
+                                                    x-bind:class="openGate === '{{ $gate['id'] }}' ? 'rotate-180' : ''" />
+                                            @endif
+                                        </span>
                                     </flux:table.cell>
                                 </flux:table.row>
+                                @if ($hasFindings)
+                                    <flux:table.row
+                                        id="gate-findings-{{ $gate['id'] }}"
+                                        x-show="openGate === '{{ $gate['id'] }}'"
+                                        x-cloak
+                                        class="whitespace-normal"
+                                    >
+                                        <flux:table.cell colspan="3" class="!ps-3 !pe-3 whitespace-normal">
+                                            @php
+                                                $grouped = collect($gate['findings'])->groupBy(fn ($f) => $f['rule'].'|'.$f['message']);
+                                            @endphp
+                                            <ul class="space-y-2">
+                                                @foreach ($grouped as $group)
+                                                    @php $head = $group->first(); @endphp
+                                                    <li class="flex items-start gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+                                                        <div class="w-20 shrink-0">
+                                                            <flux:badge :color="BadgeVariant::finding($head['severity'])" size="sm">
+                                                                {{ ucfirst($head['severity']) }}
+                                                            </flux:badge>
+                                                        </div>
+                                                        <div class="min-w-0 flex-1">
+                                                            <div class="text-sm break-words">{{ $head['message'] }}</div>
+                                                            <div class="text-xs text-zinc-500 dark:text-zinc-400 break-words">{{ $head['rule'] }}</div>
+                                                            @php
+                                                                $subjects = $group
+                                                                    ->filter(fn ($f) => isset($f['subject_type'], $f['subject_id']))
+                                                                    ->map(fn ($f) => $this->findingSubjects[$f['subject_type'].':'.$f['subject_id']] ?? null)
+                                                                    ->filter()
+                                                                    ->unique(fn ($s) => $s['label'].'|'.($s['route'] ?? ''));
+                                                            @endphp
+                                                            @if ($subjects->isNotEmpty())
+                                                                <ul class="mt-2 space-y-1">
+                                                                    @foreach ($subjects as $subject)
+                                                                        <li class="text-xs text-zinc-600 dark:text-zinc-300 break-words">
+                                                                            @if ($subject['route'])
+                                                                                <a href="{{ $subject['route'] }}" wire:navigate class="hover:underline">{{ $subject['label'] }}</a>
+                                                                            @else
+                                                                                {{ $subject['label'] }}
+                                                                            @endif
+                                                                        </li>
+                                                                    @endforeach
+                                                                </ul>
+                                                            @endif
+                                                        </div>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </flux:table.cell>
+                                    </flux:table.row>
+                                @endif
                             @endforeach
                         </flux:table.rows>
                     </flux:table>

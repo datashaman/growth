@@ -42,6 +42,28 @@ test('dashboard renders sections for the selected project', function () {
         ->assertSee('Reviews');
 });
 
+test('dashboard readiness gates render their findings inline', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+    $project->requirements()->create([
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The system shall do something TBD.',
+    ]);
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('Readiness')
+        ->assertSee('rule: requirement contains TBD/TBS/TBR — not complete')
+        ->assertSee('aria-controls="gate-findings-capabilities"', false)
+        ->assertSee('id="gate-findings-capabilities"', false);
+});
+
 test('dashboard implementation table lists work items', function () {
     $user = User::factory()->create();
     $project = Project::create([
