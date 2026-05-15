@@ -44,7 +44,7 @@ new #[Title('Requirements')] class extends Component {
             </x-slot:actions>
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
-                    <flux:table.column>{{ __('Requirement') }}</flux:table.column>
+                    <flux:table.column>{{ __('Statement') }}</flux:table.column>
                     <flux:table.column>{{ __('Doc') }}</flux:table.column>
                     <flux:table.column>{{ __('Type') }}</flux:table.column>
                     <flux:table.column>{{ __('Priority') }}</flux:table.column>
