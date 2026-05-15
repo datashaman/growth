@@ -14,7 +14,11 @@ class Workspace extends Model
 {
     use HasUlids;
 
-    protected $fillable = ['name', 'slug', 'owner_user_id'];
+    protected $fillable = ['name', 'slug', 'owner_user_id', 'mcp_capture_payloads'];
+
+    protected $casts = [
+        'mcp_capture_payloads' => 'boolean',
+    ];
 
     public function owner(): BelongsTo
     {

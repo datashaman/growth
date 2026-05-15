@@ -38,6 +38,7 @@ use App\Mcp\Tools\Dashboard\ShowGateStatus;
 use App\Mcp\Tools\Dashboard\ShowProjectDashboard;
 use App\Mcp\Tools\Dashboard\ShowRequirementExplorer;
 use App\Mcp\Tools\Dashboard\ShowTraceGraph;
+use App\Mcp\Tools\Feedback\ListToolInvocations;
 use App\Mcp\Tools\Glossary\LookupTerm;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Plan\ListAgents;
@@ -110,6 +111,7 @@ class ReadonlyServer extends Server
         ListArtifactRelations::class,
         ListChangeRequests::class,
         ListChangeApprovalEvents::class,
+        ListToolInvocations::class,
         SummarizeImplementationStatus::class,
         SummarizePlanCapacity::class,
         SummarizeScheduleHealth::class,
