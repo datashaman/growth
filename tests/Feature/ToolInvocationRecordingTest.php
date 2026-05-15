@@ -88,7 +88,7 @@ it('prune command removes old rows', function () {
         'completed_at' => now()->subDays(10),
     ]);
 
-    $this->artisan('tool-invocations:prune')->assertSuccessful();
+    $this->artisan('model:prune', ['--model' => [ToolInvocation::class]])->assertSuccessful();
 
     expect(ToolInvocation::count())->toBe(1);
 });
