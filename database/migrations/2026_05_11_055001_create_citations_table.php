@@ -11,10 +11,10 @@ return new class extends Migration
         Schema::create('citations', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('source_id')->constrained()->cascadeOnDelete();
-            $table->string('citable_type');
-            $table->string('citable_id');
+            $table->string('citable_type', 64);
+            $table->char('citable_id', 26);
             $table->text('quote')->nullable();
-            $table->string('locator')->nullable();
+            $table->string('locator', 191)->nullable();
             $table->timestamps();
 
             $table->index(['citable_type', 'citable_id']);
