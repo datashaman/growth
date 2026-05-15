@@ -13,6 +13,8 @@ new #[Layout('layouts.auth')] #[Title('Accept invitation')] class extends Compon
 {
     public WorkspaceInvitation $invitation;
 
+    public bool $accountExists = false;
+
     public string $name = '';
 
     public string $password = '';
@@ -32,6 +34,9 @@ new #[Layout('layouts.auth')] #[Title('Accept invitation')] class extends Compon
 
         $user = auth()->user();
         if ($user === null) {
+            session()->put('url.intended', request()->fullUrl());
+            $this->accountExists = User::where('email', $invitation->email)->exists();
+
             return;
         }
 
@@ -113,48 +118,58 @@ new #[Layout('layouts.auth')] #[Title('Accept invitation')] class extends Compon
         <span class="font-medium">{{ $invitation->email }}</span>
     </flux:callout>
 
-    <form wire:submit="signupAndAccept" class="flex flex-col gap-6">
-        <flux:input
-            wire:model="name"
-            :label="__('Your name')"
-            type="text"
-            required
-            autofocus
-            autocomplete="name"
-        />
+    @if ($accountExists)
+        <flux:callout icon="information-circle">
+            {{ __('An account with this email already exists. Log in to accept the invitation.') }}
+        </flux:callout>
 
-        <flux:input
-            :value="$invitation->email"
-            :label="__('Email')"
-            type="email"
-            readonly
-            disabled
-        />
-
-        <flux:input
-            wire:model="password"
-            :label="__('Password')"
-            type="password"
-            required
-            autocomplete="new-password"
-            viewable
-        />
-
-        <flux:input
-            wire:model="passwordConfirmation"
-            :label="__('Confirm password')"
-            type="password"
-            required
-            autocomplete="new-password"
-        />
-
-        <flux:button variant="primary" type="submit" class="w-full" data-test="accept-invitation-button">
-            {{ __('Create account & accept') }}
+        <flux:button variant="primary" :href="route('login')" class="w-full" wire:navigate>
+            {{ __('Log in to accept') }}
         </flux:button>
-    </form>
+    @else
+        <form wire:submit="signupAndAccept" class="flex flex-col gap-6">
+            <flux:input
+                wire:model="name"
+                :label="__('Your name')"
+                type="text"
+                required
+                autofocus
+                autocomplete="name"
+            />
 
-    <div class="text-sm text-center text-zinc-600 dark:text-zinc-400">
-        {{ __('Already have an account?') }}
-        <flux:link :href="route('login')" wire:navigate>{{ __('Log in') }}</flux:link>
-    </div>
+            <flux:input
+                :value="$invitation->email"
+                :label="__('Email')"
+                type="email"
+                readonly
+                disabled
+            />
+
+            <flux:input
+                wire:model="password"
+                :label="__('Password')"
+                type="password"
+                required
+                autocomplete="new-password"
+                viewable
+            />
+
+            <flux:input
+                wire:model="passwordConfirmation"
+                :label="__('Confirm password')"
+                type="password"
+                required
+                autocomplete="new-password"
+            />
+
+            <flux:button variant="primary" type="submit" class="w-full" data-test="accept-invitation-button">
+                {{ __('Create account & accept') }}
+            </flux:button>
+        </form>
+
+        <div class="text-sm text-center text-zinc-600 dark:text-zinc-400">
+            {{ __('Already have an account?') }}
+            <flux:link :href="route('login')" wire:navigate>{{ __('Log in') }}</flux:link>
+        </div>
+    @endif
 </div>
