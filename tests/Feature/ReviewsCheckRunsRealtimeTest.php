@@ -116,4 +116,3 @@ test('work-items.show refreshes when onProjectDataChanged is called', function (
         ->call('onProjectDataChanged')
         ->assertSee('newly-broadcast-check');
 });
-
