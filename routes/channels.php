@@ -9,14 +9,14 @@ Broadcast::channel('App.Models.User.{id}', function (User $user, int $id): bool 
     return $user->id === $id;
 });
 
-Broadcast::channel('workspaces.{workspaceId}', function (User $user, int $workspaceId): bool {
+Broadcast::channel('workspaces.{workspaceId}', function (User $user, string $workspaceId): bool {
     return WorkspaceMembership::query()
         ->where('workspace_id', $workspaceId)
         ->where('user_id', $user->id)
         ->exists();
 });
 
-Broadcast::channel('projects.{projectId}', function (User $user, int $projectId): bool {
+Broadcast::channel('projects.{projectId}', function (User $user, string $projectId): bool {
     $workspaceId = Project::query()->whereKey($projectId)->value('workspace_id');
 
     if ($workspaceId === null) {
