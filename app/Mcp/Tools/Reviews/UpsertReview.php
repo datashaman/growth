@@ -31,7 +31,7 @@ class UpsertReview extends Tool
             'type' => 'required|in:'.implode(',', Review::TYPES),
             'title' => 'required|string|max:255',
             'objective' => 'nullable|string',
-            'status' => 'prohibited',
+            'status' => 'missing',
             'planned_at' => 'nullable|date',
             'held_at' => 'nullable|date',
             'entry_criteria' => 'nullable|array',
@@ -46,7 +46,7 @@ class UpsertReview extends Tool
             'targets.*.id' => 'required_with:targets|string',
             'targets.*.context' => 'nullable|string|max:255',
         ], [
-            'status.prohibited' => 'Review status is not set here. Use the start-review, hold-review, close-review, and cancel-review tools to move status through validated transitions.',
+            'status.missing' => 'Review status is not set here. Use the start-review, hold-review, close-review, and cancel-review tools to move status through validated transitions.',
         ]);
 
         $targets = $data['targets'] ?? null;
