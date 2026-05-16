@@ -96,8 +96,9 @@ export function mapDeploymentState(githubState) {
 }
 
 /**
- * Orchestrate one pull_request event. Never throws for a missing trailer
- * or an unresolvable work item — it logs a warning and skips.
+ * Orchestrate one pull_request event. A missing trailer or an unmerged
+ * close is logged and skipped; a rejected tool call throws so the
+ * workflow fails rather than silently passing.
  */
 async function runPullRequest({ event, getCommitMessage, callTool, log }) {
   const sha = resolveCommitSha(event);
@@ -116,8 +117,7 @@ async function runPullRequest({ event, getCommitMessage, callTool, log }) {
   const args = buildDeliveryLinkArgs(event, workItemId);
   const result = await callTool('upsert-delivery-link', args);
   if (result.isError) {
-    log.warn(`Growth rejected the delivery link: ${result.errorText}; skipping.`);
-    return { skipped: true };
+    throw new Error(`Growth rejected the delivery link: ${result.errorText}`);
   }
 
   log.info(`Recorded delivery link ${args.ref} on work item ${workItemId}.`);
@@ -151,15 +151,13 @@ async function runCheckRun({ event, repository, getCommitMessage, callTool, log 
   };
   const linkResult = await callTool('upsert-delivery-link', linkArgs);
   if (linkResult.isError) {
-    log.warn(`Growth rejected the delivery link: ${linkResult.errorText}; skipping.`);
-    return { skipped: true };
+    throw new Error(`Growth rejected the delivery link: ${linkResult.errorText}`);
   }
 
   const checkArgs = buildCheckRunArgs(event, linkResult.structured?.id);
   const checkResult = await callTool('upsert-check-run', checkArgs);
   if (checkResult.isError) {
-    log.warn(`Growth rejected the check run: ${checkResult.errorText}; skipping.`);
-    return { skipped: true };
+    throw new Error(`Growth rejected the check run: ${checkResult.errorText}`);
   }
 
   log.info(`Recorded check run "${checkArgs.name}" (${checkArgs.conclusion ?? checkArgs.status}) on ${linkArgs.ref}.`);
@@ -199,8 +197,7 @@ async function runDeployment({ event, repository, callTool, log }) {
 
   const resolved = await callTool('resolve-project-by-repo', { github_repo: repository });
   if (resolved.isError) {
-    log.warn(`Growth rejected the repo lookup: ${resolved.errorText}; skipping.`);
-    return { skipped: true };
+    throw new Error(`Growth rejected the repo lookup: ${resolved.errorText}`);
   }
   const projectId = resolved.structured?.project_id;
   if (!resolved.structured?.found || !projectId) {
@@ -211,8 +208,7 @@ async function runDeployment({ event, repository, callTool, log }) {
   const args = buildDeploymentArgs(event, projectId, status);
   const result = await callTool('upsert-deployment', args);
   if (result.isError) {
-    log.warn(`Growth rejected the deployment: ${result.errorText}; skipping.`);
-    return { skipped: true };
+    throw new Error(`Growth rejected the deployment: ${result.errorText}`);
   }
 
   log.info(`Recorded ${status} deployment to ${args.environment} on project ${projectId}.`);
@@ -243,8 +239,7 @@ export function buildReleaseArgs(event, projectId) {
 async function runRelease({ event, repository, callTool, log }) {
   const resolved = await callTool('resolve-project-by-repo', { github_repo: repository });
   if (resolved.isError) {
-    log.warn(`Growth rejected the repo lookup: ${resolved.errorText}; skipping.`);
-    return { skipped: true };
+    throw new Error(`Growth rejected the repo lookup: ${resolved.errorText}`);
   }
   const projectId = resolved.structured?.project_id;
   if (!resolved.structured?.found || !projectId) {
@@ -255,8 +250,7 @@ async function runRelease({ event, repository, callTool, log }) {
   const args = buildReleaseArgs(event, projectId);
   const result = await callTool('upsert-release', args);
   if (result.isError) {
-    log.warn(`Growth rejected the release: ${result.errorText}; skipping.`);
-    return { skipped: true };
+    throw new Error(`Growth rejected the release: ${result.errorText}`);
   }
 
   log.info(`Recorded release ${args.version} on project ${projectId}.`);

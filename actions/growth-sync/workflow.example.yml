@@ -1,7 +1,9 @@
 # Copy this file to .github/workflows/growth-sync.yml in the repo you want
 # to track. Set the GROWTH_MCP_TOKEN repo secret to a Passport personal
 # access token with the mcp:use scope, and bind the project's github_repo
-# field to this repository (owner/repo) in Growth.
+# field to this repository (owner/repo) in Growth. Replace growth-url below
+# with your Growth instance URL, or use ${{ vars.GROWTH_URL }} to keep it
+# out of the repo.
 name: Growth sync
 
 on:

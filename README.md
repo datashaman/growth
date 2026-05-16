@@ -66,6 +66,50 @@ The matching HTTP endpoints are `/mcp/all`, `/mcp/intake`, `/mcp/architecture`, 
 
 The `readonly` and `all` servers also expose `show-project-dashboard`, an MCP app that renders a read-only project dashboard with readiness, implementation, schedule, capacity, and resource links.
 
+## GitHub Sync
+
+The `growth-sync` GitHub Action mirrors a repository's delivery activity into
+Growth: pull requests become delivery links, check runs become check
+evidence, and deployments and published releases become deployment and
+release records on the bound project.
+
+### Install in an adopter repository
+
+1. Copy [`actions/growth-sync/workflow.example.yml`](actions/growth-sync/workflow.example.yml)
+   to `.github/workflows/growth-sync.yml` in the repository you want to track.
+2. Mint a Passport personal access token with the `mcp:use` scope for the
+   Growth user the sync should act as.
+3. Add the token as the `GROWTH_MCP_TOKEN` repository secret.
+4. Set the workflow's `growth-url` input to your Growth instance URL (a
+   `${{ vars.GROWTH_URL }}` repository variable keeps the URL out of the repo).
+5. In Growth, set the project's `github_repo` field to the repository in
+   `owner/repo` form so deployment and release events resolve to it.
+
+### Trailer convention
+
+Pull request and check run sync find the work item from a `Growth-Work-Item:`
+git trailer on the commit. Add it to the commit a PR carries:
+
+```
+Add the widget
+
+Growth-Work-Item: 01HXYZ...
+```
+
+The trailer value is a work item ULID. The last trailer wins if several are
+present. Commits without the trailer are skipped, not errored.
+
+### Action inputs and environment
+
+| Input          | Required | Description                                         |
+| -------------- | -------- | --------------------------------------------------- |
+| `growth-url`   | yes      | Base URL of the Growth instance.                    |
+| `growth-token` | yes      | Passport token with the `mcp:use` scope.            |
+| `github-token` | no       | Defaults to `${{ github.token }}` for commit reads. |
+
+The workflow triggers on `pull_request` (`opened`, `synchronize`, `closed`),
+`check_run` (`completed`), `deployment_status`, and `release` (`published`).
+
 ## Contributing
 
 Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
