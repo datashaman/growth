@@ -16,6 +16,7 @@ use App\Mcp\Tools\Manifest\ExportManifest;
 use App\Mcp\Tools\Projects\CreateProject;
 use App\Mcp\Tools\Projects\DeleteProject;
 use App\Mcp\Tools\Projects\ListProjects;
+use App\Mcp\Tools\Projects\ResolveProjectByRepo;
 use App\Mcp\Tools\Projects\UpdateProject;
 use App\Mcp\Tools\Projects\UpsertProject;
 use Laravel\Mcp\Server;
@@ -33,6 +34,7 @@ class ManagementServer extends Server
     protected array $tools = [
         WhoAmI::class,
         ListProjects::class,
+        ResolveProjectByRepo::class,
         CreateProject::class,
         UpdateProject::class,
         UpsertProject::class,
