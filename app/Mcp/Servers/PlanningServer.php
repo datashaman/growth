@@ -15,6 +15,7 @@ use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Plan\AssignRole;
 use App\Mcp\Tools\Plan\AssignWorkItemRaci;
 use App\Mcp\Tools\Plan\BaselinePlan;
+use App\Mcp\Tools\Plan\CancelRelease;
 use App\Mcp\Tools\Plan\ComparePlanBaseline;
 use App\Mcp\Tools\Plan\CompleteWorkItem;
 use App\Mcp\Tools\Plan\DeleteAgent;
@@ -38,6 +39,8 @@ use App\Mcp\Tools\Plan\ListReleases;
 use App\Mcp\Tools\Plan\ListRisks;
 use App\Mcp\Tools\Plan\ListRoles;
 use App\Mcp\Tools\Plan\ListWorkItems;
+use App\Mcp\Tools\Plan\MarkReleaseReleased;
+use App\Mcp\Tools\Plan\PromoteRelease;
 use App\Mcp\Tools\Plan\StartWorkItem;
 use App\Mcp\Tools\Plan\SummarizeImplementationStatus;
 use App\Mcp\Tools\Plan\SummarizePlanCapacity;
@@ -112,6 +115,9 @@ class PlanningServer extends Server
         ListRisks::class,
         DeleteRisk::class,
         UpsertRelease::class,
+        PromoteRelease::class,
+        MarkReleaseReleased::class,
+        CancelRelease::class,
         ListReleases::class,
         DeleteRelease::class,
         UpsertDeployment::class,
