@@ -13,10 +13,14 @@ use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Manifest\ApplyManifest;
 use App\Mcp\Tools\Manifest\ExportManifest;
+use App\Mcp\Tools\Projects\ActivateProject;
+use App\Mcp\Tools\Projects\ArchiveProject;
+use App\Mcp\Tools\Projects\CloseProject;
 use App\Mcp\Tools\Projects\CreateProject;
 use App\Mcp\Tools\Projects\DeleteProject;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Projects\ResolveProjectByRepo;
+use App\Mcp\Tools\Projects\RestoreProject;
 use App\Mcp\Tools\Projects\UpdateProject;
 use App\Mcp\Tools\Projects\UpsertProject;
 use Laravel\Mcp\Server;
@@ -26,7 +30,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Management Server')]
 #[Version('0.1.0')]
-#[Instructions('Manage project lifecycle: create, update, archive/restore via status, delete, and bulk apply/export of project structure via manifest. Operates at the project boundary; within-project work belongs on the intake/architecture/planning/verification/governance/readonly servers.')]
+#[Instructions('Manage project lifecycle: create, update, activate/archive/close/restore via transitions, delete, and bulk apply/export of project structure via manifest. Operates at the project boundary; within-project work belongs on the intake/architecture/planning/verification/governance/readonly servers.')]
 class ManagementServer extends Server
 {
     use RoleServerDefaults;
@@ -38,6 +42,10 @@ class ManagementServer extends Server
         CreateProject::class,
         UpdateProject::class,
         UpsertProject::class,
+        ActivateProject::class,
+        ArchiveProject::class,
+        CloseProject::class,
+        RestoreProject::class,
         DeleteProject::class,
         ApplyManifest::class,
         ExportManifest::class,

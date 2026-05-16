@@ -4,6 +4,12 @@ use App\Growth\Assurance\ReadinessGateEvaluator;
 use App\Growth\Execution\ImplementationStatusSummarizer;
 use App\Growth\Plan\PlanCapacitySummarizer;
 use App\Growth\Plan\ScheduleHealthSummarizer;
+use App\Growth\Transitions\ActivateProject;
+use App\Growth\Transitions\ArchiveProject;
+use App\Growth\Transitions\CloseProject;
+use App\Growth\Transitions\IllegalTransitionException;
+use App\Growth\Transitions\RestoreProject;
+use App\Growth\Transitions\Transition;
 use App\Models\Anomaly;
 use App\Models\ChangeRequest;
 use App\Models\CustomViewpoint;
@@ -20,6 +26,7 @@ use App\Models\WorkItem;
 use App\Models\WorkspaceMembership;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
+use Flux\Flux;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -48,6 +55,47 @@ new #[Title('Dashboard')] class extends Component {
     public function refreshProject(): void
     {
         unset($this->projects, $this->project);
+    }
+
+    public function activateProject(): void
+    {
+        $this->transitionProject(new ActivateProject);
+    }
+
+    public function archiveProject(): void
+    {
+        $this->transitionProject(new ArchiveProject);
+    }
+
+    public function closeProject(): void
+    {
+        $this->transitionProject(new CloseProject);
+    }
+
+    public function restoreProject(): void
+    {
+        $this->transitionProject(new RestoreProject);
+    }
+
+    private function transitionProject(Transition $transition): void
+    {
+        $project = $this->project;
+
+        abort_if($project === null, 404);
+
+        try {
+            $transition->apply($project, auth()->user());
+        } catch (IllegalTransitionException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        unset($this->projects, $this->project);
+
+        Flux::toast(variant: 'success', text: __('Project is now :status.', [
+            'status' => $project->status,
+        ]));
     }
 
     /**
@@ -325,12 +373,21 @@ new #[Title('Dashboard')] class extends Component {
                         <div class="flex items-center gap-2">
                             <flux:heading size="lg">{{ $this->project->name }}</flux:heading>
                             <flux:badge color="zinc" size="sm">{{ __('Rigor :level', ['level' => $this->project->rigor_level]) }}</flux:badge>
+                            <flux:badge :color="BadgeVariant::projectStatus($this->project->status)" size="sm">{{ EnumLabel::lower($this->project->status) }}</flux:badge>
                         </div>
                         @if ($this->project->description)
                             <flux:text class="text-zinc-600 dark:text-zinc-400">{{ $this->project->description }}</flux:text>
                         @endif
                     </div>
                     <div class="flex gap-1">
+                        @if ($this->project->status === 'draft')
+                            <flux:button size="sm" icon="play" variant="primary" wire:click="activateProject">{{ __('Activate') }}</flux:button>
+                        @elseif ($this->project->status === 'active')
+                            <flux:button size="sm" icon="archive-box" variant="filled" wire:click="archiveProject">{{ __('Archive') }}</flux:button>
+                            <flux:button size="sm" icon="lock-closed" variant="filled" wire:click="closeProject">{{ __('Close') }}</flux:button>
+                        @else
+                            <flux:button size="sm" icon="arrow-path" variant="primary" wire:click="restoreProject">{{ __('Restore') }}</flux:button>
+                        @endif
                         <flux:button size="sm" icon="pencil-square" variant="ghost" :tooltip="__('Edit project')"
                             wire:click="$dispatch('edit-project', { projectId: '{{ $this->project->id }}' })" />
                         @if ($this->canMoveProject)
