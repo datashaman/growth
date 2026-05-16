@@ -43,12 +43,26 @@ abstract class Transition
     abstract public function subjectLabel(): string;
 
     /**
+     * Whether this transition requires a non-empty reason. Transitions that
+     * capture a mandatory rationale (e.g. blocking a work item) override this;
+     * the requirement is enforced here so no caller can bypass it.
+     */
+    public function requiresReason(): bool
+    {
+        return false;
+    }
+
+    /**
      * Apply the transition, recording an audit row.
      *
-     * @throws IllegalTransitionException when the subject's current status is not an accepted source state
+     * @throws IllegalTransitionException when the subject's current status is not an accepted source state, or when a required reason is missing
      */
     public function apply(Model $subject, ?User $actor = null, ?string $reason = null): StatusTransition
     {
+        if ($this->requiresReason() && ($reason === null || trim($reason) === '')) {
+            throw new IllegalTransitionException("A reason is required to {$this->verb()} a {$this->subjectLabel()}.");
+        }
+
         return DB::transaction(function () use ($subject, $actor, $reason): StatusTransition {
             // Lock the subject row and re-read its status under the lock, so two
             // concurrent transitions cannot both observe the same source state
@@ -63,6 +77,7 @@ abstract class Transition
             }
 
             $subject->setAttribute('status', $this->targetStatus());
+            $this->decorateSubject($subject);
             $subject->save();
 
             return $subject->statusTransitions()->create([
@@ -74,6 +89,14 @@ abstract class Transition
             ]);
         });
     }
+
+    /**
+     * Apply any non-status attribute changes that are part of this transition,
+     * within the same locked transaction. Overridden by transitions that move
+     * more than the status (e.g. deferring a milestone also sets a new target
+     * date). No-op by default.
+     */
+    protected function decorateSubject(Model $subject): void {}
 
     /**
      * Clear message explaining why the transition was rejected.
