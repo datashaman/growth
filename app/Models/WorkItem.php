@@ -102,6 +102,11 @@ class WorkItem extends Model
         return $this->morphMany(ReviewTarget::class, 'reviewable');
     }
 
+    public function statusTransitions(): MorphMany
+    {
+        return $this->morphMany(StatusTransition::class, 'transitionable');
+    }
+
     public function changeImpacts(): MorphMany
     {
         return $this->morphMany(ChangeImpact::class, 'impactable');
