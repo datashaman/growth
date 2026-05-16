@@ -2,6 +2,7 @@
 
 use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Tools\Plan\RecordUnattributedEvent;
+use App\Models\Project;
 use App\Models\UnattributedGithubEvent;
 use App\Models\User;
 use Laravel\Passport\Passport;
@@ -9,6 +10,13 @@ use Laravel\Passport\Passport;
 beforeEach(function () {
     $this->user = User::factory()->create();
     Passport::actingAs($this->user, ['mcp:use']);
+
+    Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Growth',
+        'rigor_level' => 2,
+        'github_repo' => 'datashaman/growth',
+    ]);
 });
 
 it('records a GitHub event that could not be attributed', function () {
@@ -88,4 +96,15 @@ it('rejects a malformed repo argument', function () {
         'commit_sha' => 'abc123',
         'reason' => 'missing_link',
     ])->assertHasErrors();
+});
+
+it('rejects a repo the caller has no project for', function () {
+    PlanningServer::tool(RecordUnattributedEvent::class, [
+        'github_repo' => 'datashaman/foreign',
+        'event_type' => 'check_run',
+        'commit_sha' => 'abc123',
+        'reason' => 'missing_link',
+    ])->assertHasErrors();
+
+    expect(UnattributedGithubEvent::count())->toBe(0);
 });
