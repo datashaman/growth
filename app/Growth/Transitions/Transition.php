@@ -77,6 +77,7 @@ abstract class Transition
             }
 
             $subject->setAttribute('status', $this->targetStatus());
+            $this->decorateSubject($subject);
             $subject->save();
 
             return $subject->statusTransitions()->create([
@@ -88,6 +89,14 @@ abstract class Transition
             ]);
         });
     }
+
+    /**
+     * Apply any non-status attribute changes that are part of this transition,
+     * within the same locked transaction. Overridden by transitions that move
+     * more than the status (e.g. deferring a milestone also sets a new target
+     * date). No-op by default.
+     */
+    protected function decorateSubject(Model $subject): void {}
 
     /**
      * Clear message explaining why the transition was rejected.
