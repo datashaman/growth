@@ -11,6 +11,7 @@ import {
   parseTrailer,
   resolveCheckRunPullRequest,
   resolveCommitSha,
+  resolveEventBranch,
   resolveWorkflowRunPullRequest,
   run,
 } from './index.mjs';
@@ -551,6 +552,158 @@ test('run skips an unhandled event type', async () => {
     event: {},
     getCommitMessage: async () => '',
     callTool: async () => ({ isError: false }),
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+});
+
+test('resolveEventBranch reads the branch from each event type', () => {
+  assert.equal(
+    resolveEventBranch('pull_request', { pull_request: { head: { ref: 'feature/a' } } }),
+    'feature/a',
+  );
+  assert.equal(
+    resolveEventBranch('check_run', { check_run: {} }, { head: { ref: 'feature/b' } }),
+    'feature/b',
+  );
+  assert.equal(
+    resolveEventBranch('check_run', { check_run: { check_suite: { head_branch: 'feature/c' } } }),
+    'feature/c',
+  );
+  assert.equal(
+    resolveEventBranch('workflow_run', { workflow_run: { head_branch: 'feature/d' } }),
+    'feature/d',
+  );
+  assert.equal(resolveEventBranch('release', {}), null);
+});
+
+test('run binds the branch when a pull request commit carries a trailer', async () => {
+  const calls = [];
+  const result = await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'synchronize',
+      pull_request: { number: 7, html_url: 'u', title: 't', head: { sha: 'sha7', ref: 'feature/lander' } },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'Work\n\nGrowth-Work-Item: 01WI',
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      return { isError: false, structured: { id: 'link1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, false);
+  const branchCall = calls.find((c) => c.name === 'upsert-delivery-link' && c.args.type === 'branch');
+  assert.ok(branchCall, 'expected a branch delivery link to be recorded');
+  assert.equal(branchCall.args.work_item_id, '01WI');
+  assert.equal(branchCall.args.ref, 'feature/lander');
+  assert.ok(calls.some((c) => c.name === 'upsert-delivery-link' && c.args.type === 'pull_request'));
+});
+
+test('run url-encodes a branch name with reserved characters in the binding', async () => {
+  const calls = [];
+  await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'synchronize',
+      pull_request: { number: 7, html_url: 'u', title: 't', head: { sha: 'sha7', ref: 'issue#123/fix' } },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'Work\n\nGrowth-Work-Item: 01WI',
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      return { isError: false, structured: { id: 'link1' } };
+    },
+    log: silentLog(),
+  });
+
+  const branchCall = calls.find((c) => c.name === 'upsert-delivery-link' && c.args.type === 'branch');
+  assert.ok(branchCall, 'expected a branch delivery link to be recorded');
+  assert.equal(branchCall.args.ref, 'issue#123/fix');
+  assert.equal(branchCall.args.url, 'https://github.com/datashaman/growth/tree/issue%23123/fix');
+});
+
+test('run skips a trailer-less event whose branch is ambiguously bound', async () => {
+  const warnings = [];
+  const result = await run({
+    eventName: 'check_run',
+    event: {
+      check_run: {
+        head_sha: 'shaX',
+        name: 'tests',
+        pull_requests: [{ number: 9, head: { ref: 'feature/contested' } }],
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer',
+    callTool: async (name) => {
+      if (name === 'resolve-work-item-by-branch') {
+        return { isError: false, structured: { found: false, ambiguous: true, work_item_id: null } };
+      }
+      throw new Error(`unexpected call to ${name}`);
+    },
+    log: { ...silentLog(), warn: (m) => warnings.push(m) },
+  });
+
+  assert.equal(result.skipped, true);
+  assert.ok(warnings.some((m) => m.includes('more than one work item')), 'expected an ambiguity warning');
+});
+
+test('run attributes a trailer-less check run via its branch binding', async () => {
+  const calls = [];
+  const result = await run({
+    eventName: 'check_run',
+    event: {
+      check_run: {
+        head_sha: 'shaX',
+        name: 'tests',
+        status: 'completed',
+        conclusion: 'success',
+        pull_requests: [{ number: 9, head: { ref: 'feature/lander' } }],
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer on this commit',
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      if (name === 'resolve-work-item-by-branch') {
+        return { isError: false, structured: { found: true, work_item_id: '01BR' } };
+      }
+      return { isError: false, structured: { id: 'link1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, false);
+  const lookup = calls.find((c) => c.name === 'resolve-work-item-by-branch');
+  assert.ok(lookup, 'expected a branch lookup');
+  assert.equal(lookup.args.branch, 'feature/lander');
+  assert.equal(lookup.args.github_repo, 'datashaman/growth');
+  assert.ok(calls.some((c) => c.name === 'upsert-delivery-link' && c.args.work_item_id === '01BR'));
+  assert.ok(calls.some((c) => c.name === 'upsert-check-run'));
+});
+
+test('run skips a trailer-less event whose branch is not bound', async () => {
+  const result = await run({
+    eventName: 'check_run',
+    event: {
+      check_run: {
+        head_sha: 'shaX',
+        name: 'tests',
+        pull_requests: [{ number: 9, head: { ref: 'feature/orphan' } }],
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer',
+    callTool: async (name) => {
+      if (name === 'resolve-work-item-by-branch') {
+        return { isError: false, structured: { found: false, work_item_id: null } };
+      }
+      throw new Error(`unexpected call to ${name}`);
+    },
     log: silentLog(),
   });
 
