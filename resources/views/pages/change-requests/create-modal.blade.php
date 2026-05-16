@@ -16,7 +16,6 @@ new class extends Component {
     public string $description = '';
     public string $rationale = '';
     public string $category = 'scope';
-    public string $status = 'proposed';
     public string $priority = 'medium';
     public ?string $requester_role_id = null;
     public ?string $review_id = null;
@@ -55,7 +54,6 @@ new class extends Component {
             'description' => ['nullable', 'string'],
             'rationale' => ['nullable', 'string'],
             'category' => ['required', Rule::in(ChangeRequest::CATEGORIES)],
-            'status' => ['required', Rule::in(ChangeRequest::STATUSES)],
             'priority' => ['required', Rule::in(ChangeRequest::PRIORITIES)],
             'requester_role_id' => [
                 'nullable',
@@ -72,7 +70,6 @@ new class extends Component {
             'description' => $data['description'] ?: null,
             'rationale' => $data['rationale'] ?: null,
             'category' => $data['category'],
-            'status' => $data['status'],
             'priority' => $data['priority'],
             'requester_role_id' => $data['requester_role_id'] ?: null,
             'review_id' => $data['review_id'] ?: null,
@@ -96,15 +93,10 @@ new class extends Component {
         <flux:textarea wire:model="description" :label="__('Description')" rows="3" />
         <flux:textarea wire:model="rationale" :label="__('Rationale')" rows="2" />
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <flux:select wire:model="category" :label="__('Category')">
                 @foreach (\App\Models\ChangeRequest::CATEGORIES as $option)
                     <flux:select.option value="{{ $option }}">{{ $option }}</flux:select.option>
-                @endforeach
-            </flux:select>
-            <flux:select wire:model="status" :label="__('Status')">
-                @foreach (\App\Models\ChangeRequest::STATUSES as $option)
-                    <flux:select.option value="{{ $option }}">{{ str_replace('_', ' ', $option) }}</flux:select.option>
                 @endforeach
             </flux:select>
             <flux:select wire:model="priority" :label="__('Priority')">
