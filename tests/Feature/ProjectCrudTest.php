@@ -65,6 +65,59 @@ test('owner can edit a project', function () {
         ->rigor_level->toBe(4);
 });
 
+test('owner can bind a github repo to a project', function () {
+    $project = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Bound',
+        'rigor_level' => 2,
+    ]);
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::projects.edit-modal')
+        ->call('load', $project->id)
+        ->set('github_repo', 'datashaman/growth')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($project->fresh()->github_repo)->toBe('datashaman/growth');
+});
+
+test('edit rejects a malformed github repo', function () {
+    $project = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Malformed',
+        'rigor_level' => 2,
+    ]);
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::projects.edit-modal')
+        ->call('load', $project->id)
+        ->set('github_repo', 'not-a-repo')
+        ->call('save')
+        ->assertHasErrors('github_repo');
+});
+
+test('edit rejects a github repo already bound to another project', function () {
+    Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'First',
+        'rigor_level' => 2,
+        'github_repo' => 'datashaman/growth',
+    ]);
+    $project = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Second',
+        'rigor_level' => 2,
+    ]);
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::projects.edit-modal')
+        ->call('load', $project->id)
+        ->set('github_repo', 'datashaman/growth')
+        ->call('save')
+        ->assertHasErrors('github_repo');
+});
+
 test('project edit 404s for another owner', function () {
     $bob = User::factory()->create();
     $bobProject = Project::create([

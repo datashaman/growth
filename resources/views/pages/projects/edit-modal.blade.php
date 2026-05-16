@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Project;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -11,6 +12,7 @@ new class extends Component {
 
     public string $name = '';
     public string $description = '';
+    public string $github_repo = '';
     public int $rigor_level = 2;
 
     #[On('edit-project')]
@@ -23,6 +25,7 @@ new class extends Component {
         $this->projectId = $projectId;
         $this->name = $project->name;
         $this->description = (string) $project->description;
+        $this->github_repo = (string) $project->github_repo;
         $this->rigor_level = $project->rigor_level;
 
         $this->modal('edit-project')->show();
@@ -37,12 +40,20 @@ new class extends Component {
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'github_repo' => [
+                'nullable',
+                'string',
+                'max:255',
+                'regex:/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/',
+                Rule::unique('projects', 'github_repo')->ignore($project->id),
+            ],
             'rigor_level' => ['required', 'integer', 'between:1,4'],
         ]);
 
         $project->update([
             'name' => $data['name'],
             'description' => $data['description'] ?: null,
+            'github_repo' => $data['github_repo'] ?: null,
             'rigor_level' => $data['rigor_level'],
         ]);
 
@@ -60,6 +71,12 @@ new class extends Component {
         <flux:input wire:model="name" :label="__('Name')" required />
 
         <flux:textarea wire:model="description" :label="__('Description')" rows="3" />
+
+        <flux:input
+            wire:model="github_repo"
+            :label="__('GitHub repository')"
+            :description="__('Format owner/repo. Links this project to a GitHub repo for the sync workflow.')"
+            placeholder="owner/repo" />
 
         <flux:select wire:model="rigor_level" :label="__('Rigor level')" :description="__('1 = lowest rigor, 4 = highest. Drives readiness gates and review depth.')">
             <flux:select.option value="1">{{ __('1 — Minimal rigor') }}</flux:select.option>
