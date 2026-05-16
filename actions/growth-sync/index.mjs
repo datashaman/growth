@@ -5,6 +5,10 @@
 
 const TRAILER_KEY = 'Growth-Work-Item';
 
+// Name of the GitHub check growth-sync posts back to a pull request to
+// make a missed work item attribution loud instead of silent.
+const ATTRIBUTION_CHECK_NAME = 'Growth: work item attribution';
+
 /**
  * Extract the work item id from a commit message's `Growth-Work-Item:`
  * trailer. The last matching trailer wins, per git trailer convention.
@@ -180,11 +184,74 @@ export function mapDeploymentState(githubState) {
 }
 
 /**
+ * Build the GitHub check-run payload for the work item attribution check.
+ * A resolved work item passes; an unresolved one fails (blocking) or is
+ * flagged neutral (advisory), with output naming the two ways to fix it.
+ */
+export function buildAttributionCheckArgs({ headSha, workItemId, branch, advisory }) {
+  const resolved = workItemId !== null && workItemId !== undefined;
+  const output = resolved
+    ? {
+        title: `Attributed to work item ${workItemId}`,
+        summary: `This pull request's commits are attributed to Growth work item ${workItemId}.`,
+      }
+    : {
+        title: 'No Growth work item resolved',
+        summary: [
+          'growth-sync could not attribute this pull request to a Growth work item, ',
+          'so its delivery evidence will not be recorded.',
+          '\n\nFix it one of two ways:\n',
+          `- Add a \`${TRAILER_KEY}: <id>\` trailer to a commit on \`${branch ?? 'this branch'}\`, or\n`,
+          '- Bind the branch to a work item with the `upsert-delivery-link` MCP tool (type `branch`).',
+          '\n\nRe-run this workflow once the link exists and the check will pass.',
+        ].join(''),
+      };
+
+  return {
+    name: ATTRIBUTION_CHECK_NAME,
+    head_sha: headSha,
+    status: 'completed',
+    conclusion: resolved ? 'success' : (advisory ? 'neutral' : 'failure'),
+    output,
+  };
+}
+
+/**
+ * Post the work item attribution check back to the pull request. Skipped
+ * for closed PRs (the merge already happened) and for fork PRs (their
+ * GITHUB_TOKEN is read-only, so the Checks API POST would 403). A failed
+ * post is logged, not thrown, so it never fails the whole sync.
+ */
+async function reportAttribution({ event, repository, workItemId, branch, postCheckRun, advisory, log }) {
+  if (!postCheckRun || event.action === 'closed') {
+    return;
+  }
+
+  const pr = event.pull_request ?? {};
+  const headSha = pr.head?.sha;
+  if (!headSha) {
+    return;
+  }
+  if (pr.head?.repo?.full_name && pr.head.repo.full_name !== repository) {
+    log.info('Pull request is from a fork; skipping the attribution check.');
+    return;
+  }
+
+  const args = buildAttributionCheckArgs({ headSha, workItemId, branch, advisory });
+  try {
+    await postCheckRun(args);
+    log.info(`Posted "${ATTRIBUTION_CHECK_NAME}" check (${args.conclusion}) on ${headSha}.`);
+  } catch (error) {
+    log.warn(`Could not post the attribution check: ${error.message}`);
+  }
+}
+
+/**
  * Orchestrate one pull_request event. A missing trailer or an unmerged
  * close is logged and skipped; a rejected tool call throws so the
  * workflow fails rather than silently passing.
  */
-async function runPullRequest({ event, repository, getCommitMessage, callTool, log }) {
+async function runPullRequest({ event, repository, getCommitMessage, callTool, postCheckRun, attributionCheckAdvisory, log }) {
   const sha = resolveCommitSha(event);
   if (sha === null) {
     log.warn('Pull request closed without merging; nothing to record.');
@@ -194,6 +261,17 @@ async function runPullRequest({ event, repository, getCommitMessage, callTool, l
   const branch = resolveEventBranch('pull_request', event);
   const commitMessage = await getCommitMessage(sha);
   const workItemId = await attributeWorkItem({ callTool, repository, commitMessage, branch, sha, log });
+
+  await reportAttribution({
+    event,
+    repository,
+    workItemId,
+    branch,
+    postCheckRun,
+    advisory: attributionCheckAdvisory,
+    log,
+  });
+
   if (workItemId === null) {
     return { skipped: true };
   }
@@ -213,6 +291,13 @@ async function runPullRequest({ event, repository, getCommitMessage, callTool, l
  * it if the PR event has not been seen yet) then record check evidence.
  */
 async function runCheckRun({ event, repository, getCommitMessage, callTool, log }) {
+  // growth-sync posts its own attribution check; ingesting it would record
+  // the check as evidence of itself, so skip it.
+  if (event.check_run?.name === ATTRIBUTION_CHECK_NAME) {
+    log.info('Check run is growth-sync\'s own attribution check; skipping.');
+    return { skipped: true };
+  }
+
   const pullRequest = resolveCheckRunPullRequest(event);
   if (pullRequest === null) {
     log.warn('Check run has no associated pull request; skipping.');
@@ -468,6 +553,29 @@ function makeGitHubClient({ apiUrl, repository, token, fetchFn }) {
 }
 
 /**
+ * Post a check run to a repository via the GitHub Checks API. Used to
+ * surface the work item attribution result back onto the pull request.
+ */
+function makeCheckRunPoster({ apiUrl, repository, token, fetchFn }) {
+  return async function postCheckRun(args) {
+    const response = await fetchFn(`${apiUrl}/repos/${repository}/check-runs`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'growth-sync',
+      },
+      body: JSON.stringify(args),
+    });
+    if (!response.ok) {
+      throw new Error(`GitHub API ${response.status} posting check run`);
+    }
+    return response.json();
+  };
+}
+
+/**
  * Call a Growth MCP tool over the stateless HTTP transport. Protocol-level
  * JSON-RPC errors throw; tool-level errors are returned as { isError }.
  */
@@ -520,8 +628,15 @@ async function main() {
   const { readFile } = await import('node:fs/promises');
   const event = JSON.parse(await readFile(GITHUB_EVENT_PATH, 'utf8'));
 
+  const apiUrl = process.env.GITHUB_API_URL ?? 'https://api.github.com';
   const getCommitMessage = makeGitHubClient({
-    apiUrl: process.env.GITHUB_API_URL ?? 'https://api.github.com',
+    apiUrl,
+    repository: GITHUB_REPOSITORY,
+    token: githubToken,
+    fetchFn: fetch,
+  });
+  const postCheckRun = makeCheckRunPoster({
+    apiUrl,
     repository: GITHUB_REPOSITORY,
     token: githubToken,
     fetchFn: fetch,
@@ -533,6 +648,8 @@ async function main() {
     event,
     repository: GITHUB_REPOSITORY,
     getCommitMessage,
+    postCheckRun,
+    attributionCheckAdvisory: process.env.GROWTH_ATTRIBUTION_CHECK === 'advisory',
     callTool,
     log: { info: (m) => console.log(m), warn: (m) => console.warn(m) },
   });

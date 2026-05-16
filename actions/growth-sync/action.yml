@@ -9,9 +9,13 @@ inputs:
     description: Passport personal access token with the mcp:use scope.
     required: true
   github-token:
-    description: Token used to read commit messages via the GitHub REST API.
+    description: Token used to read commit messages and post the attribution check via the GitHub REST API. Needs the checks:write permission.
     required: false
     default: ${{ github.token }}
+  attribution-check:
+    description: 'How an unattributed pull request is reported: "blocking" fails the Growth attribution check, "advisory" reports it as neutral.'
+    required: false
+    default: blocking
 
 runs:
   using: composite
@@ -22,3 +26,4 @@ runs:
         GROWTH_URL: ${{ inputs.growth-url }}
         GROWTH_TOKEN: ${{ inputs.growth-token }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
+        GROWTH_ATTRIBUTION_CHECK: ${{ inputs.attribution-check }}
