@@ -5,7 +5,6 @@ namespace App\Mcp\Tools\Plan;
 use App\Models\Release;
 use App\Models\WorkItem;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -21,12 +20,7 @@ class UpsertRelease extends Tool
         $data = $request->validate([
             'id' => 'nullable|string|owned_release',
             'project_id' => 'required|string|owned_project',
-            'version' => [
-                'required', 'string', 'max:120',
-                Rule::unique('releases', 'version')
-                    ->where('project_id', $request->get('project_id'))
-                    ->ignore($request->get('id')),
-            ],
+            'version' => 'required|string|max:120',
             'name' => 'nullable|string|max:255',
             'status' => 'nullable|in:'.implode(',', Release::STATUSES),
             'released_at' => 'nullable|date',
@@ -47,7 +41,10 @@ class UpsertRelease extends Tool
 
         $release = $id
             ? tap(Release::findOrFail($id))->update($data)
-            : Release::create($data);
+            : Release::updateOrCreate([
+                'project_id' => $data['project_id'],
+                'version' => $data['version'],
+            ], $data);
 
         if ($workItemIds !== null) {
             $release->workItems()->sync($workItemIds);

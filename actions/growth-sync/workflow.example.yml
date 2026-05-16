@@ -10,6 +10,8 @@ on:
   check_run:
     types: [completed]
   deployment_status:
+  release:
+    types: [published]
 
 jobs:
   sync:
