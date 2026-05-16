@@ -35,7 +35,7 @@ new #[Title('Changes')] class extends Component {
     {
         return $this->selectedProject?->changeRequests()
             ->with(['requesterRole', 'review'])
-            ->orderBy('created_at', 'desc')
+            ->orderByDesc('number')
             ->get()
             ?? collect();
     }

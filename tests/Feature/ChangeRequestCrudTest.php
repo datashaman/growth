@@ -187,3 +187,27 @@ test('changes page sidebar item is reachable', function () {
         ->assertOk()
         ->assertSee('Changes');
 });
+
+test('changes page lists change requests by number, not creation time', function () {
+    $this->actingAs($this->user);
+
+    // Numbers are assigned sequentially. Force created_at into the opposite
+    // order so a created_at sort would produce the wrong sequence — the list
+    // must follow the deterministic CR-NNN number instead.
+    $one = $this->project->changeRequests()->create(['title' => 'One', 'category' => 'scope']);
+    $two = $this->project->changeRequests()->create(['title' => 'Two', 'category' => 'scope']);
+    $three = $this->project->changeRequests()->create(['title' => 'Three', 'category' => 'scope']);
+
+    $one->forceFill(['created_at' => now()])->save();
+    $two->forceFill(['created_at' => now()->subDay()])->save();
+    $three->forceFill(['created_at' => now()->subDays(2)])->save();
+
+    expect([$one->number, $two->number, $three->number])->toBe([1, 2, 3]);
+
+    Livewire::test('pages::changes')
+        ->assertSeeInOrder([
+            $three->reference(),
+            $two->reference(),
+            $one->reference(),
+        ]);
+});
