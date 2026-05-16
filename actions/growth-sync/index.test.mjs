@@ -6,10 +6,12 @@ import {
   buildDeliveryLinkArgs,
   buildDeploymentArgs,
   buildReleaseArgs,
+  buildWorkflowRunArgs,
   mapDeploymentState,
   parseTrailer,
   resolveCheckRunPullRequest,
   resolveCommitSha,
+  resolveWorkflowRunPullRequest,
   run,
 } from './index.mjs';
 
@@ -363,6 +365,123 @@ test('run skips a deployment whose repo has no bound project', async () => {
   });
 
   assert.equal(result.skipped, true);
+});
+
+test('resolveWorkflowRunPullRequest returns the first PR or null', () => {
+  assert.deepEqual(
+    resolveWorkflowRunPullRequest({ workflow_run: { pull_requests: [{ number: 8 }, { number: 9 }] } }),
+    { number: 8 },
+  );
+  assert.equal(resolveWorkflowRunPullRequest({ workflow_run: { pull_requests: [] } }), null);
+  assert.equal(resolveWorkflowRunPullRequest({ workflow_run: {} }), null);
+});
+
+test('buildWorkflowRunArgs maps a workflow_run payload to upsert-check-run arguments', () => {
+  const event = {
+    workflow_run: {
+      id: 777,
+      name: 'CI',
+      status: 'completed',
+      conclusion: 'success',
+      html_url: 'https://github.com/o/r/actions/runs/777',
+      run_started_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:06:00Z',
+    },
+  };
+  assert.deepEqual(buildWorkflowRunArgs(event, 'link1'), {
+    work_item_delivery_link_id: 'link1',
+    provider: 'github-actions',
+    name: 'CI',
+    run_ref: '777',
+    status: 'completed',
+    conclusion: 'success',
+    url: 'https://github.com/o/r/actions/runs/777',
+    started_at: '2026-01-01T00:00:00Z',
+    completed_at: '2026-01-01T00:06:00Z',
+  });
+});
+
+function workflowRunEvent() {
+  return {
+    action: 'completed',
+    workflow_run: {
+      id: 777,
+      name: 'CI',
+      status: 'completed',
+      conclusion: 'success',
+      html_url: 'https://github.com/o/r/actions/runs/777',
+      head_sha: 'wrsha',
+      head_repository: { full_name: 'fork/repo' },
+      pull_requests: [{ number: 8 }],
+    },
+  };
+}
+
+test('run records a workflow run against the PR delivery link on the happy path', async () => {
+  const calls = [];
+  const result = await run({
+    eventName: 'workflow_run',
+    event: workflowRunEvent(),
+    repository: 'datashaman/growth',
+    getCommitMessage: async (sha, repositoryOverride) => {
+      assert.equal(sha, 'wrsha');
+      assert.equal(repositoryOverride, 'fork/repo');
+      return 'Work\n\nGrowth-Work-Item: 01WI';
+    },
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      return name === 'upsert-delivery-link'
+        ? { isError: false, structured: { id: 'link1' } }
+        : { isError: false, structured: { id: 'check1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, false);
+  assert.deepEqual(calls.map((c) => c.name), ['upsert-delivery-link', 'upsert-check-run']);
+  assert.equal(calls[0].args.ref, '#8');
+  assert.equal(calls[0].args.url, 'https://github.com/datashaman/growth/pull/8');
+  assert.equal(calls[1].args.work_item_delivery_link_id, 'link1');
+  assert.equal(calls[1].args.conclusion, 'success');
+});
+
+test('run skips a workflow run with no associated pull request', async () => {
+  let called = false;
+  const event = workflowRunEvent();
+  event.workflow_run.pull_requests = [];
+
+  const result = await run({
+    eventName: 'workflow_run',
+    event,
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'Growth-Work-Item: 01WI',
+    callTool: async () => {
+      called = true;
+      return { isError: false };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+  assert.equal(called, false);
+});
+
+test('run skips a workflow run whose commit has no trailer', async () => {
+  let called = false;
+  const result = await run({
+    eventName: 'workflow_run',
+    event: workflowRunEvent(),
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer',
+    callTool: async () => {
+      called = true;
+      return { isError: false };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+  assert.equal(called, false);
 });
 
 test('buildReleaseArgs maps a release payload to upsert-release arguments', () => {

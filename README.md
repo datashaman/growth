@@ -69,9 +69,9 @@ The `readonly` and `all` servers also expose `show-project-dashboard`, an MCP ap
 ## GitHub Sync
 
 The `growth-sync` GitHub Action mirrors a repository's delivery activity into
-Growth: pull requests become delivery links, check runs become check
-evidence, and deployments and published releases become deployment and
-release records on the bound project.
+Growth: pull requests become delivery links, CI runs become check evidence,
+and deployments and published releases become deployment and release records
+on the bound project.
 
 ### Install in an adopter repository
 
@@ -84,10 +84,26 @@ release records on the bound project.
    `${{ vars.GROWTH_URL }}` repository variable keeps the URL out of the repo).
 5. In Growth, set the project's `github_repo` field to the repository in
    `owner/repo` form so deployment and release events resolve to it.
+6. If your CI runs on GitHub Actions, edit the `workflow_run.workflows` list
+   in the copied workflow to name your CI workflow(s) — see CI sync below.
+
+### CI sync
+
+CI runs are recorded as check evidence through two triggers:
+
+- `workflow_run` — for **GitHub Actions** CI. GitHub does not deliver
+  `check_run` events for checks its own Actions create, so Actions CI is
+  captured here instead. The `workflow_run.workflows` list names the CI
+  workflow(s) to watch; it cannot wildcard, so each adopter must edit it.
+- `check_run` — for **third-party CI** (CircleCI, Buildkite, ...) whose
+  checks are created by their own GitHub Apps.
+
+Both resolve the PR from the event payload; runs triggered by fork pull
+requests carry no PR reference and are skipped.
 
 ### Trailer convention
 
-Pull request and check run sync find the work item from a `Growth-Work-Item:`
+Pull request and CI sync find the work item from a `Growth-Work-Item:`
 git trailer on the commit. Add it to the commit a PR carries:
 
 ```
@@ -108,7 +124,8 @@ present. Commits without the trailer are skipped, not errored.
 | `github-token` | no       | Defaults to `${{ github.token }}` for commit reads. |
 
 The workflow triggers on `pull_request` (`opened`, `synchronize`, `closed`),
-`check_run` (`completed`), `deployment_status`, and `release` (`published`).
+`check_run` (`completed`), `workflow_run` (`completed`), `deployment_status`,
+and `release` (`published`).
 
 ## Contributing
 
