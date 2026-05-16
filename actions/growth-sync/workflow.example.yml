@@ -9,7 +9,15 @@ name: Growth sync
 on:
   pull_request:
     types: [opened, synchronize, closed]
+  # check_run fires only for third-party CI (CircleCI, Buildkite, ...).
+  # GitHub Actions CI is captured by workflow_run below instead.
   check_run:
+    types: [completed]
+  # EDIT: list your GitHub Actions CI workflow name(s). This trigger
+  # cannot wildcard, and growth-sync runs from the repository default
+  # branch. Omit this block if your CI is not GitHub Actions.
+  workflow_run:
+    workflows: [CI]
     types: [completed]
   deployment_status:
   release:

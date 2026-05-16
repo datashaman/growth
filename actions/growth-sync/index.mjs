@@ -165,6 +165,77 @@ async function runCheckRun({ event, repository, getCommitMessage, callTool, log 
 }
 
 /**
+ * The first pull request a workflow_run belongs to, or null. GitHub leaves
+ * this empty for runs triggered by fork pull requests.
+ */
+export function resolveWorkflowRunPullRequest(event) {
+  const pullRequests = event.workflow_run?.pull_requests ?? [];
+  return pullRequests.length > 0 ? pullRequests[0] : null;
+}
+
+/**
+ * Build the upsert-check-run arguments from a workflow_run event. A whole
+ * GitHub Actions run maps to one check record — coarser than check_run,
+ * but check_run events never fire for Actions-authored checks.
+ */
+export function buildWorkflowRunArgs(event, deliveryLinkId) {
+  const run = event.workflow_run ?? {};
+  return {
+    work_item_delivery_link_id: deliveryLinkId,
+    provider: 'github-actions',
+    name: run.name,
+    run_ref: run.id != null ? String(run.id) : undefined,
+    status: run.status,
+    conclusion: run.conclusion ?? undefined,
+    url: run.html_url ?? undefined,
+    started_at: run.run_started_at ?? undefined,
+    completed_at: run.updated_at ?? undefined,
+  };
+}
+
+/**
+ * Orchestrate one workflow_run event: resolve the PR's delivery link
+ * (creating it if the PR event has not been seen yet) then record the
+ * run as check evidence. This is the GitHub Actions counterpart to
+ * runCheckRun, which only fires for third-party CI providers.
+ */
+async function runWorkflowRun({ event, repository, getCommitMessage, callTool, log }) {
+  const pullRequest = resolveWorkflowRunPullRequest(event);
+  if (pullRequest === null) {
+    log.warn('Workflow run has no associated pull request; skipping.');
+    return { skipped: true };
+  }
+
+  const run = event.workflow_run ?? {};
+  const commitMessage = await getCommitMessage(run.head_sha, run.head_repository?.full_name);
+  const workItemId = parseTrailer(commitMessage);
+  if (workItemId === null) {
+    log.warn(`No ${TRAILER_KEY} trailer on commit ${run.head_sha}; skipping.`);
+    return { skipped: true };
+  }
+
+  const linkArgs = {
+    work_item_id: workItemId,
+    type: 'pull_request',
+    ref: `#${pullRequest.number}`,
+    url: `https://github.com/${repository}/pull/${pullRequest.number}`,
+  };
+  const linkResult = await callTool('upsert-delivery-link', linkArgs);
+  if (linkResult.isError) {
+    throw new Error(`Growth rejected the delivery link: ${linkResult.errorText}`);
+  }
+
+  const checkArgs = buildWorkflowRunArgs(event, linkResult.structured?.id);
+  const checkResult = await callTool('upsert-check-run', checkArgs);
+  if (checkResult.isError) {
+    throw new Error(`Growth rejected the check run: ${checkResult.errorText}`);
+  }
+
+  log.info(`Recorded workflow run "${checkArgs.name}" (${checkArgs.conclusion ?? checkArgs.status}) on ${linkArgs.ref}.`);
+  return { skipped: false, structured: checkResult.structured };
+}
+
+/**
  * Build the upsert-deployment arguments from a deployment_status event.
  * provider + external_ref make the upsert idempotent across the multiple
  * deployment_status events GitHub fires for one deployment.
@@ -268,6 +339,9 @@ export async function run(context) {
   if (context.eventName === 'check_run') {
     return runCheckRun(context);
   }
+  if (context.eventName === 'workflow_run') {
+    return runWorkflowRun(context);
+  }
   if (context.eventName === 'deployment_status') {
     return runDeployment(context);
   }
@@ -281,10 +355,13 @@ export async function run(context) {
 
 /**
  * Fetch a commit message from the GitHub REST API. One request, no clone.
+ * `repositoryOverride` targets a fork when the commit lives outside the
+ * base repository — workflow_run events carry head_repository for this.
  */
 function makeGitHubClient({ apiUrl, repository, token, fetchFn }) {
-  return async function getCommitMessage(sha) {
-    const response = await fetchFn(`${apiUrl}/repos/${repository}/commits/${sha}`, {
+  return async function getCommitMessage(sha, repositoryOverride) {
+    const repo = repositoryOverride ?? repository;
+    const response = await fetchFn(`${apiUrl}/repos/${repo}/commits/${sha}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/vnd.github+json',
