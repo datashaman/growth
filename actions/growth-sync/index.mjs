@@ -79,6 +79,23 @@ export function buildCheckRunArgs(event, deliveryLinkId) {
 }
 
 /**
+ * Map a GitHub deployment_status state to a Growth deployment status.
+ * Returns null for states Growth does not record (pending, in_progress,
+ * queued, inactive) so the caller can skip them.
+ */
+export function mapDeploymentState(githubState) {
+  switch (githubState) {
+    case 'success':
+      return 'succeeded';
+    case 'failure':
+    case 'error':
+      return 'failed';
+    default:
+      return null;
+  }
+}
+
+/**
  * Orchestrate one pull_request event. Never throws for a missing trailer
  * or an unresolvable work item — it logs a warning and skips.
  */
@@ -150,6 +167,59 @@ async function runCheckRun({ event, repository, getCommitMessage, callTool, log 
 }
 
 /**
+ * Build the upsert-deployment arguments from a deployment_status event.
+ * provider + external_ref make the upsert idempotent across the multiple
+ * deployment_status events GitHub fires for one deployment.
+ */
+export function buildDeploymentArgs(event, projectId, status) {
+  const deployment = event.deployment ?? {};
+  const deploymentStatus = event.deployment_status ?? {};
+  return {
+    project_id: projectId,
+    environment: deploymentStatus.environment ?? deployment.environment,
+    status,
+    provider: 'github',
+    external_ref: String(deployment.id),
+    url: deploymentStatus.environment_url || deploymentStatus.target_url || undefined,
+    deployed_at: deploymentStatus.created_at ?? undefined,
+  };
+}
+
+/**
+ * Orchestrate one deployment_status event: resolve the repository's Growth
+ * project, then upsert the deployment. Unmapped states and unbound repos
+ * are logged and skipped.
+ */
+async function runDeployment({ event, repository, callTool, log }) {
+  const status = mapDeploymentState(event.deployment_status?.state);
+  if (status === null) {
+    log.info(`Deployment state ${event.deployment_status?.state} is not recorded; skipping.`);
+    return { skipped: true };
+  }
+
+  const resolved = await callTool('resolve-project-by-repo', { github_repo: repository });
+  if (resolved.isError) {
+    log.warn(`Growth rejected the repo lookup: ${resolved.errorText}; skipping.`);
+    return { skipped: true };
+  }
+  const projectId = resolved.structured?.project_id;
+  if (!resolved.structured?.found || !projectId) {
+    log.warn(`No Growth project bound to ${repository}; skipping.`);
+    return { skipped: true };
+  }
+
+  const args = buildDeploymentArgs(event, projectId, status);
+  const result = await callTool('upsert-deployment', args);
+  if (result.isError) {
+    log.warn(`Growth rejected the deployment: ${result.errorText}; skipping.`);
+    return { skipped: true };
+  }
+
+  log.info(`Recorded ${status} deployment to ${args.environment} on project ${projectId}.`);
+  return { skipped: false, structured: result.structured };
+}
+
+/**
  * Dispatch a GitHub event to its handler. Dependencies are injected so the
  * handlers are testable without network access.
  */
@@ -159,6 +229,9 @@ export async function run(context) {
   }
   if (context.eventName === 'check_run') {
     return runCheckRun(context);
+  }
+  if (context.eventName === 'deployment_status') {
+    return runDeployment(context);
   }
 
   context.log.info(`Event ${context.eventName} is not handled; skipping.`);
