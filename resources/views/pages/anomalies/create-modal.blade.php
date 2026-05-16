@@ -14,7 +14,6 @@ new class extends Component {
     public string $summary = '';
     public string $description = '';
     public string $severity = 'medium';
-    public string $status = 'open';
     public string $environment = '';
 
     public function mount(?string $projectId = null): void
@@ -38,7 +37,6 @@ new class extends Component {
             'summary' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
             'severity' => ['required', Rule::in(Anomaly::SEVERITIES)],
-            'status' => ['required', Rule::in(Anomaly::STATUSES)],
             'environment' => ['nullable', 'string'],
         ]);
 
@@ -65,19 +63,11 @@ new class extends Component {
 
         <flux:textarea wire:model="description" :label="__('Description')" rows="4" required />
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <flux:select wire:model="severity" :label="__('Severity')">
-                @foreach (\App\Models\Anomaly::SEVERITIES as $option)
-                    <flux:select.option value="{{ $option }}">{{ $option }}</flux:select.option>
-                @endforeach
-            </flux:select>
-
-            <flux:select wire:model="status" :label="__('Status')">
-                @foreach (\App\Models\Anomaly::STATUSES as $option)
-                    <flux:select.option value="{{ $option }}">{{ $option }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        </div>
+        <flux:select wire:model="severity" :label="__('Severity')">
+            @foreach (\App\Models\Anomaly::SEVERITIES as $option)
+                <flux:select.option value="{{ $option }}">{{ $option }}</flux:select.option>
+            @endforeach
+        </flux:select>
 
         <flux:input wire:model="environment" :label="__('Environment')" :placeholder="__('e.g. staging, prod, hardware rev B')" />
 

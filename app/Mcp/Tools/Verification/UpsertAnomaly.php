@@ -11,7 +11,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Create or update an anomaly found during verification or delivery.')]
+#[Description('Create or update an anomaly found during verification or delivery. New anomalies start as `open`; status is not set here — it moves only through the start-anomaly-investigation, resolve-anomaly, close-anomaly, and reopen-anomaly transitions.')]
 class UpsertAnomaly extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -21,12 +21,14 @@ class UpsertAnomaly extends Tool
             'project_id' => 'required|string|owned_project',
             'test_run_id' => 'nullable|string|owned_test_run',
             'severity' => 'required|string|in:'.implode(',', Anomaly::SEVERITIES),
-            'status' => 'nullable|string|in:'.implode(',', Anomaly::STATUSES),
+            'status' => 'prohibited',
             'summary' => 'required|string|max:255',
             'description' => 'required|string',
             'environment' => 'nullable|string',
             'affects_requirement_ids' => 'nullable|array',
             'affects_requirement_ids.*' => 'string|owned_requirement',
+        ], [
+            'status.prohibited' => 'Anomaly status is not set here. Use the start-anomaly-investigation, resolve-anomaly, close-anomaly, and reopen-anomaly tools to move status through validated transitions.',
         ]);
 
         $id = $data['id'] ?? null;
@@ -34,7 +36,9 @@ class UpsertAnomaly extends Tool
         unset($data['id'], $data['affects_requirement_ids']);
 
         $anomaly = DB::transaction(function () use ($id, $data, $affectedIds) {
-            $anomaly = $id ? tap(Anomaly::findOrFail($id))->update($data) : Anomaly::create($data);
+            $anomaly = $id
+                ? tap(Anomaly::findOrFail($id))->update($data)
+                : Anomaly::create($data + ['status' => 'open']);
             if (is_array($affectedIds)) {
                 $anomaly->affectedRequirements()->sync($affectedIds);
             }
@@ -58,7 +62,6 @@ class UpsertAnomaly extends Tool
             'project_id' => $schema->string()->description('Project ULID')->required(),
             'test_run_id' => $schema->string()->description('Verification run ULID that surfaced this anomaly'),
             'severity' => $schema->string()->description('Anomaly severity')->enum(Anomaly::SEVERITIES)->required(),
-            'status' => $schema->string()->description('Lifecycle status')->enum(Anomaly::STATUSES),
             'summary' => $schema->string()->description('Short summary')->required(),
             'description' => $schema->string()->description('Full description')->required(),
             'environment' => $schema->string()->description('Where it was observed'),
