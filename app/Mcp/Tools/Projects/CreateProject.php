@@ -21,7 +21,7 @@ class CreateProject extends Tool
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'rigor_level' => 'nullable|integer|between:1,4',
-            'status' => 'nullable|in:'.implode(',', Project::STATUSES),
+            'status' => 'nullable|in:draft,active',
             'github_repo' => ['nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/', Rule::unique('projects', 'github_repo')],
         ]);
 
@@ -51,8 +51,8 @@ class CreateProject extends Tool
             'rigor_level' => $schema->integer()
                 ->description('Project rigor level (1–4, default 2). Higher levels activate stricter linter rules: L2 requires milestones + work items; L3 adds RACI roles, plan baseline, recorded reviews, and acceptance criteria on all requirements; L4 is the ceiling (no rules unique to it today). Full activation table at `growth://rigor-levels`.'),
             'status' => $schema->string()
-                ->description('Project lifecycle status. Defaults to `active`. `draft` for in-progress setup, `active` for ongoing work, `archived` and `closed` are read-only (only status can change after).')
-                ->enum(Project::STATUSES),
+                ->description('Initial project lifecycle status — `draft` for in-progress setup or `active` for ongoing work (default `active`). After creation, status moves only through the activate-project, archive-project, close-project, and restore-project transitions.')
+                ->enum(['draft', 'active']),
             'github_repo' => $schema->string()
                 ->description('GitHub repository bound to this project, in owner/repo form. Lets the growth-sync action resolve deployment and release events to this project.'),
         ];
