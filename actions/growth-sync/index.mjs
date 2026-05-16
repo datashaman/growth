@@ -21,6 +21,84 @@ export function parseTrailer(commitMessage) {
 }
 
 /**
+ * The branch a GitHub event belongs to, or null. pull_request carries it
+ * directly; check_run and workflow_run take it from the head pull request.
+ * The branch is what binds trailer-less commits to a work item.
+ */
+export function resolveEventBranch(eventName, event, pullRequest = null) {
+  if (eventName === 'pull_request') {
+    return event.pull_request?.head?.ref ?? null;
+  }
+  if (eventName === 'check_run') {
+    return pullRequest?.head?.ref ?? event.check_run?.check_suite?.head_branch ?? null;
+  }
+  if (eventName === 'workflow_run') {
+    return event.workflow_run?.head_branch ?? null;
+  }
+  return null;
+}
+
+/**
+ * Resolve a work item for a trailer-less commit by looking up a branch
+ * delivery link. Returns the work item id, or null when nothing is bound.
+ */
+async function resolveWorkItemByBranch({ callTool, repository, branch }) {
+  if (!branch) {
+    return null;
+  }
+  const result = await callTool('resolve-work-item-by-branch', {
+    github_repo: repository,
+    branch,
+  });
+  if (result.isError) {
+    throw new Error(`Growth rejected the branch lookup: ${result.errorText}`);
+  }
+  return result.structured?.found ? result.structured.work_item_id : null;
+}
+
+/**
+ * Record a branch delivery link so later events on the same branch whose
+ * commits lack a trailer still attribute to this work item. Idempotent on
+ * (work_item_id, type, ref).
+ */
+async function recordBranchBinding({ callTool, repository, workItemId, branch }) {
+  const result = await callTool('upsert-delivery-link', {
+    work_item_id: workItemId,
+    type: 'branch',
+    ref: branch,
+    url: `https://github.com/${repository}/tree/${branch}`,
+  });
+  if (result.isError) {
+    throw new Error(`Growth rejected the branch link: ${result.errorText}`);
+  }
+}
+
+/**
+ * Resolve a work item from a commit message, falling back to the branch
+ * binding when the commit carries no trailer. When the trailer resolves
+ * and a branch is known, the branch is bound so later trailer-less events
+ * still attribute. Returns the work item id, or null when unattributable.
+ */
+async function attributeWorkItem({ callTool, repository, commitMessage, branch, sha, log }) {
+  const trailerId = parseTrailer(commitMessage);
+  if (trailerId !== null) {
+    if (branch) {
+      await recordBranchBinding({ callTool, repository, workItemId: trailerId, branch });
+    }
+    return trailerId;
+  }
+
+  const branchId = await resolveWorkItemByBranch({ callTool, repository, branch });
+  if (branchId !== null) {
+    log.info(`Attributed commit ${sha} to work item ${branchId} via branch ${branch}.`);
+    return branchId;
+  }
+
+  log.warn(`No ${TRAILER_KEY} trailer on commit ${sha} and no work item bound to branch ${branch ?? '(unknown)'}; skipping.`);
+  return null;
+}
+
+/**
  * Decide which commit carries the trailer for a pull_request event:
  * the merge commit once the PR is merged, otherwise the head commit.
  * Returns null for a PR closed without merging — there is nothing to record.
@@ -100,17 +178,17 @@ export function mapDeploymentState(githubState) {
  * close is logged and skipped; a rejected tool call throws so the
  * workflow fails rather than silently passing.
  */
-async function runPullRequest({ event, getCommitMessage, callTool, log }) {
+async function runPullRequest({ event, repository, getCommitMessage, callTool, log }) {
   const sha = resolveCommitSha(event);
   if (sha === null) {
     log.warn('Pull request closed without merging; nothing to record.');
     return { skipped: true };
   }
 
+  const branch = resolveEventBranch('pull_request', event);
   const commitMessage = await getCommitMessage(sha);
-  const workItemId = parseTrailer(commitMessage);
+  const workItemId = await attributeWorkItem({ callTool, repository, commitMessage, branch, sha, log });
   if (workItemId === null) {
-    log.warn(`No ${TRAILER_KEY} trailer on commit ${sha}; skipping.`);
     return { skipped: true };
   }
 
@@ -135,11 +213,11 @@ async function runCheckRun({ event, repository, getCommitMessage, callTool, log 
     return { skipped: true };
   }
 
+  const branch = resolveEventBranch('check_run', event, pullRequest);
   const sha = event.check_run?.head_sha;
   const commitMessage = await getCommitMessage(sha);
-  const workItemId = parseTrailer(commitMessage);
+  const workItemId = await attributeWorkItem({ callTool, repository, commitMessage, branch, sha, log });
   if (workItemId === null) {
-    log.warn(`No ${TRAILER_KEY} trailer on commit ${sha}; skipping.`);
     return { skipped: true };
   }
 
@@ -207,10 +285,17 @@ async function runWorkflowRun({ event, repository, getCommitMessage, callTool, l
   }
 
   const run = event.workflow_run ?? {};
+  const branch = resolveEventBranch('workflow_run', event);
   const commitMessage = await getCommitMessage(run.head_sha, run.head_repository?.full_name);
-  const workItemId = parseTrailer(commitMessage);
+  const workItemId = await attributeWorkItem({
+    callTool,
+    repository,
+    commitMessage,
+    branch,
+    sha: run.head_sha,
+    log,
+  });
   if (workItemId === null) {
-    log.warn(`No ${TRAILER_KEY} trailer on commit ${run.head_sha}; skipping.`);
     return { skipped: true };
   }
 
