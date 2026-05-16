@@ -16,7 +16,7 @@ class RecordUnattributedEvent extends Tool
     public function handle(Request $request): ResponseFactory
     {
         $data = $request->validate([
-            'github_repo' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/'],
+            'github_repo' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/', 'owned_project_repo'],
             'event_type' => ['required', 'string', 'in:'.implode(',', UnattributedGithubEvent::EVENT_TYPES)],
             'branch' => ['nullable', 'string', 'max:255'],
             'commit_sha' => ['required', 'string', 'max:255'],
