@@ -93,6 +93,17 @@ class BadgeVariant
         };
     }
 
+    public static function projectStatus(string $status): string
+    {
+        return match ($status) {
+            'draft' => 'zinc',
+            'active' => 'green',
+            'archived' => 'amber',
+            'closed' => 'red',
+            default => 'zinc',
+        };
+    }
+
     public static function priority(?string $priority): string
     {
         return match ($priority) {
