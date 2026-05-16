@@ -21,7 +21,6 @@ test('owner can create an anomaly via the modal', function () {
         ->set('summary', 'Telemetry drift')
         ->set('description', 'Subsecond drift between burst windows.')
         ->set('severity', 'high')
-        ->set('status', 'open')
         ->set('environment', 'staging')
         ->call('save')
         ->assertHasNoErrors();
@@ -68,13 +67,13 @@ test('owner can edit an anomaly', function () {
     $this->actingAs($this->user);
 
     Livewire::test('pages::anomalies.edit-modal', ['anomalyId' => $anomaly->id])
-        ->set('status', 'resolved')
+        ->set('severity', 'high')
         ->set('description', 'Fixed via patch.')
         ->call('save')
         ->assertHasNoErrors();
 
     $anomaly->refresh();
-    expect($anomaly->status)->toBe('resolved')
+    expect($anomaly->severity)->toBe('high')
         ->and($anomaly->description)->toBe('Fixed via patch.');
 });
 

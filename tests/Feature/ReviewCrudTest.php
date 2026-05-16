@@ -22,7 +22,6 @@ test('owner can create a review', function () {
     Livewire::test('pages::reviews.create-modal', ['projectId' => $this->project->id])
         ->set('title', 'Heat shield design review')
         ->set('type', 'technical_review')
-        ->set('status', 'planned')
         ->set('owner_role_id', $role->id)
         ->set('objective', 'Confirm thermal margins.')
         ->set('entry_criteria_text', "Drawings released\nAnalysis complete")
@@ -97,14 +96,12 @@ test('owner can edit a review', function () {
         ->assertSet('title', 'Original')
         ->assertSet('entry_criteria_text', "A\nB")
         ->set('title', 'Updated')
-        ->set('status', 'held')
         ->set('decision', 'accepted')
         ->call('save')
         ->assertHasNoErrors();
 
     $review->refresh();
     expect($review->title)->toBe('Updated')
-        ->and($review->status)->toBe('held')
         ->and($review->decision)->toBe('accepted');
 });
 

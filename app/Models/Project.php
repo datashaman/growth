@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
 
 class Project extends Model
@@ -173,5 +174,10 @@ class Project extends Model
     public function deployments(): HasMany
     {
         return $this->hasMany(Deployment::class);
+    }
+
+    public function statusTransitions(): MorphMany
+    {
+        return $this->morphMany(StatusTransition::class, 'transitionable');
     }
 }

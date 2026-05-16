@@ -1,7 +1,16 @@
 <?php
 
+use App\Growth\Transitions\AcceptRisk;
+use App\Growth\Transitions\AssessRisk;
+use App\Growth\Transitions\CloseRisk;
+use App\Growth\Transitions\IllegalTransitionException;
+use App\Growth\Transitions\MarkRiskMitigated;
+use App\Growth\Transitions\MarkRiskRealized;
+use App\Growth\Transitions\StartRiskMitigation;
+use App\Growth\Transitions\Transition;
 use App\Models\Risk;
 use App\Support\BadgeVariant;
+use Flux\Flux;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -15,6 +24,53 @@ new class extends Component {
 
     #[Title('Risk')]
     public function rendering(): void {}
+
+    public function assessRisk(): void
+    {
+        $this->applyTransition(new AssessRisk);
+    }
+
+    public function startRiskMitigation(): void
+    {
+        $this->applyTransition(new StartRiskMitigation);
+    }
+
+    public function markRiskMitigated(): void
+    {
+        $this->applyTransition(new MarkRiskMitigated);
+    }
+
+    public function acceptRisk(): void
+    {
+        $this->applyTransition(new AcceptRisk);
+    }
+
+    public function markRiskRealized(): void
+    {
+        $this->applyTransition(new MarkRiskRealized);
+    }
+
+    public function closeRisk(): void
+    {
+        $this->applyTransition(new CloseRisk);
+    }
+
+    private function applyTransition(Transition $transition): void
+    {
+        try {
+            $transition->apply($this->risk, auth()->user());
+        } catch (IllegalTransitionException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        $this->risk = $this->risk->fresh(['ownerRole', 'project']);
+
+        Flux::toast(variant: 'success', text: __('Risk is now :status.', [
+            'status' => str_replace('_', ' ', $this->risk->status),
+        ]));
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -37,6 +93,24 @@ new class extends Component {
         </x-slot:description>
 
         <x-slot:actions>
+            @if (in_array($risk->status, ['identified'], true))
+                <flux:button size="sm" icon="magnifying-glass" variant="primary" wire:click="assessRisk">{{ __('Assess') }}</flux:button>
+            @endif
+            @if ($risk->status === 'assessed')
+                <flux:button size="sm" icon="play" variant="primary" wire:click="startRiskMitigation">{{ __('Start mitigation') }}</flux:button>
+            @endif
+            @if ($risk->status === 'mitigating')
+                <flux:button size="sm" icon="check" variant="primary" wire:click="markRiskMitigated">{{ __('Mark mitigated') }}</flux:button>
+            @endif
+            @if (in_array($risk->status, ['identified', 'assessed'], true))
+                <flux:button size="sm" icon="hand-raised" wire:click="acceptRisk">{{ __('Accept') }}</flux:button>
+            @endif
+            @if (! in_array($risk->status, ['realized', 'closed'], true))
+                <flux:button size="sm" icon="bolt" variant="danger" wire:click="markRiskRealized">{{ __('Mark realized') }}</flux:button>
+            @endif
+            @if (in_array($risk->status, ['mitigated', 'accepted', 'realized'], true))
+                <flux:button size="sm" icon="archive-box" wire:click="closeRisk">{{ __('Close') }}</flux:button>
+            @endif
             <flux:modal.trigger name="edit-risk">
                 <flux:button size="sm" icon="pencil-square" variant="primary">{{ __('Edit') }}</flux:button>
             </flux:modal.trigger>

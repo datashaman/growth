@@ -12,12 +12,20 @@ use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Common\BulkLink;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Lint\LintProject;
+use App\Mcp\Tools\Plan\AcceptRisk;
+use App\Mcp\Tools\Plan\ActivatePlan;
+use App\Mcp\Tools\Plan\AssessRisk;
 use App\Mcp\Tools\Plan\AssignRole;
 use App\Mcp\Tools\Plan\AssignWorkItemRaci;
 use App\Mcp\Tools\Plan\BaselinePlan;
+use App\Mcp\Tools\Plan\BlockWorkItem;
 use App\Mcp\Tools\Plan\CancelDeployment;
+use App\Mcp\Tools\Plan\CancelWorkItem;
+use App\Mcp\Tools\Plan\ClosePlan;
+use App\Mcp\Tools\Plan\CloseRisk;
 use App\Mcp\Tools\Plan\ComparePlanBaseline;
 use App\Mcp\Tools\Plan\CompleteWorkItem;
+use App\Mcp\Tools\Plan\DeferMilestone;
 use App\Mcp\Tools\Plan\DeleteAgent;
 use App\Mcp\Tools\Plan\DeleteDeployment;
 use App\Mcp\Tools\Plan\DeleteMilestone;
@@ -26,6 +34,7 @@ use App\Mcp\Tools\Plan\DeleteRelease;
 use App\Mcp\Tools\Plan\DeleteRisk;
 use App\Mcp\Tools\Plan\DeleteRole;
 use App\Mcp\Tools\Plan\DeleteWorkItem;
+use App\Mcp\Tools\Plan\HitMilestone;
 use App\Mcp\Tools\Plan\LinkWorkItemDependency;
 use App\Mcp\Tools\Plan\LinkWorkItemToMilestone;
 use App\Mcp\Tools\Plan\LinkWorkItemToRequirements;
@@ -41,14 +50,20 @@ use App\Mcp\Tools\Plan\ListRoles;
 use App\Mcp\Tools\Plan\ListWorkItems;
 use App\Mcp\Tools\Plan\MarkDeploymentFailed;
 use App\Mcp\Tools\Plan\MarkDeploymentSucceeded;
+use App\Mcp\Tools\Plan\MarkRiskMitigated;
+use App\Mcp\Tools\Plan\MarkRiskRealized;
+use App\Mcp\Tools\Plan\MissMilestone;
+use App\Mcp\Tools\Plan\ReopenWorkItem;
 use App\Mcp\Tools\Plan\RollBackDeployment;
 use App\Mcp\Tools\Plan\StartDeployment;
+use App\Mcp\Tools\Plan\StartRiskMitigation;
 use App\Mcp\Tools\Plan\StartWorkItem;
 use App\Mcp\Tools\Plan\SummarizeImplementationStatus;
 use App\Mcp\Tools\Plan\SummarizePlanCapacity;
 use App\Mcp\Tools\Plan\SummarizeScheduleHealth;
 use App\Mcp\Tools\Plan\UnassignRole;
 use App\Mcp\Tools\Plan\UnassignWorkItemRaci;
+use App\Mcp\Tools\Plan\UnblockWorkItem;
 use App\Mcp\Tools\Plan\UnlinkWorkItemDependency;
 use App\Mcp\Tools\Plan\UnlinkWorkItemFromMilestone;
 use App\Mcp\Tools\Plan\UnlinkWorkItemFromRequirement;
@@ -84,11 +99,16 @@ class PlanningServer extends Server
         DeletePlan::class,
         ListProjectPlans::class,
         BaselinePlan::class,
+        ActivatePlan::class,
+        ClosePlan::class,
         ComparePlanBaseline::class,
         ListPlanBaselines::class,
         UpsertMilestone::class,
         ListMilestones::class,
         DeleteMilestone::class,
+        HitMilestone::class,
+        MissMilestone::class,
+        DeferMilestone::class,
         UpsertRole::class,
         ListRoles::class,
         DeleteRole::class,
@@ -102,6 +122,10 @@ class PlanningServer extends Server
         DeleteWorkItem::class,
         StartWorkItem::class,
         CompleteWorkItem::class,
+        BlockWorkItem::class,
+        UnblockWorkItem::class,
+        CancelWorkItem::class,
+        ReopenWorkItem::class,
         LinkWorkItemToRequirements::class,
         BulkLink::class,
         UnlinkWorkItemFromRequirement::class,
@@ -116,6 +140,12 @@ class PlanningServer extends Server
         UpsertRisk::class,
         ListRisks::class,
         DeleteRisk::class,
+        AssessRisk::class,
+        StartRiskMitigation::class,
+        MarkRiskMitigated::class,
+        AcceptRisk::class,
+        MarkRiskRealized::class,
+        CloseRisk::class,
         UpsertRelease::class,
         ListReleases::class,
         DeleteRelease::class,

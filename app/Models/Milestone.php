@@ -40,4 +40,9 @@ class Milestone extends Model
     {
         return $this->belongsToMany(WorkItem::class, 'milestone_work_item');
     }
+
+    public function statusTransitions(): MorphMany
+    {
+        return $this->morphMany(StatusTransition::class, 'transitionable');
+    }
 }
