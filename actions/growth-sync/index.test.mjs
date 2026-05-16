@@ -125,19 +125,20 @@ test('run skips a PR closed without merging without fetching a commit', async ()
   assert.equal(fetched, false);
 });
 
-test('run skips when Growth rejects the delivery link', async () => {
-  const result = await run({
-    eventName: 'pull_request',
-    event: {
-      action: 'synchronize',
-      pull_request: { number: 9, html_url: 'u', title: 't', head: { sha: 's' } },
-    },
-    getCommitMessage: async () => 'Growth-Work-Item: 01MISSING',
-    callTool: async () => ({ isError: true, errorText: 'work item not found' }),
-    log: silentLog(),
-  });
-
-  assert.equal(result.skipped, true);
+test('run throws when Growth rejects the delivery link', async () => {
+  await assert.rejects(
+    run({
+      eventName: 'pull_request',
+      event: {
+        action: 'synchronize',
+        pull_request: { number: 9, html_url: 'u', title: 't', head: { sha: 's' } },
+      },
+      getCommitMessage: async () => 'Growth-Work-Item: 01MISSING',
+      callTool: async () => ({ isError: true, errorText: 'work item not found' }),
+      log: silentLog(),
+    }),
+    /work item not found/,
+  );
 });
 
 test('resolveCheckRunPullRequest returns the first PR or null', () => {
@@ -255,20 +256,21 @@ test('run skips a check run whose commit has no trailer', async () => {
   assert.equal(called, false);
 });
 
-test('run skips when Growth rejects the check run', async () => {
-  const result = await run({
-    eventName: 'check_run',
-    event: checkRunEvent(),
-    repository: 'datashaman/growth',
-    getCommitMessage: async () => 'Growth-Work-Item: 01WI',
-    callTool: async (name) =>
-      name === 'upsert-delivery-link'
-        ? { isError: false, structured: { id: 'link1' } }
-        : { isError: true, errorText: 'bad conclusion' },
-    log: silentLog(),
-  });
-
-  assert.equal(result.skipped, true);
+test('run throws when Growth rejects the check run', async () => {
+  await assert.rejects(
+    run({
+      eventName: 'check_run',
+      event: checkRunEvent(),
+      repository: 'datashaman/growth',
+      getCommitMessage: async () => 'Growth-Work-Item: 01WI',
+      callTool: async (name) =>
+        name === 'upsert-delivery-link'
+          ? { isError: false, structured: { id: 'link1' } }
+          : { isError: true, errorText: 'bad conclusion' },
+      log: silentLog(),
+    }),
+    /bad conclusion/,
+  );
 });
 
 test('mapDeploymentState maps GitHub states to Growth statuses', () => {
