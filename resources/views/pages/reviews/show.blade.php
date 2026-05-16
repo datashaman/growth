@@ -1,7 +1,15 @@
 <?php
 
+use App\Growth\Transitions\AcceptFinding;
+use App\Growth\Transitions\CloseFinding;
+use App\Growth\Transitions\DispositionFinding;
+use App\Growth\Transitions\IllegalTransitionException;
+use App\Growth\Transitions\ReopenFinding;
+use App\Growth\Transitions\ResolveFinding;
+use App\Growth\Transitions\Transition;
 use App\Models\Review;
 use App\Support\BadgeVariant;
+use Flux\Flux;
 use Livewire\Component;
 
 new class extends Component {
@@ -9,14 +17,24 @@ new class extends Component {
 
     public function mount(Review $review): void
     {
-        $this->review = $review->load([
+        $this->review = $review->load($this->relations());
+    }
+
+    /**
+     * Relations eager-loaded for the detail view.
+     *
+     * @return list<string>
+     */
+    private function relations(): array
+    {
+        return [
             'project',
             'ownerRole',
             'reviewPlan',
             'participants.role',
             'findings.ownerRole',
             'targets',
-        ]);
+        ];
     }
 
     /**
@@ -31,14 +49,57 @@ new class extends Component {
 
     public function onReviewDataChanged(): void
     {
-        $this->review = $this->review->fresh([
-            'project',
-            'ownerRole',
-            'reviewPlan',
-            'participants.role',
-            'findings.ownerRole',
-            'targets',
-        ]);
+        $this->review = $this->review->fresh($this->relations());
+    }
+
+    public function dispositionFinding(string $findingId): void
+    {
+        $this->applyFindingTransition(new DispositionFinding, $findingId);
+    }
+
+    public function resolveFinding(string $findingId): void
+    {
+        $this->applyFindingTransition(new ResolveFinding, $findingId);
+    }
+
+    public function acceptFinding(string $findingId): void
+    {
+        $this->applyFindingTransition(new AcceptFinding, $findingId);
+    }
+
+    public function closeFinding(string $findingId): void
+    {
+        $this->applyFindingTransition(new CloseFinding, $findingId);
+    }
+
+    public function reopenFinding(string $findingId): void
+    {
+        $this->applyFindingTransition(new ReopenFinding, $findingId);
+    }
+
+    private function applyFindingTransition(Transition $transition, string $findingId): void
+    {
+        $finding = $this->review->findings()->find($findingId);
+
+        if ($finding === null) {
+            Flux::toast(variant: 'danger', text: __('Finding not found.'));
+
+            return;
+        }
+
+        try {
+            $transition->apply($finding, auth()->user());
+        } catch (IllegalTransitionException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        $this->review = $this->review->fresh($this->relations());
+
+        Flux::toast(variant: 'success', text: __('Finding is now :status.', [
+            'status' => str_replace('_', ' ', $finding->status),
+        ]));
     }
 }; ?>
 
@@ -169,6 +230,7 @@ new class extends Component {
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
                     <flux:table.column>{{ __('Owner') }}</flux:table.column>
                     <flux:table.column>{{ __('Due') }}</flux:table.column>
+                    <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($review->findings as $finding)
@@ -185,6 +247,25 @@ new class extends Component {
                             <flux:table.cell>{{ str_replace('_', ' ', $finding->status) }}</flux:table.cell>
                             <flux:table.cell>{{ $finding->ownerRole?->name ?? '—' }}</flux:table.cell>
                             <flux:table.cell>{{ $finding->due_at?->format('Y-m-d') ?? '—' }}</flux:table.cell>
+                            <flux:table.cell>
+                                <div class="flex justify-end gap-1">
+                                    @if (in_array($finding->status, ['open'], true))
+                                        <flux:button size="xs" variant="ghost" wire:click="dispositionFinding('{{ $finding->id }}')">{{ __('Disposition') }}</flux:button>
+                                    @endif
+                                    @if ($finding->status === 'dispositioned')
+                                        <flux:button size="xs" variant="ghost" wire:click="resolveFinding('{{ $finding->id }}')">{{ __('Resolve') }}</flux:button>
+                                    @endif
+                                    @if (in_array($finding->status, ['open', 'dispositioned'], true))
+                                        <flux:button size="xs" variant="ghost" wire:click="acceptFinding('{{ $finding->id }}')">{{ __('Accept') }}</flux:button>
+                                    @endif
+                                    @if (in_array($finding->status, ['resolved', 'accepted'], true))
+                                        <flux:button size="xs" variant="ghost" wire:click="closeFinding('{{ $finding->id }}')">{{ __('Close') }}</flux:button>
+                                    @endif
+                                    @if ($finding->status === 'closed')
+                                        <flux:button size="xs" variant="ghost" wire:click="reopenFinding('{{ $finding->id }}')">{{ __('Reopen') }}</flux:button>
+                                    @endif
+                                </div>
+                            </flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>

@@ -26,15 +26,20 @@ use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Dashboard\ShowGateStatus;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\ListProjects;
+use App\Mcp\Tools\Reviews\AcceptFinding;
+use App\Mcp\Tools\Reviews\CloseFinding;
 use App\Mcp\Tools\Reviews\DeleteReview;
 use App\Mcp\Tools\Reviews\DeleteReviewFinding;
 use App\Mcp\Tools\Reviews\DeleteReviewParticipant;
 use App\Mcp\Tools\Reviews\DeleteReviewPlan;
+use App\Mcp\Tools\Reviews\DispositionFinding;
 use App\Mcp\Tools\Reviews\ListReviewDecisionEvents;
 use App\Mcp\Tools\Reviews\ListReviewFindings;
 use App\Mcp\Tools\Reviews\ListReviewParticipants;
 use App\Mcp\Tools\Reviews\ListReviewPlans;
 use App\Mcp\Tools\Reviews\ListReviews;
+use App\Mcp\Tools\Reviews\ReopenFinding;
+use App\Mcp\Tools\Reviews\ResolveFinding;
 use App\Mcp\Tools\Reviews\UpsertReview;
 use App\Mcp\Tools\Reviews\UpsertReviewFinding;
 use App\Mcp\Tools\Reviews\UpsertReviewParticipant;
@@ -68,6 +73,11 @@ class GovernanceServer extends Server
         UpsertReviewFinding::class,
         ListReviewFindings::class,
         DeleteReviewFinding::class,
+        DispositionFinding::class,
+        ResolveFinding::class,
+        AcceptFinding::class,
+        CloseFinding::class,
+        ReopenFinding::class,
         AnalyzeChangeImpact::class,
         UpsertArtifactRelation::class,
         ListArtifactRelations::class,

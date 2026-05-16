@@ -14,7 +14,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Create or update a finding from a review. Findings may point at the reviewed artifact they concern and track disposition/resolution status.')]
+#[Description('Create or update a finding from a review. Findings may point at the reviewed artifact they concern. New findings start as `open`; status is not set here — it moves only through the disposition-finding, resolve-finding, accept-finding, close-finding, and reopen-finding transitions.')]
 class UpsertReviewFinding extends Tool
 {
     use ValidatesReviewArtifacts;
@@ -30,9 +30,11 @@ class UpsertReviewFinding extends Tool
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'severity' => 'nullable|in:'.implode(',', ReviewFinding::SEVERITIES),
-            'status' => 'nullable|in:'.implode(',', ReviewFinding::STATUSES),
+            'status' => 'prohibited',
             'due_at' => 'nullable|date',
             'disposition' => 'nullable|string',
+        ], [
+            'status.prohibited' => 'Review finding status is not set here. Use the disposition-finding, resolve-finding, accept-finding, close-finding, and reopen-finding tools to move status through validated transitions.',
         ]);
 
         $review = Review::findOrFail($data['review_id']);
@@ -52,7 +54,7 @@ class UpsertReviewFinding extends Tool
 
         $finding = $id
             ? tap(ReviewFinding::findOrFail($id))->update($data)
-            : ReviewFinding::create($data);
+            : ReviewFinding::create($data + ['status' => 'open']);
 
         return Response::structured([
             'id' => $finding->id,
@@ -76,7 +78,6 @@ class UpsertReviewFinding extends Tool
             'title' => $schema->string()->description('Finding title')->required(),
             'description' => $schema->string()->description('Finding detail'),
             'severity' => $schema->string()->description('Finding severity')->enum(ReviewFinding::SEVERITIES),
-            'status' => $schema->string()->description('Finding status')->enum(ReviewFinding::STATUSES),
             'due_at' => $schema->string()->description('Due date for disposition/resolution'),
             'disposition' => $schema->string()->description('Disposition or closure rationale'),
         ];
