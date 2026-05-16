@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  buildCheckRunArgs,
   buildDeliveryLinkArgs,
   parseTrailer,
+  resolveCheckRunPullRequest,
   resolveCommitSha,
   run,
 } from './index.mjs';
@@ -63,6 +65,7 @@ function silentLog() {
 test('run records a delivery link on the happy path', async () => {
   const calls = [];
   const result = await run({
+    eventName: 'pull_request',
     event: {
       action: 'synchronize',
       pull_request: { number: 7, html_url: 'u', title: 't', head: { sha: 'sha7' } },
@@ -88,6 +91,7 @@ test('run records a delivery link on the happy path', async () => {
 test('run skips and does not call Growth when no trailer is present', async () => {
   let called = false;
   const result = await run({
+    eventName: 'pull_request',
     event: { action: 'opened', pull_request: { number: 1, head: { sha: 's' } } },
     getCommitMessage: async () => 'No trailer here',
     callTool: async () => {
@@ -104,6 +108,7 @@ test('run skips and does not call Growth when no trailer is present', async () =
 test('run skips a PR closed without merging without fetching a commit', async () => {
   let fetched = false;
   const result = await run({
+    eventName: 'pull_request',
     event: { action: 'closed', pull_request: { merged: false, head: { sha: 's' } } },
     getCommitMessage: async () => {
       fetched = true;
@@ -119,12 +124,156 @@ test('run skips a PR closed without merging without fetching a commit', async ()
 
 test('run skips when Growth rejects the delivery link', async () => {
   const result = await run({
+    eventName: 'pull_request',
     event: {
       action: 'synchronize',
       pull_request: { number: 9, html_url: 'u', title: 't', head: { sha: 's' } },
     },
     getCommitMessage: async () => 'Growth-Work-Item: 01MISSING',
     callTool: async () => ({ isError: true, errorText: 'work item not found' }),
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+});
+
+test('resolveCheckRunPullRequest returns the first PR or null', () => {
+  assert.deepEqual(
+    resolveCheckRunPullRequest({ check_run: { pull_requests: [{ number: 3 }, { number: 4 }] } }),
+    { number: 3 },
+  );
+  assert.equal(resolveCheckRunPullRequest({ check_run: { pull_requests: [] } }), null);
+  assert.equal(resolveCheckRunPullRequest({ check_run: {} }), null);
+});
+
+test('buildCheckRunArgs maps a check_run payload to upsert-check-run arguments', () => {
+  const event = {
+    check_run: {
+      id: 555,
+      name: 'tests',
+      status: 'completed',
+      conclusion: 'success',
+      html_url: 'https://github.com/o/r/runs/555',
+      started_at: '2026-01-01T00:00:00Z',
+      completed_at: '2026-01-01T00:05:00Z',
+    },
+  };
+  assert.deepEqual(buildCheckRunArgs(event, 'link1'), {
+    work_item_delivery_link_id: 'link1',
+    provider: 'github-actions',
+    name: 'tests',
+    run_ref: '555',
+    status: 'completed',
+    conclusion: 'success',
+    url: 'https://github.com/o/r/runs/555',
+    started_at: '2026-01-01T00:00:00Z',
+    completed_at: '2026-01-01T00:05:00Z',
+  });
+});
+
+function checkRunEvent() {
+  return {
+    action: 'completed',
+    check_run: {
+      id: 555,
+      name: 'tests',
+      status: 'completed',
+      conclusion: 'success',
+      html_url: 'https://github.com/o/r/runs/555',
+      head_sha: 'crsha',
+      pull_requests: [{ number: 7 }],
+    },
+  };
+}
+
+test('run records a check run against the PR delivery link on the happy path', async () => {
+  const calls = [];
+  const result = await run({
+    eventName: 'check_run',
+    event: checkRunEvent(),
+    repository: 'datashaman/growth',
+    getCommitMessage: async (sha) => {
+      assert.equal(sha, 'crsha');
+      return 'Work\n\nGrowth-Work-Item: 01WI';
+    },
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      return name === 'upsert-delivery-link'
+        ? { isError: false, structured: { id: 'link1' } }
+        : { isError: false, structured: { id: 'check1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, false);
+  assert.deepEqual(calls.map((c) => c.name), ['upsert-delivery-link', 'upsert-check-run']);
+  assert.equal(calls[0].args.ref, '#7');
+  assert.equal(calls[0].args.url, 'https://github.com/datashaman/growth/pull/7');
+  assert.equal(calls[1].args.work_item_delivery_link_id, 'link1');
+  assert.equal(calls[1].args.conclusion, 'success');
+});
+
+test('run skips a check run with no associated pull request', async () => {
+  let called = false;
+  const event = checkRunEvent();
+  event.check_run.pull_requests = [];
+
+  const result = await run({
+    eventName: 'check_run',
+    event,
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'Growth-Work-Item: 01WI',
+    callTool: async () => {
+      called = true;
+      return { isError: false };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+  assert.equal(called, false);
+});
+
+test('run skips a check run whose commit has no trailer', async () => {
+  let called = false;
+  const result = await run({
+    eventName: 'check_run',
+    event: checkRunEvent(),
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer',
+    callTool: async () => {
+      called = true;
+      return { isError: false };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+  assert.equal(called, false);
+});
+
+test('run skips when Growth rejects the check run', async () => {
+  const result = await run({
+    eventName: 'check_run',
+    event: checkRunEvent(),
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'Growth-Work-Item: 01WI',
+    callTool: async (name) =>
+      name === 'upsert-delivery-link'
+        ? { isError: false, structured: { id: 'link1' } }
+        : { isError: true, errorText: 'bad conclusion' },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+});
+
+test('run skips an unhandled event type', async () => {
+  const result = await run({
+    eventName: 'push',
+    event: {},
+    getCommitMessage: async () => '',
+    callTool: async () => ({ isError: false }),
     log: silentLog(),
   });
 

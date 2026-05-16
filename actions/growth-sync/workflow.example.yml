@@ -7,6 +7,8 @@ name: Growth sync
 on:
   pull_request:
     types: [opened, synchronize, closed]
+  check_run:
+    types: [completed]
 
 jobs:
   sync:
