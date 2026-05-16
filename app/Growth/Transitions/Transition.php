@@ -81,7 +81,9 @@ abstract class Transition
     protected function rejectionMessage(?string $from): string
     {
         $current = $from === null ? 'unset' : str_replace('_', ' ', $from);
+        $label = $this->subjectLabel();
+        $article = in_array(strtolower($label[0] ?? ''), ['a', 'e', 'i', 'o', 'u'], true) ? 'an' : 'a';
 
-        return "Cannot {$this->verb()} a {$this->subjectLabel()} that is {$current}.";
+        return "Cannot {$this->verb()} {$article} {$label} that is {$current}.";
     }
 }
