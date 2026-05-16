@@ -37,7 +37,7 @@ new class extends Component {
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-detail-page-header
-        :title="$changeRequest->title"
+        :title="$changeRequest->reference().' — '.$changeRequest->title"
         back-route="changes"
         :back-label="__('Back to changes')">
         <x-slot:badges>

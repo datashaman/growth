@@ -60,6 +60,8 @@ class ListChangeRequests extends Tool
             'offset' => $offset,
             'results' => $rows->map(fn (ChangeRequest $change) => [
                 'id' => $change->id,
+                'number' => $change->number,
+                'reference' => $change->reference(),
                 'title' => $change->title,
                 'category' => $change->category,
                 'status' => $change->status,

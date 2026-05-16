@@ -68,7 +68,7 @@ class ProjectChangesResource extends Resource implements HasUriTemplate
                     $bits[] = "review={$change->review->title}";
                 }
 
-                $md .= "### {$change->title}\n\n";
+                $md .= "### {$change->reference()} — {$change->title}\n\n";
                 $md .= '- '.implode('; ', $bits)."\n\n";
                 if ($change->description) {
                     $md .= "{$change->description}\n\n";
