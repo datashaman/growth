@@ -16,6 +16,7 @@ use App\Mcp\Tools\Plan\AssignRole;
 use App\Mcp\Tools\Plan\AssignWorkItemRaci;
 use App\Mcp\Tools\Plan\BaselinePlan;
 use App\Mcp\Tools\Plan\ComparePlanBaseline;
+use App\Mcp\Tools\Plan\CompleteWorkItem;
 use App\Mcp\Tools\Plan\DeleteAgent;
 use App\Mcp\Tools\Plan\DeleteDeployment;
 use App\Mcp\Tools\Plan\DeleteMilestone;
@@ -37,6 +38,7 @@ use App\Mcp\Tools\Plan\ListReleases;
 use App\Mcp\Tools\Plan\ListRisks;
 use App\Mcp\Tools\Plan\ListRoles;
 use App\Mcp\Tools\Plan\ListWorkItems;
+use App\Mcp\Tools\Plan\StartWorkItem;
 use App\Mcp\Tools\Plan\SummarizeImplementationStatus;
 use App\Mcp\Tools\Plan\SummarizePlanCapacity;
 use App\Mcp\Tools\Plan\SummarizeScheduleHealth;
@@ -93,6 +95,8 @@ class PlanningServer extends Server
         UpsertWorkItems::class,
         ListWorkItems::class,
         DeleteWorkItem::class,
+        StartWorkItem::class,
+        CompleteWorkItem::class,
         LinkWorkItemToRequirements::class,
         BulkLink::class,
         UnlinkWorkItemFromRequirement::class,

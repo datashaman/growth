@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Throwable;
 
-#[Description('Create or update up to 100 work items in one call. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
+#[Description('Create or update up to 100 work items in one call. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items. Status is not set here: new items start as todo and move only through the start-work-item and complete-work-item transitions.')]
 class UpsertWorkItems extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -39,7 +39,7 @@ class UpsertWorkItems extends Tool
     private function upsertItem(int $index, array $item): array
     {
         try {
-            $data = Validator::make($item, $this->itemRules())->validate();
+            $data = Validator::make($item, $this->itemRules(), $this->itemMessages())->validate();
         } catch (ValidationException $e) {
             return [
                 'index' => $index,
@@ -63,7 +63,6 @@ class UpsertWorkItems extends Tool
                 'kind' => $workItem->kind,
                 'name' => $workItem->name,
                 'parent_id' => $workItem->parent_id,
-                'status' => $workItem->status,
                 'planned_start_date' => $workItem->planned_start_date?->toDateString(),
                 'due_date' => $workItem->due_date?->toDateString(),
                 'effort_estimate_hours' => $workItem->effort_estimate_hours,
@@ -95,7 +94,7 @@ class UpsertWorkItems extends Tool
             'kind' => 'required|in:'.implode(',', WorkItem::KINDS),
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'nullable|in:'.implode(',', WorkItem::STATUSES),
+            'status' => 'prohibited',
             'planned_start_date' => 'nullable|date_format:Y-m-d',
             'due_date' => 'nullable|date_format:Y-m-d',
             'effort_estimate' => 'nullable|string|max:60',
@@ -107,6 +106,16 @@ class UpsertWorkItems extends Tool
             'cost_actual' => 'nullable|string|max:60',
             'cost_actual_amount' => 'nullable|numeric|min:0|max:9999999999',
             'cost_currency' => 'nullable|string|size:3',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function itemMessages(): array
+    {
+        return [
+            'status.prohibited' => 'Work item status is not set here. Use the start-work-item and complete-work-item tools to move status through validated transitions.',
         ];
     }
 
@@ -122,7 +131,6 @@ class UpsertWorkItems extends Tool
                     'kind' => $s->string()->description('Work item kind')->enum(WorkItem::KINDS)->required(),
                     'name' => $s->string()->description('Short label')->required(),
                     'description' => $s->string()->description('Optional details or acceptance notes'),
-                    'status' => $s->string()->description('Tracking status')->enum(WorkItem::STATUSES),
                     'planned_start_date' => $s->string()->description('Planned start date in YYYY-MM-DD format'),
                     'due_date' => $s->string()->description('Due date in YYYY-MM-DD format'),
                     'effort_estimate' => $s->string()->description('Free-form effort estimate'),

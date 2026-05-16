@@ -1,8 +1,13 @@
 <?php
 
+use App\Growth\Transitions\CompleteWorkItem;
+use App\Growth\Transitions\IllegalTransitionException;
+use App\Growth\Transitions\StartWorkItem;
+use App\Growth\Transitions\Transition;
 use App\Models\WorkItem;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
+use Flux\Flux;
 use Livewire\Component;
 
 new class extends Component {
@@ -10,7 +15,17 @@ new class extends Component {
 
     public function mount(WorkItem $workItem): void
     {
-        $this->workItem = $workItem->load([
+        $this->workItem = $workItem->load($this->relations());
+    }
+
+    /**
+     * Relations eager-loaded for the detail view.
+     *
+     * @return list<string>
+     */
+    private function relations(): array
+    {
+        return [
             'project',
             'parent',
             'children',
@@ -20,7 +35,7 @@ new class extends Component {
             'dependencies',
             'deliveryLinks.checkRuns',
             'releases',
-        ]);
+        ];
     }
 
     /**
@@ -35,17 +50,34 @@ new class extends Component {
 
     public function onProjectDataChanged(): void
     {
-        $this->workItem = $this->workItem->fresh([
-            'project',
-            'parent',
-            'children',
-            'responsibleRole',
-            'requirements',
-            'milestones',
-            'dependencies',
-            'deliveryLinks.checkRuns',
-            'releases',
-        ]);
+        $this->workItem = $this->workItem->fresh($this->relations());
+    }
+
+    public function startWorkItem(): void
+    {
+        $this->applyTransition(new StartWorkItem);
+    }
+
+    public function completeWorkItem(): void
+    {
+        $this->applyTransition(new CompleteWorkItem);
+    }
+
+    private function applyTransition(Transition $transition): void
+    {
+        try {
+            $transition->apply($this->workItem, auth()->user());
+        } catch (IllegalTransitionException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        $this->workItem = $this->workItem->fresh($this->relations());
+
+        Flux::toast(variant: 'success', text: __('Work item is now :status.', [
+            'status' => str_replace('_', ' ', $this->workItem->status),
+        ]));
     }
 
     public function formatHours(?float $hours): string
@@ -72,6 +104,11 @@ new class extends Component {
         </x-slot:description>
 
         <x-slot:actions>
+            @if ($workItem->status === 'todo')
+                <flux:button size="sm" icon="play" variant="primary" wire:click="startWorkItem">{{ __('Start') }}</flux:button>
+            @elseif ($workItem->status === 'in_progress')
+                <flux:button size="sm" icon="check" variant="primary" wire:click="completeWorkItem">{{ __('Complete') }}</flux:button>
+            @endif
             <flux:button size="sm" icon="pencil-square" variant="primary" :href="route('work-items.edit', $workItem)" wire:navigate>{{ __('Edit') }}</flux:button>
             <flux:modal.trigger name="delete-work-item">
                 <flux:button size="sm" icon="trash" variant="danger">{{ __('Delete') }}</flux:button>
