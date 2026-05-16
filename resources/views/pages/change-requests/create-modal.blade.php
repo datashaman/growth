@@ -2,6 +2,7 @@
 
 use App\Models\ChangeRequest;
 use App\Models\Project;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -66,7 +67,7 @@ new class extends Component {
             ],
         ]);
 
-        $project->changeRequests()->create([
+        DB::transaction(fn () => $project->changeRequests()->create([
             'title' => $data['title'],
             'description' => $data['description'] ?: null,
             'rationale' => $data['rationale'] ?: null,
@@ -75,7 +76,7 @@ new class extends Component {
             'priority' => $data['priority'],
             'requester_role_id' => $data['requester_role_id'] ?: null,
             'review_id' => $data['review_id'] ?: null,
-        ]);
+        ]));
 
         $this->reset(['title', 'description', 'rationale', 'requester_role_id', 'review_id']);
         $this->modal('create-change-request')->close();

@@ -80,7 +80,10 @@ new #[Title('Changes')] class extends Component {
                     @foreach ($this->changeRequests as $cr)
                         <flux:table.row>
                             <flux:table.cell>
-                                <a href="{{ route('change-requests.show', $cr) }}" wire:navigate class="font-medium hover:underline">{{ $cr->title }}</a>
+                                <a href="{{ route('change-requests.show', $cr) }}" wire:navigate class="font-medium hover:underline">
+                                    <span class="font-mono text-zinc-500 dark:text-zinc-400">{{ $cr->reference() }}</span>
+                                    {{ $cr->title }}
+                                </a>
                                 @if ($cr->description)
                                     <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($cr->description, 100) }}</div>
                                 @endif

@@ -9,6 +9,7 @@ use App\Models\ChangeRequest;
 use App\Models\Review;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -65,7 +66,7 @@ class UpsertChangeRequest extends Tool
             $beforeDecision = $change->decision;
             $change->update($data);
         } else {
-            $change = ChangeRequest::create($data);
+            $change = DB::transaction(fn () => ChangeRequest::create($data));
         }
 
         $this->recordApprovalEvent($change, $beforeStatus, $beforeDecision);
@@ -77,6 +78,8 @@ class UpsertChangeRequest extends Tool
         return Response::structured([
             'id' => $change->id,
             'project_id' => $change->project_id,
+            'number' => $change->number,
+            'reference' => $change->reference(),
             'title' => $change->title,
             'category' => $change->category,
             'status' => $change->status,
@@ -95,7 +98,7 @@ class UpsertChangeRequest extends Tool
             'project_id' => $schema->string()->description('Project ULID')->required(),
             'requester_role_id' => $schema->string()->description('Role ULID requesting the change'),
             'review_id' => $schema->string()->description('Review ULID where this change was approved or raised'),
-            'title' => $schema->string()->description('Change request title')->required(),
+            'title' => $schema->string()->description('Change request title. Do not embed a "CR-NNN" prefix — a per-project reference is assigned automatically.')->required(),
             'description' => $schema->string()->description('Change description'),
             'rationale' => $schema->string()->description('Reason for the change'),
             'category' => $schema->string()->description('Change category')->enum(ChangeRequest::CATEGORIES)->required(),
@@ -128,6 +131,8 @@ class UpsertChangeRequest extends Tool
         return [
             'id' => $schema->string()->required(),
             'project_id' => $schema->string()->required(),
+            'number' => $schema->integer()->required(),
+            'reference' => $schema->string()->required(),
             'title' => $schema->string()->required(),
             'category' => $schema->string()->required(),
             'status' => $schema->string()->required(),

@@ -31,8 +31,38 @@ class ChangeRequest extends Model
     ];
 
     protected $casts = [
+        'number' => 'integer',
         'decided_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (ChangeRequest $changeRequest): void {
+            if ($changeRequest->number === null) {
+                $changeRequest->number = $changeRequest->nextNumberForProject();
+            }
+        });
+    }
+
+    /**
+     * Human-readable per-project reference, e.g. "CR-009".
+     */
+    public function reference(): string
+    {
+        return 'CR-'.str_pad((string) $this->number, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Allocate the next sequential number within the project. Callers that
+     * may run concurrently should wrap the create in a transaction so the
+     * project row lock held here spans the insert.
+     */
+    protected function nextNumberForProject(): int
+    {
+        Project::whereKey($this->project_id)->lockForUpdate()->first();
+
+        return (int) static::where('project_id', $this->project_id)->max('number') + 1;
+    }
 
     public function project(): BelongsTo
     {
