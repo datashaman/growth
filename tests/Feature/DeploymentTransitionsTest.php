@@ -81,6 +81,48 @@ it('shows succeed and fail buttons for an in_progress deployment and succeeds it
     expect($deployment->fresh()->status)->toBe('succeeded');
 });
 
+it('marks an in_progress deployment failed from the webapp', function () {
+    $deployment = ($this->makeDeployment)('in_progress');
+
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::evidence')
+        ->call('markDeploymentFailed', $deployment->id)
+        ->assertHasNoErrors()
+        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
+
+    expect($deployment->fresh()->status)->toBe('failed')
+        ->and(StatusTransition::query()->sole()->to_status)->toBe('failed');
+});
+
+it('cancels a planned deployment from the webapp', function () {
+    $deployment = ($this->makeDeployment)('planned');
+
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::evidence')
+        ->call('cancelDeployment', $deployment->id)
+        ->assertHasNoErrors()
+        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
+
+    expect($deployment->fresh()->status)->toBe('cancelled')
+        ->and(StatusTransition::query()->sole()->to_status)->toBe('cancelled');
+});
+
+it('rolls back a succeeded deployment from the webapp', function () {
+    $deployment = ($this->makeDeployment)('succeeded');
+
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::evidence')
+        ->call('rollBackDeployment', $deployment->id)
+        ->assertHasNoErrors()
+        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
+
+    expect($deployment->fresh()->status)->toBe('rolled_back')
+        ->and(StatusTransition::query()->sole()->to_status)->toBe('rolled_back');
+});
+
 it('rejects an illegal deployment transition from the webapp and warns the user', function () {
     $deployment = ($this->makeDeployment)('planned');
 
