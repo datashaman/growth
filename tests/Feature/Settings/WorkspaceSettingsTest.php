@@ -157,6 +157,37 @@ test('workspace settings page renders members', function () {
         ->assertSee($member->email);
 });
 
+test('owner can toggle MCP payload capture', function () {
+    $owner = User::factory()->create();
+
+    $this->actingAs($owner);
+
+    Livewire::test('pages::settings.workspace')
+        ->set('captureMcpPayloads', true)
+        ->assertHasNoErrors();
+
+    expect($owner->activeWorkspace->fresh()->mcp_capture_payloads)->toBeTrue();
+});
+
+test('viewer cannot toggle MCP payload capture', function () {
+    $owner = User::factory()->create();
+    $viewer = User::factory()->create();
+    WorkspaceMembership::create([
+        'workspace_id' => $owner->active_workspace_id,
+        'user_id' => $viewer->id,
+        'role' => WorkspaceMembership::ROLE_VIEWER,
+    ]);
+    $viewer->forceFill(['active_workspace_id' => $owner->active_workspace_id])->save();
+
+    $this->actingAs($viewer);
+
+    Livewire::test('pages::settings.workspace')
+        ->set('captureMcpPayloads', true)
+        ->assertStatus(403);
+
+    expect($owner->activeWorkspace->fresh()->mcp_capture_payloads)->toBeFalse();
+});
+
 test('viewer cannot change roles', function () {
     $owner = User::factory()->create();
     $viewer = User::factory()->create();

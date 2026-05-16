@@ -26,12 +26,27 @@ new #[Title('Workspace settings')] class extends Component
 
     public string $deleteConfirmation = '';
 
+    public bool $captureMcpPayloads = false;
+
     public function mount(): void
     {
         $workspace = $this->workspace();
 
         $this->workspaceId = $workspace->id;
         $this->name = $workspace->name;
+        $this->captureMcpPayloads = $workspace->mcp_capture_payloads;
+    }
+
+    public function updatedCaptureMcpPayloads(bool $value): void
+    {
+        if (! $this->canMutate()) {
+            $this->captureMcpPayloads = ! $value;
+            abort(403);
+        }
+
+        Workspace::whereKey($this->workspaceId)->update(['mcp_capture_payloads' => $value]);
+
+        Flux::toast(variant: 'success', text: __('MCP capture setting updated.'));
     }
 
     public function workspace(): Workspace
@@ -399,6 +414,18 @@ new #[Title('Workspace settings')] class extends Component
                 </flux:button>
             @endif
         </form>
+
+        <flux:separator class="my-8" />
+
+        <flux:heading size="lg" class="mb-3">{{ __('MCP tool invocations') }}</flux:heading>
+        <flux:subheading class="mb-4">{{ __('Capture full request arguments and responses for every MCP tool call. Leave off to record only metadata and payload shapes.') }}</flux:subheading>
+
+        <flux:switch
+            wire:model.live="captureMcpPayloads"
+            :label="__('Capture full payloads')"
+            :disabled="! $this->canMutate()"
+            data-test="capture-mcp-payloads"
+        />
 
         <flux:separator class="my-8" />
 
