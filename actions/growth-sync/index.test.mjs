@@ -807,8 +807,9 @@ test('run reports a neutral attribution check in advisory mode', async () => {
   assert.equal(checks[0].conclusion, 'neutral');
 });
 
-test('run skips the attribution check for a fork pull request', async () => {
+test('run skips the attribution check for a fork pull request but still records the link', async () => {
   const checks = [];
+  const calls = [];
   await run({
     eventName: 'pull_request',
     event: {
@@ -820,12 +821,16 @@ test('run skips the attribution check for a fork pull request', async () => {
     },
     repository: 'datashaman/growth',
     getCommitMessage: async () => 'Work\n\nGrowth-Work-Item: 01WI',
-    callTool: async () => ({ isError: false, structured: { id: 'link1' } }),
+    callTool: async (name, args) => { calls.push({ name, args }); return { isError: false, structured: { id: 'link1' } }; },
     postCheckRun: async (args) => { checks.push(args); return {}; },
     log: silentLog(),
   });
 
   assert.equal(checks.length, 0);
+  assert.ok(
+    calls.some((c) => c.name === 'upsert-delivery-link' && c.args.type === 'pull_request'),
+    'expected the fork PR delivery link to still be recorded',
+  );
 });
 
 test('run does not post an attribution check on a closed pull request', async () => {
