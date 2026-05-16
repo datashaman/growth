@@ -5,6 +5,7 @@ import {
   buildCheckRunArgs,
   buildDeliveryLinkArgs,
   buildDeploymentArgs,
+  buildReleaseArgs,
   mapDeploymentState,
   parseTrailer,
   resolveCheckRunPullRequest,
@@ -354,6 +355,67 @@ test('run skips a deployment whose repo has no bound project', async () => {
   const result = await run({
     eventName: 'deployment_status',
     event: deploymentEvent(),
+    repository: 'datashaman/growth',
+    callTool: async () => ({ isError: false, structured: { found: false, project_id: null } }),
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+});
+
+test('buildReleaseArgs maps a release payload to upsert-release arguments', () => {
+  const event = {
+    release: {
+      tag_name: 'v1.2.3',
+      name: 'Spring release',
+      body: 'Notes here',
+      published_at: '2026-01-01T00:00:00Z',
+    },
+  };
+  assert.deepEqual(buildReleaseArgs(event, 'proj1'), {
+    project_id: 'proj1',
+    version: 'v1.2.3',
+    name: 'Spring release',
+    status: 'released',
+    released_at: '2026-01-01T00:00:00Z',
+    notes: 'Notes here',
+  });
+});
+
+function releaseEvent() {
+  return {
+    action: 'published',
+    release: { tag_name: 'v1.2.3', name: 'Spring release', published_at: '2026-01-01T00:00:00Z' },
+  };
+}
+
+test('run records a release against the resolved project on the happy path', async () => {
+  const calls = [];
+  const result = await run({
+    eventName: 'release',
+    event: releaseEvent(),
+    repository: 'datashaman/growth',
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      return name === 'resolve-project-by-repo'
+        ? { isError: false, structured: { found: true, project_id: 'proj1' } }
+        : { isError: false, structured: { id: 'rel1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, false);
+  assert.deepEqual(calls.map((c) => c.name), ['resolve-project-by-repo', 'upsert-release']);
+  assert.equal(calls[0].args.github_repo, 'datashaman/growth');
+  assert.equal(calls[1].args.project_id, 'proj1');
+  assert.equal(calls[1].args.version, 'v1.2.3');
+  assert.equal(calls[1].args.status, 'released');
+});
+
+test('run skips a release whose repo has no bound project', async () => {
+  const result = await run({
+    eventName: 'release',
+    event: releaseEvent(),
     repository: 'datashaman/growth',
     callTool: async () => ({ isError: false, structured: { found: false, project_id: null } }),
     log: silentLog(),

@@ -220,6 +220,50 @@ async function runDeployment({ event, repository, callTool, log }) {
 }
 
 /**
+ * Build the upsert-release arguments from a release event. The GitHub tag
+ * is the version, so the upsert resolves to the same project/version row
+ * if the release is published more than once.
+ */
+export function buildReleaseArgs(event, projectId) {
+  const release = event.release ?? {};
+  return {
+    project_id: projectId,
+    version: release.tag_name,
+    name: release.name || undefined,
+    status: 'released',
+    released_at: release.published_at ?? undefined,
+    notes: release.body || undefined,
+  };
+}
+
+/**
+ * Orchestrate one release event: resolve the repository's Growth project,
+ * then upsert the release. Unbound repos are logged and skipped.
+ */
+async function runRelease({ event, repository, callTool, log }) {
+  const resolved = await callTool('resolve-project-by-repo', { github_repo: repository });
+  if (resolved.isError) {
+    log.warn(`Growth rejected the repo lookup: ${resolved.errorText}; skipping.`);
+    return { skipped: true };
+  }
+  const projectId = resolved.structured?.project_id;
+  if (!resolved.structured?.found || !projectId) {
+    log.warn(`No Growth project bound to ${repository}; skipping.`);
+    return { skipped: true };
+  }
+
+  const args = buildReleaseArgs(event, projectId);
+  const result = await callTool('upsert-release', args);
+  if (result.isError) {
+    log.warn(`Growth rejected the release: ${result.errorText}; skipping.`);
+    return { skipped: true };
+  }
+
+  log.info(`Recorded release ${args.version} on project ${projectId}.`);
+  return { skipped: false, structured: result.structured };
+}
+
+/**
  * Dispatch a GitHub event to its handler. Dependencies are injected so the
  * handlers are testable without network access.
  */
@@ -232,6 +276,9 @@ export async function run(context) {
   }
   if (context.eventName === 'deployment_status') {
     return runDeployment(context);
+  }
+  if (context.eventName === 'release') {
+    return runRelease(context);
   }
 
   context.log.info(`Event ${context.eventName} is not handled; skipping.`);
