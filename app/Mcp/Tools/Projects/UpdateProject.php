@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Projects;
 
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Validation\Rule;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
@@ -21,6 +22,7 @@ class UpdateProject extends Tool
             'description' => 'sometimes|nullable|string',
             'rigor_level' => 'sometimes|integer|between:1,4',
             'status' => 'sometimes|in:'.implode(',', Project::STATUSES),
+            'github_repo' => ['sometimes', 'nullable', 'string', 'max:255', 'regex:/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/', Rule::unique('projects', 'github_repo')->ignore($request->get('id'))],
         ]);
 
         $project = Project::findOrFail($data['id']);
@@ -41,6 +43,7 @@ class UpdateProject extends Tool
             'name' => $project->name,
             'rigor_level' => $project->rigor_level,
             'status' => $project->status,
+            'github_repo' => $project->github_repo,
         ]);
     }
 
@@ -59,6 +62,8 @@ class UpdateProject extends Tool
             'status' => $schema->string()
                 ->description('New project lifecycle status. `archived`/`closed` make the project read-only.')
                 ->enum(Project::STATUSES),
+            'github_repo' => $schema->string()
+                ->description('GitHub repository bound to this project, in owner/repo form (pass null to clear). Lets the growth-sync action resolve deployment and release events to this project.'),
         ];
     }
 
@@ -69,6 +74,7 @@ class UpdateProject extends Tool
             'name' => $schema->string()->required(),
             'rigor_level' => $schema->integer()->required(),
             'status' => $schema->string()->required(),
+            'github_repo' => $schema->string(),
         ];
     }
 }

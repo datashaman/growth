@@ -77,3 +77,50 @@ it('rejects unknown status values', function () {
         'status' => 'nope',
     ])->assertHasErrors();
 });
+
+it('binds a github repo when creating a project', function () {
+    AllServer::tool(CreateProject::class, [
+        'name' => 'Bound',
+        'github_repo' => 'datashaman/growth',
+    ])->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('github_repo', 'datashaman/growth')->etc();
+        });
+
+    expect(Project::where('name', 'Bound')->sole()->github_repo)->toBe('datashaman/growth');
+});
+
+it('binds a github repo through update-project', function () {
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'P', 'rigor_level' => 1]);
+
+    AllServer::tool(UpdateProject::class, [
+        'id' => $project->id,
+        'github_repo' => 'datashaman/growth',
+    ])->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('github_repo', 'datashaman/growth')->etc();
+        });
+
+    expect(Project::find($project->id)->github_repo)->toBe('datashaman/growth');
+});
+
+it('rejects a github repo that is not in owner/repo form', function () {
+    AllServer::tool(CreateProject::class, [
+        'name' => 'Malformed',
+        'github_repo' => 'not-a-repo',
+    ])->assertHasErrors(['github repo']);
+});
+
+it('rejects binding a github repo already bound to another project', function () {
+    Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'First',
+        'rigor_level' => 1,
+        'github_repo' => 'datashaman/growth',
+    ]);
+
+    AllServer::tool(CreateProject::class, [
+        'name' => 'Second',
+        'github_repo' => 'datashaman/growth',
+    ])->assertHasErrors(['github repo']);
+});
