@@ -12,11 +12,13 @@ use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Common\BulkLink;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Lint\LintProject;
+use App\Mcp\Tools\Plan\ActivatePlan;
 use App\Mcp\Tools\Plan\AssignRole;
 use App\Mcp\Tools\Plan\AssignWorkItemRaci;
 use App\Mcp\Tools\Plan\BaselinePlan;
 use App\Mcp\Tools\Plan\BlockWorkItem;
 use App\Mcp\Tools\Plan\CancelWorkItem;
+use App\Mcp\Tools\Plan\ClosePlan;
 use App\Mcp\Tools\Plan\ComparePlanBaseline;
 use App\Mcp\Tools\Plan\CompleteWorkItem;
 use App\Mcp\Tools\Plan\DeferMilestone;
@@ -86,6 +88,8 @@ class PlanningServer extends Server
         DeletePlan::class,
         ListProjectPlans::class,
         BaselinePlan::class,
+        ActivatePlan::class,
+        ClosePlan::class,
         ComparePlanBaseline::class,
         ListPlanBaselines::class,
         UpsertMilestone::class,

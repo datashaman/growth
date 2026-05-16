@@ -1,6 +1,8 @@
 <?php
 
 use App\Concerns\ProjectScoped;
+use App\Growth\Transitions\ActivatePlan;
+use App\Growth\Transitions\ClosePlan;
 use App\Growth\Transitions\HitMilestone;
 use App\Growth\Transitions\IllegalTransitionException;
 use App\Growth\Transitions\MissMilestone;
@@ -38,7 +40,44 @@ new #[Title('Plan')] class extends Component {
 
     public function onProjectDataChanged(): void
     {
-        unset($this->workItems, $this->milestones);
+        unset($this->workItems, $this->milestones, $this->projectPlan);
+    }
+
+    #[Computed]
+    public function projectPlan()
+    {
+        return $this->selectedProject?->projectPlan;
+    }
+
+    public function activatePlan(): void
+    {
+        $this->transitionPlan(new ActivatePlan);
+    }
+
+    public function closePlan(): void
+    {
+        $this->transitionPlan(new ClosePlan);
+    }
+
+    private function transitionPlan(Transition $transition): void
+    {
+        $plan = $this->selectedProject?->projectPlan;
+
+        abort_if($plan === null, 404);
+
+        try {
+            $transition->apply($plan, auth()->user());
+        } catch (IllegalTransitionException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        unset($this->projectPlan);
+
+        Flux::toast(variant: 'success', text: __('Plan is now :status.', [
+            'status' => $plan->status,
+        ]));
     }
 
     #[Computed]
@@ -129,6 +168,22 @@ new #[Title('Plan')] class extends Component {
             <flux:callout.text>{{ __('Pick a project to see its plan.') }}</flux:callout.text>
         </flux:callout>
     @else
+        @if ($this->projectPlan)
+            <section class="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+                <div class="flex items-center gap-2">
+                    <flux:heading size="lg">{{ __('Project plan') }}</flux:heading>
+                    <flux:badge :color="BadgeVariant::planStatus($this->projectPlan->status)" size="sm">{{ EnumLabel::lower($this->projectPlan->status) }}</flux:badge>
+                </div>
+                <div class="flex gap-1">
+                    @if ($this->projectPlan->status === 'baselined')
+                        <flux:button size="sm" icon="play" variant="primary" wire:click="activatePlan">{{ __('Activate plan') }}</flux:button>
+                    @elseif ($this->projectPlan->status === 'active')
+                        <flux:button size="sm" icon="lock-closed" variant="filled" wire:click="closePlan">{{ __('Close plan') }}</flux:button>
+                    @endif
+                </div>
+            </section>
+        @endif
+
         <x-data-table
             :title="__('Milestones')"
             :count="$this->milestones->count()"
