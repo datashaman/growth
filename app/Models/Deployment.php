@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Deployment extends Model
 {
@@ -39,5 +40,10 @@ class Deployment extends Model
     {
         return $this->belongsToMany(WorkItemDeliveryLink::class, 'deployment_delivery_link')
             ->withTimestamps();
+    }
+
+    public function statusTransitions(): MorphMany
+    {
+        return $this->morphMany(StatusTransition::class, 'transitionable');
     }
 }
