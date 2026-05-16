@@ -4,7 +4,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test:sync": "node --test 'actions/growth-sync/*.test.mjs'"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

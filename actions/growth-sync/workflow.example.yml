@@ -1,0 +1,18 @@
+# Copy this file to .github/workflows/growth-sync.yml in the repo you want
+# to track. Set the GROWTH_MCP_TOKEN repo secret to a Passport personal
+# access token with the mcp:use scope, and bind the project's github_repo
+# field to this repository (owner/repo) in Growth.
+name: Growth sync
+
+on:
+  pull_request:
+    types: [opened, synchronize, closed]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: datashaman/growth/actions/growth-sync@main
+        with:
+          growth-url: https://growth.example.com
+          growth-token: ${{ secrets.GROWTH_MCP_TOKEN }}

@@ -1,0 +1,24 @@
+name: Growth sync
+description: Translate GitHub pull request events into Growth MCP delivery-link evidence.
+
+inputs:
+  growth-url:
+    description: Base URL of the Growth instance, e.g. https://growth.example.com
+    required: true
+  growth-token:
+    description: Passport personal access token with the mcp:use scope.
+    required: true
+  github-token:
+    description: Token used to read commit messages via the GitHub REST API.
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: node "${{ github.action_path }}/index.mjs"
+      env:
+        GROWTH_URL: ${{ inputs.growth-url }}
+        GROWTH_TOKEN: ${{ inputs.growth-token }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}

@@ -1,0 +1,132 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import {
+  buildDeliveryLinkArgs,
+  parseTrailer,
+  resolveCommitSha,
+  run,
+} from './index.mjs';
+
+test('parseTrailer reads a Growth-Work-Item trailer', () => {
+  const message = 'Add widget\n\nLonger body.\n\nGrowth-Work-Item: 01HXYZ';
+  assert.equal(parseTrailer(message), '01HXYZ');
+});
+
+test('parseTrailer returns null when no trailer is present', () => {
+  assert.equal(parseTrailer('Just a commit message'), null);
+  assert.equal(parseTrailer(''), null);
+  assert.equal(parseTrailer(undefined), null);
+});
+
+test('parseTrailer takes the last trailer when several are present', () => {
+  const message = 'Squash\n\nGrowth-Work-Item: 01OLD\nGrowth-Work-Item: 01NEW';
+  assert.equal(parseTrailer(message), '01NEW');
+});
+
+test('resolveCommitSha uses the head sha for opened and synchronize', () => {
+  const event = { action: 'opened', pull_request: { head: { sha: 'headsha' } } };
+  assert.equal(resolveCommitSha(event), 'headsha');
+  assert.equal(resolveCommitSha({ ...event, action: 'synchronize' }), 'headsha');
+});
+
+test('resolveCommitSha uses the merge commit for a merged PR', () => {
+  const event = {
+    action: 'closed',
+    pull_request: { merged: true, merge_commit_sha: 'mergesha', head: { sha: 'headsha' } },
+  };
+  assert.equal(resolveCommitSha(event), 'mergesha');
+});
+
+test('resolveCommitSha returns null for a PR closed without merging', () => {
+  const event = { action: 'closed', pull_request: { merged: false, head: { sha: 'headsha' } } };
+  assert.equal(resolveCommitSha(event), null);
+});
+
+test('buildDeliveryLinkArgs produces an idempotent pull_request ref', () => {
+  const event = {
+    pull_request: { number: 42, html_url: 'https://github.com/o/r/pull/42', title: 'Add widget' },
+  };
+  assert.deepEqual(buildDeliveryLinkArgs(event, '01HXYZ'), {
+    work_item_id: '01HXYZ',
+    type: 'pull_request',
+    ref: '#42',
+    url: 'https://github.com/o/r/pull/42',
+    description: 'GitHub pull request: Add widget',
+  });
+});
+
+function silentLog() {
+  return { info: () => {}, warn: () => {} };
+}
+
+test('run records a delivery link on the happy path', async () => {
+  const calls = [];
+  const result = await run({
+    event: {
+      action: 'synchronize',
+      pull_request: { number: 7, html_url: 'u', title: 't', head: { sha: 'sha7' } },
+    },
+    getCommitMessage: async (sha) => {
+      assert.equal(sha, 'sha7');
+      return 'Work\n\nGrowth-Work-Item: 01WI';
+    },
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      return { isError: false, structured: { id: 'link1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, false);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].name, 'upsert-delivery-link');
+  assert.equal(calls[0].args.work_item_id, '01WI');
+  assert.equal(calls[0].args.ref, '#7');
+});
+
+test('run skips and does not call Growth when no trailer is present', async () => {
+  let called = false;
+  const result = await run({
+    event: { action: 'opened', pull_request: { number: 1, head: { sha: 's' } } },
+    getCommitMessage: async () => 'No trailer here',
+    callTool: async () => {
+      called = true;
+      return { isError: false };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+  assert.equal(called, false);
+});
+
+test('run skips a PR closed without merging without fetching a commit', async () => {
+  let fetched = false;
+  const result = await run({
+    event: { action: 'closed', pull_request: { merged: false, head: { sha: 's' } } },
+    getCommitMessage: async () => {
+      fetched = true;
+      return '';
+    },
+    callTool: async () => ({ isError: false }),
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+  assert.equal(fetched, false);
+});
+
+test('run skips when Growth rejects the delivery link', async () => {
+  const result = await run({
+    event: {
+      action: 'synchronize',
+      pull_request: { number: 9, html_url: 'u', title: 't', head: { sha: 's' } },
+    },
+    getCommitMessage: async () => 'Growth-Work-Item: 01MISSING',
+    callTool: async () => ({ isError: true, errorText: 'work item not found' }),
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+});
