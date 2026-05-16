@@ -22,14 +22,13 @@ test('owner can create a change request', function () {
         ->set('title', 'Switch to oxygen-rich combustion')
         ->set('category', 'design')
         ->set('priority', 'high')
-        ->set('status', 'under_review')
         ->call('save')
         ->assertHasNoErrors();
 
     $cr = ChangeRequest::query()->where('title', 'Switch to oxygen-rich combustion')->first();
     expect($cr)->not->toBeNull()
         ->and($cr->project_id)->toBe($this->project->id)
-        ->and($cr->status)->toBe('under_review');
+        ->and($cr->status)->toBe('proposed');
 });
 
 test('create rejects unknown category', function () {
@@ -70,15 +69,14 @@ test('owner can edit a change request', function () {
 
     Livewire::test('pages::change-requests.edit-modal')
         ->call('load', $cr->id)
-        ->set('status', 'approved')
-        ->set('decision', 'approved')
-        ->set('decided_at', '2026-05-13')
+        ->set('title', 'Revised approach')
+        ->set('priority', 'high')
         ->call('save')
         ->assertHasNoErrors();
 
     expect($cr->fresh())
-        ->status->toBe('approved')
-        ->decision->toBe('approved');
+        ->title->toBe('Revised approach')
+        ->priority->toBe('high');
 });
 
 test('edit 404s for another owner', function () {
