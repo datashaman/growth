@@ -603,6 +603,55 @@ test('run binds the branch when a pull request commit carries a trailer', async 
   assert.ok(calls.some((c) => c.name === 'upsert-delivery-link' && c.args.type === 'pull_request'));
 });
 
+test('run url-encodes a branch name with reserved characters in the binding', async () => {
+  const calls = [];
+  await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'synchronize',
+      pull_request: { number: 7, html_url: 'u', title: 't', head: { sha: 'sha7', ref: 'issue#123/fix' } },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'Work\n\nGrowth-Work-Item: 01WI',
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      return { isError: false, structured: { id: 'link1' } };
+    },
+    log: silentLog(),
+  });
+
+  const branchCall = calls.find((c) => c.name === 'upsert-delivery-link' && c.args.type === 'branch');
+  assert.ok(branchCall, 'expected a branch delivery link to be recorded');
+  assert.equal(branchCall.args.ref, 'issue#123/fix');
+  assert.equal(branchCall.args.url, 'https://github.com/datashaman/growth/tree/issue%23123/fix');
+});
+
+test('run skips a trailer-less event whose branch is ambiguously bound', async () => {
+  const warnings = [];
+  const result = await run({
+    eventName: 'check_run',
+    event: {
+      check_run: {
+        head_sha: 'shaX',
+        name: 'tests',
+        pull_requests: [{ number: 9, head: { ref: 'feature/contested' } }],
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer',
+    callTool: async (name) => {
+      if (name === 'resolve-work-item-by-branch') {
+        return { isError: false, structured: { found: false, ambiguous: true, work_item_id: null } };
+      }
+      throw new Error(`unexpected call to ${name}`);
+    },
+    log: { ...silentLog(), warn: (m) => warnings.push(m) },
+  });
+
+  assert.equal(result.skipped, true);
+  assert.ok(warnings.some((m) => m.includes('more than one work item')), 'expected an ambiguity warning');
+});
+
 test('run attributes a trailer-less check run via its branch binding', async () => {
   const calls = [];
   const result = await run({

@@ -41,6 +41,7 @@ it('resolves a branch delivery link to its work item', function () {
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('found', true)
+                ->where('ambiguous', false)
                 ->where('github_repo', 'datashaman/growth')
                 ->where('branch', 'feature/lander')
                 ->where('work_item_id', $this->workItem->id)
@@ -57,6 +58,7 @@ it('reports not found when no branch link matches without erroring', function ()
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('found', false)
+                ->where('ambiguous', false)
                 ->where('github_repo', 'datashaman/growth')
                 ->where('branch', 'feature/never-bound')
                 ->where('work_item_id', null)
@@ -105,6 +107,34 @@ it('does not resolve a branch bound in another repo', function () {
     ])
         ->assertOk()
         ->assertStructuredContent(fn ($json) => $json->where('found', false)->etc());
+});
+
+it('reports ambiguity when two work items share a branch link', function () {
+    $second = WorkItem::create([
+        'project_id' => $this->project->id,
+        'name' => 'Also the lander',
+        'kind' => 'task',
+        'status' => 'in_progress',
+    ]);
+    foreach ([$this->workItem, $second] as $item) {
+        WorkItemDeliveryLink::create([
+            'work_item_id' => $item->id,
+            'type' => 'branch',
+            'ref' => 'feature/contested',
+        ]);
+    }
+
+    PlanningServer::tool(ResolveWorkItemByBranch::class, [
+        'github_repo' => 'datashaman/growth',
+        'branch' => 'feature/contested',
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('found', false)
+                ->where('ambiguous', true)
+                ->where('work_item_id', null)
+                ->etc();
+        });
 });
 
 it('does not resolve a branch bound in another workspace', function () {

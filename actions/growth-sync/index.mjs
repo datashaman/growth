@@ -42,7 +42,7 @@ export function resolveEventBranch(eventName, event, pullRequest = null) {
  * Resolve a work item for a trailer-less commit by looking up a branch
  * delivery link. Returns the work item id, or null when nothing is bound.
  */
-async function resolveWorkItemByBranch({ callTool, repository, branch }) {
+async function resolveWorkItemByBranch({ callTool, repository, branch, log }) {
   if (!branch) {
     return null;
   }
@@ -53,6 +53,9 @@ async function resolveWorkItemByBranch({ callTool, repository, branch }) {
   if (result.isError) {
     throw new Error(`Growth rejected the branch lookup: ${result.errorText}`);
   }
+  if (result.structured?.ambiguous) {
+    log?.warn(`Branch ${branch} is bound to more than one work item; cannot attribute trailer-less commits.`);
+  }
   return result.structured?.found ? result.structured.work_item_id : null;
 }
 
@@ -62,11 +65,14 @@ async function resolveWorkItemByBranch({ callTool, repository, branch }) {
  * (work_item_id, type, ref).
  */
 async function recordBranchBinding({ callTool, repository, workItemId, branch }) {
+  // Branch names may contain URL-reserved characters (e.g. `issue#123`);
+  // encode each path segment so the tree URL points at the real branch.
+  const branchPath = branch.split('/').map(encodeURIComponent).join('/');
   const result = await callTool('upsert-delivery-link', {
     work_item_id: workItemId,
     type: 'branch',
     ref: branch,
-    url: `https://github.com/${repository}/tree/${branch}`,
+    url: `https://github.com/${repository}/tree/${branchPath}`,
   });
   if (result.isError) {
     throw new Error(`Growth rejected the branch link: ${result.errorText}`);
@@ -88,7 +94,7 @@ async function attributeWorkItem({ callTool, repository, commitMessage, branch, 
     return trailerId;
   }
 
-  const branchId = await resolveWorkItemByBranch({ callTool, repository, branch });
+  const branchId = await resolveWorkItemByBranch({ callTool, repository, branch, log });
   if (branchId !== null) {
     log.info(`Attributed commit ${sha} to work item ${branchId} via branch ${branch}.`);
     return branchId;

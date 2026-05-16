@@ -20,16 +20,23 @@ class ResolveWorkItemByBranch extends Tool
             'branch' => ['required', 'string', 'max:255'],
         ]);
 
-        $link = WorkItemDeliveryLink::query()
+        $workItems = WorkItemDeliveryLink::query()
             ->where('type', 'branch')
             ->where('ref', $data['branch'])
             ->whereHas('workItem.project', fn ($query) => $query->where('github_repo', $data['github_repo']))
             ->with('workItem:id,name,status')
-            ->first();
+            ->get()
+            ->pluck('workItem')
+            ->filter()
+            ->unique('id')
+            ->values();
 
-        if ($link === null) {
+        // More than one work item bound to the same branch is genuine
+        // ambiguity: skipping beats silently attributing to the wrong one.
+        if ($workItems->count() !== 1) {
             return Response::structured([
                 'found' => false,
+                'ambiguous' => $workItems->count() > 1,
                 'github_repo' => $data['github_repo'],
                 'branch' => $data['branch'],
                 'work_item_id' => null,
@@ -38,13 +45,16 @@ class ResolveWorkItemByBranch extends Tool
             ]);
         }
 
+        $workItem = $workItems->first();
+
         return Response::structured([
             'found' => true,
+            'ambiguous' => false,
             'github_repo' => $data['github_repo'],
             'branch' => $data['branch'],
-            'work_item_id' => $link->workItem->id,
-            'work_item_name' => $link->workItem->name,
-            'work_item_status' => $link->workItem->status,
+            'work_item_id' => $workItem->id,
+            'work_item_name' => $workItem->name,
+            'work_item_status' => $workItem->status,
         ]);
     }
 
@@ -60,6 +70,7 @@ class ResolveWorkItemByBranch extends Tool
     {
         return [
             'found' => $schema->boolean()->required(),
+            'ambiguous' => $schema->boolean()->required(),
             'github_repo' => $schema->string()->required(),
             'branch' => $schema->string()->required(),
             'work_item_id' => $schema->string(),
