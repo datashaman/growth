@@ -54,6 +54,7 @@ class UpsertProject extends Tool
         return Response::structured([
             'id' => $project->id,
             'name' => $project->name,
+            'status' => $project->status,
             'rigor_level' => $project->rigor_level,
             'github_repo' => $project->github_repo,
             'created' => $project->wasRecentlyCreated,
@@ -76,6 +77,7 @@ class UpsertProject extends Tool
         return [
             'id' => $schema->string()->required(),
             'name' => $schema->string()->required(),
+            'status' => $schema->string()->required()->description('Current project status (read-only; changes only through transition tools).'),
             'rigor_level' => $schema->integer()->required(),
             'github_repo' => $schema->string(),
             'created' => $schema->boolean()->required(),

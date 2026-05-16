@@ -51,6 +51,7 @@ use Laravel\Passport\Passport;
 class AppServiceProvider extends ServiceProvider
 {
     public const MORPH_MAP = [
+        'project' => Project::class,
         'requirement' => Requirement::class,
         'artifact_relation' => ArtifactRelation::class,
         'change_request' => ChangeRequest::class,
