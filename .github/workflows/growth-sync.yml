@@ -17,6 +17,12 @@ on:
   release:
     types: [published]
 
+# checks:write lets growth-sync post the "Growth: work item attribution"
+# check back onto pull requests.
+permissions:
+  contents: read
+  checks: write
+
 jobs:
   sync:
     runs-on: ubuntu-latest

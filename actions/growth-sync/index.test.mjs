@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  buildAttributionCheckArgs,
   buildCheckRunArgs,
   buildDeliveryLinkArgs,
   buildDeploymentArgs,
@@ -704,6 +705,163 @@ test('run skips a trailer-less event whose branch is not bound', async () => {
       }
       throw new Error(`unexpected call to ${name}`);
     },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+});
+
+test('buildAttributionCheckArgs passes when a work item resolved', () => {
+  const args = buildAttributionCheckArgs({ headSha: 'sha1', workItemId: '01WI', branch: 'feature/x' });
+  assert.equal(args.name, 'Growth: work item attribution');
+  assert.equal(args.head_sha, 'sha1');
+  assert.equal(args.status, 'completed');
+  assert.equal(args.conclusion, 'success');
+  assert.match(args.output.title, /01WI/);
+});
+
+test('buildAttributionCheckArgs fails when no work item resolved', () => {
+  const args = buildAttributionCheckArgs({ headSha: 'sha1', workItemId: null, branch: 'feature/x' });
+  assert.equal(args.conclusion, 'failure');
+  assert.match(args.output.title, /No Growth work item/);
+  assert.match(args.output.summary, /Growth-Work-Item/);
+  assert.match(args.output.summary, /feature\/x/);
+});
+
+test('buildAttributionCheckArgs reports neutral in advisory mode', () => {
+  const args = buildAttributionCheckArgs({ headSha: 'sha1', workItemId: null, advisory: true });
+  assert.equal(args.conclusion, 'neutral');
+});
+
+test('run posts a passing attribution check when a pull request resolves', async () => {
+  const checks = [];
+  await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'synchronize',
+      pull_request: {
+        number: 7, html_url: 'u', title: 't',
+        head: { sha: 'sha7', ref: 'feature/lander', repo: { full_name: 'datashaman/growth' } },
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'Work\n\nGrowth-Work-Item: 01WI',
+    callTool: async () => ({ isError: false, structured: { id: 'link1' } }),
+    postCheckRun: async (args) => { checks.push(args); return {}; },
+    log: silentLog(),
+  });
+
+  assert.equal(checks.length, 1);
+  assert.equal(checks[0].conclusion, 'success');
+  assert.equal(checks[0].head_sha, 'sha7');
+});
+
+test('run posts a failing attribution check when a pull request cannot be attributed', async () => {
+  const checks = [];
+  const result = await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'opened',
+      pull_request: {
+        number: 7, html_url: 'u', title: 't',
+        head: { sha: 'sha7', ref: 'feature/orphan', repo: { full_name: 'datashaman/growth' } },
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer here',
+    callTool: async (name) => {
+      if (name === 'resolve-work-item-by-branch') {
+        return { isError: false, structured: { found: false, work_item_id: null } };
+      }
+      throw new Error(`unexpected call to ${name}`);
+    },
+    postCheckRun: async (args) => { checks.push(args); return {}; },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+  assert.equal(checks.length, 1);
+  assert.equal(checks[0].conclusion, 'failure');
+});
+
+test('run reports a neutral attribution check in advisory mode', async () => {
+  const checks = [];
+  await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'opened',
+      pull_request: {
+        number: 7, html_url: 'u', title: 't',
+        head: { sha: 'sha7', ref: 'feature/orphan', repo: { full_name: 'datashaman/growth' } },
+      },
+    },
+    repository: 'datashaman/growth',
+    attributionCheckAdvisory: true,
+    getCommitMessage: async () => 'No trailer here',
+    callTool: async () => ({ isError: false, structured: { found: false, work_item_id: null } }),
+    postCheckRun: async (args) => { checks.push(args); return {}; },
+    log: silentLog(),
+  });
+
+  assert.equal(checks.length, 1);
+  assert.equal(checks[0].conclusion, 'neutral');
+});
+
+test('run skips the attribution check for a fork pull request', async () => {
+  const checks = [];
+  await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'opened',
+      pull_request: {
+        number: 7, html_url: 'u', title: 't',
+        head: { sha: 'sha7', ref: 'feature/x', repo: { full_name: 'contributor/growth' } },
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'Work\n\nGrowth-Work-Item: 01WI',
+    callTool: async () => ({ isError: false, structured: { id: 'link1' } }),
+    postCheckRun: async (args) => { checks.push(args); return {}; },
+    log: silentLog(),
+  });
+
+  assert.equal(checks.length, 0);
+});
+
+test('run does not post an attribution check on a closed pull request', async () => {
+  const checks = [];
+  await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'closed',
+      pull_request: {
+        number: 7, html_url: 'u', title: 't', merged: true, merge_commit_sha: 'merge7',
+        head: { sha: 'sha7', ref: 'feature/x', repo: { full_name: 'datashaman/growth' } },
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'Work\n\nGrowth-Work-Item: 01WI',
+    callTool: async () => ({ isError: false, structured: { id: 'link1' } }),
+    postCheckRun: async (args) => { checks.push(args); return {}; },
+    log: silentLog(),
+  });
+
+  assert.equal(checks.length, 0);
+});
+
+test('run ignores its own attribution check run without further calls', async () => {
+  const result = await run({
+    eventName: 'check_run',
+    event: {
+      check_run: {
+        name: 'Growth: work item attribution',
+        head_sha: 'sha7',
+        pull_requests: [{ number: 9, head: { ref: 'feature/x' } }],
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => { throw new Error('should not fetch a commit'); },
+    callTool: async () => { throw new Error('should not call a tool'); },
     log: silentLog(),
   });
 
