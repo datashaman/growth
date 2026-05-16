@@ -72,6 +72,42 @@ it('clears unattributed events for a branch once it is bound', function () {
     expect(UnattributedGithubEvent::where('branch', 'feature/other')->exists())->toBeTrue();
 });
 
+it('keeps unattributed events when a branch is bound to more than one work item', function () {
+    $this->project->update(['github_repo' => 'datashaman/growth']);
+
+    $secondItem = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => WorkItem::KINDS[0],
+        'name' => 'Also ship it',
+    ]);
+
+    // An existing link already points feature/contested at one work item.
+    WorkItemDeliveryLink::create([
+        'work_item_id' => $this->workItem->id,
+        'type' => 'branch',
+        'ref' => 'feature/contested',
+    ]);
+
+    UnattributedGithubEvent::create([
+        'github_repo' => 'datashaman/growth',
+        'event_type' => 'check_run',
+        'branch' => 'feature/contested',
+        'commit_sha' => 'sha-contested',
+        'reason' => 'missing_link',
+        'received_at' => now(),
+    ]);
+
+    // Binding a second work item leaves the branch ambiguous, so the
+    // exception stays — resolving it does not pick a single work item.
+    PlanningServer::tool(UpsertDeliveryLink::class, [
+        'work_item_id' => $secondItem->id,
+        'type' => 'branch',
+        'ref' => 'feature/contested',
+    ])->assertOk();
+
+    expect(UnattributedGithubEvent::where('branch', 'feature/contested')->exists())->toBeTrue();
+});
+
 it('upserts the same pull request ref across synchronize and merge events', function () {
     $args = [
         'work_item_id' => $this->workItem->id,

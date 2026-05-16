@@ -189,6 +189,7 @@ new #[Title('Evidence')] class extends Component {
 
         return UnattributedGithubEvent::query()
             ->where('github_repo', $this->selectedProject->github_repo)
+            ->withinRetention()
             ->orderByDesc('received_at')
             ->orderByDesc('id')
             ->get();

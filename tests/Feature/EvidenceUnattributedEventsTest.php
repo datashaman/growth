@@ -47,6 +47,21 @@ test('it explains an ambiguous branch differently', function () {
         ->assertSee('bound to more than one work item');
 });
 
+test('it hides unattributed events past the retention window', function () {
+    UnattributedGithubEvent::create([
+        'github_repo' => 'datashaman/growth',
+        'event_type' => 'check_run',
+        'branch' => 'feature/ancient',
+        'commit_sha' => 'old1234567890',
+        'reason' => 'missing_link',
+        'received_at' => now()->subDays(UnattributedGithubEvent::RETENTION_DAYS + 1),
+    ]);
+
+    Livewire::test('pages::evidence')
+        ->assertDontSee('feature/ancient')
+        ->assertDontSee('could not be matched to a work item');
+});
+
 test('it does not surface unattributed events for a repo in another workspace', function () {
     $other = User::factory()->create();
     Project::create([

@@ -4,7 +4,6 @@ namespace App\Mcp\Tools\Plan;
 
 use App\Models\UnattributedGithubEvent;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Illuminate\Support\Carbon;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
@@ -14,12 +13,6 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Record a GitHub event that could not be attributed to a work item, so the gap is visible on the Evidence page instead of evaporating silently.')]
 class RecordUnattributedEvent extends Tool
 {
-    /**
-     * Unattributed events older than this are dropped on each insert so the
-     * table stays a recent triage net, not an unbounded event log.
-     */
-    private const RETENTION_DAYS = 30;
-
     public function handle(Request $request): ResponseFactory
     {
         $data = $request->validate([
@@ -45,9 +38,7 @@ class RecordUnattributedEvent extends Tool
             ],
         );
 
-        UnattributedGithubEvent::query()
-            ->where('received_at', '<', Carbon::now()->subDays(self::RETENTION_DAYS))
-            ->delete();
+        UnattributedGithubEvent::pruneExpired();
 
         return Response::structured([
             'id' => $event->id,
