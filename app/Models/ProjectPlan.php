@@ -36,4 +36,9 @@ class ProjectPlan extends Model
     {
         return $this->hasMany(ProjectPlanBaseline::class);
     }
+
+    public function statusTransitions(): MorphMany
+    {
+        return $this->morphMany(StatusTransition::class, 'transitionable');
+    }
 }

@@ -44,4 +44,9 @@ class Anomaly extends Model
     {
         return $this->morphMany(Citation::class, 'citable');
     }
+
+    public function statusTransitions(): MorphMany
+    {
+        return $this->morphMany(StatusTransition::class, 'transitionable');
+    }
 }

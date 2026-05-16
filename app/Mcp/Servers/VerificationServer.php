@@ -21,6 +21,7 @@ use App\Mcp\Tools\Plan\UpsertCheckRun;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Requirements\ListRequirements;
 use App\Mcp\Tools\Trace\TraceQuery;
+use App\Mcp\Tools\Verification\CloseAnomaly;
 use App\Mcp\Tools\Verification\DeleteAnomaly;
 use App\Mcp\Tools\Verification\DeleteVerificationCase;
 use App\Mcp\Tools\Verification\DeleteVerificationPlan;
@@ -30,6 +31,9 @@ use App\Mcp\Tools\Verification\ListVerificationCases;
 use App\Mcp\Tools\Verification\ListVerificationPlans;
 use App\Mcp\Tools\Verification\ListVerificationRuns;
 use App\Mcp\Tools\Verification\LogVerificationRun;
+use App\Mcp\Tools\Verification\ReopenAnomaly;
+use App\Mcp\Tools\Verification\ResolveAnomaly;
+use App\Mcp\Tools\Verification\StartAnomalyInvestigation;
 use App\Mcp\Tools\Verification\UpsertAnomaly;
 use App\Mcp\Tools\Verification\UpsertVerificationCases;
 use App\Mcp\Tools\Verification\UpsertVerificationPlan;
@@ -61,6 +65,10 @@ class VerificationServer extends Server
         UpsertAnomaly::class,
         ListAnomalies::class,
         DeleteAnomaly::class,
+        StartAnomalyInvestigation::class,
+        ResolveAnomaly::class,
+        CloseAnomaly::class,
+        ReopenAnomaly::class,
         UpsertCheckRun::class,
         ListCheckRuns::class,
         EvaluateReadinessGates::class,
