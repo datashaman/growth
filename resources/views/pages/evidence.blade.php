@@ -11,6 +11,7 @@ use App\Growth\Transitions\PromoteRelease;
 use App\Growth\Transitions\RollBackDeployment;
 use App\Growth\Transitions\StartDeployment;
 use App\Growth\Transitions\Transition;
+use App\Models\UnattributedGithubEvent;
 use App\Models\WorkItemDeliveryLink;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
@@ -133,7 +134,7 @@ new #[Title('Evidence')] class extends Component {
 
     public function onProjectDataChanged(): void
     {
-        unset($this->releases, $this->deployments, $this->deliveryLinks);
+        unset($this->releases, $this->deployments, $this->deliveryLinks, $this->unattributedEvents);
     }
 
     #[Computed]
@@ -173,6 +174,26 @@ new #[Title('Evidence')] class extends Component {
             ->orderByDesc('id')
             ->get();
     }
+
+    /**
+     * GitHub events that arrived but could not be matched to a work item.
+     * Keyed by repository — an unattributed event has no work item, hence
+     * no project, so it is resolved through the project's github_repo.
+     */
+    #[Computed]
+    public function unattributedEvents()
+    {
+        if ($this->selectedProject?->github_repo === null) {
+            return collect();
+        }
+
+        return UnattributedGithubEvent::query()
+            ->where('github_repo', $this->selectedProject->github_repo)
+            ->withinRetention()
+            ->orderByDesc('received_at')
+            ->orderByDesc('id')
+            ->get();
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -186,6 +207,47 @@ new #[Title('Evidence')] class extends Component {
             <flux:callout.text>{{ __('Pick a project to see its evidence trail.') }}</flux:callout.text>
         </flux:callout>
     @else
+        @if ($this->unattributedEvents->isNotEmpty())
+            <flux:callout variant="warning" icon="exclamation-triangle">
+                <flux:callout.heading>
+                    {{ trans_choice(
+                        '{1} A GitHub event could not be matched to a work item|[2,*] :count GitHub events could not be matched to a work item',
+                        $this->unattributedEvents->count(),
+                        ['count' => $this->unattributedEvents->count()],
+                    ) }}
+                </flux:callout.heading>
+                <flux:callout.text>
+                    <div class="flex flex-col gap-3">
+                        @foreach ($this->unattributedEvents as $event)
+                            <div class="flex flex-col gap-0.5">
+                                <div class="text-sm font-medium">
+                                    {{ str_replace('_', ' ', $event->event_type) }}
+                                    @if ($event->branch)
+                                        · {{ __('branch') }} <span class="font-mono">{{ $event->branch }}</span>
+                                    @endif
+                                    · {{ $event->received_at->diffForHumans() }}
+                                </div>
+                                <div class="text-sm">
+                                    @if ($event->reason === 'ambiguous_branch')
+                                        {{ __('Branch :branch is bound to more than one work item, so the commit cannot be attributed.', ['branch' => $event->branch]) }}
+                                    @else
+                                        {{ __('The commit has no Growth-Work-Item trailer and its branch is not bound to a work item.') }}
+                                    @endif
+                                    {{ __('Bind the branch or add the trailer, then re-run the check.') }}
+                                </div>
+                                @if ($event->url)
+                                    <a href="{{ $event->url }}" target="_blank" rel="noopener"
+                                        class="font-mono text-xs text-sky-600 underline dark:text-sky-400">{{ \Illuminate\Support\Str::limit($event->commit_sha, 12, '') }}</a>
+                                @else
+                                    <span class="font-mono text-xs">{{ \Illuminate\Support\Str::limit($event->commit_sha, 12, '') }}</span>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </flux:callout.text>
+            </flux:callout>
+        @endif
+
         <x-data-table
             :title="__('Releases')"
             :count="$this->releases->count()"

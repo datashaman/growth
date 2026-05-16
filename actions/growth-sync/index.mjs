@@ -48,7 +48,7 @@ export function resolveEventBranch(eventName, event, pullRequest = null) {
  */
 async function resolveWorkItemByBranch({ callTool, repository, branch, log }) {
   if (!branch) {
-    return null;
+    return { workItemId: null, ambiguous: false };
   }
   const result = await callTool('resolve-work-item-by-branch', {
     github_repo: repository,
@@ -57,10 +57,40 @@ async function resolveWorkItemByBranch({ callTool, repository, branch, log }) {
   if (result.isError) {
     throw new Error(`Growth rejected the branch lookup: ${result.errorText}`);
   }
-  if (result.structured?.ambiguous) {
+  const ambiguous = result.structured?.ambiguous === true;
+  if (ambiguous) {
     log?.warn(`Branch ${branch} is bound to more than one work item; cannot attribute trailer-less commits.`);
   }
-  return result.structured?.found ? result.structured.work_item_id : null;
+  return {
+    workItemId: result.structured?.found ? result.structured.work_item_id : null,
+    ambiguous,
+  };
+}
+
+/**
+ * Record a GitHub event that could not be attributed so the gap surfaces
+ * on the Evidence page. Best-effort: a rejected record is logged, not
+ * thrown — the triage net must not fail the whole sync.
+ */
+async function recordUnattributedEvent({ callTool, repository, eventName, branch, sha, reason, url, log }) {
+  if (!sha) {
+    return;
+  }
+  try {
+    const result = await callTool('record-unattributed-event', {
+      github_repo: repository,
+      event_type: eventName,
+      branch: branch ?? undefined,
+      commit_sha: sha,
+      reason,
+      url: url ?? undefined,
+    });
+    if (result.isError) {
+      log.warn(`Growth rejected the unattributed-event record: ${result.errorText}`);
+    }
+  } catch (error) {
+    log.warn(`Could not record the unattributed event: ${error.message}`);
+  }
 }
 
 /**
@@ -89,7 +119,7 @@ async function recordBranchBinding({ callTool, repository, workItemId, branch })
  * and a branch is known, the branch is bound so later trailer-less events
  * still attribute. Returns the work item id, or null when unattributable.
  */
-async function attributeWorkItem({ callTool, repository, commitMessage, branch, sha, log }) {
+async function attributeWorkItem({ callTool, repository, eventName, commitMessage, branch, sha, url, log }) {
   const trailerId = parseTrailer(commitMessage);
   if (trailerId !== null) {
     if (branch) {
@@ -98,13 +128,23 @@ async function attributeWorkItem({ callTool, repository, commitMessage, branch, 
     return trailerId;
   }
 
-  const branchId = await resolveWorkItemByBranch({ callTool, repository, branch, log });
-  if (branchId !== null) {
-    log.info(`Attributed commit ${sha} to work item ${branchId} via branch ${branch}.`);
-    return branchId;
+  const { workItemId, ambiguous } = await resolveWorkItemByBranch({ callTool, repository, branch, log });
+  if (workItemId !== null) {
+    log.info(`Attributed commit ${sha} to work item ${workItemId} via branch ${branch}.`);
+    return workItemId;
   }
 
   log.warn(`No ${TRAILER_KEY} trailer on commit ${sha} and no work item bound to branch ${branch ?? '(unknown)'}; skipping.`);
+  await recordUnattributedEvent({
+    callTool,
+    repository,
+    eventName,
+    branch,
+    sha,
+    reason: ambiguous ? 'ambiguous_branch' : 'missing_link',
+    url,
+    log,
+  });
   return null;
 }
 
@@ -260,7 +300,16 @@ async function runPullRequest({ event, repository, getCommitMessage, callTool, p
 
   const branch = resolveEventBranch('pull_request', event);
   const commitMessage = await getCommitMessage(sha);
-  const workItemId = await attributeWorkItem({ callTool, repository, commitMessage, branch, sha, log });
+  const workItemId = await attributeWorkItem({
+    callTool,
+    repository,
+    eventName: 'pull_request',
+    commitMessage,
+    branch,
+    sha,
+    url: event.pull_request?.html_url,
+    log,
+  });
 
   await reportAttribution({
     event,
@@ -307,7 +356,16 @@ async function runCheckRun({ event, repository, getCommitMessage, callTool, log 
   const branch = resolveEventBranch('check_run', event, pullRequest);
   const sha = event.check_run?.head_sha;
   const commitMessage = await getCommitMessage(sha);
-  const workItemId = await attributeWorkItem({ callTool, repository, commitMessage, branch, sha, log });
+  const workItemId = await attributeWorkItem({
+    callTool,
+    repository,
+    eventName: 'check_run',
+    commitMessage,
+    branch,
+    sha,
+    url: event.check_run?.html_url,
+    log,
+  });
   if (workItemId === null) {
     return { skipped: true };
   }
@@ -381,9 +439,11 @@ async function runWorkflowRun({ event, repository, getCommitMessage, callTool, l
   const workItemId = await attributeWorkItem({
     callTool,
     repository,
+    eventName: 'workflow_run',
     commitMessage,
     branch,
     sha: run.head_sha,
+    url: run.html_url,
     log,
   });
   if (workItemId === null) {

@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
+use App\Models\UnattributedGithubEvent;
 use App\Models\WorkItemDeliveryLink;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -38,6 +39,10 @@ class UpsertDeliveryLink extends Tool
                 $data,
             );
 
+        if ($link->type === 'branch') {
+            $this->clearResolvedBranchEvents($link);
+        }
+
         return Response::structured([
             'id' => $link->id,
             'work_item_id' => $link->work_item_id,
@@ -46,6 +51,33 @@ class UpsertDeliveryLink extends Tool
             'url' => $link->url,
             'created' => $link->wasRecentlyCreated,
         ]);
+    }
+
+    /**
+     * Once a branch is bound, the GitHub events that failed to attribute on
+     * it leave the Evidence exception list — but only when the branch now
+     * resolves to exactly one work item. A branch bound to several is still
+     * ambiguous and unattributable, so its exceptions must stay visible.
+     * (Events bound by trailer only fall to the retention prune instead.)
+     */
+    private function clearResolvedBranchEvents(WorkItemDeliveryLink $link): void
+    {
+        $githubRepo = $link->workItem?->project?->github_repo;
+
+        if ($githubRepo === null) {
+            return;
+        }
+
+        $distinctWorkItems = WorkItemDeliveryLink::query()
+            ->where('type', 'branch')
+            ->where('ref', $link->ref)
+            ->whereHas('workItem.project', fn ($query) => $query->where('github_repo', $githubRepo))
+            ->distinct()
+            ->count('work_item_id');
+
+        if ($distinctWorkItems === 1) {
+            UnattributedGithubEvent::clearForBranch($githubRepo, $link->ref);
+        }
     }
 
     public function schema(JsonSchema $schema): array

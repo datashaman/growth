@@ -56,6 +56,7 @@ use App\Mcp\Tools\Plan\MarkRiskMitigated;
 use App\Mcp\Tools\Plan\MarkRiskRealized;
 use App\Mcp\Tools\Plan\MissMilestone;
 use App\Mcp\Tools\Plan\PromoteRelease;
+use App\Mcp\Tools\Plan\RecordUnattributedEvent;
 use App\Mcp\Tools\Plan\ReopenWorkItem;
 use App\Mcp\Tools\Plan\ResolveWorkItemByBranch;
 use App\Mcp\Tools\Plan\RollBackDeployment;
@@ -138,6 +139,7 @@ class PlanningServer extends Server
         LinkWorkItemDependency::class,
         UnlinkWorkItemDependency::class,
         ResolveWorkItemByBranch::class,
+        RecordUnattributedEvent::class,
         AssignWorkItemRaci::class,
         UnassignWorkItemRaci::class,
         UpsertDeliveryLink::class,
