@@ -5,7 +5,6 @@ use App\Growth\Transitions\HitMilestone;
 use App\Growth\Transitions\IllegalTransitionException;
 use App\Growth\Transitions\MissMilestone;
 use App\Growth\Transitions\Transition;
-use App\Models\Milestone;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
 use Flux\Flux;
@@ -90,7 +89,7 @@ new #[Title('Plan')] class extends Component {
 
     private function transitionMilestone(string $milestoneId, Transition $transition): void
     {
-        $milestone = Milestone::find($milestoneId);
+        $milestone = $this->selectedProject?->milestones()->find($milestoneId);
 
         abort_if($milestone === null, 404);
 

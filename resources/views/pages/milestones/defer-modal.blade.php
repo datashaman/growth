@@ -33,7 +33,7 @@ new class extends Component {
     public function defer(): void
     {
         $data = $this->validate([
-            'newTargetDate' => ['required', 'date'],
+            'newTargetDate' => ['required', 'date_format:Y-m-d'],
         ]);
 
         $milestone = Milestone::find($this->milestoneId);
