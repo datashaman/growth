@@ -1,7 +1,7 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 
-const driver = import.meta.env.VITE_BROADCAST_DRIVER;
+const driver = import.meta.env.VITE_BROADCAST_CONNECTION;
 
 if (driver === 'reverb') {
     window.Pusher = Pusher;
