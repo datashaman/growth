@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BroadcastsProjectChanges;
+use App\Models\Concerns\BroadcastsReviewChanges;
 use App\Models\Concerns\ScopedByOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -11,8 +13,15 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Review extends Model
 {
+    use BroadcastsProjectChanges;
+    use BroadcastsReviewChanges;
     use HasUlids;
     use ScopedByOwner;
+
+    public function reviewIdForBroadcast(): ?string
+    {
+        return $this->getKey();
+    }
 
     public const TYPES = ['management_review', 'technical_review', 'inspection', 'walkthrough', 'audit'];
 

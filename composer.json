@@ -15,10 +15,13 @@
         "laravel/horizon": "^5.46",
         "laravel/mcp": "^0.7.0",
         "laravel/passport": "^13.0",
+        "laravel/reverb": "^1.0",
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
+        "laravel/vapor-core": "^2.43",
         "livewire/flux": "^2.13.1",
-        "livewire/livewire": "^4.1"
+        "livewire/livewire": "^4.1",
+        "resend/resend-laravel": "^1.4"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -55,7 +58,7 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan horizon:listen\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,horizon,logs,vite --kill-others"
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan reverb:start --debug\" \"php artisan horizon:listen\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,reverb,horizon,logs,vite --kill-others"
         ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",

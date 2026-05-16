@@ -16,7 +16,37 @@ test('invitation page renders signup form for unauthenticated user', function ()
 
     $this->get(route('invitations.show', ['token' => $invitation->token]))
         ->assertOk()
-        ->assertSee('newcomer@example.test');
+        ->assertSee('newcomer@example.test')
+        ->assertSee('Create account & accept');
+});
+
+test('invitation page prompts existing user to log in instead of signing up', function () {
+    $owner = User::factory()->create();
+    User::factory()->create(['email' => 'returning@example.test']);
+
+    $invitation = WorkspaceInvitation::factory()->forWorkspace($owner->activeWorkspace)->create([
+        'email' => 'returning@example.test',
+        'invited_by_user_id' => $owner->id,
+    ]);
+
+    $this->get(route('invitations.show', ['token' => $invitation->token]))
+        ->assertOk()
+        ->assertSee('Log in to accept')
+        ->assertDontSee('Create account & accept');
+});
+
+test('invitation page sets intended url so login returns to the invitation', function () {
+    $owner = User::factory()->create();
+    $invitation = WorkspaceInvitation::factory()->forWorkspace($owner->activeWorkspace)->create([
+        'email' => 'newcomer@example.test',
+        'invited_by_user_id' => $owner->id,
+    ]);
+
+    $url = route('invitations.show', ['token' => $invitation->token]);
+
+    $this->get($url)->assertOk();
+
+    expect(session('url.intended'))->toBe($url);
 });
 
 test('expired invitation is rejected', function () {

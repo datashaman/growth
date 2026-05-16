@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use App\Database\Eloquent\Relations\PgCompatibleMorphToMany;
+use App\Models\Concerns\BroadcastsProjectChanges;
 use App\Models\Concerns\ScopedByOwner;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Role extends Model
 {
+    use BroadcastsProjectChanges;
     use HasUlids;
     use ScopedByOwner;
 
@@ -81,5 +85,31 @@ class Role extends Model
     public function requestedChanges(): HasMany
     {
         return $this->hasMany(ChangeRequest::class, 'requester_role_id');
+    }
+
+    protected function newMorphToMany(
+        Builder $query,
+        Model $parent,
+        $name,
+        $table,
+        $foreignPivotKey,
+        $relatedPivotKey,
+        $parentKey,
+        $relatedKey,
+        $relationName = null,
+        $inverse = false,
+    ): MorphToMany {
+        return new PgCompatibleMorphToMany(
+            $query,
+            $parent,
+            $name,
+            $table,
+            $foreignPivotKey,
+            $relatedPivotKey,
+            $parentKey,
+            $relatedKey,
+            $relationName,
+            $inverse,
+        );
     }
 }

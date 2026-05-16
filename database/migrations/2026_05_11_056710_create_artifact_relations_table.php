@@ -11,11 +11,11 @@ return new class extends Migration
         Schema::create('artifact_relations', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('project_id')->constrained()->cascadeOnDelete();
-            $table->string('source_artifact_type');
-            $table->string('source_artifact_id');
+            $table->string('source_artifact_type', 64);
+            $table->char('source_artifact_id', 26);
             $table->enum('relation', ['supersedes', 'replaces', 'duplicates', 'relates_to']);
-            $table->string('target_artifact_type');
-            $table->string('target_artifact_id');
+            $table->string('target_artifact_type', 64);
+            $table->char('target_artifact_id', 26);
             $table->text('rationale')->nullable();
             $table->timestamps();
 

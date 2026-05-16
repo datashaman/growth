@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Mcp\RecordingCallTool;
 use App\Models\Agent;
 use App\Models\Anomaly;
 use App\Models\ArtifactRelation;
@@ -44,6 +45,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Laravel\Mcp\Server\Methods\CallTool;
 use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
@@ -116,6 +118,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(WorkspaceContext::class);
+        $this->app->bind(CallTool::class, RecordingCallTool::class);
     }
 
     public function boot(): void
