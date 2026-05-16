@@ -24,6 +24,8 @@ class UpsertDeployment extends Tool
             'release_id' => 'nullable|string|owned_release',
             'environment' => 'required|string|max:120',
             'status' => 'nullable|in:'.implode(',', Deployment::STATUSES),
+            'provider' => 'nullable|string|max:120',
+            'external_ref' => 'nullable|string|max:255',
             'deployed_at' => 'nullable|date',
             'url' => 'nullable|url|max:2048',
             'notes' => 'nullable|string',
@@ -50,9 +52,17 @@ class UpsertDeployment extends Tool
         $id = $data['id'] ?? null;
         unset($data['id']);
 
-        $deployment = $id
-            ? tap(Deployment::findOrFail($id))->update($data)
-            : Deployment::create($data);
+        if ($id) {
+            $deployment = tap(Deployment::findOrFail($id))->update($data);
+        } elseif (isset($data['provider'], $data['external_ref'])) {
+            $deployment = Deployment::updateOrCreate([
+                'project_id' => $data['project_id'],
+                'provider' => $data['provider'],
+                'external_ref' => $data['external_ref'],
+            ], $data);
+        } else {
+            $deployment = Deployment::create($data);
+        }
 
         if ($deliveryLinkIds !== null) {
             $deployment->deliveryLinks()->sync($deliveryLinkIds);
@@ -78,6 +88,8 @@ class UpsertDeployment extends Tool
             'release_id' => $schema->string()->description('Release ULID deployed'),
             'environment' => $schema->string()->description('Environment name, e.g. staging or production')->required(),
             'status' => $schema->string()->description('Deployment status')->enum(Deployment::STATUSES),
+            'provider' => $schema->string()->description('External provider, e.g. github-actions'),
+            'external_ref' => $schema->string()->description('Provider deployment id; with provider, makes the upsert idempotent'),
             'deployed_at' => $schema->string()->description('Deployment timestamp'),
             'url' => $schema->string()->description('Deployment URL or run URL'),
             'notes' => $schema->string()->description('Deployment notes'),

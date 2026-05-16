@@ -18,7 +18,7 @@ class Deployment extends Model
     public const STATUSES = ['planned', 'in_progress', 'succeeded', 'failed', 'rolled_back', 'cancelled'];
 
     protected $fillable = [
-        'project_id', 'release_id', 'environment', 'status', 'deployed_at', 'url', 'notes',
+        'project_id', 'release_id', 'environment', 'status', 'provider', 'external_ref', 'deployed_at', 'url', 'notes',
     ];
 
     protected $casts = [

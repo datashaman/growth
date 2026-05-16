@@ -4,6 +4,8 @@ import { test } from 'node:test';
 import {
   buildCheckRunArgs,
   buildDeliveryLinkArgs,
+  buildDeploymentArgs,
+  mapDeploymentState,
   parseTrailer,
   resolveCheckRunPullRequest,
   resolveCommitSha,
@@ -262,6 +264,98 @@ test('run skips when Growth rejects the check run', async () => {
       name === 'upsert-delivery-link'
         ? { isError: false, structured: { id: 'link1' } }
         : { isError: true, errorText: 'bad conclusion' },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+});
+
+test('mapDeploymentState maps GitHub states to Growth statuses', () => {
+  assert.equal(mapDeploymentState('success'), 'succeeded');
+  assert.equal(mapDeploymentState('failure'), 'failed');
+  assert.equal(mapDeploymentState('error'), 'failed');
+  assert.equal(mapDeploymentState('pending'), null);
+  assert.equal(mapDeploymentState('in_progress'), null);
+});
+
+test('buildDeploymentArgs maps a deployment_status payload to upsert-deployment arguments', () => {
+  const event = {
+    deployment: { id: 999, environment: 'production' },
+    deployment_status: {
+      state: 'success',
+      environment: 'production',
+      environment_url: 'https://app.example.com',
+      created_at: '2026-01-01T00:00:00Z',
+    },
+  };
+  assert.deepEqual(buildDeploymentArgs(event, 'proj1', 'succeeded'), {
+    project_id: 'proj1',
+    environment: 'production',
+    status: 'succeeded',
+    provider: 'github',
+    external_ref: '999',
+    url: 'https://app.example.com',
+    deployed_at: '2026-01-01T00:00:00Z',
+  });
+});
+
+function deploymentEvent() {
+  return {
+    action: 'created',
+    deployment: { id: 999, environment: 'production' },
+    deployment_status: { state: 'success', environment: 'production' },
+  };
+}
+
+test('run records a deployment against the resolved project on the happy path', async () => {
+  const calls = [];
+  const result = await run({
+    eventName: 'deployment_status',
+    event: deploymentEvent(),
+    repository: 'datashaman/growth',
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      return name === 'resolve-project-by-repo'
+        ? { isError: false, structured: { found: true, project_id: 'proj1' } }
+        : { isError: false, structured: { id: 'dep1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, false);
+  assert.deepEqual(calls.map((c) => c.name), ['resolve-project-by-repo', 'upsert-deployment']);
+  assert.equal(calls[0].args.github_repo, 'datashaman/growth');
+  assert.equal(calls[1].args.project_id, 'proj1');
+  assert.equal(calls[1].args.status, 'succeeded');
+  assert.equal(calls[1].args.external_ref, '999');
+});
+
+test('run skips a deployment state Growth does not record', async () => {
+  let called = false;
+  const event = deploymentEvent();
+  event.deployment_status.state = 'pending';
+
+  const result = await run({
+    eventName: 'deployment_status',
+    event,
+    repository: 'datashaman/growth',
+    callTool: async () => {
+      called = true;
+      return { isError: false };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+  assert.equal(called, false);
+});
+
+test('run skips a deployment whose repo has no bound project', async () => {
+  const result = await run({
+    eventName: 'deployment_status',
+    event: deploymentEvent(),
+    repository: 'datashaman/growth',
+    callTool: async () => ({ isError: false, structured: { found: false, project_id: null } }),
     log: silentLog(),
   });
 
