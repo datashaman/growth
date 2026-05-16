@@ -107,6 +107,34 @@ it('does not resolve a branch bound in another repo', function () {
         ->assertStructuredContent(fn ($json) => $json->where('found', false)->etc());
 });
 
+it('does not resolve a branch bound in another workspace', function () {
+    $other = User::factory()->create();
+    $foreignProject = Project::create([
+        'workspace_id' => $other->active_workspace_id,
+        'name' => 'Foreign',
+        'rigor_level' => 2,
+        'github_repo' => 'datashaman/foreign',
+    ]);
+    $foreignItem = WorkItem::create([
+        'project_id' => $foreignProject->id,
+        'name' => 'Foreign work',
+        'kind' => 'task',
+        'status' => 'in_progress',
+    ]);
+    WorkItemDeliveryLink::create([
+        'work_item_id' => $foreignItem->id,
+        'type' => 'branch',
+        'ref' => 'feature/lander',
+    ]);
+
+    PlanningServer::tool(ResolveWorkItemByBranch::class, [
+        'github_repo' => 'datashaman/foreign',
+        'branch' => 'feature/lander',
+    ])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->where('found', false)->etc());
+});
+
 it('rejects a malformed repo argument', function () {
     PlanningServer::tool(ResolveWorkItemByBranch::class, [
         'github_repo' => 'not-a-repo',
