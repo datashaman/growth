@@ -100,7 +100,7 @@ it('rejects status passed to upsert-work-items with a pointer to the transition 
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('items.0.ok', false)
-                ->where('items.0.errors.status.0', 'Work item status is not set here. Use the start-work-item and complete-work-item tools to move status through validated transitions.')
+                ->where('items.0.errors.status.0', 'Work item status is not set here. Use the work item transition tools (start, complete, block, unblock, cancel, reopen) to move status through validated transitions.')
                 ->etc();
         });
 
