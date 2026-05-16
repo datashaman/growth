@@ -27,12 +27,15 @@ use App\Mcp\Tools\Dashboard\ShowGateStatus;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Reviews\AcceptFinding;
+use App\Mcp\Tools\Reviews\CancelReview;
 use App\Mcp\Tools\Reviews\CloseFinding;
+use App\Mcp\Tools\Reviews\CloseReview;
 use App\Mcp\Tools\Reviews\DeleteReview;
 use App\Mcp\Tools\Reviews\DeleteReviewFinding;
 use App\Mcp\Tools\Reviews\DeleteReviewParticipant;
 use App\Mcp\Tools\Reviews\DeleteReviewPlan;
 use App\Mcp\Tools\Reviews\DispositionFinding;
+use App\Mcp\Tools\Reviews\HoldReview;
 use App\Mcp\Tools\Reviews\ListReviewDecisionEvents;
 use App\Mcp\Tools\Reviews\ListReviewFindings;
 use App\Mcp\Tools\Reviews\ListReviewParticipants;
@@ -40,6 +43,7 @@ use App\Mcp\Tools\Reviews\ListReviewPlans;
 use App\Mcp\Tools\Reviews\ListReviews;
 use App\Mcp\Tools\Reviews\ReopenFinding;
 use App\Mcp\Tools\Reviews\ResolveFinding;
+use App\Mcp\Tools\Reviews\StartReview;
 use App\Mcp\Tools\Reviews\UpsertReview;
 use App\Mcp\Tools\Reviews\UpsertReviewFinding;
 use App\Mcp\Tools\Reviews\UpsertReviewParticipant;
@@ -67,6 +71,10 @@ class GovernanceServer extends Server
         ListReviews::class,
         ListReviewDecisionEvents::class,
         DeleteReview::class,
+        StartReview::class,
+        HoldReview::class,
+        CloseReview::class,
+        CancelReview::class,
         UpsertReviewParticipant::class,
         ListReviewParticipants::class,
         DeleteReviewParticipant::class,

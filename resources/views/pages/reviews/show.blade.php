@@ -1,11 +1,16 @@
 <?php
 
 use App\Growth\Transitions\AcceptFinding;
+use App\Growth\Transitions\CancelReview;
 use App\Growth\Transitions\CloseFinding;
+use App\Growth\Transitions\CloseReview;
 use App\Growth\Transitions\DispositionFinding;
+use App\Growth\Transitions\HoldReview;
 use App\Growth\Transitions\IllegalTransitionException;
 use App\Growth\Transitions\ReopenFinding;
 use App\Growth\Transitions\ResolveFinding;
+use App\Growth\Transitions\ReviewTransition;
+use App\Growth\Transitions\StartReview;
 use App\Growth\Transitions\Transition;
 use App\Models\Review;
 use App\Support\BadgeVariant;
@@ -50,6 +55,43 @@ new class extends Component {
     public function onReviewDataChanged(): void
     {
         $this->review = $this->review->fresh($this->relations());
+    }
+
+    public function startReview(): void
+    {
+        $this->applyTransition(new StartReview);
+    }
+
+    public function holdReview(): void
+    {
+        $this->applyTransition(new HoldReview);
+    }
+
+    public function closeReview(): void
+    {
+        $this->applyTransition(new CloseReview);
+    }
+
+    public function cancelReview(): void
+    {
+        $this->applyTransition(new CancelReview);
+    }
+
+    private function applyTransition(ReviewTransition $transition): void
+    {
+        try {
+            $transition->apply($this->review, auth()->user());
+        } catch (IllegalTransitionException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        $this->review = $this->review->fresh($this->relations());
+
+        Flux::toast(variant: 'success', text: __('Review is now :status.', [
+            'status' => str_replace('_', ' ', $this->review->status),
+        ]));
     }
 
     public function dispositionFinding(string $findingId): void
@@ -120,6 +162,18 @@ new class extends Component {
         </x-slot:description>
 
         <x-slot:actions>
+            @if ($review->status === 'planned')
+                <flux:button size="sm" icon="play" variant="primary" wire:click="startReview">{{ __('Start') }}</flux:button>
+            @endif
+            @if ($review->status === 'in_progress')
+                <flux:button size="sm" icon="check" variant="primary" wire:click="holdReview">{{ __('Hold') }}</flux:button>
+            @endif
+            @if ($review->status === 'held')
+                <flux:button size="sm" icon="archive-box" wire:click="closeReview">{{ __('Close') }}</flux:button>
+            @endif
+            @if (in_array($review->status, ['planned', 'in_progress'], true))
+                <flux:button size="sm" icon="x-mark" variant="danger" wire:click="cancelReview">{{ __('Cancel') }}</flux:button>
+            @endif
             <flux:modal.trigger name="edit-review">
                 <flux:button size="sm" icon="pencil-square" variant="primary">{{ __('Edit') }}</flux:button>
             </flux:modal.trigger>
