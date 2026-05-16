@@ -46,11 +46,11 @@ class ScheduleHealthSummarizer
             }
 
             foreach ($item->dependencies as $dependency) {
-                if ($this->isOpen($item) && $this->isOpen($dependency) && $item->status !== 'blocked') {
+                if ($item->status === 'in_progress' && $this->isOpen($dependency)) {
                     $findings[] = $this->finding(
                         'schedule.dependency.open',
                         'warning',
-                        'Work item depends on an unfinished work item',
+                        'Work item is in progress while a dependency is unfinished',
                         'work_item',
                         $item->id,
                         ['depends_on_id' => $dependency->id],
