@@ -12,9 +12,12 @@ use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Common\BulkLink;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Lint\LintProject;
+use App\Mcp\Tools\Plan\AcceptRisk;
+use App\Mcp\Tools\Plan\AssessRisk;
 use App\Mcp\Tools\Plan\AssignRole;
 use App\Mcp\Tools\Plan\AssignWorkItemRaci;
 use App\Mcp\Tools\Plan\BaselinePlan;
+use App\Mcp\Tools\Plan\CloseRisk;
 use App\Mcp\Tools\Plan\ComparePlanBaseline;
 use App\Mcp\Tools\Plan\CompleteWorkItem;
 use App\Mcp\Tools\Plan\DeleteAgent;
@@ -38,6 +41,9 @@ use App\Mcp\Tools\Plan\ListReleases;
 use App\Mcp\Tools\Plan\ListRisks;
 use App\Mcp\Tools\Plan\ListRoles;
 use App\Mcp\Tools\Plan\ListWorkItems;
+use App\Mcp\Tools\Plan\MarkRiskMitigated;
+use App\Mcp\Tools\Plan\MarkRiskRealized;
+use App\Mcp\Tools\Plan\StartRiskMitigation;
 use App\Mcp\Tools\Plan\StartWorkItem;
 use App\Mcp\Tools\Plan\SummarizeImplementationStatus;
 use App\Mcp\Tools\Plan\SummarizePlanCapacity;
@@ -111,6 +117,12 @@ class PlanningServer extends Server
         UpsertRisk::class,
         ListRisks::class,
         DeleteRisk::class,
+        AssessRisk::class,
+        StartRiskMitigation::class,
+        MarkRiskMitigated::class,
+        AcceptRisk::class,
+        MarkRiskRealized::class,
+        CloseRisk::class,
         UpsertRelease::class,
         ListReleases::class,
         DeleteRelease::class,
