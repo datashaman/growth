@@ -67,23 +67,28 @@ abstract class Transition
         }
 
         return DB::transaction(function () use ($subject, $actor, $reason): Model {
-            // Lock the subject row and re-read its status under the lock, so two
+            // Lock the subject row and re-read it under the lock, so two
             // concurrent transitions cannot both observe the same source state
-            // and double-apply.
-            $from = $subject->newQuery()
+            // and double-apply. Mutate the locked instance — not the caller's
+            // possibly-stale copy — so a save never writes back stale columns.
+            $locked = $subject->newQuery()
                 ->lockForUpdate()
-                ->findOrFail($subject->getKey())
-                ->getAttribute('status');
+                ->findOrFail($subject->getKey());
+
+            $from = $locked->getAttribute('status');
 
             if (! in_array($from, $this->allowedFrom(), true)) {
                 throw new IllegalTransitionException($this->rejectionMessage($from));
             }
 
-            $subject->setAttribute('status', $this->targetStatus());
-            $this->decorateSubject($subject);
-            $subject->save();
+            $locked->setAttribute('status', $this->targetStatus());
+            $this->decorateSubject($locked);
+            $locked->save();
 
-            return $this->record($subject, $from, $actor, $reason);
+            // Keep the caller's instance in sync with the persisted row.
+            $subject->setRawAttributes($locked->getAttributes(), true);
+
+            return $this->record($locked, $from, $actor, $reason);
         });
     }
 

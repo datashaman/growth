@@ -64,6 +64,10 @@ new class extends Component {
         try {
             $transition->apply($this->changeRequest, auth()->user());
         } catch (IllegalTransitionException $e) {
+            // Reload so the UI reflects the current persisted status, which the
+            // rejection implies has diverged from what this component last saw.
+            $this->reload($this->changeRequest->fresh());
+
             Flux::toast(variant: 'danger', text: $e->getMessage());
 
             return;

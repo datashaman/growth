@@ -97,6 +97,11 @@ it('rejects an under_review change request', function () {
     $change->refresh();
     expect($change->status)->toBe('rejected')
         ->and($change->decision)->toBe('rejected');
+
+    $event = ChangeApprovalEvent::query()->sole();
+    expect($event->from_status)->toBe('under_review')
+        ->and($event->to_status)->toBe('rejected')
+        ->and($event->to_decision)->toBe('rejected');
 });
 
 it('defers an under_review change request', function () {
@@ -108,6 +113,11 @@ it('defers an under_review change request', function () {
     $change->refresh();
     expect($change->status)->toBe('deferred')
         ->and($change->decision)->toBe('deferred');
+
+    $event = ChangeApprovalEvent::query()->sole();
+    expect($event->from_status)->toBe('under_review')
+        ->and($event->to_status)->toBe('deferred')
+        ->and($event->to_decision)->toBe('deferred');
 });
 
 it('rejects approving a change request that is not under_review', function () {
@@ -117,6 +127,26 @@ it('rejects approving a change request that is not under_review', function () {
         ->assertHasErrors(['Cannot approve a change request that is proposed.']);
 
     expect($change->fresh()->decision)->toBeNull();
+    expect(ChangeApprovalEvent::count())->toBe(0);
+});
+
+it('rejects rejecting a change request that is not under_review', function () {
+    $change = ($this->makeChange)('proposed');
+
+    GovernanceServer::tool(RejectChangeRequest::class, ['change_request_id' => $change->id])
+        ->assertHasErrors(['Cannot reject a change request that is proposed.']);
+
+    expect($change->fresh()->status)->toBe('proposed');
+    expect(ChangeApprovalEvent::count())->toBe(0);
+});
+
+it('rejects deferring a change request that is not under_review', function () {
+    $change = ($this->makeChange)('proposed');
+
+    GovernanceServer::tool(DeferChangeRequest::class, ['change_request_id' => $change->id])
+        ->assertHasErrors(['Cannot defer a change request that is proposed.']);
+
+    expect($change->fresh()->status)->toBe('proposed');
     expect(ChangeApprovalEvent::count())->toBe(0);
 });
 
@@ -132,6 +162,20 @@ it('marks an approved change request as implemented', function () {
         });
 
     expect($change->fresh()->status)->toBe('implemented');
+
+    $event = ChangeApprovalEvent::query()->sole();
+    expect($event->from_status)->toBe('approved')
+        ->and($event->to_status)->toBe('implemented');
+});
+
+it('rejects marking a change request implemented that is not approved', function () {
+    $change = ($this->makeChange)('under_review');
+
+    GovernanceServer::tool(MarkChangeRequestImplemented::class, ['change_request_id' => $change->id])
+        ->assertHasErrors(['Cannot implement a change request that is under review.']);
+
+    expect($change->fresh()->status)->toBe('under_review');
+    expect(ChangeApprovalEvent::count())->toBe(0);
 });
 
 it('cancels a deferred change request', function () {
@@ -141,6 +185,20 @@ it('cancels a deferred change request', function () {
         ->assertOk();
 
     expect($change->fresh()->status)->toBe('cancelled');
+
+    $event = ChangeApprovalEvent::query()->sole();
+    expect($event->from_status)->toBe('deferred')
+        ->and($event->to_status)->toBe('cancelled');
+});
+
+it('rejects cancelling a change request that is already implemented', function () {
+    $change = ($this->makeChange)('implemented', 'approved');
+
+    GovernanceServer::tool(CancelChangeRequest::class, ['change_request_id' => $change->id])
+        ->assertHasErrors(['Cannot cancel a change request that is implemented.']);
+
+    expect($change->fresh()->status)->toBe('implemented');
+    expect(ChangeApprovalEvent::count())->toBe(0);
 });
 
 it('rejects status passed to upsert-change-request with a pointer to the transition tools', function () {
@@ -150,7 +208,7 @@ it('rejects status passed to upsert-change-request with a pointer to the transit
         'category' => 'scope',
         'status' => 'approved',
     ])
-        ->assertHasErrors(['Change request status is not set here. Use the submit-, approve-, reject-, defer-, mark-change-request-implemented, and cancel-change-request tools to move status through validated transitions.']);
+        ->assertHasErrors(['Change request status is not set here. Use the submit-change-request, approve-change-request, reject-change-request, defer-change-request, mark-change-request-implemented, and cancel-change-request tools to move status through validated transitions.']);
 
     expect(ChangeRequest::where('title', 'No status here')->exists())->toBeFalse();
 });
@@ -162,7 +220,7 @@ it('rejects decision fields passed to upsert-change-request', function () {
         'category' => 'scope',
         'decision' => 'approved',
     ])
-        ->assertHasErrors(['Change request decisions are recorded by the approve-, reject-, and defer-change-request tools, not set directly.']);
+        ->assertHasErrors(['Change request decisions are recorded by the approve-change-request, reject-change-request, and defer-change-request tools, not set directly.']);
 });
 
 it('rejects a transition on a change request the user does not own', function () {

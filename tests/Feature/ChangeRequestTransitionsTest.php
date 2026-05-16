@@ -99,6 +99,79 @@ it('shows approve and reject buttons for an under_review change request and appr
         ->and($change->decision)->toBe('approved');
 });
 
+it('rejects an under_review change request from the webapp', function () {
+    $change = ($this->makeChange)('under_review');
+
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::change-requests.show', ['changeRequest' => $change])
+        ->call('rejectChangeRequest')
+        ->assertHasNoErrors()
+        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
+
+    $change->refresh();
+    expect($change->status)->toBe('rejected')
+        ->and($change->decision)->toBe('rejected')
+        ->and(ChangeApprovalEvent::query()->sole()->to_status)->toBe('rejected');
+});
+
+it('defers an under_review change request from the webapp', function () {
+    $change = ($this->makeChange)('under_review');
+
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::change-requests.show', ['changeRequest' => $change])
+        ->call('deferChangeRequest')
+        ->assertHasNoErrors()
+        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
+
+    $change->refresh();
+    expect($change->status)->toBe('deferred')
+        ->and($change->decision)->toBe('deferred');
+});
+
+it('cancels an under_review change request from the webapp', function () {
+    $change = ($this->makeChange)('under_review');
+
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::change-requests.show', ['changeRequest' => $change])
+        ->call('cancelChangeRequest')
+        ->assertHasNoErrors()
+        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
+
+    expect($change->fresh()->status)->toBe('cancelled');
+});
+
+it('marks an approved change request implemented from the webapp', function () {
+    $change = ($this->makeChange)('approved', 'approved');
+
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::change-requests.show', ['changeRequest' => $change])
+        ->assertSee('Mark implemented')
+        ->call('markChangeRequestImplemented')
+        ->assertHasNoErrors()
+        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
+
+    expect($change->fresh()->status)->toBe('implemented')
+        ->and(ChangeApprovalEvent::query()->sole()->to_status)->toBe('implemented');
+});
+
+it('cancels a deferred change request from the webapp', function () {
+    $change = ($this->makeChange)('deferred', 'deferred');
+
+    $this->actingAs($this->user);
+
+    Livewire::test('pages::change-requests.show', ['changeRequest' => $change])
+        ->assertSee('Cancel')
+        ->call('cancelChangeRequest')
+        ->assertHasNoErrors()
+        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
+
+    expect($change->fresh()->status)->toBe('cancelled');
+});
+
 it('rejects an illegal transition from the webapp and warns the user', function () {
     $change = ($this->makeChange)('approved', 'approved');
 
