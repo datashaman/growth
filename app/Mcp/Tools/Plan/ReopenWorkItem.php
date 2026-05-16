@@ -12,7 +12,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Reopen a work item: move it from done or cancelled back to todo. Rejects a work item that is still in progress with a clear message. Records a status transition with the acting user and timestamp.')]
+#[Description('Reopen a work item: move it from done or cancelled back to todo. Rejects any other source status with a clear message. Records a status transition with the acting user and timestamp.')]
 class ReopenWorkItem extends Tool
 {
     public function handle(Request $request): ResponseFactory

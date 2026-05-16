@@ -76,7 +76,10 @@ new class extends Component {
             ['blockReason.required' => __('A blocker reason is required.')],
         );
 
-        $this->applyTransition(new BlockWorkItem, $this->blockReason);
+        if (! $this->applyTransition(new BlockWorkItem, $this->blockReason)) {
+            return;
+        }
+
         $this->reset('blockReason');
         $this->modal('block-work-item')->close();
     }
@@ -96,14 +99,14 @@ new class extends Component {
         $this->applyTransition(new ReopenWorkItem);
     }
 
-    private function applyTransition(Transition $transition, ?string $reason = null): void
+    private function applyTransition(Transition $transition, ?string $reason = null): bool
     {
         try {
             $transition->apply($this->workItem, auth()->user(), $reason);
         } catch (IllegalTransitionException $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
 
-            return;
+            return false;
         }
 
         $this->workItem = $this->workItem->fresh($this->relations());
@@ -111,6 +114,8 @@ new class extends Component {
         Flux::toast(variant: 'success', text: __('Work item is now :status.', [
             'status' => str_replace('_', ' ', $this->workItem->status),
         ]));
+
+        return true;
     }
 
     public function formatHours(?float $hours): string

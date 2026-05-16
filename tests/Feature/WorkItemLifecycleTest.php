@@ -1,5 +1,7 @@
 <?php
 
+use App\Growth\Transitions\BlockWorkItem;
+use App\Growth\Transitions\IllegalTransitionException;
 use App\Models\Project;
 use App\Models\StatusTransition;
 use App\Models\User;
@@ -22,6 +24,16 @@ beforeEach(function () {
     ]);
 
     $this->actingAs($this->user);
+});
+
+it('enforces the blocker reason in the transition layer', function () {
+    $item = ($this->makeItem)('todo');
+
+    expect(fn () => (new BlockWorkItem)->apply($item))
+        ->toThrow(IllegalTransitionException::class, 'A reason is required to block a work item.');
+
+    expect($item->fresh()->status)->toBe('todo')
+        ->and(StatusTransition::count())->toBe(0);
 });
 
 it('blocks a work item from the modal and records the reason', function () {

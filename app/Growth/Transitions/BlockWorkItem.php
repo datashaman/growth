@@ -26,4 +26,9 @@ class BlockWorkItem extends Transition
     {
         return 'work item';
     }
+
+    public function requiresReason(): bool
+    {
+        return true;
+    }
 }
