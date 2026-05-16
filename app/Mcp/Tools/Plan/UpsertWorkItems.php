@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 use Throwable;
 
-#[Description('Create or update up to 100 work items in one call. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items. Status is not set here: new items start as todo and move only through the start-work-item and complete-work-item transitions.')]
+#[Description('Create or update up to 100 work items in one call. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items. Status is not set here: new items start as todo and move only through the work item transition tools (start, complete, block, unblock, cancel, reopen).')]
 class UpsertWorkItems extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -115,7 +115,7 @@ class UpsertWorkItems extends Tool
     private function itemMessages(): array
     {
         return [
-            'status.prohibited' => 'Work item status is not set here. Use the start-work-item and complete-work-item tools to move status through validated transitions.',
+            'status.prohibited' => 'Work item status is not set here. Use the work item transition tools (start, complete, block, unblock, cancel, reopen) to move status through validated transitions.',
         ];
     }
 

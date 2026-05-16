@@ -1,8 +1,15 @@
 <?php
 
 use App\Concerns\ProjectScoped;
+use App\Growth\Transitions\ActivatePlan;
+use App\Growth\Transitions\ClosePlan;
+use App\Growth\Transitions\HitMilestone;
+use App\Growth\Transitions\IllegalTransitionException;
+use App\Growth\Transitions\MissMilestone;
+use App\Growth\Transitions\Transition;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
+use Flux\Flux;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -33,7 +40,44 @@ new #[Title('Plan')] class extends Component {
 
     public function onProjectDataChanged(): void
     {
-        unset($this->workItems, $this->milestones);
+        unset($this->workItems, $this->milestones, $this->projectPlan);
+    }
+
+    #[Computed]
+    public function projectPlan()
+    {
+        return $this->selectedProject?->projectPlan;
+    }
+
+    public function activatePlan(): void
+    {
+        $this->transitionPlan(new ActivatePlan);
+    }
+
+    public function closePlan(): void
+    {
+        $this->transitionPlan(new ClosePlan);
+    }
+
+    private function transitionPlan(Transition $transition): void
+    {
+        $plan = $this->selectedProject?->projectPlan;
+
+        abort_if($plan === null, 404);
+
+        try {
+            $transition->apply($plan, auth()->user());
+        } catch (IllegalTransitionException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        unset($this->projectPlan);
+
+        Flux::toast(variant: 'success', text: __('Plan is now :status.', [
+            'status' => $plan->status,
+        ]));
     }
 
     #[Computed]
@@ -72,6 +116,37 @@ new #[Title('Plan')] class extends Component {
             : collect();
     }
 
+    public function hitMilestone(string $milestoneId): void
+    {
+        $this->transitionMilestone($milestoneId, new HitMilestone);
+    }
+
+    public function missMilestone(string $milestoneId): void
+    {
+        $this->transitionMilestone($milestoneId, new MissMilestone);
+    }
+
+    private function transitionMilestone(string $milestoneId, Transition $transition): void
+    {
+        $milestone = $this->selectedProject?->milestones()->find($milestoneId);
+
+        abort_if($milestone === null, 404);
+
+        try {
+            $transition->apply($milestone, auth()->user());
+        } catch (IllegalTransitionException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        unset($this->milestones);
+
+        Flux::toast(variant: 'success', text: __('Milestone is now :status.', [
+            'status' => $milestone->status,
+        ]));
+    }
+
     public function formatHours(?float $hours): string
     {
         if ($hours === null || $hours === 0.0) {
@@ -93,6 +168,22 @@ new #[Title('Plan')] class extends Component {
             <flux:callout.text>{{ __('Pick a project to see its plan.') }}</flux:callout.text>
         </flux:callout>
     @else
+        @if ($this->projectPlan)
+            <section class="flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+                <div class="flex items-center gap-2">
+                    <flux:heading size="lg">{{ __('Project plan') }}</flux:heading>
+                    <flux:badge :color="BadgeVariant::planStatus($this->projectPlan->status)" size="sm">{{ EnumLabel::lower($this->projectPlan->status) }}</flux:badge>
+                </div>
+                <div class="flex gap-1">
+                    @if ($this->projectPlan->status === 'baselined')
+                        <flux:button size="sm" icon="play" variant="primary" wire:click="activatePlan">{{ __('Activate plan') }}</flux:button>
+                    @elseif ($this->projectPlan->status === 'active')
+                        <flux:button size="sm" icon="lock-closed" variant="filled" wire:click="closePlan">{{ __('Close plan') }}</flux:button>
+                    @endif
+                </div>
+            </section>
+        @endif
+
         <x-data-table
             :title="__('Milestones')"
             :count="$this->milestones->count()"
@@ -123,6 +214,20 @@ new #[Title('Plan')] class extends Component {
                             <flux:table.cell>{{ \Illuminate\Support\Str::limit($milestone->exit_criteria ?? '—', 100) }}</flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex justify-end gap-1">
+                                    @if ($milestone->status === 'pending')
+                                        <flux:tooltip content="{{ __('Mark hit') }}">
+                                            <flux:button size="xs" icon="check-circle" variant="ghost"
+                                                wire:click="hitMilestone('{{ $milestone->id }}')" />
+                                        </flux:tooltip>
+                                        <flux:tooltip content="{{ __('Mark missed') }}">
+                                            <flux:button size="xs" icon="x-circle" variant="ghost"
+                                                wire:click="missMilestone('{{ $milestone->id }}')" />
+                                        </flux:tooltip>
+                                        <flux:tooltip content="{{ __('Defer') }}">
+                                            <flux:button size="xs" icon="clock" variant="ghost"
+                                                wire:click="$dispatch('defer-milestone', { milestoneId: '{{ $milestone->id }}' })" />
+                                        </flux:tooltip>
+                                    @endif
                                     <flux:button size="xs" icon="pencil-square" variant="ghost"
                                         wire:click="$dispatch('edit-milestone', { milestoneId: '{{ $milestone->id }}' })" />
                                     <flux:button size="xs" icon="trash" variant="ghost"
@@ -137,6 +242,7 @@ new #[Title('Plan')] class extends Component {
 
         <livewire:pages::milestones.create-modal :project-id="$this->selectedProject->id" :key="'create-milestone-'.$this->selectedProject->id" />
         <livewire:pages::milestones.edit-modal :key="'edit-milestone-'.$this->selectedProject->id" />
+        <livewire:pages::milestones.defer-modal :key="'defer-milestone-'.$this->selectedProject->id" />
         <livewire:pages::milestones.delete-modal :key="'delete-milestone-'.$this->selectedProject->id" />
 
         <x-data-table
