@@ -50,11 +50,39 @@ export function buildDeliveryLinkArgs(event, workItemId) {
 }
 
 /**
- * Orchestrate one pull_request event. Dependencies are injected so this
- * is testable without network access. Never throws for a missing trailer
+ * The first pull request a check_run belongs to, or null when the check
+ * run is not associated with a PR (e.g. a check on a bare branch push).
+ */
+export function resolveCheckRunPullRequest(event) {
+  const pullRequests = event.check_run?.pull_requests ?? [];
+  return pullRequests.length > 0 ? pullRequests[0] : null;
+}
+
+/**
+ * Build the upsert-check-run arguments from a check_run event. The
+ * (delivery link, provider, name) triple keeps re-runs idempotent.
+ * Undefined optional fields are dropped by JSON.stringify.
+ */
+export function buildCheckRunArgs(event, deliveryLinkId) {
+  const checkRun = event.check_run ?? {};
+  return {
+    work_item_delivery_link_id: deliveryLinkId,
+    provider: 'github-actions',
+    name: checkRun.name,
+    run_ref: checkRun.id != null ? String(checkRun.id) : undefined,
+    status: checkRun.status,
+    conclusion: checkRun.conclusion ?? undefined,
+    url: checkRun.html_url ?? undefined,
+    started_at: checkRun.started_at ?? undefined,
+    completed_at: checkRun.completed_at ?? undefined,
+  };
+}
+
+/**
+ * Orchestrate one pull_request event. Never throws for a missing trailer
  * or an unresolvable work item — it logs a warning and skips.
  */
-export async function run({ event, getCommitMessage, callTool, log }) {
+async function runPullRequest({ event, getCommitMessage, callTool, log }) {
   const sha = resolveCommitSha(event);
   if (sha === null) {
     log.warn('Pull request closed without merging; nothing to record.');
@@ -77,6 +105,64 @@ export async function run({ event, getCommitMessage, callTool, log }) {
 
   log.info(`Recorded delivery link ${args.ref} on work item ${workItemId}.`);
   return { skipped: false, structured: result.structured };
+}
+
+/**
+ * Orchestrate one check_run event: resolve the PR's delivery link (creating
+ * it if the PR event has not been seen yet) then record check evidence.
+ */
+async function runCheckRun({ event, repository, getCommitMessage, callTool, log }) {
+  const pullRequest = resolveCheckRunPullRequest(event);
+  if (pullRequest === null) {
+    log.warn('Check run has no associated pull request; skipping.');
+    return { skipped: true };
+  }
+
+  const sha = event.check_run?.head_sha;
+  const commitMessage = await getCommitMessage(sha);
+  const workItemId = parseTrailer(commitMessage);
+  if (workItemId === null) {
+    log.warn(`No ${TRAILER_KEY} trailer on commit ${sha}; skipping.`);
+    return { skipped: true };
+  }
+
+  const linkArgs = {
+    work_item_id: workItemId,
+    type: 'pull_request',
+    ref: `#${pullRequest.number}`,
+    url: `https://github.com/${repository}/pull/${pullRequest.number}`,
+  };
+  const linkResult = await callTool('upsert-delivery-link', linkArgs);
+  if (linkResult.isError) {
+    log.warn(`Growth rejected the delivery link: ${linkResult.errorText}; skipping.`);
+    return { skipped: true };
+  }
+
+  const checkArgs = buildCheckRunArgs(event, linkResult.structured?.id);
+  const checkResult = await callTool('upsert-check-run', checkArgs);
+  if (checkResult.isError) {
+    log.warn(`Growth rejected the check run: ${checkResult.errorText}; skipping.`);
+    return { skipped: true };
+  }
+
+  log.info(`Recorded check run "${checkArgs.name}" (${checkArgs.conclusion ?? checkArgs.status}) on ${linkArgs.ref}.`);
+  return { skipped: false, structured: checkResult.structured };
+}
+
+/**
+ * Dispatch a GitHub event to its handler. Dependencies are injected so the
+ * handlers are testable without network access.
+ */
+export async function run(context) {
+  if (context.eventName === 'pull_request') {
+    return runPullRequest(context);
+  }
+  if (context.eventName === 'check_run') {
+    return runCheckRun(context);
+  }
+
+  context.log.info(`Event ${context.eventName} is not handled; skipping.`);
+  return { skipped: true };
 }
 
 /**
@@ -141,10 +227,6 @@ function makeMcpClient({ growthUrl, token, fetchFn }) {
 
 async function main() {
   const { GITHUB_EVENT_NAME, GITHUB_EVENT_PATH, GITHUB_REPOSITORY } = process.env;
-  if (GITHUB_EVENT_NAME !== 'pull_request') {
-    console.log(`Event ${GITHUB_EVENT_NAME} is not handled; skipping.`);
-    return;
-  }
 
   const growthUrl = process.env.GROWTH_URL;
   const growthToken = process.env.GROWTH_TOKEN;
@@ -165,7 +247,9 @@ async function main() {
   const callTool = makeMcpClient({ growthUrl, token: growthToken, fetchFn: fetch });
 
   await run({
+    eventName: GITHUB_EVENT_NAME,
     event,
+    repository: GITHUB_REPOSITORY,
     getCommitMessage,
     callTool,
     log: { info: (m) => console.log(m), warn: (m) => console.warn(m) },
