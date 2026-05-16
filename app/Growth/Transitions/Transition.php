@@ -2,7 +2,6 @@
 
 namespace App\Growth\Transitions;
 
-use App\Models\StatusTransition;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -11,12 +10,14 @@ use Illuminate\Support\Facades\DB;
  * Base verb-named status transition.
  *
  * A concrete transition validates that the subject's current status is an
- * accepted source state, applies the target status, and records a
- * `status_transitions` audit row. The MCP tool and the webapp button are
- * thin callers — transition logic is never duplicated outside this class.
+ * accepted source state, applies the target status, and records an audit
+ * row. The MCP tool and the webapp button are thin callers — transition
+ * logic is never duplicated outside this class.
  *
- * Subjects must expose a `status` attribute and a `statusTransitions()`
- * polymorphic relation.
+ * Subjects must expose a `status` attribute. By default the audit row is
+ * written to the polymorphic `status_transitions` table via a
+ * `statusTransitions()` relation; governance entities override
+ * {@see Transition::record()} to log elsewhere.
  */
 abstract class Transition
 {
@@ -47,9 +48,9 @@ abstract class Transition
      *
      * @throws IllegalTransitionException when the subject's current status is not an accepted source state
      */
-    public function apply(Model $subject, ?User $actor = null, ?string $reason = null): StatusTransition
+    public function apply(Model $subject, ?User $actor = null, ?string $reason = null): Model
     {
-        return DB::transaction(function () use ($subject, $actor, $reason): StatusTransition {
+        return DB::transaction(function () use ($subject, $actor, $reason): Model {
             // Lock the subject row and re-read its status under the lock, so two
             // concurrent transitions cannot both observe the same source state
             // and double-apply.
@@ -65,14 +66,25 @@ abstract class Transition
             $subject->setAttribute('status', $this->targetStatus());
             $subject->save();
 
-            return $subject->statusTransitions()->create([
-                'from_status' => $from,
-                'to_status' => $this->targetStatus(),
-                'reason' => $reason,
-                'transitioned_by_user_id' => $actor?->getKey(),
-                'transitioned_at' => now(),
-            ]);
+            return $this->record($subject, $from, $actor, $reason);
         });
+    }
+
+    /**
+     * Record the transition as an audit row.
+     *
+     * Defaults to the polymorphic `status_transitions` table. Override for
+     * subjects that track their status history elsewhere.
+     */
+    protected function record(Model $subject, string $from, ?User $actor, ?string $reason): Model
+    {
+        return $subject->statusTransitions()->create([
+            'from_status' => $from,
+            'to_status' => $this->targetStatus(),
+            'reason' => $reason,
+            'transitioned_by_user_id' => $actor?->getKey(),
+            'transitioned_at' => now(),
+        ]);
     }
 
     /**

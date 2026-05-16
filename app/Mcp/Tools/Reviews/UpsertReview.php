@@ -16,7 +16,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Create or update a review record. Supports management reviews, technical reviews, inspections, walkthroughs, and audits, with optional reviewed artifact targets. The response includes a missing_prerequisites list summarising which lint-reviews readiness checks the review will currently fail (targets, participants, entry/exit criteria, inspection roles, review-plan expected responsibilities) so you can address them before running lint-reviews.')]
+#[Description('Create or update a review record. Supports management reviews, technical reviews, inspections, walkthroughs, and audits, with optional reviewed artifact targets. New reviews start as `planned`; status is not set here — it moves only through the start-review, hold-review, close-review, and cancel-review transitions. The response includes a missing_prerequisites list summarising which lint-reviews readiness checks the review will currently fail (targets, participants, entry/exit criteria, inspection roles, review-plan expected responsibilities) so you can address them before running lint-reviews.')]
 class UpsertReview extends Tool
 {
     use ValidatesReviewArtifacts;
@@ -31,7 +31,7 @@ class UpsertReview extends Tool
             'type' => 'required|in:'.implode(',', Review::TYPES),
             'title' => 'required|string|max:255',
             'objective' => 'nullable|string',
-            'status' => 'nullable|in:'.implode(',', Review::STATUSES),
+            'status' => 'prohibited',
             'planned_at' => 'nullable|date',
             'held_at' => 'nullable|date',
             'entry_criteria' => 'nullable|array',
@@ -45,6 +45,8 @@ class UpsertReview extends Tool
             'targets.*.type' => 'required_with:targets|string|in:'.implode(',', array_keys($this->reviewableTypes())),
             'targets.*.id' => 'required_with:targets|string',
             'targets.*.context' => 'nullable|string|max:255',
+        ], [
+            'status.prohibited' => 'Review status is not set here. Use the start-review, hold-review, close-review, and cancel-review tools to move status through validated transitions.',
         ]);
 
         $targets = $data['targets'] ?? null;
@@ -81,7 +83,7 @@ class UpsertReview extends Tool
             $beforeDecision = $review->decision;
             $review->update($data);
         } else {
-            $review = Review::create($data);
+            $review = Review::create($data + ['status' => 'planned']);
         }
 
         $this->recordDecisionEvent($review, $beforeStatus, $beforeDecision, $decisionRationale);
@@ -156,7 +158,6 @@ class UpsertReview extends Tool
             'type' => $schema->string()->description('Review type')->enum(Review::TYPES)->required(),
             'title' => $schema->string()->description('Review title')->required(),
             'objective' => $schema->string()->description('Review objective/scope'),
-            'status' => $schema->string()->description('Review lifecycle status')->enum(Review::STATUSES),
             'planned_at' => $schema->string()->description('Planned review date/time'),
             'held_at' => $schema->string()->description('Actual review date/time'),
             'entry_criteria' => $schema->array()->description('Entry criteria checklist'),
