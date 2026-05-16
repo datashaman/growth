@@ -1,9 +1,13 @@
 <?php
 
+use App\Growth\Transitions\BlockWorkItem;
+use App\Growth\Transitions\CancelWorkItem;
 use App\Growth\Transitions\CompleteWorkItem;
 use App\Growth\Transitions\IllegalTransitionException;
+use App\Growth\Transitions\ReopenWorkItem;
 use App\Growth\Transitions\StartWorkItem;
 use App\Growth\Transitions\Transition;
+use App\Growth\Transitions\UnblockWorkItem;
 use App\Models\WorkItem;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
@@ -12,6 +16,8 @@ use Livewire\Component;
 
 new class extends Component {
     public WorkItem $workItem;
+
+    public string $blockReason = '';
 
     public function mount(WorkItem $workItem): void
     {
@@ -63,14 +69,44 @@ new class extends Component {
         $this->applyTransition(new CompleteWorkItem);
     }
 
-    private function applyTransition(Transition $transition): void
+    public function blockWorkItem(): void
+    {
+        $this->validate(
+            ['blockReason' => 'required|string|max:1000'],
+            ['blockReason.required' => __('A blocker reason is required.')],
+        );
+
+        if (! $this->applyTransition(new BlockWorkItem, $this->blockReason)) {
+            return;
+        }
+
+        $this->reset('blockReason');
+        $this->modal('block-work-item')->close();
+    }
+
+    public function unblockWorkItem(): void
+    {
+        $this->applyTransition(new UnblockWorkItem);
+    }
+
+    public function cancelWorkItem(): void
+    {
+        $this->applyTransition(new CancelWorkItem);
+    }
+
+    public function reopenWorkItem(): void
+    {
+        $this->applyTransition(new ReopenWorkItem);
+    }
+
+    private function applyTransition(Transition $transition, ?string $reason = null): bool
     {
         try {
-            $transition->apply($this->workItem, auth()->user());
+            $transition->apply($this->workItem, auth()->user(), $reason);
         } catch (IllegalTransitionException $e) {
             Flux::toast(variant: 'danger', text: $e->getMessage());
 
-            return;
+            return false;
         }
 
         $this->workItem = $this->workItem->fresh($this->relations());
@@ -78,6 +114,8 @@ new class extends Component {
         Flux::toast(variant: 'success', text: __('Work item is now :status.', [
             'status' => str_replace('_', ' ', $this->workItem->status),
         ]));
+
+        return true;
     }
 
     public function formatHours(?float $hours): string
@@ -108,13 +146,48 @@ new class extends Component {
                 <flux:button size="sm" icon="play" variant="primary" wire:click="startWorkItem">{{ __('Start') }}</flux:button>
             @elseif ($workItem->status === 'in_progress')
                 <flux:button size="sm" icon="check" variant="primary" wire:click="completeWorkItem">{{ __('Complete') }}</flux:button>
+            @elseif ($workItem->status === 'blocked')
+                <flux:button size="sm" icon="play" variant="primary" wire:click="unblockWorkItem">{{ __('Unblock') }}</flux:button>
             @endif
+
+            @if (in_array($workItem->status, ['todo', 'in_progress'], true))
+                <flux:modal.trigger name="block-work-item">
+                    <flux:button size="sm" icon="hand-raised" variant="filled">{{ __('Block') }}</flux:button>
+                </flux:modal.trigger>
+            @endif
+
+            @if (in_array($workItem->status, ['todo', 'in_progress', 'blocked'], true))
+                <flux:button size="sm" icon="x-circle" variant="filled" wire:click="cancelWorkItem">{{ __('Cancel work') }}</flux:button>
+            @endif
+
+            @if (in_array($workItem->status, ['done', 'cancelled'], true))
+                <flux:button size="sm" icon="arrow-path" variant="filled" wire:click="reopenWorkItem">{{ __('Reopen') }}</flux:button>
+            @endif
+
             <flux:button size="sm" icon="pencil-square" variant="primary" :href="route('work-items.edit', $workItem)" wire:navigate>{{ __('Edit') }}</flux:button>
             <flux:modal.trigger name="delete-work-item">
                 <flux:button size="sm" icon="trash" variant="danger">{{ __('Delete') }}</flux:button>
             </flux:modal.trigger>
         </x-slot:actions>
     </x-detail-page-header>
+
+    <flux:modal name="block-work-item" :show="$errors->isNotEmpty()" focusable class="max-w-md">
+        <form wire:submit="blockWorkItem" class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ __('Block this work item?') }}</flux:heading>
+                <flux:subheading>{{ __('Record why the work item is blocked. It moves to the blocked status.') }}</flux:subheading>
+            </div>
+
+            <flux:textarea wire:model="blockReason" :label="__('Blocker reason')" required rows="3" />
+
+            <div class="flex justify-end gap-2">
+                <flux:modal.close>
+                    <flux:button variant="filled" type="button">{{ __('Cancel') }}</flux:button>
+                </flux:modal.close>
+                <flux:button type="submit" variant="primary">{{ __('Block work item') }}</flux:button>
+            </div>
+        </form>
+    </flux:modal>
 
     <livewire:pages::work-items.delete-modal :work-item-id="$workItem->id" :key="'delete-work-item-'.$workItem->id" />
 
