@@ -3,12 +3,10 @@
 namespace App\Mcp\Tools\Changes;
 
 use App\Growth\Artifacts\ArtifactRegistry;
-use App\Models\ChangeApprovalEvent;
 use App\Models\ChangeImpact;
 use App\Models\ChangeRequest;
 use App\Models\Review;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
@@ -31,16 +29,21 @@ class UpsertChangeRequest extends Tool
             'description' => 'nullable|string',
             'rationale' => 'nullable|string',
             'category' => 'required|in:'.implode(',', ChangeRequest::CATEGORIES),
-            'status' => 'nullable|in:'.implode(',', ChangeRequest::STATUSES),
+            'status' => 'prohibited',
             'priority' => 'nullable|in:'.implode(',', ChangeRequest::PRIORITIES),
-            'decision' => 'nullable|in:'.implode(',', ChangeRequest::DECISIONS),
-            'decision_rationale' => 'nullable|string',
-            'decided_at' => 'nullable|date',
+            'decision' => 'prohibited',
+            'decision_rationale' => 'prohibited',
+            'decided_at' => 'prohibited',
             'impacts' => 'nullable|array',
             'impacts.*.type' => 'required_with:impacts|string|in:'.implode(',', array_keys(ArtifactRegistry::types())),
             'impacts.*.id' => 'required_with:impacts|string',
             'impacts.*.impact_kind' => 'required_with:impacts|in:'.implode(',', ChangeImpact::KINDS),
             'impacts.*.description' => 'nullable|string',
+        ], [
+            'status.prohibited' => 'Change request status is not set here. Use the submit-, approve-, reject-, defer-, mark-change-request-implemented, and cancel-change-request tools to move status through validated transitions.',
+            'decision.prohibited' => 'Change request decisions are recorded by the approve-, reject-, and defer-change-request tools, not set directly.',
+            'decision_rationale.prohibited' => 'Pass decision rationale as the reason argument to the approve-, reject-, or defer-change-request tool.',
+            'decided_at.prohibited' => 'The decision timestamp is set automatically by the approve-, reject-, and defer-change-request tools.',
         ]);
 
         if (isset($data['review_id'])) {
@@ -58,18 +61,9 @@ class UpsertChangeRequest extends Tool
         $id = $data['id'] ?? null;
         unset($data['id']);
 
-        $beforeStatus = null;
-        $beforeDecision = null;
-        if ($id) {
-            $change = ChangeRequest::findOrFail($id);
-            $beforeStatus = $change->status;
-            $beforeDecision = $change->decision;
-            $change->update($data);
-        } else {
-            $change = DB::transaction(fn () => ChangeRequest::create($data));
-        }
-
-        $this->recordApprovalEvent($change, $beforeStatus, $beforeDecision);
+        $change = $id
+            ? tap(ChangeRequest::findOrFail($id))->update($data)
+            : DB::transaction(fn () => ChangeRequest::create($data));
 
         if ($impacts !== null) {
             $this->syncImpacts($change, $impacts);
@@ -102,11 +96,7 @@ class UpsertChangeRequest extends Tool
             'description' => $schema->string()->description('Change description'),
             'rationale' => $schema->string()->description('Reason for the change'),
             'category' => $schema->string()->description('Change category')->enum(ChangeRequest::CATEGORIES)->required(),
-            'status' => $schema->string()->description('Change status')->enum(ChangeRequest::STATUSES),
             'priority' => $schema->string()->description('Change priority')->enum(ChangeRequest::PRIORITIES),
-            'decision' => $schema->string()->description('Decision, when made')->enum(ChangeRequest::DECISIONS),
-            'decision_rationale' => $schema->string()->description('Decision rationale'),
-            'decided_at' => $schema->string()->description('Decision timestamp'),
             'impacts' => $schema->array()
                 ->description('Impacted artifacts. Each entry: {type, id, impact_kind, description?}.')
                 ->items($schema->object(fn (JsonSchema $s) => [
@@ -142,28 +132,6 @@ class UpsertChangeRequest extends Tool
             'approval_events' => $schema->integer()->required(),
             'created' => $schema->boolean()->required(),
         ];
-    }
-
-    private function recordApprovalEvent(ChangeRequest $change, ?string $beforeStatus, ?string $beforeDecision): void
-    {
-        if ($change->decision === null && $beforeDecision === null) {
-            return;
-        }
-
-        if ($change->status === $beforeStatus && $change->decision === $beforeDecision && trim((string) $change->decision_rationale) === '') {
-            return;
-        }
-
-        ChangeApprovalEvent::create([
-            'change_request_id' => $change->id,
-            'recorded_by_user_id' => Auth::id(),
-            'from_status' => $beforeStatus,
-            'to_status' => $change->status,
-            'from_decision' => $beforeDecision,
-            'to_decision' => $change->decision,
-            'rationale' => $change->decision_rationale,
-            'recorded_at' => now(),
-        ]);
     }
 
     private function syncImpacts(ChangeRequest $change, array $impacts): void

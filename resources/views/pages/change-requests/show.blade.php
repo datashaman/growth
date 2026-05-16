@@ -1,7 +1,16 @@
 <?php
 
+use App\Growth\Transitions\ApproveChangeRequest;
+use App\Growth\Transitions\CancelChangeRequest;
+use App\Growth\Transitions\DeferChangeRequest;
+use App\Growth\Transitions\IllegalTransitionException;
+use App\Growth\Transitions\MarkChangeRequestImplemented;
+use App\Growth\Transitions\RejectChangeRequest;
+use App\Growth\Transitions\SubmitChangeRequest;
+use App\Growth\Transitions\Transition;
 use App\Models\ChangeRequest;
 use App\Support\BadgeVariant;
+use Flux\Flux;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -18,6 +27,53 @@ new class extends Component {
     public function refresh(): void
     {
         $this->reload($this->changeRequest->fresh());
+    }
+
+    public function submitChangeRequest(): void
+    {
+        $this->applyTransition(new SubmitChangeRequest);
+    }
+
+    public function approveChangeRequest(): void
+    {
+        $this->applyTransition(new ApproveChangeRequest);
+    }
+
+    public function rejectChangeRequest(): void
+    {
+        $this->applyTransition(new RejectChangeRequest);
+    }
+
+    public function deferChangeRequest(): void
+    {
+        $this->applyTransition(new DeferChangeRequest);
+    }
+
+    public function markChangeRequestImplemented(): void
+    {
+        $this->applyTransition(new MarkChangeRequestImplemented);
+    }
+
+    public function cancelChangeRequest(): void
+    {
+        $this->applyTransition(new CancelChangeRequest);
+    }
+
+    private function applyTransition(Transition $transition): void
+    {
+        try {
+            $transition->apply($this->changeRequest, auth()->user());
+        } catch (IllegalTransitionException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        $this->reload($this->changeRequest->fresh());
+
+        Flux::toast(variant: 'success', text: __('Change request is now :status.', [
+            'status' => str_replace('_', ' ', $this->changeRequest->status),
+        ]));
     }
 
     private function reload(ChangeRequest $cr): void
@@ -54,6 +110,19 @@ new class extends Component {
         </x-slot:description>
 
         <x-slot:actions>
+            @if ($changeRequest->status === 'proposed')
+                <flux:button size="sm" icon="paper-airplane" variant="primary" wire:click="submitChangeRequest">{{ __('Submit') }}</flux:button>
+                <flux:button size="sm" icon="x-circle" variant="danger" wire:click="cancelChangeRequest">{{ __('Cancel') }}</flux:button>
+            @elseif ($changeRequest->status === 'under_review')
+                <flux:button size="sm" icon="check" variant="primary" wire:click="approveChangeRequest">{{ __('Approve') }}</flux:button>
+                <flux:button size="sm" icon="x-mark" variant="danger" wire:click="rejectChangeRequest">{{ __('Reject') }}</flux:button>
+                <flux:button size="sm" icon="clock" wire:click="deferChangeRequest">{{ __('Defer') }}</flux:button>
+                <flux:button size="sm" icon="x-circle" variant="danger" wire:click="cancelChangeRequest">{{ __('Cancel') }}</flux:button>
+            @elseif ($changeRequest->status === 'approved')
+                <flux:button size="sm" icon="check-badge" variant="primary" wire:click="markChangeRequestImplemented">{{ __('Mark implemented') }}</flux:button>
+            @elseif ($changeRequest->status === 'deferred')
+                <flux:button size="sm" icon="x-circle" variant="danger" wire:click="cancelChangeRequest">{{ __('Cancel') }}</flux:button>
+            @endif
             <flux:button
                 size="sm"
                 icon="pencil-square"

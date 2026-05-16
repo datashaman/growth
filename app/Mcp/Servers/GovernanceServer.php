@@ -16,10 +16,16 @@ use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
 use App\Mcp\Tools\Assurance\ReportEvidenceGaps;
 use App\Mcp\Tools\Assurance\ScanContradictions;
 use App\Mcp\Tools\Changes\AnalyzeChangeImpact;
+use App\Mcp\Tools\Changes\ApproveChangeRequest;
+use App\Mcp\Tools\Changes\CancelChangeRequest;
+use App\Mcp\Tools\Changes\DeferChangeRequest;
 use App\Mcp\Tools\Changes\DeleteChangeRequest;
 use App\Mcp\Tools\Changes\ListArtifactRelations;
 use App\Mcp\Tools\Changes\ListChangeApprovalEvents;
 use App\Mcp\Tools\Changes\ListChangeRequests;
+use App\Mcp\Tools\Changes\MarkChangeRequestImplemented;
+use App\Mcp\Tools\Changes\RejectChangeRequest;
+use App\Mcp\Tools\Changes\SubmitChangeRequest;
 use App\Mcp\Tools\Changes\UpsertArtifactRelation;
 use App\Mcp\Tools\Changes\UpsertChangeRequest;
 use App\Mcp\Tools\Common\WhoAmI;
@@ -72,6 +78,12 @@ class GovernanceServer extends Server
         UpsertArtifactRelation::class,
         ListArtifactRelations::class,
         UpsertChangeRequest::class,
+        SubmitChangeRequest::class,
+        ApproveChangeRequest::class,
+        RejectChangeRequest::class,
+        DeferChangeRequest::class,
+        MarkChangeRequestImplemented::class,
+        CancelChangeRequest::class,
         ListChangeRequests::class,
         ListChangeApprovalEvents::class,
         DeleteChangeRequest::class,

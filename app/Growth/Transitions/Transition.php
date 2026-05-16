@@ -2,7 +2,6 @@
 
 namespace App\Growth\Transitions;
 
-use App\Models\StatusTransition;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -45,11 +44,13 @@ abstract class Transition
     /**
      * Apply the transition, recording an audit row.
      *
+     * Returns the audit record created for the transition.
+     *
      * @throws IllegalTransitionException when the subject's current status is not an accepted source state
      */
-    public function apply(Model $subject, ?User $actor = null, ?string $reason = null): StatusTransition
+    public function apply(Model $subject, ?User $actor = null, ?string $reason = null): Model
     {
-        return DB::transaction(function () use ($subject, $actor, $reason): StatusTransition {
+        return DB::transaction(function () use ($subject, $actor, $reason): Model {
             // Lock the subject row and re-read its status under the lock, so two
             // concurrent transitions cannot both observe the same source state
             // and double-apply.
@@ -63,16 +64,40 @@ abstract class Transition
             }
 
             $subject->setAttribute('status', $this->targetStatus());
+            $this->decorateSubject($subject);
             $subject->save();
 
-            return $subject->statusTransitions()->create([
-                'from_status' => $from,
-                'to_status' => $this->targetStatus(),
-                'reason' => $reason,
-                'transitioned_by_user_id' => $actor?->getKey(),
-                'transitioned_at' => now(),
-            ]);
+            return $this->record($subject, $from, $actor, $reason);
         });
+    }
+
+    /**
+     * Apply any attribute changes beyond `status` before the subject is saved.
+     *
+     * The default does nothing; transitions that also set decision fields or
+     * timestamps override this. Runs inside the transition transaction.
+     */
+    protected function decorateSubject(Model $subject): void
+    {
+        //
+    }
+
+    /**
+     * Record the audit row for this transition.
+     *
+     * The default writes a generic `status_transitions` row. Subjects with a
+     * domain-specific event log (review decisions, change approvals) override
+     * this to write to that log instead.
+     */
+    protected function record(Model $subject, string $from, ?User $actor, ?string $reason): Model
+    {
+        return $subject->statusTransitions()->create([
+            'from_status' => $from,
+            'to_status' => $this->targetStatus(),
+            'reason' => $reason,
+            'transitioned_by_user_id' => $actor?->getKey(),
+            'transitioned_at' => now(),
+        ]);
     }
 
     /**
