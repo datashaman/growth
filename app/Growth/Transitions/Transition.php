@@ -56,6 +56,8 @@ abstract class Transition
     /**
      * Apply the transition, recording an audit row.
      *
+     * Returns the audit record created for the transition.
+     *
      * @throws IllegalTransitionException when the subject's current status is not an accepted source state, or when a required reason is missing
      */
     public function apply(Model $subject, ?User $actor = null, ?string $reason = null): Model
@@ -65,39 +67,45 @@ abstract class Transition
         }
 
         return DB::transaction(function () use ($subject, $actor, $reason): Model {
-            // Lock the subject row and re-read its status under the lock, so two
+            // Lock the subject row and re-read it under the lock, so two
             // concurrent transitions cannot both observe the same source state
-            // and double-apply.
-            $from = $subject->newQuery()
+            // and double-apply. Mutate the locked instance — not the caller's
+            // possibly-stale copy — so a save never writes back stale columns.
+            $locked = $subject->newQuery()
                 ->lockForUpdate()
-                ->findOrFail($subject->getKey())
-                ->getAttribute('status');
+                ->findOrFail($subject->getKey());
+
+            $from = $locked->getAttribute('status');
 
             if (! in_array($from, $this->allowedFrom(), true)) {
                 throw new IllegalTransitionException($this->rejectionMessage($from));
             }
 
-            $subject->setAttribute('status', $this->targetStatus());
-            $this->decorateSubject($subject);
-            $subject->save();
+            $locked->setAttribute('status', $this->targetStatus());
+            $this->decorateSubject($locked);
+            $locked->save();
 
-            return $this->record($subject, $from, $actor, $reason);
+            // Keep the caller's instance in sync with the persisted row.
+            $subject->setRawAttributes($locked->getAttributes(), true);
+
+            return $this->record($locked, $from, $actor, $reason);
         });
     }
 
     /**
      * Apply any non-status attribute changes that are part of this transition,
-     * within the same locked transaction. Overridden by transitions that move
-     * more than the status (e.g. deferring a milestone also sets a new target
-     * date). No-op by default.
+     * within the same locked transaction. Overridden by transitions that set
+     * decision fields, timestamps, or other attributes alongside the status.
+     * No-op by default.
      */
     protected function decorateSubject(Model $subject): void {}
 
     /**
-     * Record the transition as an audit row.
+     * Record the audit row for this transition.
      *
-     * Defaults to the polymorphic `status_transitions` table. Override for
-     * subjects that track their status history elsewhere.
+     * The default writes a generic `status_transitions` row. Subjects with a
+     * domain-specific event log (review decisions, change approvals) override
+     * this to write to that log instead.
      */
     protected function record(Model $subject, string $from, ?User $actor, ?string $reason): Model
     {
