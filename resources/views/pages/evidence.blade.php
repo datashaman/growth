@@ -2,9 +2,12 @@
 
 use App\Concerns\ProjectScoped;
 use App\Growth\Transitions\CancelDeployment;
+use App\Growth\Transitions\CancelRelease;
 use App\Growth\Transitions\IllegalTransitionException;
 use App\Growth\Transitions\MarkDeploymentFailed;
 use App\Growth\Transitions\MarkDeploymentSucceeded;
+use App\Growth\Transitions\MarkReleaseReleased;
+use App\Growth\Transitions\PromoteRelease;
 use App\Growth\Transitions\RollBackDeployment;
 use App\Growth\Transitions\StartDeployment;
 use App\Growth\Transitions\Transition;
@@ -24,6 +27,42 @@ new #[Title('Evidence')] class extends Component {
     public function refreshReleases(): void
     {
         unset($this->releases);
+    }
+
+    public function promoteRelease(string $releaseId): void
+    {
+        $this->applyReleaseTransition($releaseId, new PromoteRelease);
+    }
+
+    public function markReleaseReleased(string $releaseId): void
+    {
+        $this->applyReleaseTransition($releaseId, new MarkReleaseReleased);
+    }
+
+    public function cancelRelease(string $releaseId): void
+    {
+        $this->applyReleaseTransition($releaseId, new CancelRelease);
+    }
+
+    private function applyReleaseTransition(string $releaseId, Transition $transition): void
+    {
+        $release = $this->selectedProject?->releases()->find($releaseId);
+
+        abort_if($release === null, 404);
+
+        try {
+            $transition->apply($release, auth()->user());
+        } catch (IllegalTransitionException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        unset($this->releases);
+
+        Flux::toast(variant: 'success', text: __('Release is now :status.', [
+            'status' => $release->status,
+        ]));
     }
 
     #[On('deployment-saved')]
@@ -177,6 +216,17 @@ new #[Title('Evidence')] class extends Component {
                             <flux:table.cell>{{ \Illuminate\Support\Str::limit($release->notes ?? '—', 100) }}</flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex justify-end gap-1">
+                                    @if ($release->status === 'planned')
+                                        <flux:button size="xs" icon="arrow-up-circle" variant="ghost"
+                                            wire:click="promoteRelease('{{ $release->id }}')">{{ __('Promote') }}</flux:button>
+                                        <flux:button size="xs" icon="x-circle" variant="ghost"
+                                            wire:click="cancelRelease('{{ $release->id }}')">{{ __('Cancel') }}</flux:button>
+                                    @elseif ($release->status === 'candidate')
+                                        <flux:button size="xs" icon="rocket-launch" variant="ghost"
+                                            wire:click="markReleaseReleased('{{ $release->id }}')">{{ __('Mark released') }}</flux:button>
+                                        <flux:button size="xs" icon="x-circle" variant="ghost"
+                                            wire:click="cancelRelease('{{ $release->id }}')">{{ __('Cancel') }}</flux:button>
+                                    @endif
                                     <flux:button size="xs" icon="pencil-square" variant="ghost"
                                         wire:click="$dispatch('edit-release', { releaseId: '{{ $release->id }}' })" />
                                     <flux:button size="xs" icon="trash" variant="ghost"

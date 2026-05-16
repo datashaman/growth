@@ -20,6 +20,7 @@ use App\Mcp\Tools\Plan\AssignWorkItemRaci;
 use App\Mcp\Tools\Plan\BaselinePlan;
 use App\Mcp\Tools\Plan\BlockWorkItem;
 use App\Mcp\Tools\Plan\CancelDeployment;
+use App\Mcp\Tools\Plan\CancelRelease;
 use App\Mcp\Tools\Plan\CancelWorkItem;
 use App\Mcp\Tools\Plan\ClosePlan;
 use App\Mcp\Tools\Plan\CloseRisk;
@@ -50,9 +51,11 @@ use App\Mcp\Tools\Plan\ListRoles;
 use App\Mcp\Tools\Plan\ListWorkItems;
 use App\Mcp\Tools\Plan\MarkDeploymentFailed;
 use App\Mcp\Tools\Plan\MarkDeploymentSucceeded;
+use App\Mcp\Tools\Plan\MarkReleaseReleased;
 use App\Mcp\Tools\Plan\MarkRiskMitigated;
 use App\Mcp\Tools\Plan\MarkRiskRealized;
 use App\Mcp\Tools\Plan\MissMilestone;
+use App\Mcp\Tools\Plan\PromoteRelease;
 use App\Mcp\Tools\Plan\ReopenWorkItem;
 use App\Mcp\Tools\Plan\RollBackDeployment;
 use App\Mcp\Tools\Plan\StartDeployment;
@@ -147,6 +150,9 @@ class PlanningServer extends Server
         MarkRiskRealized::class,
         CloseRisk::class,
         UpsertRelease::class,
+        PromoteRelease::class,
+        MarkReleaseReleased::class,
+        CancelRelease::class,
         ListReleases::class,
         DeleteRelease::class,
         UpsertDeployment::class,
