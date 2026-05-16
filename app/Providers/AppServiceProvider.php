@@ -82,6 +82,7 @@ class AppServiceProvider extends ServiceProvider
 
     private const OWNED_RULES = [
         'owned_project' => [Project::class,         'projects.id'],
+        'owned_project_repo' => [Project::class,    'projects.github_repo'],
         'owned_artifact_relation' => [ArtifactRelation::class, 'artifact_relations.id'],
         'owned_change_approval_event' => [ChangeApprovalEvent::class, 'change_approval_events.id'],
         'owned_change_request' => [ChangeRequest::class,   'change_requests.id'],
