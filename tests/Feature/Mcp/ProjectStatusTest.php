@@ -16,15 +16,12 @@ beforeEach(function () {
 
 it('defaults new projects to active status', function () {
     IntakeServer::tool(UpsertProject::class, ['name' => 'New', 'rigor_level' => 1])
-        ->assertOk()
-        ->assertStructuredContent(function ($json) {
-            $json->where('status', 'active')->etc();
-        });
+        ->assertOk();
 
     expect(Project::where('name', 'New')->sole()->status)->toBe('active');
 });
 
-it('refuses content edits on an archived project but allows status to change', function () {
+it('refuses content edits on an archived project', function () {
     $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'P', 'rigor_level' => 1, 'status' => 'archived']);
 
     IntakeServer::tool(UpsertProject::class, [
@@ -33,21 +30,6 @@ it('refuses content edits on an archived project but allows status to change', f
     ])->assertHasErrors(['archived and cannot be edited']);
 
     expect(Project::find($project->id)->name)->toBe('P');
-
-    IntakeServer::tool(UpsertProject::class, [
-        'id' => $project->id,
-        'status' => 'active',
-    ])->assertOk()
-        ->assertStructuredContent(function ($json) {
-            $json->where('status', 'active')->etc();
-        });
-
-    IntakeServer::tool(UpsertProject::class, [
-        'id' => $project->id,
-        'name' => 'Renamed',
-    ])->assertOk();
-
-    expect(Project::find($project->id)->name)->toBe('Renamed');
 });
 
 it('blocks update-project content edits on closed projects', function () {

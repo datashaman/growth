@@ -2,6 +2,8 @@
 
 namespace App\Mcp\Tools\Plan;
 
+use App\Growth\Transitions\BaselinePlan as BaselinePlanTransition;
+use App\Growth\Transitions\IllegalTransitionException;
 use App\Models\ProjectPlan;
 use App\Models\ProjectPlanBaseline;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -12,7 +14,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Create an immutable baseline snapshot of the current Project Management Plan and its WBS/cost state. Auto-increments version and marks the plan baselined.')]
+#[Description('Create an immutable baseline snapshot of the current Project Management Plan and its WBS/cost state. Auto-increments version and moves the plan from draft to baselined, recording a status transition. Rejects a plan that is not in draft.')]
 class BaselinePlan extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -22,26 +24,30 @@ class BaselinePlan extends Tool
             'note' => 'nullable|string',
         ]);
 
-        $baseline = DB::transaction(function () use ($data) {
-            $plan = ProjectPlan::with([
-                'project.workItems' => fn ($q) => $q->orderBy('kind')->orderBy('name'),
-            ])->findOrFail($data['project_plan_id']);
+        try {
+            $baseline = DB::transaction(function () use ($data) {
+                $plan = ProjectPlan::with([
+                    'project.workItems' => fn ($q) => $q->orderBy('kind')->orderBy('name'),
+                ])->findOrFail($data['project_plan_id']);
 
-            $version = ((int) $plan->baselines()->max('version')) + 1;
+                $version = ((int) $plan->baselines()->max('version')) + 1;
 
-            $baseline = ProjectPlanBaseline::create([
-                'project_plan_id' => $plan->id,
-                'version' => $version,
-                'snapshot' => $this->snapshot($plan),
-                'baselined_at' => now(),
-                'baselined_by_user_id' => auth()->id(),
-                'note' => $data['note'] ?? null,
-            ]);
+                $baseline = ProjectPlanBaseline::create([
+                    'project_plan_id' => $plan->id,
+                    'version' => $version,
+                    'snapshot' => $this->snapshot($plan),
+                    'baselined_at' => now(),
+                    'baselined_by_user_id' => auth()->id(),
+                    'note' => $data['note'] ?? null,
+                ]);
 
-            $plan->update(['status' => 'baselined']);
+                (new BaselinePlanTransition)->apply($plan, auth()->user(), $data['note'] ?? null);
 
-            return $baseline;
-        });
+                return $baseline;
+            });
+        } catch (IllegalTransitionException $e) {
+            return new ResponseFactory(Response::error($e->getMessage()));
+        }
 
         return Response::structured([
             'id' => $baseline->id,

@@ -13,7 +13,6 @@ new class extends Component {
 
     public string $title = '';
     public string $type = 'technical_review';
-    public string $status = 'planned';
     public string $objective = '';
     public string $summary = '';
     public string $planned_at = '';
@@ -56,7 +55,6 @@ new class extends Component {
         $data = $this->validate([
             'title' => ['required', 'string', 'max:255'],
             'type' => ['required', Rule::in(Review::TYPES)],
-            'status' => ['required', Rule::in(Review::STATUSES)],
             'objective' => ['nullable', 'string'],
             'summary' => ['nullable', 'string'],
             'planned_at' => ['nullable', 'date'],
@@ -77,7 +75,6 @@ new class extends Component {
         $review = $project->reviews()->create([
             'title' => $data['title'],
             'type' => $data['type'],
-            'status' => $data['status'],
             'objective' => $data['objective'] ?: null,
             'summary' => $data['summary'] ?: null,
             'planned_at' => $data['planned_at'] ?: null,
@@ -121,12 +118,6 @@ new class extends Component {
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <flux:select wire:model="type" :label="__('Type')">
                 @foreach (\App\Models\Review::TYPES as $option)
-                    <flux:select.option value="{{ $option }}">{{ str_replace('_', ' ', $option) }}</flux:select.option>
-                @endforeach
-            </flux:select>
-
-            <flux:select wire:model="status" :label="__('Status')">
-                @foreach (\App\Models\Review::STATUSES as $option)
                     <flux:select.option value="{{ $option }}">{{ str_replace('_', ' ', $option) }}</flux:select.option>
                 @endforeach
             </flux:select>

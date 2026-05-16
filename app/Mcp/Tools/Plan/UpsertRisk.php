@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Create or update a project risk register item (risk management). Use owner_role_id for the role accountable for mitigation.')]
+#[Description('Create or update a project risk register item (risk management). Use owner_role_id for the role accountable for mitigation. New risks start as `identified`; status is not set here — it moves only through the assess-risk, start-risk-mitigation, mark-risk-mitigated, accept-risk, mark-risk-realized, and close-risk transitions.')]
 class UpsertRisk extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -24,8 +24,10 @@ class UpsertRisk extends Tool
             'category' => 'required|in:'.implode(',', Risk::CATEGORIES),
             'probability' => 'required|in:'.implode(',', Risk::EXPOSURES),
             'impact' => 'required|in:'.implode(',', Risk::EXPOSURES),
-            'status' => 'nullable|in:'.implode(',', Risk::STATUSES),
+            'status' => 'prohibited',
             'mitigation_plan' => 'nullable|string',
+        ], [
+            'status.prohibited' => 'Risk status is not set here. Use the assess-risk, start-risk-mitigation, mark-risk-mitigated, accept-risk, mark-risk-realized, and close-risk tools to move status through validated transitions.',
         ]);
 
         $id = $data['id'] ?? null;
@@ -33,7 +35,7 @@ class UpsertRisk extends Tool
 
         $risk = $id
             ? tap(Risk::findOrFail($id))->update($data)
-            : Risk::create($data);
+            : Risk::create($data + ['status' => 'identified']);
 
         return Response::structured([
             'id' => $risk->id,
@@ -58,7 +60,6 @@ class UpsertRisk extends Tool
             'category' => $schema->string()->description('Risk category')->enum(Risk::CATEGORIES)->required(),
             'probability' => $schema->string()->description('Probability rating')->enum(Risk::EXPOSURES)->required(),
             'impact' => $schema->string()->description('Impact rating')->enum(Risk::EXPOSURES)->required(),
-            'status' => $schema->string()->description('Risk lifecycle status')->enum(Risk::STATUSES),
             'mitigation_plan' => $schema->string()->description('Avoid/reduce/transfer/accept response plan'),
         ];
     }

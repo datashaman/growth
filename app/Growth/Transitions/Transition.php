@@ -10,12 +10,14 @@ use Illuminate\Support\Facades\DB;
  * Base verb-named status transition.
  *
  * A concrete transition validates that the subject's current status is an
- * accepted source state, applies the target status, and records a
- * `status_transitions` audit row. The MCP tool and the webapp button are
- * thin callers — transition logic is never duplicated outside this class.
+ * accepted source state, applies the target status, and records an audit
+ * row. The MCP tool and the webapp button are thin callers — transition
+ * logic is never duplicated outside this class.
  *
- * Subjects must expose a `status` attribute and a `statusTransitions()`
- * polymorphic relation.
+ * Subjects must expose a `status` attribute. By default the audit row is
+ * written to the polymorphic `status_transitions` table via a
+ * `statusTransitions()` relation; governance entities override
+ * {@see Transition::record()} to log elsewhere.
  */
 abstract class Transition
 {
@@ -42,14 +44,28 @@ abstract class Transition
     abstract public function subjectLabel(): string;
 
     /**
+     * Whether this transition requires a non-empty reason. Transitions that
+     * capture a mandatory rationale (e.g. blocking a work item) override this;
+     * the requirement is enforced here so no caller can bypass it.
+     */
+    public function requiresReason(): bool
+    {
+        return false;
+    }
+
+    /**
      * Apply the transition, recording an audit row.
      *
      * Returns the audit record created for the transition.
      *
-     * @throws IllegalTransitionException when the subject's current status is not an accepted source state
+     * @throws IllegalTransitionException when the subject's current status is not an accepted source state, or when a required reason is missing
      */
     public function apply(Model $subject, ?User $actor = null, ?string $reason = null): Model
     {
+        if ($this->requiresReason() && ($reason === null || trim($reason) === '')) {
+            throw new IllegalTransitionException("A reason is required to {$this->verb()} a {$this->subjectLabel()}.");
+        }
+
         return DB::transaction(function () use ($subject, $actor, $reason): Model {
             // Lock the subject row and re-read its status under the lock, so two
             // concurrent transitions cannot both observe the same source state
@@ -72,15 +88,12 @@ abstract class Transition
     }
 
     /**
-     * Apply any attribute changes beyond `status` before the subject is saved.
-     *
-     * The default does nothing; transitions that also set decision fields or
-     * timestamps override this. Runs inside the transition transaction.
+     * Apply any non-status attribute changes that are part of this transition,
+     * within the same locked transaction. Overridden by transitions that set
+     * decision fields, timestamps, or other attributes alongside the status.
+     * No-op by default.
      */
-    protected function decorateSubject(Model $subject): void
-    {
-        //
-    }
+    protected function decorateSubject(Model $subject): void {}
 
     /**
      * Record the audit row for this transition.
@@ -106,7 +119,9 @@ abstract class Transition
     protected function rejectionMessage(?string $from): string
     {
         $current = $from === null ? 'unset' : str_replace('_', ' ', $from);
+        $label = $this->subjectLabel();
+        $article = in_array(strtolower($label[0] ?? ''), ['a', 'e', 'i', 'o', 'u'], true) ? 'an' : 'a';
 
-        return "Cannot {$this->verb()} a {$this->subjectLabel()} that is {$current}.";
+        return "Cannot {$this->verb()} {$article} {$label} that is {$current}.";
     }
 }
