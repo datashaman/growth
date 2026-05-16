@@ -39,7 +39,7 @@ class UpsertWorkItems extends Tool
     private function upsertItem(int $index, array $item): array
     {
         try {
-            $data = Validator::make($item, $this->itemRules())->validate();
+            $data = Validator::make($item, $this->itemRules(), $this->itemMessages())->validate();
         } catch (ValidationException $e) {
             return [
                 'index' => $index,
@@ -94,6 +94,7 @@ class UpsertWorkItems extends Tool
             'kind' => 'required|in:'.implode(',', WorkItem::KINDS),
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'status' => 'prohibited',
             'planned_start_date' => 'nullable|date_format:Y-m-d',
             'due_date' => 'nullable|date_format:Y-m-d',
             'effort_estimate' => 'nullable|string|max:60',
@@ -105,6 +106,16 @@ class UpsertWorkItems extends Tool
             'cost_actual' => 'nullable|string|max:60',
             'cost_actual_amount' => 'nullable|numeric|min:0|max:9999999999',
             'cost_currency' => 'nullable|string|size:3',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function itemMessages(): array
+    {
+        return [
+            'status.prohibited' => 'Work item status is not set here. Use the start-work-item and complete-work-item tools to move status through validated transitions.',
         ];
     }
 

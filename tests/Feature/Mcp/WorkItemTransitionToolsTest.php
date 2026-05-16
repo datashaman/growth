@@ -3,6 +3,7 @@
 use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Tools\Plan\CompleteWorkItem;
 use App\Mcp\Tools\Plan\StartWorkItem;
+use App\Mcp\Tools\Plan\UpsertWorkItems;
 use App\Models\Project;
 use App\Models\StatusTransition;
 use App\Models\User;
@@ -85,6 +86,25 @@ it('rejects completing a work item that is not in_progress', function () {
 
     expect($item->fresh()->status)->toBe('todo');
     expect(StatusTransition::count())->toBe(0);
+});
+
+it('rejects status passed to upsert-work-items with a pointer to the transition tools', function () {
+    PlanningServer::tool(UpsertWorkItems::class, [
+        'items' => [[
+            'project_id' => $this->project->id,
+            'kind' => 'task',
+            'name' => 'No status here',
+            'status' => 'in_progress',
+        ]],
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('items.0.ok', false)
+                ->where('items.0.errors.status.0', 'Work item status is not set here. Use the start-work-item and complete-work-item tools to move status through validated transitions.')
+                ->etc();
+        });
+
+    expect(WorkItem::where('name', 'No status here')->exists())->toBeFalse();
 });
 
 it('rejects a transition on a work item the user does not own', function () {

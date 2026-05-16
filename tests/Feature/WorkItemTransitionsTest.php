@@ -69,7 +69,8 @@ it('shows a start button for a todo work item and starts it', function () {
     Livewire::test('pages::work-items.show', ['workItem' => $item])
         ->assertSee('Start')
         ->call('startWorkItem')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
 
     expect($item->fresh()->status)->toBe('in_progress');
 
@@ -86,21 +87,42 @@ it('shows a complete button for an in_progress work item and completes it', func
     Livewire::test('pages::work-items.show', ['workItem' => $item])
         ->assertSee('Complete')
         ->call('completeWorkItem')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
 
     expect($item->fresh()->status)->toBe('done')
         ->and(StatusTransition::query()->sole()->to_status)->toBe('done');
 });
 
-it('rejects an illegal transition from the webapp without recording a row', function () {
+it('rejects an illegal transition from the webapp and warns the user', function () {
     $item = ($this->makeItem)('done');
 
     $this->actingAs($this->user);
 
     Livewire::test('pages::work-items.show', ['workItem' => $item])
         ->call('startWorkItem')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertDispatched('toast-show', dataset: ['variant' => 'danger']);
 
     expect($item->fresh()->status)->toBe('done')
         ->and(StatusTransition::count())->toBe(0);
+});
+
+it('404s the work item page for a user from another workspace', function () {
+    $stranger = User::factory()->create();
+    $strangerProject = Project::create([
+        'workspace_id' => $stranger->active_workspace_id,
+        'name' => 'Foreign',
+        'rigor_level' => 1,
+    ]);
+    $foreignItem = WorkItem::create([
+        'project_id' => $strangerProject->id,
+        'kind' => 'task',
+        'name' => 'Off limits',
+        'status' => 'todo',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get(route('work-items.show', $foreignItem))
+        ->assertNotFound();
 });

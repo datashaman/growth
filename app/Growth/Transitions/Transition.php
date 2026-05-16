@@ -49,13 +49,19 @@ abstract class Transition
      */
     public function apply(Model $subject, ?User $actor = null, ?string $reason = null): StatusTransition
     {
-        $from = $subject->getAttribute('status');
+        return DB::transaction(function () use ($subject, $actor, $reason): StatusTransition {
+            // Lock the subject row and re-read its status under the lock, so two
+            // concurrent transitions cannot both observe the same source state
+            // and double-apply.
+            $from = $subject->newQuery()
+                ->lockForUpdate()
+                ->findOrFail($subject->getKey())
+                ->getAttribute('status');
 
-        if (! in_array($from, $this->allowedFrom(), true)) {
-            throw new IllegalTransitionException($this->rejectionMessage($from));
-        }
+            if (! in_array($from, $this->allowedFrom(), true)) {
+                throw new IllegalTransitionException($this->rejectionMessage($from));
+            }
 
-        return DB::transaction(function () use ($subject, $actor, $reason, $from): StatusTransition {
             $subject->setAttribute('status', $this->targetStatus());
             $subject->save();
 
