@@ -101,3 +101,12 @@ it('rejects status passed to upsert-plan with a pointer to the transition tools'
         'status' => 'active',
     ])->assertHasErrors(['Plan status is not set here. Use the baseline-plan, activate-plan, and close-plan tools to move status through validated transitions.']);
 });
+
+it('rejects an empty status key on upsert-plan rather than persisting it', function () {
+    PlanningServer::tool(UpsertPlan::class, [
+        'project_id' => $this->project->id,
+        'status' => null,
+    ])->assertHasErrors(['Plan status is not set here. Use the baseline-plan, activate-plan, and close-plan tools to move status through validated transitions.']);
+
+    expect(ProjectPlan::where('project_id', $this->project->id)->exists())->toBeFalse();
+});

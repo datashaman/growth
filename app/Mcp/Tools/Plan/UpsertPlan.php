@@ -17,7 +17,7 @@ class UpsertPlan extends Tool
     {
         $data = $request->validate([
             'project_id' => 'required|string|owned_project',
-            'status' => 'prohibited',
+            'status' => 'missing',
             'scope_summary' => 'nullable|string',
             'objectives' => 'nullable|string',
             'deliverables_summary' => 'nullable|string',
@@ -27,7 +27,7 @@ class UpsertPlan extends Tool
             'constraints' => 'nullable|string',
             'budget_summary' => 'nullable|string',
         ], [
-            'status.prohibited' => 'Plan status is not set here. Use the baseline-plan, activate-plan, and close-plan tools to move status through validated transitions.',
+            'status.missing' => 'Plan status is not set here. Use the baseline-plan, activate-plan, and close-plan tools to move status through validated transitions.',
         ]);
 
         $plan = ProjectPlan::updateOrCreate(
