@@ -154,6 +154,7 @@ new #[Title('Evidence')] class extends Component {
             ->with('release')
             ->orderByRaw('deployed_at IS NULL')
             ->orderByDesc('deployed_at')
+            ->orderByDesc('id')
             ->get()
             ?? collect();
     }
@@ -168,7 +169,8 @@ new #[Title('Evidence')] class extends Component {
         return WorkItemDeliveryLink::query()
             ->whereHas('workItem', fn ($q) => $q->where('project_id', $this->selectedProject->id))
             ->with(['workItem', 'checkRuns'])
-            ->orderBy('created_at', 'desc')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->get();
     }
 }; ?>
