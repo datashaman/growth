@@ -95,21 +95,26 @@ test('run records a delivery link on the happy path', async () => {
   assert.equal(calls[0].args.ref, '#7');
 });
 
-test('run skips and does not call Growth when no trailer is present', async () => {
-  let called = false;
+test('run records an unattributed event when no trailer is present', async () => {
+  const calls = [];
   const result = await run({
     eventName: 'pull_request',
-    event: { action: 'opened', pull_request: { number: 1, head: { sha: 's' } } },
+    event: { action: 'opened', pull_request: { number: 1, html_url: 'u', head: { sha: 's' } } },
+    repository: 'datashaman/growth',
     getCommitMessage: async () => 'No trailer here',
-    callTool: async () => {
-      called = true;
+    callTool: async (name, args) => {
+      calls.push({ name, args });
       return { isError: false };
     },
     log: silentLog(),
   });
 
   assert.equal(result.skipped, true);
-  assert.equal(called, false);
+  const record = calls.find((c) => c.name === 'record-unattributed-event');
+  assert.ok(record, 'expected the unattributed event to be recorded');
+  assert.equal(record.args.reason, 'missing_link');
+  assert.equal(record.args.commit_sha, 's');
+  assert.ok(!calls.some((c) => c.name === 'upsert-delivery-link'));
 });
 
 test('run skips a PR closed without merging without fetching a commit', async () => {
@@ -242,22 +247,26 @@ test('run skips a check run with no associated pull request', async () => {
   assert.equal(called, false);
 });
 
-test('run skips a check run whose commit has no trailer', async () => {
-  let called = false;
+test('run records an unattributed event for a check run with no trailer', async () => {
+  const calls = [];
   const result = await run({
     eventName: 'check_run',
     event: checkRunEvent(),
     repository: 'datashaman/growth',
     getCommitMessage: async () => 'No trailer',
-    callTool: async () => {
-      called = true;
+    callTool: async (name, args) => {
+      calls.push({ name, args });
       return { isError: false };
     },
     log: silentLog(),
   });
 
   assert.equal(result.skipped, true);
-  assert.equal(called, false);
+  const record = calls.find((c) => c.name === 'record-unattributed-event');
+  assert.ok(record, 'expected the unattributed event to be recorded');
+  assert.equal(record.args.event_type, 'check_run');
+  assert.equal(record.args.commit_sha, 'crsha');
+  assert.ok(!calls.some((c) => c.name === 'upsert-check-run'));
 });
 
 test('run throws when Growth rejects the check run', async () => {
@@ -468,22 +477,25 @@ test('run skips a workflow run with no associated pull request', async () => {
   assert.equal(called, false);
 });
 
-test('run skips a workflow run whose commit has no trailer', async () => {
-  let called = false;
+test('run records an unattributed event for a workflow run with no trailer', async () => {
+  const calls = [];
   const result = await run({
     eventName: 'workflow_run',
     event: workflowRunEvent(),
     repository: 'datashaman/growth',
     getCommitMessage: async () => 'No trailer',
-    callTool: async () => {
-      called = true;
+    callTool: async (name, args) => {
+      calls.push({ name, args });
       return { isError: false };
     },
     log: silentLog(),
   });
 
   assert.equal(result.skipped, true);
-  assert.equal(called, false);
+  const record = calls.find((c) => c.name === 'record-unattributed-event');
+  assert.ok(record, 'expected the unattributed event to be recorded');
+  assert.equal(record.args.event_type, 'workflow_run');
+  assert.ok(!calls.some((c) => c.name === 'upsert-check-run'));
 });
 
 test('buildReleaseArgs maps a release payload to upsert-release arguments', () => {
@@ -629,6 +641,7 @@ test('run url-encodes a branch name with reserved characters in the binding', as
 
 test('run skips a trailer-less event whose branch is ambiguously bound', async () => {
   const warnings = [];
+  const calls = [];
   const result = await run({
     eventName: 'check_run',
     event: {
@@ -640,9 +653,13 @@ test('run skips a trailer-less event whose branch is ambiguously bound', async (
     },
     repository: 'datashaman/growth',
     getCommitMessage: async () => 'No trailer',
-    callTool: async (name) => {
+    callTool: async (name, args) => {
+      calls.push({ name, args });
       if (name === 'resolve-work-item-by-branch') {
         return { isError: false, structured: { found: false, ambiguous: true, work_item_id: null } };
+      }
+      if (name === 'record-unattributed-event') {
+        return { isError: false };
       }
       throw new Error(`unexpected call to ${name}`);
     },
@@ -651,6 +668,9 @@ test('run skips a trailer-less event whose branch is ambiguously bound', async (
 
   assert.equal(result.skipped, true);
   assert.ok(warnings.some((m) => m.includes('more than one work item')), 'expected an ambiguity warning');
+  const record = calls.find((c) => c.name === 'record-unattributed-event');
+  assert.ok(record, 'expected the unattributed event to be recorded');
+  assert.equal(record.args.reason, 'ambiguous_branch');
 });
 
 test('run attributes a trailer-less check run via its branch binding', async () => {
@@ -702,6 +722,9 @@ test('run skips a trailer-less event whose branch is not bound', async () => {
     callTool: async (name) => {
       if (name === 'resolve-work-item-by-branch') {
         return { isError: false, structured: { found: false, work_item_id: null } };
+      }
+      if (name === 'record-unattributed-event') {
+        return { isError: false };
       }
       throw new Error(`unexpected call to ${name}`);
     },
@@ -772,6 +795,9 @@ test('run posts a failing attribution check when a pull request cannot be attrib
     callTool: async (name) => {
       if (name === 'resolve-work-item-by-branch') {
         return { isError: false, structured: { found: false, work_item_id: null } };
+      }
+      if (name === 'record-unattributed-event') {
+        return { isError: false };
       }
       throw new Error(`unexpected call to ${name}`);
     },

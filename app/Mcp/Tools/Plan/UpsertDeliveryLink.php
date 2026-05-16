@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
+use App\Models\UnattributedGithubEvent;
 use App\Models\WorkItemDeliveryLink;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -37,6 +38,17 @@ class UpsertDeliveryLink extends Tool
                 ],
                 $data,
             );
+
+        // Binding a branch resolves the attribution gap, so any GitHub
+        // events that failed on this branch leave the Evidence exception
+        // list. (Events on bound-by-trailer-only paths fall to the prune.)
+        if ($link->type === 'branch') {
+            $githubRepo = $link->workItem?->project?->github_repo;
+
+            if ($githubRepo !== null) {
+                UnattributedGithubEvent::clearForBranch($githubRepo, $link->ref);
+            }
+        }
 
         return Response::structured([
             'id' => $link->id,
