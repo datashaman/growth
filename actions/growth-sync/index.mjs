@@ -43,6 +43,19 @@ export function resolveEventBranch(eventName, event, pullRequest = null) {
 }
 
 /**
+ * Whether a pull request originates from a fork — its head repository
+ * differs from the base. Branch bindings only make sense within the base
+ * repository: two forks can each open a pull request with the same head
+ * ref, so a fork branch must never create or resolve a base-repo branch
+ * binding. A missing head repo (older payloads, a deleted fork) is treated
+ * as same-repo, matching the attribution-check guard.
+ */
+export function isForkPullRequest(pullRequest, repository) {
+  const headRepo = pullRequest?.head?.repo?.full_name;
+  return Boolean(headRepo && headRepo !== repository);
+}
+
+/**
  * Resolve a work item for a trailer-less commit by looking up a branch
  * delivery link. Returns the work item id, or null when nothing is bound.
  */
@@ -119,16 +132,23 @@ async function recordBranchBinding({ callTool, repository, workItemId, branch })
  * and a branch is known, the branch is bound so later trailer-less events
  * still attribute. Returns the work item id, or null when unattributable.
  */
-async function attributeWorkItem({ callTool, repository, eventName, commitMessage, branch, sha, url, log }) {
+async function attributeWorkItem({ callTool, repository, eventName, commitMessage, branch, sha, url, isFork = false, log }) {
   const trailerId = parseTrailer(commitMessage);
   if (trailerId !== null) {
-    if (branch) {
+    // Two forks can share a head ref, so a fork branch must never become a
+    // base-repo branch binding. The PR-number link still carries attribution
+    // for later trailer-less events on the same pull request.
+    if (branch && !isFork) {
       await recordBranchBinding({ callTool, repository, workItemId: trailerId, branch });
     }
     return trailerId;
   }
 
-  const { workItemId, ambiguous } = await resolveWorkItemByBranch({ callTool, repository, branch, log });
+  // A fork's trailer-less commit cannot borrow a base-repo branch binding:
+  // another fork may have created it for an unrelated same-named branch.
+  const { workItemId, ambiguous } = isFork
+    ? { workItemId: null, ambiguous: false }
+    : await resolveWorkItemByBranch({ callTool, repository, branch, log });
   if (workItemId !== null) {
     log.info(`Attributed commit ${sha} to work item ${workItemId} via branch ${branch}.`);
     return workItemId;
@@ -308,6 +328,7 @@ async function runPullRequest({ event, repository, getCommitMessage, callTool, p
     branch,
     sha,
     url: event.pull_request?.html_url,
+    isFork: isForkPullRequest(event.pull_request, repository),
     log,
   });
 

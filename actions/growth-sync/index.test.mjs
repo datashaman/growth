@@ -8,6 +8,7 @@ import {
   buildDeploymentArgs,
   buildReleaseArgs,
   buildWorkflowRunArgs,
+  isForkPullRequest,
   mapDeploymentState,
   parseTrailer,
   resolveCheckRunPullRequest,
@@ -857,6 +858,54 @@ test('run skips the attribution check for a fork pull request but still records 
     calls.some((c) => c.name === 'upsert-delivery-link' && c.args.type === 'pull_request'),
     'expected the fork PR delivery link to still be recorded',
   );
+  assert.ok(
+    !calls.some((c) => c.name === 'upsert-delivery-link' && c.args.type === 'branch'),
+    'a fork branch must not become a base-repo branch binding',
+  );
+});
+
+test('isForkPullRequest is true only when the head repo differs from the base', () => {
+  assert.equal(
+    isForkPullRequest({ head: { repo: { full_name: 'contributor/growth' } } }, 'datashaman/growth'),
+    true,
+  );
+  assert.equal(
+    isForkPullRequest({ head: { repo: { full_name: 'datashaman/growth' } } }, 'datashaman/growth'),
+    false,
+  );
+  // A missing head repo is treated as same-repo, matching the check guard.
+  assert.equal(isForkPullRequest({ head: {} }, 'datashaman/growth'), false);
+});
+
+test('run does not resolve a fork pull request via a base-repo branch binding', async () => {
+  // The collision: another fork could have bound `feature/shared` in the
+  // base repo. This fork's trailer-less commit must not borrow that binding.
+  const calls = [];
+  const result = await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'opened',
+      pull_request: {
+        number: 7, html_url: 'u', title: 't',
+        head: { sha: 'sha7', ref: 'feature/shared', repo: { full_name: 'contributor/growth' } },
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer on this fork commit',
+    callTool: async (name, args) => {
+      if (name === 'resolve-work-item-by-branch') {
+        throw new Error('a fork PR must not consult a base-repo branch binding');
+      }
+      calls.push({ name, args });
+      return { isError: false };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+  const record = calls.find((c) => c.name === 'record-unattributed-event');
+  assert.ok(record, 'expected the fork event to be recorded as unattributed');
+  assert.equal(record.args.reason, 'missing_link');
 });
 
 test('run does not post an attribution check on a closed pull request', async () => {
