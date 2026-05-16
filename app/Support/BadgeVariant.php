@@ -82,6 +82,17 @@ class BadgeVariant
         };
     }
 
+    public static function planStatus(string $status): string
+    {
+        return match ($status) {
+            'draft' => 'sky',
+            'baselined' => 'blue',
+            'active' => 'green',
+            'closed' => 'zinc',
+            default => 'zinc',
+        };
+    }
+
     public static function priority(?string $priority): string
     {
         return match ($priority) {

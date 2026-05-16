@@ -10,14 +10,14 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Create or update the delivery plan for a Growth project.')]
+#[Description('Create or update the delivery plan for a Growth project. Status is not set here: a new plan starts as draft and moves only through the baseline-plan, activate-plan, and close-plan transitions.')]
 class UpsertPlan extends Tool
 {
     public function handle(Request $request): ResponseFactory
     {
         $data = $request->validate([
             'project_id' => 'required|string|owned_project',
-            'status' => 'nullable|in:'.implode(',', ProjectPlan::STATUSES),
+            'status' => 'prohibited',
             'scope_summary' => 'nullable|string',
             'objectives' => 'nullable|string',
             'deliverables_summary' => 'nullable|string',
@@ -26,6 +26,8 @@ class UpsertPlan extends Tool
             'assumptions' => 'nullable|string',
             'constraints' => 'nullable|string',
             'budget_summary' => 'nullable|string',
+        ], [
+            'status.prohibited' => 'Plan status is not set here. Use the baseline-plan, activate-plan, and close-plan tools to move status through validated transitions.',
         ]);
 
         $plan = ProjectPlan::updateOrCreate(
@@ -36,7 +38,6 @@ class UpsertPlan extends Tool
         return Response::structured([
             'id' => $plan->id,
             'project_id' => $plan->project_id,
-            'status' => $plan->status,
             'created' => $plan->wasRecentlyCreated,
         ]);
     }
@@ -45,7 +46,6 @@ class UpsertPlan extends Tool
     {
         return [
             'project_id' => $schema->string()->description('Project ULID')->required(),
-            'status' => $schema->string()->description('Plan lifecycle status')->enum(ProjectPlan::STATUSES),
             'scope_summary' => $schema->string()->description('What is in scope and out of scope'),
             'objectives' => $schema->string()->description('Project objectives'),
             'deliverables_summary' => $schema->string()->description('High-level deliverables'),
