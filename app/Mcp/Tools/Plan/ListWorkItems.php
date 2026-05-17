@@ -52,7 +52,7 @@ class ListWorkItems extends Tool
             ->limit($limit)
             ->offset($offset)
             ->get([
-                'id', 'kind', 'name', 'status', 'parent_id', 'responsible_role_id',
+                'id', 'number', 'kind', 'name', 'status', 'parent_id', 'responsible_role_id',
                 'planned_start_date', 'due_date', 'effort_estimate', 'effort_estimate_hours', 'effort_actual',
                 'effort_actual_hours', 'cost_estimate', 'cost_estimate_amount',
                 'cost_actual', 'cost_actual_amount', 'cost_currency',
@@ -64,6 +64,8 @@ class ListWorkItems extends Tool
             'offset' => $offset,
             'results' => $rows->map(fn ($w) => [
                 'id' => $w->id,
+                'number' => $w->number,
+                'reference' => $w->reference(),
                 'kind' => $w->kind,
                 'name' => $w->name,
                 'status' => $w->status,
