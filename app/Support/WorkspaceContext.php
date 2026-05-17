@@ -4,7 +4,7 @@ namespace App\Support;
 
 use App\Models\User;
 use App\Models\Workspace;
-use Laravel\Passport\Token;
+use Laravel\Passport\AccessToken;
 use RuntimeException;
 use Throwable;
 
@@ -89,10 +89,9 @@ class WorkspaceContext
         }
 
         try {
-            /** @var Token|null $token */
             $token = $user->token();
 
-            $workspaceId = $token instanceof Token ? $token->getAttribute('workspace_id') : null;
+            $workspaceId = $token instanceof AccessToken ? $token->workspace_id : null;
         } catch (Throwable) {
             return null;
         }
