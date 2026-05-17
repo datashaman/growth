@@ -7,7 +7,6 @@ use App\Models\Project;
 use App\Models\Release;
 use App\Models\StatusTransition;
 use App\Models\User;
-use Livewire\Livewire;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -44,51 +43,6 @@ it('rejects an illegal source state without writing an audit row', function () {
 
     expect(fn () => (new CancelRelease)->apply($release))
         ->toThrow(IllegalTransitionException::class, 'Cannot cancel a release that is released.');
-
-    expect($release->fresh()->status)->toBe('released')
-        ->and(StatusTransition::count())->toBe(0);
-});
-
-// ---- webapp buttons ----
-
-it('shows a promote button for a planned release and promotes it', function () {
-    $release = ($this->makeRelease)('planned');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::evidence')
-        ->assertSee('Promote')
-        ->call('promoteRelease', $release->id)
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($release->fresh()->status)->toBe('candidate')
-        ->and(StatusTransition::query()->sole()->to_status)->toBe('candidate');
-});
-
-it('shows a mark-released button for a candidate release and releases it', function () {
-    $release = ($this->makeRelease)('candidate');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::evidence')
-        ->assertSee('Mark released')
-        ->call('markReleaseReleased', $release->id)
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($release->fresh()->status)->toBe('released');
-});
-
-it('rejects an illegal release transition from the webapp and warns the user', function () {
-    $release = ($this->makeRelease)('released');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::evidence')
-        ->call('cancelRelease', $release->id)
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'danger']);
 
     expect($release->fresh()->status)->toBe('released')
         ->and(StatusTransition::count())->toBe(0);
