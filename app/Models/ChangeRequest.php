@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use RuntimeException;
 
 class ChangeRequest extends Model
 {
@@ -40,6 +41,15 @@ class ChangeRequest extends Model
         static::creating(function (ChangeRequest $changeRequest): void {
             if ($changeRequest->number === null) {
                 $changeRequest->number = $changeRequest->nextNumberForProject();
+            }
+        });
+
+        // The per-project number is assigned once on create, so moving a
+        // change request to another project would leave a stale CR-NNN
+        // reference or collide with the (project_id, number) unique index.
+        static::updating(function (ChangeRequest $changeRequest): void {
+            if ($changeRequest->isDirty('project_id')) {
+                throw new RuntimeException('A change request cannot be moved to another project.');
             }
         });
     }

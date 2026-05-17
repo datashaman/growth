@@ -61,9 +61,17 @@ class UpsertChangeRequest extends Tool
         $id = $data['id'] ?? null;
         unset($data['id']);
 
-        $change = $id
-            ? tap(ChangeRequest::findOrFail($id))->update($data)
-            : DB::transaction(fn () => ChangeRequest::create($data));
+        if ($id !== null) {
+            $change = ChangeRequest::findOrFail($id);
+            if ($change->project_id !== $data['project_id']) {
+                throw ValidationException::withMessages([
+                    'project_id' => 'A change request cannot be moved to another project.',
+                ]);
+            }
+            $change->update($data);
+        } else {
+            $change = DB::transaction(fn () => ChangeRequest::create($data));
+        }
 
         if ($impacts !== null) {
             $this->syncImpacts($change, $impacts);
