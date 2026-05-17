@@ -91,11 +91,16 @@ class ScaffoldGithubSync extends Tool
      * workflow. A callback replacement keeps any `$`/`\` in a name out of
      * preg's backreference syntax.
      *
+     * The template's "# EDIT: list your CI workflow name(s)" comment block
+     * is dropped — the list is now filled in, so the instruction is stale.
+     *
      * @param  list<string>  $ciWorkflows
      */
     private function applyCiWorkflows(string $yaml, array $ciWorkflows): string
     {
         $list = json_encode($ciWorkflows, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        $yaml = preg_replace('/^[ \t]*# EDIT:.*\n(?:[ \t]*#.*\n)*/m', '', $yaml, 1);
 
         return preg_replace_callback(
             '/^(\s*workflows:) \[.*\]$/m',
