@@ -84,6 +84,24 @@ it('rejects an illegal feedback transition without writing a row', function () {
         ->and(StatusTransition::count())->toBe(0);
 });
 
+it('rejects triaging feedback that is already triaged', function () {
+    $feedback = ($this->makeFeedback)('triaged');
+
+    PlanningServer::tool(TriageFeedback::class, ['feedback_id' => $feedback->id])
+        ->assertHasErrors(['Cannot triage a feedback that is triaged.']);
+
+    expect(StatusTransition::count())->toBe(0);
+});
+
+it('rejects resolving feedback that is already resolved', function () {
+    $feedback = ($this->makeFeedback)('resolved');
+
+    PlanningServer::tool(ResolveFeedback::class, ['feedback_id' => $feedback->id])
+        ->assertHasErrors(['Cannot resolve a feedback that is resolved.']);
+
+    expect(StatusTransition::count())->toBe(0);
+});
+
 it('does not transition feedback from another workspace', function () {
     $stranger = User::factory()->create();
     $foreign = ($this->makeFeedback)('new', $stranger->active_workspace_id);
