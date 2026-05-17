@@ -2,6 +2,50 @@
 
 use App\Models\Project;
 use App\Models\User;
+use App\Support\ViewLens;
+
+/**
+ * Create a project whose dashboard exercises every panel: counts, readiness,
+ * schedule, implementation, capacity, risks, anomalies, and reviews.
+ */
+function dashboardProjectWithEveryPanel(User $user): Project
+{
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+
+    $project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Wire the descent engine',
+        'status' => 'todo',
+        'effort_estimate_hours' => 8,
+    ]);
+    $project->risks()->create([
+        'title' => 'Heat shield delamination',
+        'category' => 'technical',
+        'probability' => 'high',
+        'impact' => 'high',
+        'status' => 'mitigating',
+    ]);
+    $project->anomalies()->create([
+        'severity' => 'high',
+        'status' => 'open',
+        'summary' => 'Telemetry sync drift',
+        'description' => 'Subseconds desync between burst windows.',
+        'environment' => 'staging',
+    ]);
+    $project->reviews()->create([
+        'type' => 'technical_review',
+        'title' => 'Heat shield design review',
+        'status' => 'held',
+        'decision' => 'accepted_with_actions',
+        'held_at' => now()->subDay(),
+    ]);
+
+    return $project;
+}
 
 test('dashboard redirects guests to login', function () {
     $this->get('/dashboard')->assertRedirect('/login');
@@ -143,6 +187,89 @@ test('dashboard surfaces risks, anomalies, and reviews', function () {
         ->assertSee('Telemetry sync drift')
         ->assertSee('Heat shield design review')
         ->assertSee('accepted with actions');
+});
+
+/*
+ * Each panel is identified by a string unique to it: a section heading
+ * ("Counts", "Schedule health", "Capacity") or a table column header ("Gate"
+ * for readiness, "Deploys" for implementation, "Exposure" for risks,
+ * "Environment" for anomalies, "Decision" for reviews). Neither entity titles
+ * nor the word "Implementation" are used as anchors — the readiness panel
+ * cross-references risks, anomalies, reviews, and work items as finding
+ * subjects, and lists an "Implementation" readiness gate, so those strings can
+ * surface outside their own panels.
+ */
+
+test('the All lens renders every dashboard panel', function () {
+    $user = User::factory()->create();
+    $user->switchLens(ViewLens::All);
+    $project = dashboardProjectWithEveryPanel($user);
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('Counts')
+        ->assertSee('Gate')
+        ->assertSee('Schedule health')
+        ->assertSee('Deploys')
+        ->assertSee('Capacity')
+        ->assertSee('Exposure')
+        ->assertSee('Environment')
+        ->assertSee('Decision');
+});
+
+test('the spec-writer lens renders only counts and readiness', function () {
+    $user = User::factory()->create();
+    $user->switchLens(ViewLens::SpecWriter);
+    $project = dashboardProjectWithEveryPanel($user);
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('Counts')
+        ->assertSee('Gate')
+        ->assertDontSee('Schedule health')
+        ->assertDontSee('Deploys')
+        ->assertDontSee('Capacity')
+        ->assertDontSee('Exposure')
+        ->assertDontSee('Environment')
+        ->assertDontSee('Decision');
+});
+
+test('the spec-implementer lens renders implementation, schedule, capacity, risks, and anomalies', function () {
+    $user = User::factory()->create();
+    $user->switchLens(ViewLens::SpecImplementer);
+    $project = dashboardProjectWithEveryPanel($user);
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('Schedule health')
+        ->assertSee('Deploys')
+        ->assertSee('Capacity')
+        ->assertSee('Exposure')
+        ->assertSee('Environment')
+        ->assertDontSee('Counts')
+        ->assertDontSee('Gate')
+        ->assertDontSee('Decision');
+});
+
+test('the reviewer lens renders only readiness and reviews', function () {
+    $user = User::factory()->create();
+    $user->switchLens(ViewLens::Reviewer);
+    $project = dashboardProjectWithEveryPanel($user);
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('Gate')
+        ->assertSee('Decision')
+        ->assertDontSee('Counts')
+        ->assertDontSee('Schedule health')
+        ->assertDontSee('Deploys')
+        ->assertDontSee('Capacity')
+        ->assertDontSee('Exposure')
+        ->assertDontSee('Environment');
 });
 
 test('dashboard only lists projects owned by the authed user', function () {

@@ -367,6 +367,9 @@ new #[Title('Dashboard')] class extends Component {
                 <flux:callout.text>{{ __('Pick a project from the dropdown to see its dashboard.') }}</flux:callout.text>
             </flux:callout>
         @else
+            @php
+                $lens = auth()->user()->lens();
+            @endphp
             <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
                 <div class="flex items-start justify-between gap-4">
                     <div class="flex flex-col gap-2">
@@ -401,6 +404,7 @@ new #[Title('Dashboard')] class extends Component {
                 </div>
             </section>
 
+            @if ($lens->revealsPanel('counts'))
             <section>
                 <flux:heading size="lg" class="mb-3">{{ __('Counts') }}</flux:heading>
                 <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
@@ -412,8 +416,11 @@ new #[Title('Dashboard')] class extends Component {
                     @endforeach
                 </div>
             </section>
+            @endif
 
+            @if ($lens->revealsPanel('readiness') || $lens->revealsPanel('schedule'))
             <section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                @if ($lens->revealsPanel('readiness'))
                 <x-data-table
                     :empty="count($this->readiness['gates']) === 0"
                     :empty-message="__('No readiness gates defined.')">
@@ -521,7 +528,9 @@ new #[Title('Dashboard')] class extends Component {
                         </flux:table.rows>
                     </flux:table>
                 </x-data-table>
+                @endif
 
+                @if ($lens->revealsPanel('schedule'))
                 <x-data-table
                     :title="__('Schedule health')"
                     :count="count($this->schedule['findings'])"
@@ -568,8 +577,11 @@ new #[Title('Dashboard')] class extends Component {
                         @endforeach
                     </ul>
                 </x-data-table>
+                @endif
             </section>
+            @endif
 
+            @if ($lens->revealsPanel('implementation'))
             <x-data-table
                 :empty="count($this->implementation['results']) === 0"
                 :empty-message="__('No work items defined.')">
@@ -640,7 +652,9 @@ new #[Title('Dashboard')] class extends Component {
                     </flux:table.rows>
                 </flux:table>
             </x-data-table>
+            @endif
 
+            @if ($lens->revealsPanel('capacity'))
             <x-data-table
                 :empty="count($this->capacity['roles']) === 0"
                 :empty-message="__('No roles or work items defined.')">
@@ -691,7 +705,9 @@ new #[Title('Dashboard')] class extends Component {
                     </flux:table.rows>
                 </flux:table>
             </x-data-table>
+            @endif
 
+            @if ($lens->revealsPanel('risks'))
             <x-data-table
                 :title="__('Risks')"
                 :count="$this->risks->count()"
@@ -748,7 +764,9 @@ new #[Title('Dashboard')] class extends Component {
             @if ($this->project)
                 <livewire:pages::risks.create-modal :project-id="$this->project->id" :key="'create-risk-'.$this->project->id" />
             @endif
+            @endif
 
+            @if ($lens->revealsPanel('anomalies'))
             <x-data-table
                 :title="__('Anomalies')"
                 :count="$this->anomalies->where('status', '!=', 'closed')->count().' '.__('open').' / '.$this->anomalies->count()"
@@ -787,7 +805,9 @@ new #[Title('Dashboard')] class extends Component {
                     </flux:table.rows>
                 </flux:table>
             </x-data-table>
+            @endif
 
+            @if ($lens->revealsPanel('reviews'))
             <x-data-table
                 :title="__('Reviews')"
                 :count="$this->reviews->where('status', 'held')->count().' '.__('held').' / '.$this->reviews->count()"
@@ -852,6 +872,7 @@ new #[Title('Dashboard')] class extends Component {
 
             @if ($this->project)
                 <livewire:pages::reviews.create-modal :project-id="$this->project->id" :key="'create-review-'.$this->project->id" />
+            @endif
             @endif
         @endif
 </div>

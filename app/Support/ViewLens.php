@@ -40,6 +40,31 @@ enum ViewLens: string
     }
 
     /**
+     * The dashboard panels this lens renders, by panel key. Panel keys are:
+     * counts, readiness, schedule, implementation, capacity, risks, anomalies,
+     * reviews. The project header is unconditional and not listed here.
+     *
+     * @return list<string>
+     */
+    public function panels(): array
+    {
+        return match ($this) {
+            self::All => ['counts', 'readiness', 'schedule', 'implementation', 'capacity', 'risks', 'anomalies', 'reviews'],
+            self::SpecWriter => ['counts', 'readiness'],
+            self::SpecImplementer => ['implementation', 'schedule', 'capacity', 'risks', 'anomalies'],
+            self::Reviewer => ['readiness', 'reviews'],
+        };
+    }
+
+    /**
+     * Whether this lens renders the given dashboard panel.
+     */
+    public function revealsPanel(string $panel): bool
+    {
+        return in_array($panel, $this->panels(), true);
+    }
+
+    /**
      * Human-readable label for the lens switcher.
      */
     public function label(): string
