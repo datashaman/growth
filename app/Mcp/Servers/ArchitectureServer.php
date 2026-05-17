@@ -20,8 +20,11 @@ use App\Mcp\Tools\Architecture\UpsertArchitectureViewpoint;
 use App\Mcp\Tools\Common\BulkLink;
 use App\Mcp\Tools\Common\Doctor;
 use App\Mcp\Tools\Common\WhoAmI;
+use App\Mcp\Tools\Feedback\ReopenFeedback;
+use App\Mcp\Tools\Feedback\ResolveFeedback;
 use App\Mcp\Tools\Feedback\SearchFeedback;
 use App\Mcp\Tools\Feedback\SendFeedback;
+use App\Mcp\Tools\Feedback\TriageFeedback;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Requirements\ListRequirements;
@@ -41,6 +44,9 @@ class ArchitectureServer extends Server
         Doctor::class,
         SearchFeedback::class,
         SendFeedback::class,
+        TriageFeedback::class,
+        ResolveFeedback::class,
+        ReopenFeedback::class,
         ListProjects::class,
         ListRequirements::class,
         UpsertArchitectureViewpoint::class,
