@@ -10,6 +10,7 @@ import {
   buildWorkflowRunArgs,
   isForkPullRequest,
   mapDeploymentState,
+  parseBranchReference,
   parseTrailer,
   resolveCheckRunPullRequest,
   resolveCommitSha,
@@ -733,6 +734,162 @@ test('run skips a trailer-less event whose branch is not bound', async () => {
   });
 
   assert.equal(result.skipped, true);
+});
+
+test('parseBranchReference extracts a WI-NNN reference from any position', () => {
+  assert.equal(parseBranchReference('WI-42-add-login'), 'WI-42');
+  assert.equal(parseBranchReference('feature/WI-42'), 'WI-42');
+  assert.equal(parseBranchReference('marlin/wi-7-fix'), 'WI-7');
+  assert.equal(parseBranchReference('WI-009'), 'WI-9');
+  assert.equal(parseBranchReference('WI-42'), 'WI-42');
+});
+
+test('parseBranchReference returns null when no reference is present', () => {
+  assert.equal(parseBranchReference('feature/add-login'), null);
+  assert.equal(parseBranchReference('fixWI-42'), null);
+  assert.equal(parseBranchReference('WI-x'), null);
+  assert.equal(parseBranchReference(''), null);
+  assert.equal(parseBranchReference(null), null);
+  assert.equal(parseBranchReference(undefined), null);
+});
+
+test('run attributes a trailer-less pull request via a WI-NNN branch reference', async () => {
+  const calls = [];
+  const result = await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'synchronize',
+      pull_request: {
+        number: 12,
+        html_url: 'https://github.com/datashaman/growth/pull/12',
+        head: { ref: 'WI-42-add-login', sha: 'headsha', repo: { full_name: 'datashaman/growth' } },
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer here',
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      if (name === 'resolve-work-item-by-reference') {
+        return { isError: false, structured: { found: true, work_item_id: '01REF' } };
+      }
+      return { isError: false, structured: { id: 'link1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, false);
+  const lookup = calls.find((c) => c.name === 'resolve-work-item-by-reference');
+  assert.ok(lookup, 'expected a reference lookup');
+  assert.equal(lookup.args.reference, 'WI-42');
+  assert.equal(lookup.args.github_repo, 'datashaman/growth');
+  assert.ok(calls.some((c) => c.name === 'upsert-delivery-link'
+    && c.args.type === 'pull_request' && c.args.work_item_id === '01REF'));
+  assert.ok(!calls.some((c) => c.name === 'upsert-delivery-link' && c.args.type === 'branch'),
+    'a branch reference must not record a branch delivery link');
+});
+
+test('run resolves a branch reference for a fork pull request', async () => {
+  const calls = [];
+  const result = await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'synchronize',
+      pull_request: {
+        number: 13,
+        html_url: 'https://github.com/datashaman/growth/pull/13',
+        head: { ref: 'WI-7-fix', sha: 'forksha', repo: { full_name: 'someone/growth-fork' } },
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer here',
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      if (name === 'resolve-work-item-by-reference') {
+        return { isError: false, structured: { found: true, work_item_id: '01FORK' } };
+      }
+      return { isError: false, structured: { id: 'link1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, false);
+  assert.ok(calls.some((c) => c.name === 'resolve-work-item-by-reference'));
+  assert.ok(!calls.some((c) => c.name === 'resolve-work-item-by-branch'),
+    'a branch reference should not fall through to the branch binding');
+  assert.ok(!calls.some((c) => c.name === 'upsert-delivery-link' && c.args.type === 'branch'),
+    'a branch reference must not record a branch delivery link');
+});
+
+test('a branch reference wins over a colliding branch delivery-link binding', async () => {
+  const calls = [];
+  await run({
+    eventName: 'check_run',
+    event: {
+      check_run: {
+        head_sha: 'shaX',
+        name: 'tests',
+        status: 'completed',
+        conclusion: 'success',
+        pull_requests: [{ number: 9, head: { ref: 'WI-42-add-login' } }],
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer',
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      if (name === 'resolve-work-item-by-reference') {
+        return { isError: false, structured: { found: true, work_item_id: '01REF' } };
+      }
+      if (name === 'resolve-work-item-by-branch') {
+        // The branch is also bound to a different work item; the reference
+        // must take precedence and this lookup must not even be reached.
+        return { isError: false, structured: { found: true, work_item_id: '01BRANCH' } };
+      }
+      return { isError: false, structured: { id: 'link1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.ok(!calls.some((c) => c.name === 'resolve-work-item-by-branch'),
+    'the branch binding must not be consulted once a reference resolves');
+  assert.ok(calls.some((c) => c.name === 'upsert-delivery-link'
+    && c.args.type === 'pull_request' && c.args.work_item_id === '01REF'));
+  assert.ok(!calls.some((c) => c.name === 'upsert-delivery-link' && c.args.type === 'branch'),
+    'a branch reference must not record a branch delivery link');
+  assert.ok(calls.some((c) => c.name === 'upsert-check-run'));
+});
+
+test('an unresolved branch reference falls through to the branch binding', async () => {
+  const calls = [];
+  const result = await run({
+    eventName: 'check_run',
+    event: {
+      check_run: {
+        head_sha: 'shaX',
+        name: 'tests',
+        status: 'completed',
+        conclusion: 'success',
+        pull_requests: [{ number: 9, head: { ref: 'WI-999-stale' } }],
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer',
+    callTool: async (name) => {
+      calls.push({ name });
+      if (name === 'resolve-work-item-by-reference') {
+        return { isError: false, structured: { found: false, work_item_id: null } };
+      }
+      if (name === 'resolve-work-item-by-branch') {
+        return { isError: false, structured: { found: true, work_item_id: '01BRANCH' } };
+      }
+      return { isError: false, structured: { id: 'link1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, false);
+  assert.ok(calls.some((c) => c.name === 'resolve-work-item-by-reference'));
+  assert.ok(calls.some((c) => c.name === 'resolve-work-item-by-branch'));
 });
 
 test('buildAttributionCheckArgs passes when a work item resolved', () => {
