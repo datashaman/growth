@@ -45,7 +45,7 @@ below is the scope of the cutover. "Verdict" anticipates Q3.
 |---|---|---|
 | `work_items.planned_start_date`, `due_date` | scheduling | remove |
 | `work_items.effort_estimate(_hours)`, `effort_actual(_hours)` | duration | remove |
-| `work_items.cost_*` (`cost_estimate_amount`, `cost_actual_amount`, `cost_currency`, labels) | cost as `hours × rate` | remove — see *Cost* below |
+| `work_items.cost_*` (`cost_estimate`, `cost_estimate_amount`, `cost_actual`, `cost_actual_amount`, `cost_currency`) | cost authored or derived as `hours × rate` | remove — see *Cost* below |
 | `milestones.target_date` | dated checkpoint | remove |
 | `Milestone` status `missed`, `deferred` | date-driven outcomes | remove |
 | `work_item_dependencies.kind` (4 kinds) | 3 of 4 are duration-relational | collapse to 1 |
@@ -151,10 +151,13 @@ dashboard panels, and the date-based `PmpLinter` rules.
 ### Cost — a deliberate carve-out
 
 It is tempting to write "capacity dies as a time lens but survives as a cost
-lens". Resist it. `cost_estimate_amount` today is, by `PlanCapacitySummarizer`'s
-own formula, `effort_estimate_hours × hourly_rate_amount` — it is a *projection
-of the time model*, not an independent axis. Retiring the time model and keeping
-its projection would leave a number nothing computes.
+lens". Resist it. `cost_estimate_amount` is either authored directly or, when
+left unset, derived by `PlanCapacitySummarizer` as `effort_estimate_hours ×
+hourly_rate_amount`. Either way the cost fields are wedded to the time model: the
+derived path vanishes once effort hours and role rates are gone, and the authored
+path is a per-work-item effort estimate expressed in money — a human-planning
+quantity with no agent-paced thing behind it. Retiring the time model and keeping
+cost would leave a number nothing computes and nothing means.
 
 An agent's *real* cost — tokens, compute — is a different quantity on a different
 axis, measured per invocation, and Growth already records `tool_invocations`.
