@@ -22,8 +22,6 @@ class WorkItem extends Model
 
     public const STATUSES = ['todo', 'in_progress', 'blocked', 'done', 'cancelled'];
 
-    public const DEPENDENCY_KINDS = ['finish_to_start', 'start_to_start', 'finish_to_finish', 'start_to_finish'];
-
     public const RACI = ['r', 'a', 'c', 'i'];
 
     protected $fillable = [
@@ -112,14 +110,12 @@ class WorkItem extends Model
     public function dependencies(): BelongsToMany
     {
         return $this->belongsToMany(self::class, 'work_item_dependencies', 'work_item_id', 'depends_on_id')
-            ->withPivot('kind')
             ->withTimestamps();
     }
 
     public function dependents(): BelongsToMany
     {
         return $this->belongsToMany(self::class, 'work_item_dependencies', 'depends_on_id', 'work_item_id')
-            ->withPivot('kind')
             ->withTimestamps();
     }
 

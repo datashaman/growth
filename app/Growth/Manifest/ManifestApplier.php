@@ -771,7 +771,6 @@ class ManifestApplier
             $deps = [];
             foreach ((array) $input['dependencies'] as $depInput) {
                 $depRef = is_array($depInput) ? ($depInput['work_item'] ?? null) : $depInput;
-                $depKind = is_array($depInput) ? ($depInput['kind'] ?? 'finish_to_start') : 'finish_to_start';
 
                 if ($depRef === null) {
                     throw new RuntimeException("Work item [{$workItem->name}] has a dependency entry missing `work_item`.");
@@ -780,7 +779,7 @@ class ManifestApplier
                     ?? WorkItem::where('project_id', $projectId)->where('name', $depRef)->value('id')
                     ?? throw new RuntimeException("Work item [{$workItem->name}] references unknown dependency [{$depRef}].");
 
-                $deps[$depId] = ['kind' => $depKind];
+                $deps[] = $depId;
             }
             $workItem->dependencies()->sync($deps);
         }

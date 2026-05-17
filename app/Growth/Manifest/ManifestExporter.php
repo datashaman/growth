@@ -408,11 +408,8 @@ class ManifestExporter
             ->all();
 
         $dependencies = $workItem->dependencies
-            ->map(fn ($d) => [
-                'work_item' => $workItemSlugs[$d->id],
-                'kind' => $d->pivot->kind,
-            ])
-            ->sortBy('work_item')
+            ->map(fn ($d) => $workItemSlugs[$d->id])
+            ->sort()
             ->values()
             ->all();
 
