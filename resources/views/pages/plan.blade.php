@@ -116,12 +116,6 @@ new #[Title('Plan')] class extends Component {
             :count-label="__('items')"
             :empty="$this->workItems->isEmpty()"
             :empty-message="__('No work items defined.')">
-            <x-slot:actions>
-                <flux:button size="sm" icon="plus" variant="primary"
-                    :href="route('work-items.create', ['project' => $this->selectedProject->id])" wire:navigate>
-                    {{ __('New work item') }}
-                </flux:button>
-            </x-slot:actions>
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Work item') }}</flux:table.column>

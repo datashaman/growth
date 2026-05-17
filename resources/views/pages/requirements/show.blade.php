@@ -37,15 +37,7 @@ new class extends Component {
             {{ __('Requirement in project') }} <a href="{{ route('dashboard', ['project' => $requirement->project_id]) }}" class="underline">{{ $requirement->project->name }}</a>
         </x-slot:description>
 
-        <x-slot:actions>
-            <flux:button size="sm" icon="pencil-square" variant="primary" :href="route('requirements.edit', $requirement)" wire:navigate>{{ __('Edit') }}</flux:button>
-            <flux:modal.trigger name="delete-requirement">
-                <flux:button size="sm" icon="trash" variant="danger">{{ __('Delete') }}</flux:button>
-            </flux:modal.trigger>
-        </x-slot:actions>
     </x-detail-page-header>
-
-    <livewire:pages::requirements.delete-modal :requirement-id="$requirement->id" :key="'delete-requirement-'.$requirement->id" />
 
     <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:heading size="lg" class="mb-3">{{ __('Statement') }}</flux:heading>

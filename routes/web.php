@@ -17,12 +17,8 @@ Route::middleware('auth')->group(function () {
     Route::livewire('changes', 'pages::changes')->name('changes');
     Route::livewire('change-requests/{changeRequest}', 'pages::change-requests.show')->name('change-requests.show');
     Route::livewire('risks/{risk}', 'pages::risks.show')->name('risks.show');
-    Route::livewire('work-items/create', 'pages::work-items.create')->name('work-items.create');
     Route::livewire('work-items/{workItem}', 'pages::work-items.show')->name('work-items.show');
-    Route::livewire('work-items/{workItem}/edit', 'pages::work-items.edit')->name('work-items.edit');
-    Route::livewire('requirements/create', 'pages::requirements.create')->name('requirements.create');
     Route::livewire('requirements/{requirement}', 'pages::requirements.show')->name('requirements.show');
-    Route::livewire('requirements/{requirement}/edit', 'pages::requirements.edit')->name('requirements.edit');
     Route::livewire('anomalies/{anomaly}', 'pages::anomalies.show')->name('anomalies.show');
     Route::livewire('reviews/{review}', 'pages::reviews.show')->name('reviews.show');
     Route::livewire('tool-invocations', 'pages::tool-invocations')->name('tool-invocations');
