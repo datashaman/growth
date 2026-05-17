@@ -47,20 +47,27 @@ This collapses two taxonomies into one and leaves the third where it belongs.
 
 ### 1. How does a session declare and carry its role binding?
 
-Mirror `WorkspaceContext` — the precedent is already in the codebase and adopters
+Follow `WorkspaceContext` — the precedent is already in the codebase and adopters
 already configure it. A new `RoleContext` support class resolves the bound role
-through the same first-non-null-wins chain:
+through a first-non-null-wins chain, plus a `set()` override for tests:
 
 1. **Token-bound** — a `role` column on `oauth_access_tokens` (HTTP MCP via
    Passport). The token *is* the session for HTTP; the role rides it the same
    way `workspace_id` already does (migration `2026_05_14_181307`).
 2. **Env override** — `GROWTH_ROLE` for local stdio MCP, alongside the existing
-   `GROWTH_USER_EMAIL` / `GROWTH_WORKSPACE_ID`.
+   `GROWTH_USER_EMAIL` / `GROWTH_USER_ID` / `GROWTH_WORKSPACE_ID`.
 3. **Unbound** — no role; the session is not operating as a role. See Q5.
 
-Both transports, both mechanisms — exactly as `WorkspaceContext` does it. No new
-binding concept is invented; an adopter who already knows how to scope a token to
-a workspace scopes it to a role the same way.
+`RoleContext` borrows `WorkspaceContext`'s *carrier mechanism* — token column for
+HTTP, env var for stdio, a `set()` override for tests — but the chain is
+deliberately **one step shorter**: it has no authenticated-user fallback.
+`WorkspaceContext` falls back to `users.active_workspace_id` because a workspace
+is a stored user preference; an operating role is not — it is a context a
+session declares, so an unconfigured session is unbound, not silently assigned a
+default role. Implementers should copy the mechanism, not that third step.
+
+No new binding concept is invented: an adopter who already knows how to scope a
+token to a workspace scopes it to a role the same way.
 
 One subtlety: the role binding and the MCP server are redundant for HTTP, where
 the URL path (`/mcp/verification`) already selects the server. The token's `role`
