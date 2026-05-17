@@ -12,7 +12,6 @@ new class extends Component {
     public ?string $milestoneId = null;
 
     public string $name = '';
-    public string $target_date = '';
     public string $exit_criteria = '';
     public string $status = 'pending';
 
@@ -25,7 +24,6 @@ new class extends Component {
         abort_if($milestone === null, 404);
 
         $this->name = $milestone->name;
-        $this->target_date = $milestone->target_date?->format('Y-m-d') ?? '';
         $this->exit_criteria = (string) $milestone->exit_criteria;
         $this->status = $milestone->status;
 
@@ -46,14 +44,12 @@ new class extends Component {
 
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'target_date' => ['nullable', 'date'],
             'exit_criteria' => ['nullable', 'string'],
             'status' => ['required', Rule::in(Milestone::STATUSES)],
         ]);
 
         $milestone->update([
             ...$data,
-            'target_date' => $data['target_date'] ?: null,
             'exit_criteria' => $data['exit_criteria'] ?: null,
         ]);
 
@@ -70,14 +66,11 @@ new class extends Component {
 
         <flux:input wire:model="name" :label="__('Name')" required />
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <flux:input wire:model="target_date" type="date" :label="__('Target date')" />
-            <flux:select wire:model="status" :label="__('Status')">
-                @foreach (\App\Models\Milestone::STATUSES as $option)
-                    <flux:select.option value="{{ $option }}">{{ $option }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        </div>
+        <flux:select wire:model="status" :label="__('Status')">
+            @foreach (\App\Models\Milestone::STATUSES as $option)
+                <flux:select.option value="{{ $option }}">{{ $option }}</flux:select.option>
+            @endforeach
+        </flux:select>
 
         <flux:textarea wire:model="exit_criteria" :label="__('Exit criteria')" rows="3" />
 

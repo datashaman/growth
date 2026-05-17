@@ -9,7 +9,6 @@ use App\Models\Source;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Carbon;
 
 beforeEach(function () {
     $this->alice = User::factory()->create();
@@ -126,15 +125,4 @@ it('lets a Source cite a ProjectPlan / Milestone / Role', function () {
     expect($plan->citations()->count())->toBe(1);
     expect($ms->citations()->count())->toBe(1);
     expect($role->citations()->count())->toBe(1);
-});
-
-it('casts milestone target_date to a Carbon date', function () {
-    $ms = Milestone::create([
-        'project_id' => $this->aliceProject->id,
-        'name' => 'Beta',
-        'target_date' => '2026-07-01',
-    ]);
-
-    expect($ms->target_date)->toBeInstanceOf(Carbon::class);
-    expect($ms->target_date->toDateString())->toBe('2026-07-01');
 });

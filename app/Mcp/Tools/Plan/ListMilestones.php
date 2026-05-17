@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('List milestones for a project. Returns narrow columns sorted by target_date (nulls last) then name.')]
+#[Description('List milestones for a project. Returns narrow columns sorted by name.')]
 class ListMilestones extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -37,13 +37,11 @@ class ListMilestones extends Tool
         $total = (clone $query)->count();
 
         $rows = $query
-            ->orderByRaw('target_date is null')
-            ->orderBy('target_date')
             ->orderBy('name')
             ->withCount('workItems')
             ->limit($limit)
             ->offset($offset)
-            ->get(['id', 'name', 'target_date', 'status', 'exit_criteria']);
+            ->get(['id', 'name', 'status', 'exit_criteria']);
 
         return Response::structured([
             'total' => $total,
@@ -52,7 +50,6 @@ class ListMilestones extends Tool
             'results' => $rows->map(fn ($m) => [
                 'id' => $m->id,
                 'name' => $m->name,
-                'target_date' => $m->target_date?->toDateString(),
                 'status' => $m->status,
                 'exit_criteria' => $m->exit_criteria,
                 'work_items_count' => $m->work_items_count,

@@ -199,14 +199,6 @@ new class extends Component {
                     @endif
                 </dd>
             </div>
-            <div>
-                <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Planned start') }}</dt>
-                <dd class="mt-0.5">{{ $workItem->planned_start_date?->format('Y-m-d') ?? '—' }}</dd>
-            </div>
-            <div>
-                <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Due') }}</dt>
-                <dd class="mt-0.5">{{ $workItem->due_date?->format('Y-m-d') ?? '—' }}</dd>
-            </div>
         </dl>
     </section>
 
@@ -282,14 +274,12 @@ new class extends Component {
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Milestone') }}</flux:table.column>
-                    <flux:table.column>{{ __('Target') }}</flux:table.column>
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($workItem->milestones as $milestone)
                         <flux:table.row>
                             <flux:table.cell class="font-medium">{{ $milestone->name }}</flux:table.cell>
-                            <flux:table.cell>{{ $milestone->target_date?->format('Y-m-d') ?? '—' }}</flux:table.cell>
                             <flux:table.cell>
                                 <flux:badge :color="BadgeVariant::milestoneStatus($milestone->status)" size="sm">{{ EnumLabel::lower($milestone->status) }}</flux:badge>
                             </flux:table.cell>

@@ -4,7 +4,6 @@ namespace App\Mcp\Tools\Dashboard;
 
 use App\Growth\Assurance\ReadinessGateEvaluator;
 use App\Growth\Execution\ImplementationStatusSummarizer;
-use App\Growth\Plan\ScheduleHealthSummarizer;
 use App\Mcp\Resources\ProjectDashboardApp;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -25,7 +24,6 @@ class GetProjectDashboardData extends Tool
     public function __construct(
         private readonly ReadinessGateEvaluator $readiness,
         private readonly ImplementationStatusSummarizer $implementationStatus,
-        private readonly ScheduleHealthSummarizer $scheduleHealth,
     ) {}
 
     public function handle(Request $request): Response|ResponseFactory
@@ -117,7 +115,6 @@ class GetProjectDashboardData extends Tool
             'resource_uris' => $this->resourceUris($project),
             'readiness' => $this->readiness->evaluate($project),
             'implementation' => $this->implementationStatus->summarize($project),
-            'schedule' => $this->scheduleHealth->summarize($project),
         ];
     }
 

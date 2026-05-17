@@ -529,7 +529,7 @@ it('creates project plan, roles, milestones and work items from scratch', functi
                     ['slug' => 'backend', 'name' => 'Backend'],
                 ],
                 'milestones' => [
-                    ['slug' => 'm1', 'name' => 'MVP', 'target_date' => '2026-06-01'],
+                    ['slug' => 'm1', 'name' => 'MVP'],
                 ],
                 'work_items' => [
                     [
@@ -561,7 +561,7 @@ it('creates project plan, roles, milestones and work items from scratch', functi
     expect($plan->status)->toBe('draft');
     expect(Role::where('project_id', $project->id)->count())->toBe(2);
     $milestone = Milestone::where('project_id', $project->id)->where('name', 'MVP')->first();
-    expect($milestone->target_date->toDateString())->toBe('2026-06-01');
+    expect($milestone)->not->toBeNull();
     $workItem = WorkItem::where('project_id', $project->id)->where('name', 'Implement add-todo')->first();
     expect($workItem->responsibleRole->name)->toBe('Frontend');
     expect($workItem->requirements()->count())->toBe(1);
@@ -663,26 +663,6 @@ it('replace mode wipes plan, roles, milestones and work items', function () {
     expect(Milestone::where('project_id', $project->id)->where('name', 'OldMilestone')->exists())->toBeFalse();
     expect(WorkItem::where('project_id', $project->id)->where('name', 'OldWi')->exists())->toBeFalse();
     expect(ProjectPlan::where('project_id', $project->id)->value('status'))->toBe('active');
-});
-
-it('fail mode aborts when a milestone target_date differs', function () {
-    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'DateDiff', 'rigor_level' => 2]);
-    Milestone::create(['project_id' => $project->id, 'name' => 'MVP', 'target_date' => '2026-06-01']);
-
-    $response = ManagementServer::tool(ApplyManifest::class, [
-        'manifest' => [
-            'project' => ['id' => $project->id, 'name' => 'DateDiff'],
-            'plan' => [
-                'milestones' => [
-                    ['name' => 'MVP', 'target_date' => '2026-07-15'],
-                ],
-            ],
-        ],
-    ]);
-
-    $response->assertHasErrors(['fail mode aborts']);
-    expect(Milestone::where('project_id', $project->id)->where('name', 'MVP')->value('target_date')->toDateString())
-        ->toBe('2026-06-01');
 });
 
 it('resolves work-item refs by existing names when no manifest slug matches', function () {

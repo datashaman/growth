@@ -19,7 +19,6 @@ beforeEach(function () {
     $this->makeMilestone = fn (string $status): Milestone => Milestone::create([
         'project_id' => $this->project->id,
         'name' => 'Beta',
-        'target_date' => '2026-06-01',
         'status' => $status,
     ]);
 
@@ -81,33 +80,4 @@ it('shows transition controls only for pending milestones', function () {
 
     Livewire::test('pages::plan')
         ->assertDontSeeHtml("hitMilestone('{$milestone->id}')");
-});
-
-// ---- defer modal ----
-
-it('defers a milestone from the modal and applies the new target date', function () {
-    $milestone = ($this->makeMilestone)('pending');
-
-    Livewire::test('pages::milestones.defer-modal')
-        ->call('load', $milestone->id)
-        ->set('newTargetDate', '2026-12-01')
-        ->call('defer')
-        ->assertHasNoErrors()
-        ->assertDispatched('milestone-saved');
-
-    $fresh = $milestone->fresh();
-    expect($fresh->status)->toBe('deferred')
-        ->and($fresh->target_date->format('Y-m-d'))->toBe('2026-12-01');
-});
-
-it('requires a new target date to defer from the modal', function () {
-    $milestone = ($this->makeMilestone)('pending');
-
-    Livewire::test('pages::milestones.defer-modal')
-        ->call('load', $milestone->id)
-        ->set('newTargetDate', '')
-        ->call('defer')
-        ->assertHasErrors('newTargetDate');
-
-    expect($milestone->fresh()->status)->toBe('pending');
 });

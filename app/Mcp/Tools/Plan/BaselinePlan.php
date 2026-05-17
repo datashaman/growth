@@ -103,8 +103,6 @@ class BaselinePlan extends Tool
                 'kind' => $w->kind,
                 'name' => $w->name,
                 'status' => $w->status,
-                'planned_start_date' => $w->planned_start_date?->toDateString(),
-                'due_date' => $w->due_date?->toDateString(),
             ])->values()->all(),
         ];
     }

@@ -96,8 +96,6 @@ class DemoProjectSeeder extends Seeder
                 'kind' => 'task',
                 'name' => 'Implement ingest stage '.($i + 1),
                 'status' => $status,
-                'planned_start_date' => now()->subDays(30 - $i * 5),
-                'due_date' => now()->addDays(7 + $i * 3),
             ]);
         }
 
@@ -107,21 +105,17 @@ class DemoProjectSeeder extends Seeder
             'kind' => 'task',
             'name' => 'Ground station failover drill',
             'status' => 'in_progress',
-            'planned_start_date' => now()->subDays(20),
-            'due_date' => now()->subDays(3),
         ]);
 
         Milestone::create([
             'project_id' => $project->id,
             'name' => 'Telemetry pipeline GA',
-            'target_date' => now()->subDays(2),
             'status' => 'pending',
         ]);
 
         Milestone::create([
             'project_id' => $project->id,
             'name' => 'Beta cutover',
-            'target_date' => now()->addDays(21),
             'status' => 'pending',
         ]);
 
@@ -310,8 +304,6 @@ class DemoProjectSeeder extends Seeder
             'kind' => 'work_package',
             'name' => 'Data extract & validate',
             'status' => 'in_progress',
-            'planned_start_date' => now()->subDays(40),
-            'due_date' => now()->subDays(5),
         ]);
 
         $spike = WorkItem::create([
@@ -320,8 +312,6 @@ class DemoProjectSeeder extends Seeder
             'kind' => 'task',
             'name' => 'Schema mapping spike',
             'status' => 'done',
-            'planned_start_date' => now()->subDays(45),
-            'due_date' => now()->subDays(15),
         ]);
 
         WorkItem::create([
@@ -330,8 +320,6 @@ class DemoProjectSeeder extends Seeder
             'kind' => 'task',
             'name' => 'Rollback runbook',
             'status' => 'todo',
-            'planned_start_date' => now()->addDays(3),
-            'due_date' => now()->addDays(14),
         ]);
 
         // Done spike with PR + successful checks but no deployment → "validated" (done with evidence but un-deployed)
@@ -377,14 +365,12 @@ class DemoProjectSeeder extends Seeder
         Milestone::create([
             'project_id' => $project->id,
             'name' => 'Dress rehearsal complete',
-            'target_date' => now()->subDays(7),
             'status' => 'pending',
         ]);
 
         Milestone::create([
             'project_id' => $project->id,
             'name' => 'Cutover window',
-            'target_date' => now()->addDays(30),
             'status' => 'pending',
         ]);
 

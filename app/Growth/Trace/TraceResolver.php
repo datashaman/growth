@@ -346,9 +346,7 @@ class TraceResolver
                 ? "{$model->name} ({$model->kind})"
                 : (string) $model->name,
             'user' => (string) ($model->name ?? $model->email),
-            'milestone' => $model->target_date
-                ? "{$model->name} @ ".$model->target_date->toDateString()
-                : (string) $model->name,
+            'milestone' => (string) $model->name,
             default => (string) ($model->name ?? $model->getKey()),
         };
     }

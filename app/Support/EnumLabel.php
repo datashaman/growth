@@ -51,14 +51,7 @@ class EnumLabel
     public static function findingRule(string $rule): string
     {
         return match ($rule) {
-            'schedule.milestone.overdue' => 'Milestone overdue',
-            'schedule.work_item.overdue' => 'Work item overdue',
-            'schedule.dependency.open' => 'Open dependency',
-            'schedule.dependency.date_risk' => 'Dependency date risk',
-            'pmp.milestone.no_date' => 'Milestone missing target date',
-            'pmp.milestone.past_pending' => 'Milestone past target date',
             'pmp.milestone.could_hit' => 'Milestone could be marked hit',
-            'pmp.milestone.could_miss' => 'Milestone likely missed',
             'pmp.milestones.empty' => 'No milestones',
             'pmp.missing' => 'PMP missing',
             'pmp.scope.empty' => 'PMP scope empty',
@@ -70,10 +63,7 @@ class EnumLabel
             'pmp.roles.empty' => 'No roles defined',
             'pmp.requirement.uncovered' => 'Uncovered requirement',
             'pmp.risk.high_unmitigated' => 'Unmitigated high-exposure risk',
-            'pmp.schedule.milestone.overdue' => 'Milestone overdue',
-            'pmp.schedule.work_item.overdue' => 'Work item overdue',
-            'pmp.schedule.dependency.open' => 'Open dependency',
-            'pmp.schedule.dependency.date_risk' => 'Dependency date risk',
+            'pmp.dependency.open' => 'Open dependency',
             'baseline.none' => 'No plan baseline',
             'baseline.artifact.removed' => 'Baseline artifact removed',
             'baseline.drift.uncovered' => 'Baseline drift without change coverage',

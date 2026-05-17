@@ -28,13 +28,11 @@ class WorkItem extends Model
 
     protected $fillable = [
         'project_id', 'parent_id', 'responsible_role_id', 'kind',
-        'name', 'description', 'status', 'planned_start_date', 'due_date',
+        'name', 'description', 'status',
     ];
 
     protected $casts = [
         'number' => 'integer',
-        'planned_start_date' => 'date',
-        'due_date' => 'date',
     ];
 
     protected static function booted(): void

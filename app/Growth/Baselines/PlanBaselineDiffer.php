@@ -209,8 +209,6 @@ class PlanBaselineDiffer
             'kind' => $workItem->kind,
             'name' => $workItem->name,
             'status' => $workItem->status,
-            'planned_start_date' => $workItem->planned_start_date?->toDateString(),
-            'due_date' => $workItem->due_date?->toDateString(),
         ];
     }
 

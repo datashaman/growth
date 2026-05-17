@@ -29,7 +29,7 @@ class PlanResource extends Resource implements HasUriTemplate
     {
         $project = Project::with([
             'projectPlan',
-            'milestones' => fn ($q) => $q->orderByRaw('target_date is null')->orderBy('target_date')->orderBy('name'),
+            'milestones' => fn ($q) => $q->orderBy('name'),
             'roles' => fn ($q) => $q->orderBy('name'),
             'workItems' => fn ($q) => $q->orderBy('kind')->orderBy('name'),
             'workItems.requirements:id,type,text',
@@ -59,7 +59,6 @@ class PlanResource extends Resource implements HasUriTemplate
                 'id' => $milestone->id,
                 'name' => $milestone->name,
                 'status' => $milestone->status,
-                'target_date' => $milestone->target_date?->toDateString(),
             ])->all(),
             'work_items' => $project->workItems->map(fn ($workItem): array => [
                 'id' => $workItem->id,

@@ -27,8 +27,7 @@ class ProjectPmpResource extends Resource implements HasUriTemplate
         $project = Project::with([
             'projectPlan.citations.source',
             'projectPlan.baselines' => fn ($q) => $q->orderByDesc('version'),
-            'milestones' => fn ($q) => $q->orderByRaw('target_date is null')
-                ->orderBy('target_date')->orderBy('name'),
+            'milestones' => fn ($q) => $q->orderBy('name'),
             'milestones.citations.source',
             'milestones.workItems:id,name',
             'roles' => fn ($q) => $q->orderBy('name'),
@@ -132,16 +131,15 @@ class ProjectPmpResource extends Resource implements HasUriTemplate
             $md .= "\n";
         }
 
-        $md .= "## 4. Schedule (milestones)\n\n";
+        $md .= "## 4. Milestones\n\n";
         if ($project->milestones->isEmpty()) {
             $md .= "_No milestones defined._\n\n";
         } else {
-            $md .= "| Milestone | Target | Status | Work items |\n";
-            $md .= "| --- | --- | --- | --- |\n";
+            $md .= "| Milestone | Status | Work items |\n";
+            $md .= "| --- | --- | --- |\n";
             foreach ($project->milestones as $m) {
-                $date = $m->target_date?->toDateString() ?? '—';
                 $count = $m->workItems->count();
-                $md .= "| **{$m->name}** | {$date} | {$m->status} | {$count} |\n";
+                $md .= "| **{$m->name}** | {$m->status} | {$count} |\n";
             }
             $md .= "\n";
             foreach ($project->milestones as $m) {
@@ -175,12 +173,6 @@ class ProjectPmpResource extends Resource implements HasUriTemplate
                     }
                     if ($w->responsibleRole) {
                         $bits[] = 'owner: '.$w->responsibleRole->name;
-                    }
-                    if ($w->planned_start_date) {
-                        $bits[] = 'start '.$w->planned_start_date->toDateString();
-                    }
-                    if ($w->due_date) {
-                        $bits[] = 'due '.$w->due_date->toDateString();
                     }
                     if ($bits !== []) {
                         $out .= ' _('.implode(', ', $bits).')_';
