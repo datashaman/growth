@@ -1,6 +1,6 @@
 <?php
 
-use App\Growth\Transitions\HitMilestone;
+use App\Growth\Transitions\AchieveMilestone;
 use App\Growth\Transitions\IllegalTransitionException;
 use App\Models\Milestone;
 use App\Models\Project;
@@ -28,45 +28,35 @@ beforeEach(function () {
 // ---- base action ----
 
 it('rejects an illegal milestone transition without writing a row', function () {
-    $milestone = ($this->makeMilestone)('hit');
+    $milestone = ($this->makeMilestone)('achieved');
 
-    expect(fn () => (new HitMilestone)->apply($milestone))
-        ->toThrow(IllegalTransitionException::class, 'Cannot hit a milestone that is hit.');
+    expect(fn () => (new AchieveMilestone)->apply($milestone))
+        ->toThrow(IllegalTransitionException::class, 'Cannot achieve a milestone that is achieved.');
 
     expect(StatusTransition::count())->toBe(0);
 });
 
 // ---- plan page buttons ----
 
-it('hits a milestone from the plan page', function () {
+it('achieves a milestone from the plan page', function () {
     $milestone = ($this->makeMilestone)('pending');
 
     Livewire::test('pages::plan')
-        ->call('hitMilestone', $milestone->id)
+        ->call('achieveMilestone', $milestone->id)
         ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
 
-    expect($milestone->fresh()->status)->toBe('hit');
-    expect(StatusTransition::query()->sole()->to_status)->toBe('hit');
-});
-
-it('misses a milestone from the plan page', function () {
-    $milestone = ($this->makeMilestone)('pending');
-
-    Livewire::test('pages::plan')
-        ->call('missMilestone', $milestone->id)
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($milestone->fresh()->status)->toBe('missed');
+    expect($milestone->fresh()->status)->toBe('achieved');
+    expect(StatusTransition::query()->sole()->to_status)->toBe('achieved');
 });
 
 it('warns the user when a plan page milestone transition is illegal', function () {
-    $milestone = ($this->makeMilestone)('hit');
+    $milestone = ($this->makeMilestone)('achieved');
 
     Livewire::test('pages::plan')
-        ->call('hitMilestone', $milestone->id)
+        ->call('achieveMilestone', $milestone->id)
         ->assertDispatched('toast-show', dataset: ['variant' => 'danger']);
 
-    expect($milestone->fresh()->status)->toBe('hit')
+    expect($milestone->fresh()->status)->toBe('achieved')
         ->and(StatusTransition::count())->toBe(0);
 });
 
@@ -74,10 +64,10 @@ it('shows transition controls only for pending milestones', function () {
     $milestone = ($this->makeMilestone)('pending');
 
     Livewire::test('pages::plan')
-        ->assertSeeHtml("hitMilestone('{$milestone->id}')");
+        ->assertSeeHtml("achieveMilestone('{$milestone->id}')");
 
-    $milestone->update(['status' => 'hit']);
+    $milestone->update(['status' => 'achieved']);
 
     Livewire::test('pages::plan')
-        ->assertDontSeeHtml("hitMilestone('{$milestone->id}')");
+        ->assertDontSeeHtml("achieveMilestone('{$milestone->id}')");
 });

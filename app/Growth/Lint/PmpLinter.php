@@ -62,7 +62,7 @@ class PmpLinter
                 if ($live->isEmpty()) {
                     $findings[] = $this->finding(
                         'pmp.milestone.could_hit', 'warning',
-                        'Milestone has every linked work item done/cancelled — consider flipping status to hit',
+                        'Milestone has every linked work item done/cancelled — consider flipping status to achieved',
                         'milestone', $m->id,
                     );
                 }

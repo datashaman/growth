@@ -16,6 +16,7 @@ use App\Mcp\Tools\Feedback\SearchFeedback;
 use App\Mcp\Tools\Feedback\SendFeedback;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Plan\AcceptRisk;
+use App\Mcp\Tools\Plan\AchieveMilestone;
 use App\Mcp\Tools\Plan\ActivatePlan;
 use App\Mcp\Tools\Plan\AssessRisk;
 use App\Mcp\Tools\Plan\AssignRole;
@@ -37,7 +38,6 @@ use App\Mcp\Tools\Plan\DeleteRelease;
 use App\Mcp\Tools\Plan\DeleteRisk;
 use App\Mcp\Tools\Plan\DeleteRole;
 use App\Mcp\Tools\Plan\DeleteWorkItem;
-use App\Mcp\Tools\Plan\HitMilestone;
 use App\Mcp\Tools\Plan\LinkWorkItemDependency;
 use App\Mcp\Tools\Plan\LinkWorkItemToMilestone;
 use App\Mcp\Tools\Plan\LinkWorkItemToRequirements;
@@ -56,7 +56,6 @@ use App\Mcp\Tools\Plan\MarkDeploymentSucceeded;
 use App\Mcp\Tools\Plan\MarkReleaseReleased;
 use App\Mcp\Tools\Plan\MarkRiskMitigated;
 use App\Mcp\Tools\Plan\MarkRiskRealized;
-use App\Mcp\Tools\Plan\MissMilestone;
 use App\Mcp\Tools\Plan\PromoteRelease;
 use App\Mcp\Tools\Plan\RecordUnattributedEvent;
 use App\Mcp\Tools\Plan\ReopenWorkItem;
@@ -113,8 +112,7 @@ class PlanningServer extends Server
         UpsertMilestone::class,
         ListMilestones::class,
         DeleteMilestone::class,
-        HitMilestone::class,
-        MissMilestone::class,
+        AchieveMilestone::class,
         UpsertRole::class,
         ListRoles::class,
         DeleteRole::class,

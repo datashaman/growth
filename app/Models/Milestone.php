@@ -16,7 +16,7 @@ class Milestone extends Model
     use HasUlids;
     use ScopedByOwner;
 
-    public const STATUSES = ['pending', 'hit', 'missed', 'deferred'];
+    public const STATUSES = ['pending', 'achieved'];
 
     protected $fillable = [
         'project_id', 'name', 'exit_criteria', 'status',

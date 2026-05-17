@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
-use App\Growth\Transitions\HitMilestone as HitMilestoneTransition;
+use App\Growth\Transitions\AchieveMilestone as AchieveMilestoneTransition;
 use App\Growth\Transitions\IllegalTransitionException;
 use App\Models\Milestone;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -12,8 +12,8 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Mark a milestone as hit: move it from pending to hit. Rejects a milestone that is not pending with a clear message. Records a status transition with the acting user and timestamp.')]
-class HitMilestone extends Tool
+#[Description('Mark a milestone as achieved: move it from pending to achieved. Rejects a milestone that is not pending with a clear message. Records a status transition with the acting user and timestamp.')]
+class AchieveMilestone extends Tool
 {
     public function handle(Request $request): ResponseFactory
     {
@@ -25,7 +25,7 @@ class HitMilestone extends Tool
         $milestone = Milestone::findOrFail($data['milestone_id']);
 
         try {
-            $transition = (new HitMilestoneTransition)->apply($milestone, auth()->user(), $data['reason'] ?? null);
+            $transition = (new AchieveMilestoneTransition)->apply($milestone, auth()->user(), $data['reason'] ?? null);
         } catch (IllegalTransitionException $e) {
             return new ResponseFactory(Response::error($e->getMessage()));
         }

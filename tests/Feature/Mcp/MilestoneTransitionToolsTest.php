@@ -1,8 +1,7 @@
 <?php
 
 use App\Mcp\Servers\PlanningServer;
-use App\Mcp\Tools\Plan\HitMilestone;
-use App\Mcp\Tools\Plan\MissMilestone;
+use App\Mcp\Tools\Plan\AchieveMilestone;
 use App\Mcp\Tools\Plan\UpsertMilestone;
 use App\Models\Milestone;
 use App\Models\Project;
@@ -27,58 +26,39 @@ beforeEach(function () {
     ]);
 });
 
-it('hits a pending milestone and records a transition', function () {
+it('achieves a pending milestone and records a transition', function () {
     $milestone = ($this->makeMilestone)('pending');
 
-    PlanningServer::tool(HitMilestone::class, ['milestone_id' => $milestone->id])
+    PlanningServer::tool(AchieveMilestone::class, ['milestone_id' => $milestone->id])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
-            $json->where('from_status', 'pending')->where('to_status', 'hit')->etc();
+            $json->where('from_status', 'pending')->where('to_status', 'achieved')->etc();
         });
 
-    expect($milestone->fresh()->status)->toBe('hit');
+    expect($milestone->fresh()->status)->toBe('achieved');
 
     $transition = StatusTransition::query()->sole();
-    expect($transition->to_status)->toBe('hit')
+    expect($transition->to_status)->toBe('achieved')
         ->and($transition->transitioned_by_user_id)->toBe($this->user->id)
         ->and($transition->transitionable->is($milestone))->toBeTrue();
 });
 
-it('rejects hitting a milestone that is not pending', function () {
-    $milestone = ($this->makeMilestone)('missed');
+it('rejects achieving a milestone that is not pending', function () {
+    $milestone = ($this->makeMilestone)('achieved');
 
-    PlanningServer::tool(HitMilestone::class, ['milestone_id' => $milestone->id])
-        ->assertHasErrors(['Cannot hit a milestone that is missed.']);
+    PlanningServer::tool(AchieveMilestone::class, ['milestone_id' => $milestone->id])
+        ->assertHasErrors(['Cannot achieve a milestone that is achieved.']);
 
     expect(StatusTransition::count())->toBe(0);
 });
 
-it('misses a pending milestone', function () {
-    $milestone = ($this->makeMilestone)('pending');
-
-    PlanningServer::tool(MissMilestone::class, ['milestone_id' => $milestone->id])
-        ->assertOk()
-        ->assertStructuredContent(function ($json) {
-            $json->where('to_status', 'missed')->etc();
-        });
-
-    expect($milestone->fresh()->status)->toBe('missed');
-});
-
-it('rejects missing a milestone that is already hit', function () {
-    $milestone = ($this->makeMilestone)('hit');
-
-    PlanningServer::tool(MissMilestone::class, ['milestone_id' => $milestone->id])
-        ->assertHasErrors(['Cannot miss a milestone that is hit.']);
-});
-
-it('rejects status passed to upsert-milestone with a pointer to the transition tools', function () {
+it('rejects status passed to upsert-milestone with a pointer to the transition tool', function () {
     PlanningServer::tool(UpsertMilestone::class, [
         'project_id' => $this->project->id,
         'name' => 'No status here',
-        'status' => 'hit',
+        'status' => 'achieved',
     ])
-        ->assertHasErrors(['Milestone status is not set here. Use the milestone transition tools (hit, miss) to move status through validated transitions.']);
+        ->assertHasErrors(['Milestone status is not set here. Use the milestone transition tool (achieve) to move status through validated transitions.']);
 
     expect(Milestone::where('name', 'No status here')->exists())->toBeFalse();
 });
