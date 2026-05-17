@@ -31,9 +31,4 @@ class OAuthWorkspaceBinding
     {
         return $this->workspaceId;
     }
-
-    public function forget(): void
-    {
-        $this->workspaceId = null;
-    }
 }

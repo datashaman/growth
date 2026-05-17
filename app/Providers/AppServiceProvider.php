@@ -131,7 +131,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(WorkspaceContext::class);
         $this->app->singleton(RoleContext::class);
-        $this->app->singleton(OAuthWorkspaceBinding::class);
+        // Scoped, not singleton: the holder carries mutable per-request state
+        // and must reset between requests on long-lived workers (#197, #214).
+        $this->app->scoped(OAuthWorkspaceBinding::class);
         $this->app->bind(CallTool::class, RecordingCallTool::class);
 
         // Carry the consent-screen workspace selection through the OAuth grant
