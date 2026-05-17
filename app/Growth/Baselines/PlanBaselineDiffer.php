@@ -143,7 +143,7 @@ class PlanBaselineDiffer
      * longer exists. For an added or removed artifact one side is empty, so the
      * non-empty side supplies the field set.
      *
-     * @return list<string>
+     * @return list<array{field:string,before:mixed,after:mixed}>
      */
     private function fieldChanges(array $before, array $after, array $ignored = []): array
     {
