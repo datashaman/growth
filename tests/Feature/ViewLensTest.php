@@ -1,8 +1,14 @@
 <?php
 
 use App\Models\User;
+use App\Support\OperatingRole;
+use App\Support\RoleContext;
 use App\Support\ViewLens;
 use Livewire\Livewire;
+
+afterEach(function () {
+    app(RoleContext::class)->forget();
+});
 
 it('defaults to the All lens when the user has none set', function () {
     $user = User::factory()->create();
@@ -31,6 +37,32 @@ it('ignores an unknown lens value', function () {
         ->set('selectedLens', 'not-a-lens');
 
     expect($user->fresh()->lens())->toBe(ViewLens::Reviewer);
+});
+
+it('projects the bound role onto the lens, ignoring the user preference', function () {
+    $user = User::factory()->create();
+    $user->switchLens(ViewLens::SpecWriter);
+
+    app(RoleContext::class)->set(OperatingRole::Governance);
+
+    expect($user->lens())->toBe(ViewLens::Reviewer)
+        ->and($user->view_lens)->toBe(ViewLens::SpecWriter);
+});
+
+it('does not switch the lens for a role-bound session', function () {
+    $user = User::factory()->create();
+    $user->switchLens(ViewLens::Reviewer);
+    $this->actingAs($user);
+
+    app(RoleContext::class)->set(OperatingRole::Intake);
+
+    Livewire::test('lens-switcher')
+        ->assertSee(__(ViewLens::SpecWriter->label()))
+        ->assertDontSeeHtml('wire:model.live="selectedLens"')
+        ->set('selectedLens', ViewLens::All->value)
+        ->assertNoRedirect();
+
+    expect($user->fresh()->view_lens)->toBe(ViewLens::Reviewer);
 });
 
 it('shows only the spec-writer sections in the sidebar', function () {

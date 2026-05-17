@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\RoleContext;
 use App\Support\ViewLens;
 use App\Support\WorkspaceContext;
 use Database\Factories\UserFactory;
@@ -113,11 +114,17 @@ class User extends Authenticatable implements OAuthenticatable
     }
 
     /**
-     * The user's active view lens; defaults to All when none is set.
+     * The user's active view lens.
+     *
+     * For a role-bound session the lens is a projection of the operating role
+     * and the user's `view_lens` preference is ignored. For an unbound session
+     * it is the self-selected `view_lens`, defaulting to All when none is set.
      */
     public function lens(): ViewLens
     {
-        return $this->view_lens ?? ViewLens::All;
+        return app(RoleContext::class)->role()?->lens()
+            ?? $this->view_lens
+            ?? ViewLens::All;
     }
 
     public function switchLens(ViewLens $lens): void
