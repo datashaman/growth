@@ -18,18 +18,21 @@ new class extends Component {
 
     public function updatedSelectedLens(string $value): void
     {
+        /** @var User $user */
+        $user = auth()->user();
+
         $lens = ViewLens::tryFrom($value);
 
         if ($lens === null) {
-            /** @var User $user */
-            $user = auth()->user();
             $this->selectedLens = $user->lens()->value;
 
             return;
         }
 
-        /** @var User $user */
-        $user = auth()->user();
+        if ($lens === $user->lens()) {
+            return;
+        }
+
         $user->switchLens($lens);
 
         $this->redirect('/'.ltrim(Livewire::originalPath(), '/'), navigate: true);
