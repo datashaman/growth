@@ -1,0 +1,374 @@
+Growth Domain Glossary
+
+This glossary defines the vocabulary of the Growth platform itself — the
+artifacts, roles, and lifecycle states an agent works with through the MCP
+surface. It is parsed by App\Growth\Glossary\GlossaryParser and served by the
+lookup-term tool. Each entry is a numbered section, a term, and a definition.
+Sections 1.x cover structure, 2.x planning, 3.x roles, 4.x change and
+governance, 5.x verification, 6.x delivery, 7.x traceability, 8.x agents and
+system.
+
+
+1.1
+
+workspace
+
+The top-level tenant boundary. Every project, artifact, and piece of feedback
+belongs to exactly one workspace, and a user acts within one active workspace
+at a time.
+cf. project, agent.
+
+1.2
+
+project
+
+A bounded body of work managed inside a workspace. A project carries a plan,
+work items, requirements, risks, and a rigor level, and moves through a
+lifecycle from draft to active to closed or archived.
+cf. workspace, project plan, rigor level.
+
+1.3
+
+work item
+
+A single unit of work in a project's breakdown — a task, deliverable, or
+grouping node. Work items form a tree, may depend on one another, and carry a
+status, a responsible role, and links to the requirements they satisfy.
+cf. work breakdown structure, dependency, milestone, requirement.
+
+1.4
+
+milestone
+
+A named scope bundle: a meaningful grouping of work items that marks a
+checkpoint in a project. A milestone is achieved when its scope is complete;
+its status is pending or achieved.
+cf. work item, project plan.
+
+1.5
+
+rigor level
+
+An integer that sets how much process a project is held to — how many
+readiness gates apply and how strict the linter is. Higher rigor demands more
+complete artifacts before a project may advance.
+cf. readiness gate, finding.
+
+2.1
+
+project plan
+
+The single planning artifact for a project, also called the PMP. It records
+scope, objectives, deliverables, approach, organization, assumptions,
+constraints, and a budget summary. A project has at most one project plan.
+cf. baseline, milestone, work breakdown structure.
+
+2.2
+
+requirement
+
+A stated need the project must satisfy. Requirements are traced to the work
+items that deliver them and to the verification cases that confirm them; a
+requirement with no covering work item is uncovered.
+cf. work item, verification case, trace graph.
+
+2.3
+
+baseline
+
+A frozen, versioned snapshot of a project plan and its work items, captured so
+that later change can be measured against an agreed reference point. Also
+called a plan baseline.
+cf. drift, change request, project plan.
+
+2.4
+
+drift
+
+The set of differences between the current plan and its most recent baseline.
+Drift is uncovered when a changed artifact is not accounted for by an approved
+change request.
+cf. baseline, change request, change impact.
+
+2.5
+
+work breakdown structure
+
+The hierarchical decomposition of a project into work items, from broad
+grouping nodes down to individual tasks. Abbreviated WBS. A WBS is flat when it
+has no hierarchy and invalid when its dependencies form a cycle.
+cf. work item, dependency, project plan.
+
+2.6
+
+dependency
+
+A directed link stating that one work item cannot proceed until another is
+done. An open dependency points at work that is not yet complete.
+cf. work item, work breakdown structure.
+
+3.1
+
+role
+
+A named responsibility defined within a project, such as Tech Lead or QA Lead.
+Work items are assigned a responsible role; role names are unique per project.
+cf. work item, RACI, operating role.
+
+3.2
+
+RACI
+
+The responsibility assignment model — Responsible, Accountable, Consulted,
+Informed — used to record how project roles relate to a given work item.
+cf. role, work item.
+
+3.3
+
+operating role
+
+The MCP-facing capability scope an agent connects under: intake, architecture,
+planning, verification, governance, management, or readonly. Each role-scoped
+server exposes only the tools that role may use.
+cf. role, lens, MCP tool.
+
+3.4
+
+lens
+
+The viewpoint a user reads the webapp through — all, spec writer, spec
+implementer, or reviewer. When a session is bound to an operating role the lens
+is derived from that role rather than chosen freely.
+cf. operating role.
+
+4.1
+
+change request
+
+A proposed, reviewable modification to a baselined plan. A change request moves
+through draft, submitted, approved or rejected, and implemented; its target
+project is fixed once created.
+cf. baseline, change impact, status transition.
+
+4.2
+
+change impact
+
+A record linking a change request to a specific artifact it affects. Approved
+change impacts are what mark baseline drift as covered.
+cf. change request, drift.
+
+4.3
+
+readiness gate
+
+A checkpoint that a project must clear to advance — capabilities,
+architecture, verification, planning, review, change control, or
+implementation. Which gates apply is governed by the project's rigor level.
+cf. rigor level, finding.
+
+4.4
+
+status transition
+
+An audited change of an artifact's lifecycle status, applied through a
+verb-named transition class that validates the source state and records an
+audit row. The same transitions back both MCP tools and webapp actions.
+cf. change request, finding, anomaly.
+
+4.5
+
+finding
+
+An issue raised by the project linter against an artifact — for example a
+missing PMP, an empty WBS, or an uncovered requirement. Findings are grouped by
+rule and dispositioned through their own lifecycle.
+cf. readiness gate, anomaly, review.
+
+4.6
+
+anomaly
+
+A recorded defect or unexpected condition in a project, tracked from
+investigation through resolution and closure independently of the linter.
+cf. finding, risk.
+
+4.7
+
+risk
+
+A potential future condition that could harm the project, recorded with an
+exposure level and carried from assessment through mitigation to a realized or
+closed outcome.
+cf. anomaly, finding.
+
+5.1
+
+verification case
+
+A single, checkable statement of how a requirement is to be confirmed — the
+unit that a verification run executes and reports against.
+cf. requirement, verification plan, verification run.
+
+5.2
+
+verification plan
+
+The organized set of verification cases for a project, describing the overall
+strategy for confirming that requirements are met.
+cf. verification case, verification run.
+
+5.3
+
+verification run
+
+A recorded execution of verification cases, capturing their pass or fail
+outcomes as evidence that requirements were checked.
+cf. verification case, evidence bundle.
+
+5.4
+
+review
+
+A structured evaluation of project artifacts by named participants, producing
+review findings and a decision. A review moves from started through held to
+closed or cancelled.
+cf. finding, status transition.
+
+5.5
+
+check run
+
+An external automated check — typically a CI job — recorded against a project
+so its pass or fail result counts toward delivery evidence.
+cf. verification run, delivery link, evidence bundle.
+
+5.6
+
+evidence bundle
+
+A compiled package of the verification runs, check runs, and other artifacts
+that together demonstrate a project has met its obligations.
+cf. verification run, check run, release.
+
+6.1
+
+deployment
+
+A record of project output being pushed to an environment, tracked from start
+through succeeded, failed, or rolled back.
+cf. release, check run.
+
+6.2
+
+release
+
+A named, versioned package of project output prepared for delivery. A release
+is assessed for readiness, promoted, and finally marked released.
+cf. deployment, evidence bundle.
+
+6.3
+
+delivery link
+
+A connection between a project artifact and an external delivery system — a
+repository, pull request, or CI run — that ties planning to what was actually
+shipped.
+cf. check run, deployment.
+
+7.1
+
+source
+
+A reference document a project draws on, such as a brief or a standard, against
+which artifacts can be cited.
+cf. citation.
+
+7.2
+
+citation
+
+A link from a source to a project artifact, optionally with a locator,
+recording where in the source that artifact is grounded.
+cf. source, trace graph.
+
+7.3
+
+trace graph
+
+The connected web of relations among requirements, work items, verification
+cases, and other artifacts — used to answer coverage and impact questions.
+cf. requirement, work item, citation.
+
+7.4
+
+architecture element
+
+A described component of a system's architecture — a part, connector, or
+boundary — recorded so it can be related to requirements and concerns.
+cf. architecture view, viewpoint, concern.
+
+7.5
+
+architecture view
+
+A representation of a system's architecture from one vantage point, composed of
+architecture elements and framed by a viewpoint.
+cf. architecture element, viewpoint.
+
+7.6
+
+viewpoint
+
+A specification of the conventions for constructing and reading an architecture
+view, defining which concerns that view addresses.
+cf. architecture view, concern.
+
+7.7
+
+concern
+
+An interest in a system held by one or more stakeholders — such as performance
+or security — that the architecture must address.
+cf. stakeholder, viewpoint.
+
+7.8
+
+stakeholder
+
+A person or group with an interest in the project or system, whose concerns
+shape requirements and architecture.
+cf. concern, requirement.
+
+8.1
+
+agent
+
+A non-human principal — typically an AI assistant — that drives a project
+through the MCP surface. Agents are registered per workspace.
+cf. workspace, MCP tool, operating role.
+
+8.2
+
+MCP tool
+
+A single callable operation exposed over the Model Context Protocol, the means
+by which an agent reads and writes project data. Tools are grouped onto
+role-scoped servers.
+cf. agent, operating role, tool invocation.
+
+8.3
+
+manifest
+
+A portable, declarative description of a project's artifacts that can be
+exported and re-applied, used to move or reconstruct a project's state.
+cf. project, MCP tool.
+
+8.4
+
+tool invocation
+
+An automatically recorded entry for every MCP tool call — its name, outcome,
+and duration — forming the quantitative usage trail for a workspace.
+cf. MCP tool, agent.
