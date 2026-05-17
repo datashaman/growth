@@ -25,6 +25,7 @@ use App\Mcp\Tools\Glossary\LookupTerm;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\DeleteProject;
 use App\Mcp\Tools\Projects\ListProjects;
+use App\Mcp\Tools\Projects\MoveProject;
 use App\Mcp\Tools\Projects\UpsertProject;
 use App\Mcp\Tools\Requirements\DeleteRequirement;
 use App\Mcp\Tools\Requirements\ListRequirements;
@@ -61,6 +62,7 @@ class IntakeServer extends Server
         UpsertProject::class,
         ListProjects::class,
         DeleteProject::class,
+        MoveProject::class,
         UpsertStakeholder::class,
         DeleteStakeholder::class,
         UpsertConcerns::class,

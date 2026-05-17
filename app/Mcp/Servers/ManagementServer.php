@@ -25,6 +25,7 @@ use App\Mcp\Tools\Projects\CloseProject;
 use App\Mcp\Tools\Projects\CreateProject;
 use App\Mcp\Tools\Projects\DeleteProject;
 use App\Mcp\Tools\Projects\ListProjects;
+use App\Mcp\Tools\Projects\MoveProject;
 use App\Mcp\Tools\Projects\ResolveProjectByRepo;
 use App\Mcp\Tools\Projects\RestoreProject;
 use App\Mcp\Tools\Projects\ScaffoldGithubSync;
@@ -59,6 +60,7 @@ class ManagementServer extends Server
         CloseProject::class,
         RestoreProject::class,
         DeleteProject::class,
+        MoveProject::class,
         ApplyManifest::class,
         ExportManifest::class,
     ];
