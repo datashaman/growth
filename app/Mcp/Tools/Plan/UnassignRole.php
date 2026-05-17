@@ -40,7 +40,7 @@ class UnassignRole extends Tool
         return [
             'role_id' => $schema->string()->description('Role ULID')->required(),
             'assignee_type' => $schema->string()->description('user or agent')->enum(self::ASSIGNEE_TYPES)->required(),
-            'assignee_id' => $schema->string()->description('ULID of the assignee to detach')->required(),
+            'assignee_id' => $schema->string()->description('Identifier of the assignee to detach. For assignee_type=user this is the integer user id reported as `user_id` by who-am-i; for assignee_type=agent this is the agent ULID.')->required(),
         ];
     }
 
