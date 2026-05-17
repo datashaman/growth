@@ -53,7 +53,7 @@ class AssignRole extends Tool
                 ->enum(self::ASSIGNEE_TYPES)
                 ->required(),
             'assignee_id' => $schema->string()
-                ->description('ULID of the User or Agent filling the role')
+                ->description('Identifier of the assignee filling the role. For assignee_type=user this is the integer user id reported as `user_id` by who-am-i (pass who-am-i\'s `user_id` to self-assign). For assignee_type=agent this is the agent ULID.')
                 ->required(),
         ];
     }
