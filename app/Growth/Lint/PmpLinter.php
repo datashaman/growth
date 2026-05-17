@@ -61,7 +61,7 @@ class PmpLinter
                 $live = $items->whereNotIn('status', ['done', 'cancelled']);
                 if ($live->isEmpty()) {
                     $findings[] = $this->finding(
-                        'pmp.milestone.could_hit', 'warning',
+                        'pmp.milestone.could_achieve', 'warning',
                         'Milestone has every linked work item done/cancelled — consider flipping status to achieved',
                         'milestone', $m->id,
                     );

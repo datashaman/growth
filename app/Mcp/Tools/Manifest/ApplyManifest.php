@@ -48,7 +48,7 @@ class ApplyManifest extends Tool
             'manifest.plan.roles.*.name' => 'required|string|max:255',
             'manifest.plan.milestones' => 'nullable|array',
             'manifest.plan.milestones.*.name' => 'required|string|max:255',
-            'manifest.plan.milestones.*.status' => 'nullable|in:pending,hit,missed,deferred',
+            'manifest.plan.milestones.*.status' => 'nullable|in:pending,achieved',
             'manifest.plan.work_items' => 'nullable|array',
             'manifest.plan.work_items.*.name' => 'required|string|max:255',
             'manifest.plan.work_items.*.kind' => 'required|in:deliverable,work_package,task',
