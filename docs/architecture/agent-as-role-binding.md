@@ -8,8 +8,8 @@ Four implementation issues spun off (see end).**
 ## Recommendation
 
 Bind a session to an **operating role** — a new, code-level taxonomy that names
-the seven functional contexts an agent can operate in. The binding mirrors the
-existing `WorkspaceContext` mechanism exactly: token-bound for HTTP, env-var for
+the seven functional contexts an agent can operate in. The binding reuses the
+existing `WorkspaceContext` carrier mechanism: token-bound for HTTP, env-var for
 stdio, resolved through a `RoleContext` support class. Once bound, the role
 selects the MCP server (its tool subset), supplies the persona via the server's
 `instructions`, and drives the webapp view lens.
