@@ -38,6 +38,10 @@ use App\Models\ToolFeedback;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
+use App\Support\OAuthWorkspaceBinding;
+use App\Support\Passport\AccessTokenRepository;
+use App\Support\Passport\AuthCodeRepository;
+use App\Support\Passport\RefreshTokenRepository;
 use App\Support\RoleContext;
 use App\Support\WorkspaceContext;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -48,6 +52,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Laravel\Mcp\Server\Methods\CallTool;
+use Laravel\Passport\Bridge\AccessTokenRepository as BridgeAccessTokenRepository;
+use Laravel\Passport\Bridge\AuthCodeRepository as BridgeAuthCodeRepository;
+use Laravel\Passport\Bridge\RefreshTokenRepository as BridgeRefreshTokenRepository;
 use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
@@ -124,7 +131,16 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(WorkspaceContext::class);
         $this->app->singleton(RoleContext::class);
+        $this->app->singleton(OAuthWorkspaceBinding::class);
         $this->app->bind(CallTool::class, RecordingCallTool::class);
+
+        // Carry the consent-screen workspace selection through the OAuth grant
+        // chain so HTTP MCP tokens are workspace-bound (#197, #214). Passport
+        // resolves these bridge repositories from the container when it builds
+        // the authorization server.
+        $this->app->bind(BridgeAuthCodeRepository::class, AuthCodeRepository::class);
+        $this->app->bind(BridgeAccessTokenRepository::class, AccessTokenRepository::class);
+        $this->app->bind(BridgeRefreshTokenRepository::class, RefreshTokenRepository::class);
     }
 
     public function boot(): void
