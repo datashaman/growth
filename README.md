@@ -75,6 +75,10 @@ on the bound project.
 
 ### Install in an adopter repository
 
+The quickest path is the `scaffold-github-sync` MCP tool: given a project it
+returns a ready-to-commit workflow file and the remaining one-time setup
+steps. To wire it up by hand instead:
+
 1. Copy [`actions/growth-sync/workflow.example.yml`](actions/growth-sync/workflow.example.yml)
    to `.github/workflows/growth-sync.yml` in the repository you want to track.
 2. Mint a Passport personal access token with the `mcp:use` scope for the
@@ -101,19 +105,32 @@ CI runs are recorded as check evidence through two triggers:
 Both resolve the PR from the event payload; runs triggered by fork pull
 requests carry no PR reference and are skipped.
 
-### Trailer convention
+### Attribution
 
-Pull request and CI sync find the work item from a `Growth-Work-Item:`
-git trailer on the commit. Add it to the commit a PR carries:
+Pull request and CI sync attribute each event to a work item, trying three
+sources in order — the first that resolves wins:
 
-```
-Add the widget
+1. **Branch name.** A `WI-<number>` reference anywhere in the branch name
+   (`WI-42-add-login`, `feature/wi-42`) resolves to the work item with that
+   per-project number. This is the recommended convention: no per-commit or
+   per-branch setup, and it resolves even for fork pull requests.
+2. **Commit trailer.** A `Growth-Work-Item: <work-item-id>` git trailer on
+   the commit:
 
-Growth-Work-Item: 01HXYZ...
-```
+   ```
+   Add the widget
 
-The trailer value is a work item ULID. The last trailer wins if several are
-present. Commits without the trailer are skipped, not errored.
+   Growth-Work-Item: 01HXYZ...
+   ```
+
+   The value is a work item ULID; the last trailer wins if several are
+   present. A resolved trailer also binds the branch, so later trailer-less
+   events on it still attribute.
+3. **Branch delivery link.** A work item explicitly bound to the branch with
+   the `upsert-delivery-link` tool (type `branch`).
+
+An event that matches none of the three is recorded as an unattributed event
+and surfaces on the Evidence page; the sync is not errored.
 
 ### Action inputs and environment
 

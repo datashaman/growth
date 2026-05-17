@@ -302,7 +302,24 @@ async function reportAttribution({ event, repository, workItemId, branch, postCh
     await postCheckRun(args);
     log.info(`Posted "${ATTRIBUTION_CHECK_NAME}" check (${args.conclusion}) on ${headSha}.`);
   } catch (error) {
-    log.warn(`Could not post the attribution check: ${error.message}`);
+    if (error.status === 403) {
+      // A 403 on the check-runs POST is almost always a misconfigured
+      // workflow missing `permissions: checks: write`. A swallowed warning
+      // is exactly how that drift goes unnoticed, so make it loud — the
+      // sync itself still succeeded, this only reports the gap.
+      log.error(
+        'growth-sync could not post the work item attribution check (HTTP 403). '
+        + 'Most likely cause: this workflow is missing `permissions: checks: write`. '
+        + 'Add to .github/workflows/growth-sync.yml:\n'
+        + '  permissions:\n'
+        + '    contents: read\n'
+        + '    checks: write\n'
+        + 'If that block is already present, check the repository or '
+        + 'organization Actions workflow-token permissions.'
+      );
+    } else {
+      log.warn(`Could not post the attribution check: ${error.message}`);
+    }
   }
 }
 
@@ -650,7 +667,11 @@ function makeCheckRunPoster({ apiUrl, repository, token, fetchFn }) {
       body: JSON.stringify(args),
     });
     if (!response.ok) {
-      throw new Error(`GitHub API ${response.status} posting check run`);
+      // Carry the HTTP status on the error so the caller can branch on it
+      // (a 403 means missing `checks: write`) without parsing the message.
+      const error = new Error(`GitHub API ${response.status} posting check run`);
+      error.status = response.status;
+      throw error;
     }
     return response.json();
   };
@@ -732,8 +753,22 @@ async function main() {
     postCheckRun,
     attributionCheckAdvisory: process.env.GROWTH_ATTRIBUTION_CHECK === 'advisory',
     callTool,
-    log: { info: (m) => console.log(m), warn: (m) => console.warn(m) },
+    log: {
+      info: (m) => console.log(m),
+      warn: (m) => console.warn(m),
+      // `::error::` renders as a loud annotation on the GitHub run summary.
+      // Workflow commands are single-line, so the message data is encoded.
+      error: (m) => console.log(`::error title=growth-sync::${encodeAnnotation(m)}`),
+    },
   });
+}
+
+/**
+ * Encode a message for a GitHub Actions workflow command. The command is a
+ * single line, so literal `%`, carriage returns, and newlines are escaped.
+ */
+export function encodeAnnotation(message) {
+  return message.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
 }
 
 if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
