@@ -9,6 +9,7 @@ use App\Models\Source;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->alice = User::factory()->create();
@@ -84,10 +85,13 @@ it('scopes ProjectPlan / milestones / roles to the authenticated owner', functio
 it('enforces unique role name per project', function () {
     Role::create(['project_id' => $this->aliceProject->id, 'name' => 'QA Lead']);
 
-    expect(fn () => Role::create([
+    // Wrapped in a transaction so the constraint violation rolls back to a
+    // savepoint: on PostgreSQL a failed statement aborts the whole enclosing
+    // transaction (here, the RefreshDatabase one), poisoning later queries.
+    expect(fn () => DB::transaction(fn () => Role::create([
         'project_id' => $this->aliceProject->id,
         'name' => 'QA Lead',
-    ]))->toThrow(UniqueConstraintViolationException::class);
+    ])))->toThrow(UniqueConstraintViolationException::class);
 
     // Different project, same name → allowed.
     Role::create(['project_id' => $this->bobProject->id, 'name' => 'QA Lead']);
