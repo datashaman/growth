@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ViewLens;
 use App\Support\WorkspaceContext;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -37,6 +38,7 @@ class User extends Authenticatable implements OAuthenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'view_lens' => ViewLens::class,
         ];
     }
 
@@ -108,6 +110,19 @@ class User extends Authenticatable implements OAuthenticatable
         });
 
         app(WorkspaceContext::class)->forget();
+    }
+
+    /**
+     * The user's active view lens; defaults to All when none is set.
+     */
+    public function lens(): ViewLens
+    {
+        return $this->view_lens ?? ViewLens::All;
+    }
+
+    public function switchLens(ViewLens $lens): void
+    {
+        $this->forceFill(['view_lens' => $lens])->save();
     }
 
     public function ownedWorkspaces(): HasMany

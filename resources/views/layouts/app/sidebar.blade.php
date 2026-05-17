@@ -13,34 +13,53 @@
             @auth
                 <livewire:workspace-switcher />
                 <livewire:project-switcher />
+                <livewire:lens-switcher />
             @endauth
+
+            @php($lens = auth()->check() ? auth()->user()->lens() : \App\Support\ViewLens::All)
 
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Project')" class="grid">
-                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="megaphone" :href="route('intent')" :current="request()->routeIs('intent')" wire:navigate>
-                        {{ __('Intent') }}
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="clipboard-document-list" :href="route('requirements')" :current="request()->routeIs('requirements')" wire:navigate>
-                        {{ __('Requirements') }}
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="cube" :href="route('architecture')" :current="request()->routeIs('architecture')" wire:navigate>
-                        {{ __('Architecture') }}
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="check-badge" :href="route('verification')" :current="request()->routeIs('verification')" wire:navigate>
-                        {{ __('Verification') }}
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="calendar-days" :href="route('plan')" :current="request()->routeIs('plan')" wire:navigate>
-                        {{ __('Plan') }}
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="archive-box" :href="route('evidence')" :current="request()->routeIs('evidence')" wire:navigate>
-                        {{ __('Evidence') }}
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="arrows-right-left" :href="route('changes')" :current="request()->routeIs('changes')" wire:navigate>
-                        {{ __('Changes') }}
-                    </flux:sidebar.item>
+                    @if ($lens->reveals('dashboard'))
+                        <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
+                            {{ __('Dashboard') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($lens->reveals('intent'))
+                        <flux:sidebar.item icon="megaphone" :href="route('intent')" :current="request()->routeIs('intent')" wire:navigate>
+                            {{ __('Intent') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($lens->reveals('requirements'))
+                        <flux:sidebar.item icon="clipboard-document-list" :href="route('requirements')" :current="request()->routeIs('requirements')" wire:navigate>
+                            {{ __('Requirements') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($lens->reveals('architecture'))
+                        <flux:sidebar.item icon="cube" :href="route('architecture')" :current="request()->routeIs('architecture')" wire:navigate>
+                            {{ __('Architecture') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($lens->reveals('verification'))
+                        <flux:sidebar.item icon="check-badge" :href="route('verification')" :current="request()->routeIs('verification')" wire:navigate>
+                            {{ __('Verification') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($lens->reveals('plan'))
+                        <flux:sidebar.item icon="calendar-days" :href="route('plan')" :current="request()->routeIs('plan')" wire:navigate>
+                            {{ __('Plan') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($lens->reveals('evidence'))
+                        <flux:sidebar.item icon="archive-box" :href="route('evidence')" :current="request()->routeIs('evidence')" wire:navigate>
+                            {{ __('Evidence') }}
+                        </flux:sidebar.item>
+                    @endif
+                    @if ($lens->reveals('changes'))
+                        <flux:sidebar.item icon="arrows-right-left" :href="route('changes')" :current="request()->routeIs('changes')" wire:navigate>
+                            {{ __('Changes') }}
+                        </flux:sidebar.item>
+                    @endif
                 </flux:sidebar.group>
                 <flux:sidebar.group :heading="__('Workspace')" class="grid">
                     <flux:sidebar.item icon="bolt" :href="route('tool-invocations')" :current="request()->routeIs('tool-invocations')" wire:navigate>
