@@ -68,11 +68,6 @@ class UpsertWorkItems extends Tool
                 'parent_id' => $workItem->parent_id,
                 'planned_start_date' => $workItem->planned_start_date?->toDateString(),
                 'due_date' => $workItem->due_date?->toDateString(),
-                'effort_estimate_hours' => $workItem->effort_estimate_hours,
-                'effort_actual_hours' => $workItem->effort_actual_hours,
-                'cost_estimate_amount' => $workItem->cost_estimate_amount,
-                'cost_actual_amount' => $workItem->cost_actual_amount,
-                'cost_currency' => $workItem->cost_currency,
                 'created' => $workItem->wasRecentlyCreated,
             ];
         } catch (Throwable $e) {
@@ -100,15 +95,6 @@ class UpsertWorkItems extends Tool
             'status' => 'prohibited',
             'planned_start_date' => 'nullable|date_format:Y-m-d',
             'due_date' => 'nullable|date_format:Y-m-d',
-            'effort_estimate' => 'nullable|string|max:60',
-            'effort_estimate_hours' => 'nullable|numeric|min:0|max:999999',
-            'effort_actual' => 'nullable|string|max:60',
-            'effort_actual_hours' => 'nullable|numeric|min:0|max:999999',
-            'cost_estimate' => 'nullable|string|max:60',
-            'cost_estimate_amount' => 'nullable|numeric|min:0|max:9999999999',
-            'cost_actual' => 'nullable|string|max:60',
-            'cost_actual_amount' => 'nullable|numeric|min:0|max:9999999999',
-            'cost_currency' => 'nullable|string|size:3',
         ];
     }
 
@@ -136,15 +122,6 @@ class UpsertWorkItems extends Tool
                     'description' => $s->string()->description('Optional details or acceptance notes'),
                     'planned_start_date' => $s->string()->description('Planned start date in YYYY-MM-DD format'),
                     'due_date' => $s->string()->description('Due date in YYYY-MM-DD format'),
-                    'effort_estimate' => $s->string()->description('Free-form effort estimate'),
-                    'effort_estimate_hours' => $s->number()->description('Estimated effort in hours'),
-                    'effort_actual' => $s->string()->description('Free-form actual effort'),
-                    'effort_actual_hours' => $s->number()->description('Actual effort in hours'),
-                    'cost_estimate' => $s->string()->description('Free-form cost estimate'),
-                    'cost_estimate_amount' => $s->number()->description('Estimated cost amount'),
-                    'cost_actual' => $s->string()->description('Free-form actual cost'),
-                    'cost_actual_amount' => $s->number()->description('Actual cost amount'),
-                    'cost_currency' => $s->string()->description('Three-letter currency code for numeric cost amounts, such as USD'),
                 ]))
                 ->min(1)
                 ->max(100)

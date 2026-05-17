@@ -12,9 +12,6 @@ new class extends Component {
 
     public string $name = '';
     public string $responsibilities = '';
-    public ?string $weekly_capacity_hours = null;
-    public ?string $hourly_rate_amount = null;
-    public string $rate_currency = '';
 
     public function mount(?string $projectId = null): void
     {
@@ -43,20 +40,14 @@ new class extends Component {
                 },
             ],
             'responsibilities' => ['nullable', 'string'],
-            'weekly_capacity_hours' => ['nullable', 'numeric', 'min:0'],
-            'hourly_rate_amount' => ['nullable', 'numeric', 'min:0'],
-            'rate_currency' => ['nullable', 'string', 'max:8'],
         ]);
 
         $project->roles()->create([
             'name' => $data['name'],
             'responsibilities' => $data['responsibilities'] ?: null,
-            'weekly_capacity_hours' => $data['weekly_capacity_hours'] !== null && $data['weekly_capacity_hours'] !== '' ? $data['weekly_capacity_hours'] : null,
-            'hourly_rate_amount' => $data['hourly_rate_amount'] !== null && $data['hourly_rate_amount'] !== '' ? $data['hourly_rate_amount'] : null,
-            'rate_currency' => $data['rate_currency'] ?: null,
         ]);
 
-        $this->reset(['name', 'responsibilities', 'weekly_capacity_hours', 'hourly_rate_amount', 'rate_currency']);
+        $this->reset(['name', 'responsibilities']);
         $this->modal('create-role')->close();
         $this->dispatch('role-saved');
     }
@@ -72,12 +63,6 @@ new class extends Component {
         <flux:input wire:model="name" :label="__('Name')" required />
 
         <flux:textarea wire:model="responsibilities" :label="__('Responsibilities')" rows="3" />
-
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <flux:input wire:model="weekly_capacity_hours" type="number" step="0.5" min="0" :label="__('Weekly capacity (h)')" />
-            <flux:input wire:model="hourly_rate_amount" type="number" step="0.01" min="0" :label="__('Hourly rate')" />
-            <flux:input wire:model="rate_currency" :label="__('Currency')" :placeholder="__('e.g. USD')" />
-        </div>
 
         <div class="flex justify-end gap-2">
             <flux:modal.close>

@@ -22,12 +22,6 @@ class Role extends Model
 
     protected $fillable = [
         'project_id', 'name', 'responsibilities',
-        'weekly_capacity_hours', 'hourly_rate_amount', 'rate_currency',
-    ];
-
-    protected $casts = [
-        'weekly_capacity_hours' => 'decimal:2',
-        'hourly_rate_amount' => 'decimal:2',
     ];
 
     public function project(): BelongsTo

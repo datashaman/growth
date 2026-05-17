@@ -134,14 +134,21 @@ class PlanBaselineDiffer
     }
 
     /**
+     * Compare two artifact states field by field.
+     *
+     * The field set is taken from the current state, not the union of both
+     * sides. A baseline captured before a field was retired still carries that
+     * key in its snapshot; comparing only the fields the current model defines
+     * keeps a legacy snapshot from reporting spurious drift on a column that no
+     * longer exists. For an added or removed artifact one side is empty, so the
+     * non-empty side supplies the field set.
+     *
      * @return list<string>
      */
     private function fieldChanges(array $before, array $after, array $ignored = []): array
     {
-        $fields = array_values(array_diff(
-            array_unique(array_merge(array_keys($before), array_keys($after))),
-            $ignored,
-        ));
+        $canonical = $after !== [] ? array_keys($after) : array_keys($before);
+        $fields = array_values(array_diff($canonical, $ignored));
         sort($fields);
 
         return array_values(array_filter(array_map(
@@ -204,15 +211,6 @@ class PlanBaselineDiffer
             'status' => $workItem->status,
             'planned_start_date' => $workItem->planned_start_date?->toDateString(),
             'due_date' => $workItem->due_date?->toDateString(),
-            'effort_estimate' => $workItem->effort_estimate,
-            'effort_estimate_hours' => $workItem->effort_estimate_hours,
-            'effort_actual' => $workItem->effort_actual,
-            'effort_actual_hours' => $workItem->effort_actual_hours,
-            'cost_estimate' => $workItem->cost_estimate,
-            'cost_estimate_amount' => $workItem->cost_estimate_amount,
-            'cost_actual' => $workItem->cost_actual,
-            'cost_actual_amount' => $workItem->cost_actual_amount,
-            'cost_currency' => $workItem->cost_currency,
         ];
     }
 

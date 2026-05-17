@@ -20,16 +20,13 @@ test('owner can create a role', function () {
     Livewire::test('pages::roles.create-modal', ['projectId' => $this->project->id])
         ->set('name', 'Thermal Lead')
         ->set('responsibilities', 'Owns thermal protection system.')
-        ->set('weekly_capacity_hours', '32')
-        ->set('hourly_rate_amount', '180')
-        ->set('rate_currency', 'USD')
         ->call('save')
         ->assertHasNoErrors();
 
     $role = Role::query()->where('name', 'Thermal Lead')->first();
     expect($role)->not->toBeNull()
         ->and($role->project_id)->toBe($this->project->id)
-        ->and((float) $role->weekly_capacity_hours)->toBe(32.0);
+        ->and($role->responsibilities)->toBe('Owns thermal protection system.');
 });
 
 test('role create requires name', function () {

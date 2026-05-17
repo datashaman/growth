@@ -29,18 +29,12 @@ class WorkItem extends Model
     protected $fillable = [
         'project_id', 'parent_id', 'responsible_role_id', 'kind',
         'name', 'description', 'status', 'planned_start_date', 'due_date',
-        'effort_estimate', 'effort_actual', 'effort_estimate_hours', 'effort_actual_hours', 'cost_estimate',
-        'cost_actual', 'cost_estimate_amount', 'cost_actual_amount', 'cost_currency',
     ];
 
     protected $casts = [
         'number' => 'integer',
         'planned_start_date' => 'date',
         'due_date' => 'date',
-        'effort_estimate_hours' => 'decimal:2',
-        'effort_actual_hours' => 'decimal:2',
-        'cost_estimate_amount' => 'decimal:2',
-        'cost_actual_amount' => 'decimal:2',
     ];
 
     protected static function booted(): void

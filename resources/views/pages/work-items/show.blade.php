@@ -117,15 +117,6 @@ new class extends Component {
 
         return true;
     }
-
-    public function formatHours(?float $hours): string
-    {
-        if ($hours === null || $hours === 0.0) {
-            return '—';
-        }
-
-        return rtrim(rtrim(number_format($hours, 1, '.', ''), '0'), '.').'h';
-    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -215,22 +206,6 @@ new class extends Component {
             <div>
                 <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Due') }}</dt>
                 <dd class="mt-0.5">{{ $workItem->due_date?->format('Y-m-d') ?? '—' }}</dd>
-            </div>
-            <div>
-                <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Effort est / actual') }}</dt>
-                <dd class="mt-0.5 tabular-nums">{{ $this->formatHours((float) $workItem->effort_estimate_hours) }} / {{ $this->formatHours((float) $workItem->effort_actual_hours) }}</dd>
-            </div>
-            <div>
-                <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Cost est / actual') }}</dt>
-                <dd class="mt-0.5 tabular-nums">
-                    @if ($workItem->cost_estimate_amount || $workItem->cost_actual_amount)
-                        {{ $workItem->cost_currency }} {{ number_format((float) ($workItem->cost_estimate_amount ?? 0), 2) }}
-                        /
-                        {{ number_format((float) ($workItem->cost_actual_amount ?? 0), 2) }}
-                    @else
-                        —
-                    @endif
-                </dd>
             </div>
         </dl>
     </section>

@@ -14,7 +14,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Create an immutable baseline snapshot of the current Project Management Plan and its WBS/cost state. Auto-increments version and moves the plan from draft to baselined, recording a status transition. Rejects a plan that is not in draft.')]
+#[Description('Create an immutable baseline snapshot of the current Project Management Plan and its WBS state. Auto-increments version and moves the plan from draft to baselined, recording a status transition. Rejects a plan that is not in draft.')]
 class BaselinePlan extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -105,15 +105,6 @@ class BaselinePlan extends Tool
                 'status' => $w->status,
                 'planned_start_date' => $w->planned_start_date?->toDateString(),
                 'due_date' => $w->due_date?->toDateString(),
-                'effort_estimate' => $w->effort_estimate,
-                'effort_estimate_hours' => $w->effort_estimate_hours,
-                'effort_actual' => $w->effort_actual,
-                'effort_actual_hours' => $w->effort_actual_hours,
-                'cost_estimate' => $w->cost_estimate,
-                'cost_estimate_amount' => $w->cost_estimate_amount,
-                'cost_actual' => $w->cost_actual,
-                'cost_actual_amount' => $w->cost_actual_amount,
-                'cost_currency' => $w->cost_currency,
             ])->values()->all(),
         ];
     }

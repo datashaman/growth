@@ -27,7 +27,6 @@ test('owner can create a work item from the create page', function () {
         ->set('responsible_role_id', $role->id)
         ->set('description', 'Hook up ignition harness.')
         ->set('due_date', '2026-09-30')
-        ->set('effort_estimate_hours', '40')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -35,7 +34,7 @@ test('owner can create a work item from the create page', function () {
     expect($item)->not->toBeNull()
         ->and($item->project_id)->toBe($this->project->id)
         ->and($item->responsible_role_id)->toBe($role->id)
-        ->and((float) $item->effort_estimate_hours)->toBe(40.0);
+        ->and($item->due_date->toDateString())->toBe('2026-09-30');
 });
 
 test('work item create page 404s when project does not belong to user', function () {

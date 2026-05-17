@@ -4,7 +4,6 @@ namespace App\Mcp\Tools\Dashboard;
 
 use App\Growth\Assurance\ReadinessGateEvaluator;
 use App\Growth\Execution\ImplementationStatusSummarizer;
-use App\Growth\Plan\PlanCapacitySummarizer;
 use App\Growth\Plan\ScheduleHealthSummarizer;
 use App\Mcp\Resources\ProjectDashboardApp;
 use App\Models\Project;
@@ -27,7 +26,6 @@ class GetProjectDashboardData extends Tool
         private readonly ReadinessGateEvaluator $readiness,
         private readonly ImplementationStatusSummarizer $implementationStatus,
         private readonly ScheduleHealthSummarizer $scheduleHealth,
-        private readonly PlanCapacitySummarizer $capacity,
     ) {}
 
     public function handle(Request $request): Response|ResponseFactory
@@ -120,7 +118,6 @@ class GetProjectDashboardData extends Tool
             'readiness' => $this->readiness->evaluate($project),
             'implementation' => $this->implementationStatus->summarize($project),
             'schedule' => $this->scheduleHealth->summarize($project),
-            'capacity' => $this->capacity->summarize($project),
         ];
     }
 

@@ -2,7 +2,6 @@
 
 use App\Growth\Assurance\ReadinessGateEvaluator;
 use App\Growth\Execution\ImplementationStatusSummarizer;
-use App\Growth\Plan\PlanCapacitySummarizer;
 use App\Growth\Plan\ScheduleHealthSummarizer;
 use App\Growth\Transitions\ActivateProject;
 use App\Growth\Transitions\ArchiveProject;
@@ -119,7 +118,6 @@ new #[Title('Dashboard')] class extends Component {
             $this->readiness,
             $this->schedule,
             $this->implementation,
-            $this->capacity,
             $this->risks,
             $this->anomalies,
             $this->reviews,
@@ -184,15 +182,6 @@ new #[Title('Dashboard')] class extends Component {
     public function implementation(): ?array
     {
         return $this->project ? app(ImplementationStatusSummarizer::class)->summarize($this->project) : null;
-    }
-
-    /**
-     * @return array<string,mixed>|null
-     */
-    #[Computed]
-    public function capacity(): ?array
-    {
-        return $this->project ? app(PlanCapacitySummarizer::class)->summarize($this->project) : null;
     }
 
     #[Computed]
@@ -324,25 +313,6 @@ new #[Title('Dashboard')] class extends Component {
         return $result;
     }
 
-    public function formatHours(?float $hours): string
-    {
-        if ($hours === null || $hours === 0.0) {
-            return '—';
-        }
-
-        return rtrim(rtrim(number_format($hours, 1, '.', ''), '0'), '.').'h';
-    }
-
-    public function formatCurrency(float $amount, ?string $currency = null): string
-    {
-        if ($amount === 0.0) {
-            return '—';
-        }
-
-        $symbol = $currency ? $currency.' ' : '';
-
-        return $symbol.number_format($amount, 2);
-    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -643,59 +613,6 @@ new #[Title('Dashboard')] class extends Component {
                                         <span class="text-emerald-600 dark:text-emerald-400">{{ $row['successful_deployments'] }}</span>/{{ $row['deployments'] }}
                                     @elseif ($row['deployments'] > 0)
                                         {{ $row['deployments'] }}
-                                    @else
-                                        —
-                                    @endif
-                                </flux:table.cell>
-                            </flux:table.row>
-                        @endforeach
-                    </flux:table.rows>
-                </flux:table>
-            </x-data-table>
-            @endif
-
-            @if ($lens->revealsPanel('capacity'))
-            <x-data-table
-                :empty="count($this->capacity['roles']) === 0"
-                :empty-message="__('No roles or work items defined.')">
-                <x-slot:header>
-                    <flux:heading size="lg">{{ __('Capacity') }}</flux:heading>
-                    <div class="flex flex-wrap gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                        <span>{{ __('Est :h', ['h' => $this->formatHours($this->capacity['totals']['effort_estimate_hours'])]) }}</span>
-                        <span>{{ __('Actual :h', ['h' => $this->formatHours($this->capacity['totals']['effort_actual_hours'])]) }}</span>
-                        <span>{{ __('Cost est :c', ['c' => $this->formatCurrency($this->capacity['totals']['cost_estimate_amount'])]) }}</span>
-                    </div>
-                </x-slot:header>
-
-                <flux:table class="[&_td]:align-top">
-                    <flux:table.columns>
-                        <flux:table.column>{{ __('Role') }}</flux:table.column>
-                        <flux:table.column align="end">{{ __('Items') }}</flux:table.column>
-                        <flux:table.column align="end">{{ __('Est hrs') }}</flux:table.column>
-                        <flux:table.column align="end">{{ __('Actual hrs') }}</flux:table.column>
-                        <flux:table.column align="end">{{ __('Cost est') }}</flux:table.column>
-                        <flux:table.column align="end">{{ __('Cost actual') }}</flux:table.column>
-                        <flux:table.column align="end">{{ __('Utilization') }}</flux:table.column>
-                    </flux:table.columns>
-                    <flux:table.rows>
-                        @foreach ($this->capacity['roles'] as $row)
-                            <flux:table.row>
-                                <flux:table.cell>
-                                    <div class="font-medium">{{ $row['role'] ?? __('Unassigned') }}</div>
-                                    @if ($row['weekly_capacity_hours'])
-                                        <div class="text-xs text-zinc-500 dark:text-zinc-400">
-                                            {{ __('Capacity :h/wk', ['h' => $this->formatHours($row['weekly_capacity_hours'])]) }}
-                                        </div>
-                                    @endif
-                                </flux:table.cell>
-                                <flux:table.cell align="end" class="tabular-nums">{{ $row['work_items'] }}</flux:table.cell>
-                                <flux:table.cell align="end" class="tabular-nums">{{ $this->formatHours($row['effort_estimate_hours']) }}</flux:table.cell>
-                                <flux:table.cell align="end" class="tabular-nums">{{ $this->formatHours($row['effort_actual_hours']) }}</flux:table.cell>
-                                <flux:table.cell align="end" class="tabular-nums">{{ $this->formatCurrency($row['cost_estimate_amount'], $row['rate_currency']) }}</flux:table.cell>
-                                <flux:table.cell align="end" class="tabular-nums">{{ $this->formatCurrency($row['cost_actual_amount'], $row['rate_currency']) }}</flux:table.cell>
-                                <flux:table.cell align="end" class="tabular-nums">
-                                    @if ($row['utilization_estimate'] !== null)
-                                        {{ number_format($row['utilization_estimate'] * 100, 0) }}%
                                     @else
                                         —
                                     @endif

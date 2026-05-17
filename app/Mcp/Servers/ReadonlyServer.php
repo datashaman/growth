@@ -55,7 +55,6 @@ use App\Mcp\Tools\Plan\ListRisks;
 use App\Mcp\Tools\Plan\ListRoles;
 use App\Mcp\Tools\Plan\ListWorkItems;
 use App\Mcp\Tools\Plan\SummarizeImplementationStatus;
-use App\Mcp\Tools\Plan\SummarizePlanCapacity;
 use App\Mcp\Tools\Plan\SummarizeScheduleHealth;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Requirements\ListRequirements;
@@ -117,7 +116,6 @@ class ReadonlyServer extends Server
         ListChangeApprovalEvents::class,
         ListToolInvocations::class,
         SummarizeImplementationStatus::class,
-        SummarizePlanCapacity::class,
         SummarizeScheduleHealth::class,
         BuildEvidenceBundle::class,
         EvaluateReadinessGates::class,

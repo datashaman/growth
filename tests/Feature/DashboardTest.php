@@ -6,7 +6,7 @@ use App\Support\ViewLens;
 
 /**
  * Create a project whose dashboard exercises every panel: counts, readiness,
- * schedule, implementation, capacity, risks, anomalies, and reviews.
+ * schedule, implementation, risks, anomalies, and reviews.
  */
 function dashboardProjectWithEveryPanel(User $user): Project
 {
@@ -20,7 +20,6 @@ function dashboardProjectWithEveryPanel(User $user): Project
         'kind' => 'task',
         'name' => 'Wire the descent engine',
         'status' => 'todo',
-        'effort_estimate_hours' => 8,
     ]);
     $project->risks()->create([
         'title' => 'Heat shield delamination',
@@ -80,7 +79,6 @@ test('dashboard renders sections for the selected project', function () {
         ->assertSee('Readiness')
         ->assertSee('Schedule health')
         ->assertSee('Implementation')
-        ->assertSee('Capacity')
         ->assertSee('Risks')
         ->assertSee('Anomalies')
         ->assertSee('Reviews');
@@ -119,7 +117,6 @@ test('dashboard implementation table lists work items', function () {
         'kind' => 'task',
         'name' => 'Wire the descent engine',
         'status' => 'done',
-        'effort_estimate_hours' => 8,
     ]);
 
     $this->actingAs($user)
@@ -127,27 +124,6 @@ test('dashboard implementation table lists work items', function () {
         ->assertOk()
         ->assertSee('Wire the descent engine')
         ->assertSee('done without evidence');
-});
-
-test('dashboard capacity table groups work items by role', function () {
-    $user = User::factory()->create();
-    $project = Project::create([
-        'workspace_id' => $user->active_workspace_id,
-        'name' => 'Lunar Lander',
-        'rigor_level' => 2,
-    ]);
-    $project->workItems()->create([
-        'kind' => 'task',
-        'name' => 'Unassigned work',
-        'status' => 'todo',
-        'effort_estimate_hours' => 4,
-    ]);
-
-    $this->actingAs($user)
-        ->get('/dashboard?project='.$project->id)
-        ->assertOk()
-        ->assertSee('Capacity')
-        ->assertSee('Unassigned');
 });
 
 test('dashboard surfaces risks, anomalies, and reviews', function () {
@@ -191,7 +167,7 @@ test('dashboard surfaces risks, anomalies, and reviews', function () {
 
 /*
  * Each panel is identified by a string unique to it: a section heading
- * ("Counts", "Schedule health", "Capacity") or a table column header ("Gate"
+ * ("Counts", "Schedule health") or a table column header ("Gate"
  * for readiness, "Deploys" for implementation, "Exposure" for risks,
  * "Environment" for anomalies, "Decision" for reviews). Neither entity titles
  * nor the word "Implementation" are used as anchors — the readiness panel
@@ -212,7 +188,6 @@ test('the All lens renders every dashboard panel', function () {
         ->assertSee('Gate')
         ->assertSee('Schedule health')
         ->assertSee('Deploys')
-        ->assertSee('Capacity')
         ->assertSee('Exposure')
         ->assertSee('Environment')
         ->assertSee('Decision');
@@ -230,13 +205,12 @@ test('the spec-writer lens renders only counts and readiness', function () {
         ->assertSee('Gate')
         ->assertDontSee('Schedule health')
         ->assertDontSee('Deploys')
-        ->assertDontSee('Capacity')
         ->assertDontSee('Exposure')
         ->assertDontSee('Environment')
         ->assertDontSee('Decision');
 });
 
-test('the spec-implementer lens renders implementation, schedule, capacity, risks, and anomalies', function () {
+test('the spec-implementer lens renders implementation, schedule, risks, and anomalies', function () {
     $user = User::factory()->create();
     $user->switchLens(ViewLens::SpecImplementer);
     $project = dashboardProjectWithEveryPanel($user);
@@ -246,7 +220,6 @@ test('the spec-implementer lens renders implementation, schedule, capacity, risk
         ->assertOk()
         ->assertSee('Schedule health')
         ->assertSee('Deploys')
-        ->assertSee('Capacity')
         ->assertSee('Exposure')
         ->assertSee('Environment')
         ->assertDontSee('Counts')
@@ -267,7 +240,6 @@ test('the reviewer lens renders only readiness and reviews', function () {
         ->assertDontSee('Counts')
         ->assertDontSee('Schedule health')
         ->assertDontSee('Deploys')
-        ->assertDontSee('Capacity')
         ->assertDontSee('Exposure')
         ->assertDontSee('Environment');
 });

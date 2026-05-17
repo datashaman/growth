@@ -5,7 +5,6 @@ use App\Models\Project;
 use App\Models\ProjectPlan;
 use App\Models\ProjectPlanBaseline;
 use App\Models\User;
-use App\Models\WorkItem;
 use Illuminate\Database\UniqueConstraintViolationException;
 
 beforeEach(function () {
@@ -23,22 +22,13 @@ beforeEach(function () {
     ]);
 });
 
-it('stores budget and work-item cost fields', function () {
+it('stores the plan budget summary', function () {
     $plan = ProjectPlan::create([
         'project_id' => $this->aliceProject->id,
         'budget_summary' => '$250k capex, $40k monthly run.',
     ]);
-    $item = WorkItem::create([
-        'project_id' => $this->aliceProject->id,
-        'kind' => 'task',
-        'name' => 'Procure test devices',
-        'cost_estimate' => '$12k',
-        'cost_actual' => '$11.5k',
-    ]);
 
     expect($plan->budget_summary)->toBe('$250k capex, $40k monthly run.');
-    expect($item->cost_estimate)->toBe('$12k');
-    expect($item->cost_actual)->toBe('$11.5k');
 });
 
 it('relates baselines to plans, users, and agents', function () {

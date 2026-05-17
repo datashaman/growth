@@ -53,9 +53,7 @@ class ListWorkItems extends Tool
             ->offset($offset)
             ->get([
                 'id', 'number', 'kind', 'name', 'status', 'parent_id', 'responsible_role_id',
-                'planned_start_date', 'due_date', 'effort_estimate', 'effort_estimate_hours', 'effort_actual',
-                'effort_actual_hours', 'cost_estimate', 'cost_estimate_amount',
-                'cost_actual', 'cost_actual_amount', 'cost_currency',
+                'planned_start_date', 'due_date',
             ]);
 
         return Response::structured([
@@ -73,15 +71,6 @@ class ListWorkItems extends Tool
                 'responsible_role_id' => $w->responsible_role_id,
                 'planned_start_date' => $w->planned_start_date?->toDateString(),
                 'due_date' => $w->due_date?->toDateString(),
-                'effort_estimate' => $w->effort_estimate,
-                'effort_estimate_hours' => $w->effort_estimate_hours,
-                'effort_actual' => $w->effort_actual,
-                'effort_actual_hours' => $w->effort_actual_hours,
-                'cost_estimate' => $w->cost_estimate,
-                'cost_estimate_amount' => $w->cost_estimate_amount,
-                'cost_actual' => $w->cost_actual,
-                'cost_actual_amount' => $w->cost_actual_amount,
-                'cost_currency' => $w->cost_currency,
             ])->all(),
         ]);
     }

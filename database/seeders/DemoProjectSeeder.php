@@ -62,16 +62,10 @@ class DemoProjectSeeder extends Seeder
         $engineering = Role::create([
             'project_id' => $project->id,
             'name' => 'Engineering Lead',
-            'weekly_capacity_hours' => 32,
-            'hourly_rate_amount' => 120,
-            'rate_currency' => 'USD',
         ]);
         $ops = Role::create([
             'project_id' => $project->id,
             'name' => 'Ground Ops',
-            'weekly_capacity_hours' => 24,
-            'hourly_rate_amount' => 95,
-            'rate_currency' => 'USD',
         ]);
 
         Concern::create(['project_id' => $project->id, 'text' => 'Continuous telemetry availability during burns.']);
@@ -104,8 +98,6 @@ class DemoProjectSeeder extends Seeder
                 'status' => $status,
                 'planned_start_date' => now()->subDays(30 - $i * 5),
                 'due_date' => now()->addDays(7 + $i * 3),
-                'effort_estimate_hours' => 16,
-                'effort_actual_hours' => $status === 'done' ? 14 : null,
             ]);
         }
 
@@ -117,7 +109,6 @@ class DemoProjectSeeder extends Seeder
             'status' => 'in_progress',
             'planned_start_date' => now()->subDays(20),
             'due_date' => now()->subDays(3),
-            'effort_estimate_hours' => 12,
         ]);
 
         Milestone::create([
@@ -289,16 +280,10 @@ class DemoProjectSeeder extends Seeder
         $migrationLead = Role::create([
             'project_id' => $project->id,
             'name' => 'Migration Lead',
-            'weekly_capacity_hours' => 32,
-            'hourly_rate_amount' => 140,
-            'rate_currency' => 'USD',
         ]);
         $compliance = Role::create([
             'project_id' => $project->id,
             'name' => 'Compliance Officer',
-            'weekly_capacity_hours' => 16,
-            'hourly_rate_amount' => 160,
-            'rate_currency' => 'USD',
         ]);
 
         Concern::create(['project_id' => $project->id, 'text' => 'Cutover must preserve audit history.']);
@@ -327,8 +312,6 @@ class DemoProjectSeeder extends Seeder
             'status' => 'in_progress',
             'planned_start_date' => now()->subDays(40),
             'due_date' => now()->subDays(5),
-            'effort_estimate_hours' => 80,
-            'effort_actual_hours' => 60,
         ]);
 
         $spike = WorkItem::create([
@@ -339,8 +322,6 @@ class DemoProjectSeeder extends Seeder
             'status' => 'done',
             'planned_start_date' => now()->subDays(45),
             'due_date' => now()->subDays(15),
-            'effort_estimate_hours' => 24,
-            'effort_actual_hours' => 28,
         ]);
 
         WorkItem::create([
@@ -351,7 +332,6 @@ class DemoProjectSeeder extends Seeder
             'status' => 'todo',
             'planned_start_date' => now()->addDays(3),
             'due_date' => now()->addDays(14),
-            'effort_estimate_hours' => 12,
         ]);
 
         // Done spike with PR + successful checks but no deployment → "validated" (done with evidence but un-deployed)
