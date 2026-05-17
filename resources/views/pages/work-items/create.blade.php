@@ -17,8 +17,6 @@ new #[Title('New work item')] class extends Component {
     public string $kind = 'task';
     public string $status = 'todo';
     public string $description = '';
-    public string $planned_start_date = '';
-    public string $due_date = '';
     public ?string $responsible_role_id = null;
     public ?string $parent_id = null;
 
@@ -61,8 +59,6 @@ new #[Title('New work item')] class extends Component {
             'kind' => ['required', Rule::in(WorkItem::KINDS)],
             'status' => ['required', Rule::in(WorkItem::STATUSES)],
             'description' => ['nullable', 'string'],
-            'planned_start_date' => ['nullable', 'date'],
-            'due_date' => ['nullable', 'date'],
             'responsible_role_id' => [
                 'nullable',
                 Rule::exists('roles', 'id')->where('project_id', $project->id),
@@ -78,8 +74,6 @@ new #[Title('New work item')] class extends Component {
             'kind' => $data['kind'],
             'status' => $data['status'],
             'description' => $data['description'] ?: null,
-            'planned_start_date' => $data['planned_start_date'] ?: null,
-            'due_date' => $data['due_date'] ?: null,
             'responsible_role_id' => $data['responsible_role_id'] ?: null,
             'parent_id' => $data['parent_id'] ?: null,
         ]));
@@ -128,14 +122,6 @@ new #[Title('New work item')] class extends Component {
                     @endforeach
                 </flux:select>
                 <flux:textarea wire:model="description" :label="__('Description')" rows="4" />
-            </div>
-        </section>
-
-        <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-            <flux:heading size="lg" class="mb-3">{{ __('Schedule') }}</flux:heading>
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <flux:input wire:model="planned_start_date" type="date" :label="__('Planned start')" />
-                <flux:input wire:model="due_date" type="date" :label="__('Due')" />
             </div>
         </section>
 

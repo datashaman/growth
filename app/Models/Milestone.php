@@ -19,11 +19,7 @@ class Milestone extends Model
     public const STATUSES = ['pending', 'hit', 'missed', 'deferred'];
 
     protected $fillable = [
-        'project_id', 'name', 'target_date', 'exit_criteria', 'status',
-    ];
-
-    protected $casts = [
-        'target_date' => 'date',
+        'project_id', 'name', 'exit_criteria', 'status',
     ];
 
     public function project(): BelongsTo

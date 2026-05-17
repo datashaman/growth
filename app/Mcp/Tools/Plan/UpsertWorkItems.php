@@ -66,8 +66,6 @@ class UpsertWorkItems extends Tool
                 'kind' => $workItem->kind,
                 'name' => $workItem->name,
                 'parent_id' => $workItem->parent_id,
-                'planned_start_date' => $workItem->planned_start_date?->toDateString(),
-                'due_date' => $workItem->due_date?->toDateString(),
                 'created' => $workItem->wasRecentlyCreated,
             ];
         } catch (Throwable $e) {
@@ -93,8 +91,6 @@ class UpsertWorkItems extends Tool
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'status' => 'prohibited',
-            'planned_start_date' => 'nullable|date_format:Y-m-d',
-            'due_date' => 'nullable|date_format:Y-m-d',
         ];
     }
 
@@ -120,8 +116,6 @@ class UpsertWorkItems extends Tool
                     'kind' => $s->string()->description('Work item kind')->enum(WorkItem::KINDS)->required(),
                     'name' => $s->string()->description('Short label')->required(),
                     'description' => $s->string()->description('Optional details or acceptance notes'),
-                    'planned_start_date' => $s->string()->description('Planned start date in YYYY-MM-DD format'),
-                    'due_date' => $s->string()->description('Due date in YYYY-MM-DD format'),
                 ]))
                 ->min(1)
                 ->max(100)

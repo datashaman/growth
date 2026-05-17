@@ -259,8 +259,7 @@ it('returns read-only data for the project dashboard app', function () {
         ->assertSee('Dashboard Project')
         ->assertSee('growth://projects/'.$project->id.'/requirements')
         ->assertSee('readiness')
-        ->assertSee('implementation')
-        ->assertSee('schedule');
+        ->assertSee('implementation');
 
     ReadonlyServer::tool(GetProjectDashboardData::class, [
         'project_id' => 'missing-project',

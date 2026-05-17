@@ -53,7 +53,6 @@ class ListWorkItems extends Tool
             ->offset($offset)
             ->get([
                 'id', 'number', 'kind', 'name', 'status', 'parent_id', 'responsible_role_id',
-                'planned_start_date', 'due_date',
             ]);
 
         return Response::structured([
@@ -69,8 +68,6 @@ class ListWorkItems extends Tool
                 'status' => $w->status,
                 'parent_id' => $w->parent_id,
                 'responsible_role_id' => $w->responsible_role_id,
-                'planned_start_date' => $w->planned_start_date?->toDateString(),
-                'due_date' => $w->due_date?->toDateString(),
             ])->all(),
         ]);
     }

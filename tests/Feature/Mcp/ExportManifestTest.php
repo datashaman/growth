@@ -69,7 +69,7 @@ function fullManifest(): array
                 ['slug' => 'fe', 'name' => 'Frontend', 'responsibilities' => 'UI work.'],
             ],
             'milestones' => [
-                ['slug' => 'm1', 'name' => 'MVP', 'target_date' => '2026-06-01', 'status' => 'pending'],
+                ['slug' => 'm1', 'name' => 'MVP', 'status' => 'pending'],
             ],
             'work_items' => [
                 [

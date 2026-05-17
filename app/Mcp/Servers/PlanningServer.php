@@ -29,7 +29,6 @@ use App\Mcp\Tools\Plan\ClosePlan;
 use App\Mcp\Tools\Plan\CloseRisk;
 use App\Mcp\Tools\Plan\ComparePlanBaseline;
 use App\Mcp\Tools\Plan\CompleteWorkItem;
-use App\Mcp\Tools\Plan\DeferMilestone;
 use App\Mcp\Tools\Plan\DeleteAgent;
 use App\Mcp\Tools\Plan\DeleteDeployment;
 use App\Mcp\Tools\Plan\DeleteMilestone;
@@ -68,7 +67,6 @@ use App\Mcp\Tools\Plan\StartDeployment;
 use App\Mcp\Tools\Plan\StartRiskMitigation;
 use App\Mcp\Tools\Plan\StartWorkItem;
 use App\Mcp\Tools\Plan\SummarizeImplementationStatus;
-use App\Mcp\Tools\Plan\SummarizeScheduleHealth;
 use App\Mcp\Tools\Plan\UnassignRole;
 use App\Mcp\Tools\Plan\UnassignWorkItemRaci;
 use App\Mcp\Tools\Plan\UnblockWorkItem;
@@ -117,7 +115,6 @@ class PlanningServer extends Server
         DeleteMilestone::class,
         HitMilestone::class,
         MissMilestone::class,
-        DeferMilestone::class,
         UpsertRole::class,
         ListRoles::class,
         DeleteRole::class,
@@ -173,7 +170,6 @@ class PlanningServer extends Server
         ListDeployments::class,
         DeleteDeployment::class,
         SummarizeImplementationStatus::class,
-        SummarizeScheduleHealth::class,
         LintProject::class,
         TraceQuery::class,
     ];

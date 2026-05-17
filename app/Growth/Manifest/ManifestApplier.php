@@ -633,7 +633,7 @@ class ManifestApplier
     private function applyMilestone(array $input, string $projectId, string $mode, array &$counts, array &$drift): Milestone
     {
         $fields = array_intersect_key($input, array_flip([
-            'name', 'target_date', 'exit_criteria', 'status',
+            'name', 'exit_criteria', 'status',
         ]));
 
         $existing = Milestone::where('project_id', $projectId)->where('name', $fields['name'])->first();
@@ -642,7 +642,7 @@ class ManifestApplier
             $this->checkDrift('milestone', $existing->updated_at, $input['_exported_at'] ?? null, $existing->name, $drift);
 
             if ($mode === 'fail') {
-                $this->failOnCollisionMilestone($existing, $fields);
+                $this->failOnCollision('milestone', $existing, $fields);
 
                 return $existing;
             }
@@ -672,7 +672,6 @@ class ManifestApplier
     {
         $fields = array_intersect_key($input, array_flip([
             'kind', 'name', 'description', 'status',
-            'planned_start_date', 'due_date',
         ]));
 
         if (isset($input['responsible_role'])) {
@@ -877,27 +876,6 @@ class ManifestApplier
         }
 
         return $created;
-    }
-
-    /**
-     * Milestone fail-mode comparison normalizes `target_date` (Carbon ↔ string)
-     * before delegating to the generic collision check.
-     *
-     * @param  array<string,mixed>  $fields
-     */
-    private function failOnCollisionMilestone(Milestone $existing, array $fields): void
-    {
-        if (isset($fields['target_date']) && is_string($fields['target_date'])) {
-            $existingDate = $existing->target_date?->toDateString();
-            $providedDate = Carbon::parse($fields['target_date'])->toDateString();
-            if ($existingDate !== $providedDate) {
-                throw new RuntimeException(
-                    "milestone [{$existing->name}] already exists with different content; fail mode aborts on any difference. Use merge or replace mode to update."
-                );
-            }
-            unset($fields['target_date']);
-        }
-        $this->failOnCollision('milestone', $existing, $fields);
     }
 
     /**

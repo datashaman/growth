@@ -6,7 +6,7 @@ use App\Support\ViewLens;
 
 /**
  * Create a project whose dashboard exercises every panel: counts, readiness,
- * schedule, implementation, risks, anomalies, and reviews.
+ * implementation, risks, anomalies, and reviews.
  */
 function dashboardProjectWithEveryPanel(User $user): Project
 {
@@ -77,7 +77,6 @@ test('dashboard renders sections for the selected project', function () {
         ->assertSee('Counts')
         ->assertSee('Stakeholders')
         ->assertSee('Readiness')
-        ->assertSee('Schedule health')
         ->assertSee('Implementation')
         ->assertSee('Risks')
         ->assertSee('Anomalies')
@@ -167,7 +166,7 @@ test('dashboard surfaces risks, anomalies, and reviews', function () {
 
 /*
  * Each panel is identified by a string unique to it: a section heading
- * ("Counts", "Schedule health") or a table column header ("Gate"
+ * ("Counts") or a table column header ("Gate"
  * for readiness, "Deploys" for implementation, "Exposure" for risks,
  * "Environment" for anomalies, "Decision" for reviews). Neither entity titles
  * nor the word "Implementation" are used as anchors — the readiness panel
@@ -186,7 +185,6 @@ test('the All lens renders every dashboard panel', function () {
         ->assertOk()
         ->assertSee('Counts')
         ->assertSee('Gate')
-        ->assertSee('Schedule health')
         ->assertSee('Deploys')
         ->assertSee('Exposure')
         ->assertSee('Environment')
@@ -203,14 +201,13 @@ test('the spec-writer lens renders only counts and readiness', function () {
         ->assertOk()
         ->assertSee('Counts')
         ->assertSee('Gate')
-        ->assertDontSee('Schedule health')
         ->assertDontSee('Deploys')
         ->assertDontSee('Exposure')
         ->assertDontSee('Environment')
         ->assertDontSee('Decision');
 });
 
-test('the spec-implementer lens renders implementation, schedule, risks, and anomalies', function () {
+test('the spec-implementer lens renders implementation, risks, and anomalies', function () {
     $user = User::factory()->create();
     $user->switchLens(ViewLens::SpecImplementer);
     $project = dashboardProjectWithEveryPanel($user);
@@ -218,7 +215,6 @@ test('the spec-implementer lens renders implementation, schedule, risks, and ano
     $this->actingAs($user)
         ->get('/dashboard?project='.$project->id)
         ->assertOk()
-        ->assertSee('Schedule health')
         ->assertSee('Deploys')
         ->assertSee('Exposure')
         ->assertSee('Environment')
@@ -238,7 +234,6 @@ test('the reviewer lens renders only readiness and reviews', function () {
         ->assertSee('Gate')
         ->assertSee('Decision')
         ->assertDontSee('Counts')
-        ->assertDontSee('Schedule health')
         ->assertDontSee('Deploys')
         ->assertDontSee('Exposure')
         ->assertDontSee('Environment');

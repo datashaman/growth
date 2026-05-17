@@ -84,7 +84,7 @@ new #[Title('Plan')] class extends Component {
     public function milestones()
     {
         return $this->selectedProject?->milestones()
-            ->orderBy('target_date')
+            ->orderBy('name')
             ->get()
             ?? collect();
     }
@@ -94,7 +94,6 @@ new #[Title('Plan')] class extends Component {
     {
         return $this->selectedProject?->workItems()
             ->with('responsibleRole')
-            ->orderBy('due_date')
             ->orderBy('name')
             ->get()
             ?? collect();
@@ -190,7 +189,6 @@ new #[Title('Plan')] class extends Component {
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Milestone') }}</flux:table.column>
-                    <flux:table.column>{{ __('Target') }}</flux:table.column>
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
                     <flux:table.column>{{ __('Exit criteria') }}</flux:table.column>
                     <flux:table.column></flux:table.column>
@@ -199,7 +197,6 @@ new #[Title('Plan')] class extends Component {
                     @foreach ($this->milestones as $milestone)
                         <flux:table.row>
                             <flux:table.cell class="font-medium">{{ $milestone->name }}</flux:table.cell>
-                            <flux:table.cell>{{ $milestone->target_date?->format('Y-m-d') ?? '—' }}</flux:table.cell>
                             <flux:table.cell>
                                 <flux:badge :color="BadgeVariant::milestoneStatus($milestone->status)" size="sm">{{ EnumLabel::lower($milestone->status) }}</flux:badge>
                             </flux:table.cell>
@@ -214,10 +211,6 @@ new #[Title('Plan')] class extends Component {
                                         <flux:tooltip content="{{ __('Mark missed') }}">
                                             <flux:button size="xs" icon="x-circle" variant="ghost"
                                                 wire:click="missMilestone('{{ $milestone->id }}')" />
-                                        </flux:tooltip>
-                                        <flux:tooltip content="{{ __('Defer') }}">
-                                            <flux:button size="xs" icon="clock" variant="ghost"
-                                                wire:click="$dispatch('defer-milestone', { milestoneId: '{{ $milestone->id }}' })" />
                                         </flux:tooltip>
                                     @endif
                                     <flux:button size="xs" icon="pencil-square" variant="ghost"
@@ -234,7 +227,6 @@ new #[Title('Plan')] class extends Component {
 
         <livewire:pages::milestones.create-modal :project-id="$this->selectedProject->id" :key="'create-milestone-'.$this->selectedProject->id" />
         <livewire:pages::milestones.edit-modal :key="'edit-milestone-'.$this->selectedProject->id" />
-        <livewire:pages::milestones.defer-modal :key="'defer-milestone-'.$this->selectedProject->id" />
         <livewire:pages::milestones.delete-modal :key="'delete-milestone-'.$this->selectedProject->id" />
 
         <x-data-table
@@ -255,7 +247,6 @@ new #[Title('Plan')] class extends Component {
                     <flux:table.column>{{ __('Kind') }}</flux:table.column>
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
                     <flux:table.column>{{ __('Role') }}</flux:table.column>
-                    <flux:table.column>{{ __('Due') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->workItems as $item)
@@ -273,7 +264,6 @@ new #[Title('Plan')] class extends Component {
                                 <flux:badge :color="BadgeVariant::workItemStatus($item->status)" size="sm">{{ str_replace('_', ' ', $item->status) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>{{ $item->responsibleRole?->name ?? '—' }}</flux:table.cell>
-                            <flux:table.cell>{{ $item->due_date?->format('Y-m-d') ?? '—' }}</flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>

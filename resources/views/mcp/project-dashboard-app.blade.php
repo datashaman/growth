@@ -537,7 +537,6 @@
                             ${implementationPanel()}
                         </div>
                         <div>
-                            ${schedulePanel()}
                             ${termsPanel()}
                         </div>
                     </div>
@@ -621,26 +620,6 @@
                     'Deployed': summary.deployed,
                     'Done without evidence': summary.done_without_delivery_evidence,
                 }));
-            }
-
-            function schedulePanel() {
-                const schedule = state.project.schedule;
-                const findings = schedule.findings.slice(0, 4).map((finding) => `
-                    <div class="row">
-                        <span>${escapeHtml(finding.message)}</span>
-                        <span class="pill ${finding.severity}">${escapeHtml(finding.severity)}</span>
-                    </div>
-                `).join('');
-
-                return section('Schedule', `
-                    ${metricList({
-                        'Overdue milestones': schedule.summary.overdue_milestones,
-                        'Overdue work items': schedule.summary.overdue_work_items,
-                        'Open dependencies': schedule.summary.open_dependency_blocks,
-                        'Date risks': schedule.summary.dependency_date_risks,
-                    })}
-                    <div class="rows">${findings || '<div class="row"><span>No findings</span><span class="pill pass">clean</span></div>'}</div>
-                `);
             }
 
             function termsPanel() {

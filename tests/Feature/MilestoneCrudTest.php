@@ -19,7 +19,6 @@ test('owner can create a milestone', function () {
 
     Livewire::test('pages::milestones.create-modal', ['projectId' => $this->project->id])
         ->set('name', 'CDR')
-        ->set('target_date', '2026-09-01')
         ->set('exit_criteria', 'Design closed.')
         ->set('status', 'pending')
         ->call('save')
@@ -27,8 +26,7 @@ test('owner can create a milestone', function () {
 
     $milestone = Milestone::query()->where('name', 'CDR')->first();
     expect($milestone)->not->toBeNull()
-        ->and($milestone->project_id)->toBe($this->project->id)
-        ->and($milestone->target_date->format('Y-m-d'))->toBe('2026-09-01');
+        ->and($milestone->project_id)->toBe($this->project->id);
 });
 
 test('milestone create requires name', function () {

@@ -359,7 +359,6 @@ class ManifestExporter
             ->map(fn ($m) => $this->compact([
                 'slug' => $milestoneSlugs[$m->id],
                 'name' => $m->name,
-                'target_date' => $m->target_date?->toDateString(),
                 'exit_criteria' => $m->exit_criteria,
                 'status' => $m->status,
                 '_exported_at' => $m->updated_at?->toIso8601String(),
@@ -423,8 +422,6 @@ class ManifestExporter
             'name' => $workItem->name,
             'description' => $workItem->description,
             'status' => $workItem->status,
-            'planned_start_date' => $workItem->planned_start_date?->toDateString(),
-            'due_date' => $workItem->due_date?->toDateString(),
             'responsible_role' => $workItem->responsible_role_id
                 ? ($roleSlugs[$workItem->responsible_role_id] ?? null)
                 : null,

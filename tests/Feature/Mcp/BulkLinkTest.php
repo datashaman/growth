@@ -38,8 +38,6 @@ beforeEach(function () {
     $this->milestone = Milestone::create([
         'project_id' => $this->project->id,
         'name' => 'M1',
-        'description' => 'first milestone',
-        'target_date' => '2026-12-31',
     ]);
 
     $this->view = DesignView::create([

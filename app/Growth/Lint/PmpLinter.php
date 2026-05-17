@@ -2,7 +2,6 @@
 
 namespace App\Growth\Lint;
 
-use App\Growth\Plan\ScheduleHealthSummarizer;
 use App\Models\Project;
 use App\Models\WorkItem;
 use Illuminate\Support\Collection;
@@ -14,8 +13,6 @@ use Illuminate\Support\Collection;
  */
 class PmpLinter
 {
-    public function __construct(private readonly ScheduleHealthSummarizer $scheduleHealth) {}
-
     /**
      * @return list<array{rule:string,severity:string,message:string,subject_type:string,subject_id:string}>
      */
@@ -58,22 +55,7 @@ class PmpLinter
                 'project', $project->id,
             );
         }
-        $today = now()->startOfDay();
         foreach ($milestones as $m) {
-            if (! $m->target_date) {
-                $findings[] = $this->finding(
-                    'pmp.milestone.no_date', 'warning',
-                    'Milestone has no target_date',
-                    'milestone', $m->id,
-                );
-            } elseif ($m->status === 'pending' && $m->target_date->lt($today)) {
-                $findings[] = $this->finding(
-                    'pmp.milestone.past_pending', 'error',
-                    'Milestone target_date is in the past and still pending',
-                    'milestone', $m->id,
-                );
-            }
-
             $items = $m->workItems;
             if ($m->status === 'pending' && $items->isNotEmpty()) {
                 $live = $items->whereNotIn('status', ['done', 'cancelled']);
@@ -83,18 +65,12 @@ class PmpLinter
                         'Milestone has every linked work item done/cancelled — consider flipping status to hit',
                         'milestone', $m->id,
                     );
-                } elseif ($m->target_date && $m->target_date->lt($today)) {
-                    $findings[] = $this->finding(
-                        'pmp.milestone.could_miss', 'warning',
-                        'Milestone target_date passed with work items still open — likely missed',
-                        'milestone', $m->id,
-                    );
                 }
             }
         }
 
         $workItems = $project->workItems()
-            ->with(['requirements:id', 'dependencies:id'])
+            ->with(['requirements:id', 'dependencies:id,status'])
             ->get();
         if ($workItems->isEmpty() && $il >= 2) {
             $findings[] = $this->finding(
@@ -118,14 +94,19 @@ class PmpLinter
             );
         }
 
-        foreach ($this->scheduleHealth->summarize($project)['findings'] as $scheduleFinding) {
-            $findings[] = $this->finding(
-                str_replace('schedule.', 'pmp.schedule.', $scheduleFinding['rule']),
-                $scheduleFinding['severity'],
-                $scheduleFinding['message'],
-                $scheduleFinding['subject_type'],
-                $scheduleFinding['subject_id'],
-            );
+        foreach ($workItems as $w) {
+            if ($w->status !== 'in_progress') {
+                continue;
+            }
+            foreach ($w->dependencies as $dependency) {
+                if (! in_array($dependency->status, ['done', 'cancelled'], true)) {
+                    $findings[] = $this->finding(
+                        'pmp.dependency.open', 'warning',
+                        'Work item is in progress while a dependency is unfinished',
+                        'work_item', $w->id,
+                    );
+                }
+            }
         }
 
         if ($il >= 3) {

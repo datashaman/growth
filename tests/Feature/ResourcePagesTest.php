@@ -101,7 +101,6 @@ test('plan page renders milestones, work items, and roles', function () {
     ]);
     $this->project->milestones()->create([
         'name' => 'Critical Design Review',
-        'target_date' => now()->addMonth()->toDateString(),
         'status' => 'pending',
     ]);
     $this->project->workItems()->create([

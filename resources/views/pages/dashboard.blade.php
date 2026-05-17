@@ -2,7 +2,6 @@
 
 use App\Growth\Assurance\ReadinessGateEvaluator;
 use App\Growth\Execution\ImplementationStatusSummarizer;
-use App\Growth\Plan\ScheduleHealthSummarizer;
 use App\Growth\Transitions\ActivateProject;
 use App\Growth\Transitions\ArchiveProject;
 use App\Growth\Transitions\CloseProject;
@@ -116,7 +115,6 @@ new #[Title('Dashboard')] class extends Component {
         unset(
             $this->project,
             $this->readiness,
-            $this->schedule,
             $this->implementation,
             $this->risks,
             $this->anomalies,
@@ -164,15 +162,6 @@ new #[Title('Dashboard')] class extends Component {
     public function readiness(): ?array
     {
         return $this->project ? app(ReadinessGateEvaluator::class)->evaluate($this->project) : null;
-    }
-
-    /**
-     * @return array<string,mixed>|null
-     */
-    #[Computed]
-    public function schedule(): ?array
-    {
-        return $this->project ? app(ScheduleHealthSummarizer::class)->summarize($this->project) : null;
     }
 
     /**
@@ -258,14 +247,14 @@ new #[Title('Dashboard')] class extends Component {
 
     /**
      * Resolve readable labels (and optional routes) for every (subject_type, subject_id)
-     * referenced by any readiness gate or schedule-health finding, in a single query per type.
+     * referenced by any readiness gate finding, in a single query per type.
      *
      * @return array<string,array{label:string,route:?string}>
      */
     #[Computed]
     public function findingSubjects(): array
     {
-        if ($this->readiness === null && $this->schedule === null) {
+        if ($this->readiness === null) {
             return [];
         }
 
@@ -286,10 +275,8 @@ new #[Title('Dashboard')] class extends Component {
 
         $gateFindings = collect($this->readiness['gates'] ?? [])
             ->flatMap(fn (array $gate) => $gate['findings']);
-        $scheduleFindings = collect($this->schedule['findings'] ?? []);
 
         $idsByType = $gateFindings
-            ->concat($scheduleFindings)
             ->filter(fn (array $f) => isset($f['subject_type'], $f['subject_id']) && isset($map[$f['subject_type']]))
             ->groupBy('subject_type')
             ->map(fn ($group) => $group->pluck('subject_id')->unique()->values()->all())
@@ -388,7 +375,7 @@ new #[Title('Dashboard')] class extends Component {
             </section>
             @endif
 
-            @if ($lens->revealsPanel('readiness') || $lens->revealsPanel('schedule'))
+            @if ($lens->revealsPanel('readiness'))
             <section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 @if ($lens->revealsPanel('readiness'))
                 <x-data-table
@@ -500,54 +487,6 @@ new #[Title('Dashboard')] class extends Component {
                 </x-data-table>
                 @endif
 
-                @if ($lens->revealsPanel('schedule'))
-                <x-data-table
-                    :title="__('Schedule health')"
-                    :count="count($this->schedule['findings'])"
-                    :count-label="__('findings')"
-                    :empty="count($this->schedule['findings']) === 0"
-                    :empty-message="__('No schedule issues found.')">
-                    @php
-                        $scheduleGrouped = collect($this->schedule['findings'])->groupBy(fn ($f) => $f['rule'].'|'.$f['message']);
-                    @endphp
-                    <ul class="space-y-2">
-                        @foreach ($scheduleGrouped as $group)
-                            @php $head = $group->first(); @endphp
-                            <li class="flex items-start gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
-                                <div class="w-20 shrink-0">
-                                    <flux:badge :color="BadgeVariant::finding($head['severity'])" size="sm">
-                                        {{ EnumLabel::lower($head['severity']) }}
-                                    </flux:badge>
-                                </div>
-                                <div class="min-w-0 flex-1">
-                                    <div class="text-sm break-words">{{ $head['message'] }}</div>
-                                    <div class="text-xs text-zinc-500 dark:text-zinc-400 break-words">{{ EnumLabel::findingRule($head['rule']) }}</div>
-                                    @php
-                                        $subjects = $group
-                                            ->filter(fn ($f) => isset($f['subject_type'], $f['subject_id']))
-                                            ->map(fn ($f) => $this->findingSubjects[$f['subject_type'].':'.$f['subject_id']] ?? null)
-                                            ->filter()
-                                            ->unique(fn ($s) => $s['label'].'|'.($s['route'] ?? ''));
-                                    @endphp
-                                    @if ($subjects->isNotEmpty())
-                                        <ul class="mt-2 space-y-1">
-                                            @foreach ($subjects as $subject)
-                                                <li class="text-xs text-zinc-600 dark:text-zinc-300 break-words">
-                                                    @if ($subject['route'])
-                                                        <a href="{{ $subject['route'] }}" wire:navigate class="hover:underline">{{ $subject['label'] }}</a>
-                                                    @else
-                                                        {{ $subject['label'] }}
-                                                    @endif
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    @endif
-                                </div>
-                            </li>
-                        @endforeach
-                    </ul>
-                </x-data-table>
-                @endif
             </section>
             @endif
 
