@@ -39,7 +39,6 @@ class ListRoles extends Tool
             ->offset($offset)
             ->get([
                 'id', 'name', 'responsibilities',
-                'weekly_capacity_hours', 'hourly_rate_amount', 'rate_currency',
             ]);
 
         return Response::structured([
@@ -50,9 +49,6 @@ class ListRoles extends Tool
                 'id' => $r->id,
                 'name' => $r->name,
                 'responsibilities' => $r->responsibilities,
-                'weekly_capacity_hours' => $r->weekly_capacity_hours,
-                'hourly_rate_amount' => $r->hourly_rate_amount,
-                'rate_currency' => $r->rate_currency,
                 'work_items_count' => $r->work_items_count,
             ])->all(),
         ]);

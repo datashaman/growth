@@ -21,9 +21,6 @@ new #[Title('New work item')] class extends Component {
     public string $due_date = '';
     public ?string $responsible_role_id = null;
     public ?string $parent_id = null;
-    public ?string $effort_estimate_hours = null;
-    public ?string $cost_estimate_amount = null;
-    public string $cost_currency = '';
 
     public function mount(?string $project = null): void
     {
@@ -74,9 +71,6 @@ new #[Title('New work item')] class extends Component {
                 'nullable',
                 Rule::exists('work_items', 'id')->where('project_id', $project->id),
             ],
-            'effort_estimate_hours' => ['nullable', 'numeric', 'min:0'],
-            'cost_estimate_amount' => ['nullable', 'numeric', 'min:0'],
-            'cost_currency' => ['nullable', 'string', 'max:8'],
         ]);
 
         $workItem = DB::transaction(fn () => $project->workItems()->create([
@@ -88,9 +82,6 @@ new #[Title('New work item')] class extends Component {
             'due_date' => $data['due_date'] ?: null,
             'responsible_role_id' => $data['responsible_role_id'] ?: null,
             'parent_id' => $data['parent_id'] ?: null,
-            'effort_estimate_hours' => $data['effort_estimate_hours'] !== null && $data['effort_estimate_hours'] !== '' ? $data['effort_estimate_hours'] : null,
-            'cost_estimate_amount' => $data['cost_estimate_amount'] !== null && $data['cost_estimate_amount'] !== '' ? $data['cost_estimate_amount'] : null,
-            'cost_currency' => $data['cost_currency'] ?: null,
         ]));
 
         $this->redirectRoute('work-items.show', ['workItem' => $workItem->id], navigate: true);
@@ -145,15 +136,6 @@ new #[Title('New work item')] class extends Component {
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <flux:input wire:model="planned_start_date" type="date" :label="__('Planned start')" />
                 <flux:input wire:model="due_date" type="date" :label="__('Due')" />
-            </div>
-        </section>
-
-        <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-            <flux:heading size="lg" class="mb-3">{{ __('Effort and cost') }}</flux:heading>
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <flux:input wire:model="effort_estimate_hours" type="number" step="0.25" min="0" :label="__('Estimated hours')" />
-                <flux:input wire:model="cost_estimate_amount" type="number" step="0.01" min="0" :label="__('Estimated cost')" />
-                <flux:input wire:model="cost_currency" :label="__('Currency')" :placeholder="__('e.g. USD')" />
             </div>
         </section>
 

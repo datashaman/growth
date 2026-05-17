@@ -44,7 +44,7 @@ it('exposes role-specific MCP metadata surfaces', function () {
     ])->assertOk()->json('result.resourceTemplates');
 
     expect(collect($intakeTools)->pluck('name')->all())->toContain('upsert-citation', 'upsert-requirements')
-        ->and(collect($planningTools)->pluck('name')->all())->toContain('upsert-work-items', 'summarize-plan-capacity')
+        ->and(collect($planningTools)->pluck('name')->all())->toContain('upsert-work-items')
         ->and(collect($resources)->pluck('uriTemplate')->all())->toContain('growth://projects/{project}/requirements');
 });
 
@@ -260,8 +260,7 @@ it('returns read-only data for the project dashboard app', function () {
         ->assertSee('growth://projects/'.$project->id.'/requirements')
         ->assertSee('readiness')
         ->assertSee('implementation')
-        ->assertSee('schedule')
-        ->assertSee('capacity');
+        ->assertSee('schedule');
 
     ReadonlyServer::tool(GetProjectDashboardData::class, [
         'project_id' => 'missing-project',

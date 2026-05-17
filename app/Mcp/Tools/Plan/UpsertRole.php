@@ -26,9 +26,6 @@ class UpsertRole extends Tool
                     ->ignore($request->get('id')),
             ],
             'responsibilities' => 'nullable|string',
-            'weekly_capacity_hours' => 'nullable|numeric|min:0|max:10000',
-            'hourly_rate_amount' => 'nullable|numeric|min:0|max:9999999999',
-            'rate_currency' => 'nullable|string|size:3',
         ]);
 
         $id = $data['id'] ?? null;
@@ -39,9 +36,6 @@ class UpsertRole extends Tool
         return Response::structured([
             'id' => $role->id,
             'name' => $role->name,
-            'weekly_capacity_hours' => $role->weekly_capacity_hours,
-            'hourly_rate_amount' => $role->hourly_rate_amount,
-            'rate_currency' => $role->rate_currency,
             'created' => $role->wasRecentlyCreated,
         ]);
     }
@@ -53,9 +47,6 @@ class UpsertRole extends Tool
             'project_id' => $schema->string()->description('Project ULID')->required(),
             'name' => $schema->string()->description('Role label, unique per project')->required(),
             'responsibilities' => $schema->string()->description('Responsibilities owned by this role'),
-            'weekly_capacity_hours' => $schema->number()->description('Available capacity for this role in hours per week'),
-            'hourly_rate_amount' => $schema->number()->description('Planning rate used to estimate cost from effort hours'),
-            'rate_currency' => $schema->string()->description('Three-letter currency code for the planning rate, such as USD'),
         ];
     }
 }

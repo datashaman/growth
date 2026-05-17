@@ -204,15 +204,6 @@ class PlanBaselineDiffer
             'status' => $workItem->status,
             'planned_start_date' => $workItem->planned_start_date?->toDateString(),
             'due_date' => $workItem->due_date?->toDateString(),
-            'effort_estimate' => $workItem->effort_estimate,
-            'effort_estimate_hours' => $workItem->effort_estimate_hours,
-            'effort_actual' => $workItem->effort_actual,
-            'effort_actual_hours' => $workItem->effort_actual_hours,
-            'cost_estimate' => $workItem->cost_estimate,
-            'cost_estimate_amount' => $workItem->cost_estimate_amount,
-            'cost_actual' => $workItem->cost_actual,
-            'cost_actual_amount' => $workItem->cost_actual_amount,
-            'cost_currency' => $workItem->cost_currency,
         ];
     }
 

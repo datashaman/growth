@@ -346,9 +346,6 @@ class ManifestExporter
                 'slug' => $roleSlugs[$r->id],
                 'name' => $r->name,
                 'responsibilities' => $r->responsibilities,
-                'weekly_capacity_hours' => $r->weekly_capacity_hours,
-                'hourly_rate_amount' => $r->hourly_rate_amount,
-                'rate_currency' => $r->rate_currency,
                 '_exported_at' => $r->updated_at?->toIso8601String(),
             ]))
             ->values()
@@ -428,13 +425,6 @@ class ManifestExporter
             'status' => $workItem->status,
             'planned_start_date' => $workItem->planned_start_date?->toDateString(),
             'due_date' => $workItem->due_date?->toDateString(),
-            'effort_estimate' => $workItem->effort_estimate,
-            'effort_actual' => $workItem->effort_actual,
-            'effort_estimate_hours' => $workItem->effort_estimate_hours,
-            'effort_actual_hours' => $workItem->effort_actual_hours,
-            'cost_estimate_amount' => $workItem->cost_estimate_amount,
-            'cost_actual_amount' => $workItem->cost_actual_amount,
-            'cost_currency' => $workItem->cost_currency,
             'responsible_role' => $workItem->responsible_role_id
                 ? ($roleSlugs[$workItem->responsible_role_id] ?? null)
                 : null,

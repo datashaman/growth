@@ -147,14 +147,6 @@ new #[Title('Plan')] class extends Component {
         ]));
     }
 
-    public function formatHours(?float $hours): string
-    {
-        if ($hours === null || $hours === 0.0) {
-            return '—';
-        }
-
-        return rtrim(rtrim(number_format($hours, 1, '.', ''), '0'), '.').'h';
-    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -264,8 +256,6 @@ new #[Title('Plan')] class extends Component {
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
                     <flux:table.column>{{ __('Role') }}</flux:table.column>
                     <flux:table.column>{{ __('Due') }}</flux:table.column>
-                    <flux:table.column align="end">{{ __('Est') }}</flux:table.column>
-                    <flux:table.column align="end">{{ __('Actual') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->workItems as $item)
@@ -284,8 +274,6 @@ new #[Title('Plan')] class extends Component {
                             </flux:table.cell>
                             <flux:table.cell>{{ $item->responsibleRole?->name ?? '—' }}</flux:table.cell>
                             <flux:table.cell>{{ $item->due_date?->format('Y-m-d') ?? '—' }}</flux:table.cell>
-                            <flux:table.cell align="end" class="tabular-nums">{{ $this->formatHours((float) ($item->effort_estimate_hours ?? 0)) }}</flux:table.cell>
-                            <flux:table.cell align="end" class="tabular-nums">{{ $this->formatHours((float) ($item->effort_actual_hours ?? 0)) }}</flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
@@ -307,8 +295,6 @@ new #[Title('Plan')] class extends Component {
                 <flux:table.columns>
                     <flux:table.column>{{ __('Role') }}</flux:table.column>
                     <flux:table.column>{{ __('Responsibilities') }}</flux:table.column>
-                    <flux:table.column align="end">{{ __('Weekly capacity') }}</flux:table.column>
-                    <flux:table.column align="end">{{ __('Hourly rate') }}</flux:table.column>
                     <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
@@ -316,14 +302,6 @@ new #[Title('Plan')] class extends Component {
                         <flux:table.row>
                             <flux:table.cell class="font-medium">{{ $role->name }}</flux:table.cell>
                             <flux:table.cell>{{ $role->responsibilities ?? '—' }}</flux:table.cell>
-                            <flux:table.cell align="end" class="tabular-nums">{{ $this->formatHours((float) ($role->weekly_capacity_hours ?? 0)) }}</flux:table.cell>
-                            <flux:table.cell align="end" class="tabular-nums">
-                                @if ($role->hourly_rate_amount)
-                                    {{ $role->rate_currency }} {{ number_format((float) $role->hourly_rate_amount, 2) }}
-                                @else
-                                    —
-                                @endif
-                            </flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex justify-end gap-1">
                                     <flux:button size="xs" icon="pencil-square" variant="ghost"

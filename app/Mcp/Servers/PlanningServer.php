@@ -68,7 +68,6 @@ use App\Mcp\Tools\Plan\StartDeployment;
 use App\Mcp\Tools\Plan\StartRiskMitigation;
 use App\Mcp\Tools\Plan\StartWorkItem;
 use App\Mcp\Tools\Plan\SummarizeImplementationStatus;
-use App\Mcp\Tools\Plan\SummarizePlanCapacity;
 use App\Mcp\Tools\Plan\SummarizeScheduleHealth;
 use App\Mcp\Tools\Plan\UnassignRole;
 use App\Mcp\Tools\Plan\UnassignWorkItemRaci;
@@ -174,7 +173,6 @@ class PlanningServer extends Server
         ListDeployments::class,
         DeleteDeployment::class,
         SummarizeImplementationStatus::class,
-        SummarizePlanCapacity::class,
         SummarizeScheduleHealth::class,
         LintProject::class,
         TraceQuery::class,

@@ -98,7 +98,6 @@ test('verification page renders test plans, cases, and anomalies', function () {
 test('plan page renders milestones, work items, and roles', function () {
     $role = $this->project->roles()->create([
         'name' => 'Propulsion Engineer',
-        'weekly_capacity_hours' => 30,
     ]);
     $this->project->milestones()->create([
         'name' => 'Critical Design Review',
@@ -110,7 +109,6 @@ test('plan page renders milestones, work items, and roles', function () {
         'name' => 'Wire the descent engine',
         'status' => 'in_progress',
         'responsible_role_id' => $role->id,
-        'effort_estimate_hours' => 8,
     ]);
 
     $this->actingAs($this->user)

@@ -121,16 +121,6 @@ class ProjectPmpResource extends Resource implements HasUriTemplate
                     $md .= " — {$r->responsibilities}";
                 }
                 $md .= "\n";
-                $planning = [];
-                if ($r->weekly_capacity_hours !== null) {
-                    $planning[] = "capacity: {$r->weekly_capacity_hours}h/week";
-                }
-                if ($r->hourly_rate_amount !== null) {
-                    $planning[] = 'rate: '.($r->rate_currency ? "{$r->rate_currency} " : '').$r->hourly_rate_amount.'/h';
-                }
-                if ($planning !== []) {
-                    $md .= '  - _Planning:_ '.implode(', ', $planning)."\n";
-                }
                 $fillers = collect()
                     ->merge($r->users->map(fn ($u) => "{$u->name} (user)"))
                     ->merge($r->agents->map(fn ($a) => "{$a->name} (agent".($a->kind ? ", {$a->kind}" : '').')'));
@@ -191,29 +181,6 @@ class ProjectPmpResource extends Resource implements HasUriTemplate
                     }
                     if ($w->due_date) {
                         $bits[] = 'due '.$w->due_date->toDateString();
-                    }
-                    if ($w->effort_estimate) {
-                        $bits[] = "est {$w->effort_estimate}";
-                    }
-                    if ($w->effort_estimate_hours !== null) {
-                        $bits[] = "est {$w->effort_estimate_hours}h";
-                    }
-                    if ($w->effort_actual_hours !== null) {
-                        $bits[] = "actual {$w->effort_actual_hours}h";
-                    }
-                    if ($w->cost_estimate) {
-                        $bits[] = "cost est {$w->cost_estimate}";
-                    }
-                    if ($w->cost_estimate_amount !== null) {
-                        $amount = $w->cost_currency ? "{$w->cost_currency} {$w->cost_estimate_amount}" : $w->cost_estimate_amount;
-                        $bits[] = "cost est {$amount}";
-                    }
-                    if ($w->cost_actual) {
-                        $bits[] = "cost actual {$w->cost_actual}";
-                    }
-                    if ($w->cost_actual_amount !== null) {
-                        $amount = $w->cost_currency ? "{$w->cost_currency} {$w->cost_actual_amount}" : $w->cost_actual_amount;
-                        $bits[] = "cost actual {$amount}";
                     }
                     if ($bits !== []) {
                         $out .= ' _('.implode(', ', $bits).')_';

@@ -538,7 +538,6 @@
                         </div>
                         <div>
                             ${schedulePanel()}
-                            ${capacityPanel()}
                             ${termsPanel()}
                         </div>
                     </div>
@@ -641,40 +640,6 @@
                         'Date risks': schedule.summary.dependency_date_risks,
                     })}
                     <div class="rows">${findings || '<div class="row"><span>No findings</span><span class="pill pass">clean</span></div>'}</div>
-                `);
-            }
-
-            function capacityPanel() {
-                const capacity = state.project.capacity;
-                const roles = capacity.roles.map((role) => `
-                    <tr>
-                        <td>${escapeHtml(role.role ?? 'Unassigned')}</td>
-                        <td>${role.work_items}</td>
-                        <td>${number(role.effort_estimate_hours)}</td>
-                        <td>${role.utilization_estimate ?? '-'}</td>
-                    </tr>
-                `).join('');
-
-                return section('Capacity', `
-                    ${metricList({
-                        'Estimated hours': number(capacity.totals.effort_estimate_hours),
-                        'Actual hours': number(capacity.totals.effort_actual_hours),
-                        'Estimated cost': number(capacity.totals.cost_estimate_amount),
-                        'Actual cost': number(capacity.totals.cost_actual_amount),
-                    })}
-                    <div class="rows">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Role</th>
-                                <th>Items</th>
-                                <th>Estimate</th>
-                                <th>Utilization</th>
-                            </tr>
-                        </thead>
-                        <tbody>${roles}</tbody>
-                    </table>
-                    </div>
                 `);
             }
 

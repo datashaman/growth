@@ -596,8 +596,7 @@ class ManifestApplier
     private function applyRole(array $input, string $projectId, string $mode, array &$counts, array &$drift): Role
     {
         $fields = array_intersect_key($input, array_flip([
-            'name', 'responsibilities', 'weekly_capacity_hours',
-            'hourly_rate_amount', 'rate_currency',
+            'name', 'responsibilities',
         ]));
 
         $existing = Role::where('project_id', $projectId)->where('name', $fields['name'])->first();
@@ -674,9 +673,6 @@ class ManifestApplier
         $fields = array_intersect_key($input, array_flip([
             'kind', 'name', 'description', 'status',
             'planned_start_date', 'due_date',
-            'effort_estimate', 'effort_actual',
-            'effort_estimate_hours', 'effort_actual_hours',
-            'cost_estimate_amount', 'cost_actual_amount', 'cost_currency',
         ]));
 
         if (isset($input['responsible_role'])) {

@@ -49,9 +49,9 @@ enum ViewLens: string
     public function panels(): array
     {
         return match ($this) {
-            self::All => ['counts', 'readiness', 'schedule', 'implementation', 'capacity', 'risks', 'anomalies', 'reviews'],
+            self::All => ['counts', 'readiness', 'schedule', 'implementation', 'risks', 'anomalies', 'reviews'],
             self::SpecWriter => ['counts', 'readiness'],
-            self::SpecImplementer => ['implementation', 'schedule', 'capacity', 'risks', 'anomalies'],
+            self::SpecImplementer => ['implementation', 'schedule', 'risks', 'anomalies'],
             self::Reviewer => ['readiness', 'reviews'],
         };
     }
