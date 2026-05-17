@@ -12,7 +12,9 @@ use Laravel\Mcp\Facades\Mcp;
 
 // Local stdio transport — runs under the user's own shell session. Set
 // GROWTH_USER_EMAIL or GROWTH_USER_ID to bind the trusted local process to an
-// application user for owner-scoped tools.
+// application user for owner-scoped tools. Set GROWTH_ROLE to bind the session
+// to an operating role (#183) — it must match the role server it connects to,
+// and it takes effect only once a user is bound via GROWTH_USER_EMAIL/_ID.
 Mcp::local('all', AllServer::class);
 Mcp::local('management', ManagementServer::class);
 Mcp::local('intake', IntakeServer::class);

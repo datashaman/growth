@@ -2,6 +2,8 @@
 
 namespace App\Mcp\Servers\Concerns;
 
+use App\Support\RoleContext;
+
 trait RoleServerDefaults
 {
     use AuthenticatesLocalMcpSessions;
@@ -12,5 +14,7 @@ trait RoleServerDefaults
         $this->defaultPaginationLength = 200;
 
         $this->bootTrustedLocalSession();
+
+        app(RoleContext::class)->assertServerMatches(static::class);
     }
 }
