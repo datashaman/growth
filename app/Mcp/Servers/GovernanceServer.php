@@ -30,6 +30,8 @@ use App\Mcp\Tools\Changes\UpsertArtifactRelation;
 use App\Mcp\Tools\Changes\UpsertChangeRequest;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Dashboard\ShowGateStatus;
+use App\Mcp\Tools\Feedback\SearchFeedback;
+use App\Mcp\Tools\Feedback\SendFeedback;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Reviews\AcceptFinding;
@@ -69,6 +71,8 @@ class GovernanceServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        SearchFeedback::class,
+        SendFeedback::class,
         ListProjects::class,
         UpsertReviewPlan::class,
         ListReviewPlans::class,

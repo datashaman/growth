@@ -84,6 +84,8 @@ it('exposes the complete MCP surface through the all server', function () {
         'upsert-review',
         'upsert-change-request',
         'trace-query',
+        'search-feedback',
+        'send-feedback',
     )->and(collect($resources)->pluck('uriTemplate')->all())->toContain(
         'growth://projects/{project}/requirements',
         'growth://projects/{project}/sdd',

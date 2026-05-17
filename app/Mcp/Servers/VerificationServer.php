@@ -15,6 +15,8 @@ use App\Mcp\Tools\Assurance\BuildEvidenceBundle;
 use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
 use App\Mcp\Tools\Assurance\ReportEvidenceGaps;
 use App\Mcp\Tools\Common\WhoAmI;
+use App\Mcp\Tools\Feedback\SearchFeedback;
+use App\Mcp\Tools\Feedback\SendFeedback;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Plan\ListCheckRuns;
 use App\Mcp\Tools\Plan\UpsertCheckRun;
@@ -51,6 +53,8 @@ class VerificationServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        SearchFeedback::class,
+        SendFeedback::class,
         ListProjects::class,
         ListRequirements::class,
         UpsertVerificationPlan::class,

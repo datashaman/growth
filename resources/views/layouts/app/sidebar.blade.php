@@ -46,6 +46,9 @@
                     <flux:sidebar.item icon="bolt" :href="route('tool-invocations')" :current="request()->routeIs('tool-invocations')" wire:navigate>
                         {{ __('Tool invocations') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="chat-bubble-left-right" :href="route('feedback')" :current="request()->routeIs('feedback')" wire:navigate>
+                        {{ __('Feedback') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 

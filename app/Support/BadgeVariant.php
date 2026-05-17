@@ -329,6 +329,27 @@ class BadgeVariant
         };
     }
 
+    public static function feedbackCategory(string $category): string
+    {
+        return match ($category) {
+            'bug' => 'red',
+            'difficulty' => 'amber',
+            'missing_capability' => 'indigo',
+            'suggestion' => 'blue',
+            default => 'zinc',
+        };
+    }
+
+    public static function feedbackStatus(string $status): string
+    {
+        return match ($status) {
+            'new' => 'sky',
+            'triaged' => 'blue',
+            'resolved' => 'green',
+            default => 'zinc',
+        };
+    }
+
     public static function workspaceRole(string $role): string
     {
         return match ($role) {

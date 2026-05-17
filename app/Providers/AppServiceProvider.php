@@ -34,6 +34,7 @@ use App\Models\Stakeholder;
 use App\Models\TestCase;
 use App\Models\TestPlan;
 use App\Models\TestRun;
+use App\Models\ToolFeedback;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
@@ -77,6 +78,7 @@ class AppServiceProvider extends ServiceProvider
         'review' => Review::class,
         'review_finding' => ReviewFinding::class,
         'agent' => Agent::class,
+        'tool_feedback' => ToolFeedback::class,
         'user' => User::class,
     ];
 
@@ -115,6 +117,7 @@ class AppServiceProvider extends ServiceProvider
         'owned_review_participant' => [ReviewParticipant::class, 'review_participants.id'],
         'owned_review_target' => [ReviewTarget::class,    'review_targets.id'],
         'owned_agent' => [Agent::class,           'agents.id'],
+        'owned_tool_feedback' => [ToolFeedback::class, 'tool_feedback.id'],
     ];
 
     public function register(): void

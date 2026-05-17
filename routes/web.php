@@ -26,6 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('anomalies/{anomaly}', 'pages::anomalies.show')->name('anomalies.show');
     Route::livewire('reviews/{review}', 'pages::reviews.show')->name('reviews.show');
     Route::livewire('tool-invocations', 'pages::tool-invocations')->name('tool-invocations');
+    Route::livewire('feedback', 'pages::feedback')->name('feedback');
 });
 
 require __DIR__.'/settings.php';
