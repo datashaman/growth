@@ -47,6 +47,27 @@ it('exposes role-specific MCP metadata surfaces', function () {
         ->and(collect($resources)->pluck('uriTemplate')->all())->toContain('growth://projects/{project}/requirements');
 });
 
+it('exposes the doctor tool on every role server', function (string $endpoint) {
+    Passport::actingAs(User::factory()->create(), ['mcp:use']);
+
+    $tools = $this->postJson($endpoint, [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+        'params' => ['per_page' => 200],
+    ])->assertOk()->json('result.tools');
+
+    expect(collect($tools)->pluck('name')->all())->toContain('doctor');
+})->with([
+    '/mcp/intake',
+    '/mcp/management',
+    '/mcp/architecture',
+    '/mcp/planning',
+    '/mcp/verification',
+    '/mcp/governance',
+    '/mcp/readonly',
+]);
+
 it('exposes the complete MCP surface through the all server', function () {
     $user = User::factory()->create();
     Passport::actingAs($user, ['mcp:use']);
@@ -86,6 +107,7 @@ it('exposes the complete MCP surface through the all server', function () {
         'trace-query',
         'search-feedback',
         'send-feedback',
+        'doctor',
     )->and(collect($resources)->pluck('uriTemplate')->all())->toContain(
         'growth://projects/{project}/requirements',
         'growth://projects/{project}/sdd',

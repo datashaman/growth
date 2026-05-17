@@ -14,6 +14,7 @@ use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Assurance\BuildEvidenceBundle;
 use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
 use App\Mcp\Tools\Assurance\ReportEvidenceGaps;
+use App\Mcp\Tools\Common\Doctor;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Feedback\SearchFeedback;
 use App\Mcp\Tools\Feedback\SendFeedback;
@@ -53,6 +54,7 @@ class VerificationServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        Doctor::class,
         SearchFeedback::class,
         SendFeedback::class,
         ListProjects::class,
