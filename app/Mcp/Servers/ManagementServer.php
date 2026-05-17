@@ -28,13 +28,11 @@ use App\Mcp\Tools\Projects\ScaffoldGithubSync;
 use App\Mcp\Tools\Projects\UpdateProject;
 use App\Mcp\Tools\Projects\UpsertProject;
 use Laravel\Mcp\Server;
-use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Management Server')]
 #[Version('0.1.0')]
-#[Instructions('Manage project lifecycle: create, update, activate/archive/close/restore via transitions, delete, and bulk apply/export of project structure via manifest. Operates at the project boundary; within-project work belongs on the intake/architecture/planning/verification/governance/readonly servers.')]
 class ManagementServer extends Server
 {
     use RoleServerDefaults;

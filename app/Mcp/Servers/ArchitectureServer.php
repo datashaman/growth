@@ -27,13 +27,11 @@ use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Requirements\ListRequirements;
 use App\Mcp\Tools\Trace\TraceQuery;
 use Laravel\Mcp\Server;
-use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Architecture Server')]
 #[Version('0.1.0')]
-#[Instructions('Shape architecture viewpoints, views, elements, and concern coverage.')]
 class ArchitectureServer extends Server
 {
     use RoleServerDefaults;

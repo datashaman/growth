@@ -72,13 +72,11 @@ use App\Mcp\Tools\Verification\ListVerificationCases;
 use App\Mcp\Tools\Verification\ListVerificationPlans;
 use App\Mcp\Tools\Verification\ListVerificationRuns;
 use Laravel\Mcp\Server;
-use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Readonly Server')]
 #[Version('0.1.0')]
-#[Instructions('Read project state, summaries, traces, resources, and lookup terms without mutating project data.')]
 class ReadonlyServer extends Server
 {
     use RoleServerDefaults;

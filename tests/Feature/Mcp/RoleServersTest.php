@@ -47,6 +47,38 @@ it('exposes role-specific MCP metadata surfaces', function () {
         ->and(collect($resources)->pluck('uriTemplate')->all())->toContain('growth://projects/{project}/requirements');
 });
 
+it('delivers the role persona as the server instructions', function () {
+    Passport::actingAs(User::factory()->create(), ['mcp:use']);
+
+    $verification = $this->postJson('/mcp/verification', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'initialize',
+        'params' => [
+            'protocolVersion' => '2025-11-25',
+            'clientInfo' => ['name' => 'test', 'version' => '1.0.0'],
+            'capabilities' => [],
+        ],
+    ])->assertOk()->json('result.instructions');
+
+    $all = $this->postJson('/mcp/all', [
+        'jsonrpc' => '2.0',
+        'id' => 2,
+        'method' => 'initialize',
+        'params' => [
+            'protocolVersion' => '2025-11-25',
+            'clientInfo' => ['name' => 'test', 'version' => '1.0.0'],
+            'capabilities' => [],
+        ],
+    ])->assertOk()->json('result.instructions');
+
+    // The role server delivers its persona; the roleless AllServer keeps its
+    // own generic instructions.
+    expect($verification)->toContain('Verification engineer')
+        ->and($all)->toContain('complete MCP surface')
+        ->and($all)->not->toContain('Verification engineer');
+});
+
 it('exposes the doctor tool on every role server', function (string $endpoint) {
     Passport::actingAs(User::factory()->create(), ['mcp:use']);
 

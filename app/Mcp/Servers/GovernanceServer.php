@@ -59,13 +59,11 @@ use App\Mcp\Tools\Reviews\UpsertReviewParticipant;
 use App\Mcp\Tools\Reviews\UpsertReviewPlan;
 use App\Mcp\Tools\Trace\TraceQuery;
 use Laravel\Mcp\Server;
-use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Governance Server')]
 #[Version('0.1.0')]
-#[Instructions('Manage reviews, change control, release readiness, impact analysis, and evidence gaps.')]
 class GovernanceServer extends Server
 {
     use RoleServerDefaults;

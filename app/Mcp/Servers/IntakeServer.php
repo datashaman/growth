@@ -38,13 +38,11 @@ use App\Mcp\Tools\Stakeholders\DeleteStakeholder;
 use App\Mcp\Tools\Stakeholders\UpsertStakeholder;
 use App\Mcp\Tools\Trace\TraceQuery;
 use Laravel\Mcp\Server;
-use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Intake Server')]
 #[Version('0.1.0')]
-#[Instructions('Capture project intent, stakeholders, concerns, sources, citations, and initial requirements.')]
 class IntakeServer extends Server
 {
     use RoleServerDefaults;

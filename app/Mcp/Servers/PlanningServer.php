@@ -89,13 +89,11 @@ use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Requirements\ListRequirements;
 use App\Mcp\Tools\Trace\TraceQuery;
 use Laravel\Mcp\Server;
-use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Planning Server')]
 #[Version('0.1.0')]
-#[Instructions('Plan delivery, roles, agents, milestones, work items, risks, releases, and deployments.')]
 class PlanningServer extends Server
 {
     use RoleServerDefaults;

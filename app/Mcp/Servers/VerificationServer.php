@@ -41,13 +41,11 @@ use App\Mcp\Tools\Verification\UpsertAnomaly;
 use App\Mcp\Tools\Verification\UpsertVerificationCases;
 use App\Mcp\Tools\Verification\UpsertVerificationPlan;
 use Laravel\Mcp\Server;
-use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('Verification Server')]
 #[Version('0.1.0')]
-#[Instructions('Capture verification plans, cases, runs, anomalies, check evidence, and readiness.')]
 class VerificationServer extends Server
 {
     use RoleServerDefaults;
