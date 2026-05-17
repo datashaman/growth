@@ -84,3 +84,35 @@ test('the upsert-change-request tool returns the assigned number and reference',
                 ->etc();
         });
 });
+
+test('a change request cannot be moved to another project', function () {
+    $other = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Mars Lander',
+        'rigor_level' => 2,
+    ]);
+    $cr = makeChangeRequest($this->project, 'Stays put');
+
+    expect(fn () => $cr->update(['project_id' => $other->id]))
+        ->toThrow(RuntimeException::class);
+});
+
+test('the upsert-change-request tool rejects moving a request to another project', function () {
+    $other = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Mars Lander',
+        'rigor_level' => 2,
+    ]);
+    $cr = makeChangeRequest($this->project, 'Stays put');
+
+    GovernanceServer::tool(UpsertChangeRequest::class, [
+        'id' => $cr->id,
+        'project_id' => $other->id,
+        'title' => 'Stays put',
+        'category' => 'scope',
+    ])->assertHasErrors();
+
+    $cr->refresh();
+    expect($cr->project_id)->toBe($this->project->id)
+        ->and($cr->number)->toBe(1);
+});
