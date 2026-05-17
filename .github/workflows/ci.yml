@@ -59,3 +59,7 @@ jobs:
 
       - name: Tests
         run: php artisan test --compact
+
+      - name: Growth-sync action tests
+        run: node --test
+        working-directory: actions/growth-sync
