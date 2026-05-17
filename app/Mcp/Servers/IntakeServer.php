@@ -15,6 +15,8 @@ use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Concerns\DeleteConcern;
 use App\Mcp\Tools\Concerns\UpsertConcerns;
 use App\Mcp\Tools\Dashboard\ShowRequirementExplorer;
+use App\Mcp\Tools\Feedback\SearchFeedback;
+use App\Mcp\Tools\Feedback\SendFeedback;
 use App\Mcp\Tools\Glossary\LookupTerm;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\DeleteProject;
@@ -48,6 +50,8 @@ class IntakeServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        SearchFeedback::class,
+        SendFeedback::class,
         UpsertProject::class,
         ListProjects::class,
         DeleteProject::class,

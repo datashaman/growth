@@ -11,6 +11,8 @@ use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Common\BulkLink;
 use App\Mcp\Tools\Common\WhoAmI;
+use App\Mcp\Tools\Feedback\SearchFeedback;
+use App\Mcp\Tools\Feedback\SendFeedback;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Plan\AcceptRisk;
 use App\Mcp\Tools\Plan\ActivatePlan;
@@ -99,6 +101,8 @@ class PlanningServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        SearchFeedback::class,
+        SendFeedback::class,
         ListProjects::class,
         ListRequirements::class,
         UpsertPlan::class,

@@ -11,6 +11,8 @@ use App\Mcp\Resources\StarterTemplate3Resource;
 use App\Mcp\Resources\StarterTemplate4Resource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Common\WhoAmI;
+use App\Mcp\Tools\Feedback\SearchFeedback;
+use App\Mcp\Tools\Feedback\SendFeedback;
 use App\Mcp\Tools\Manifest\ApplyManifest;
 use App\Mcp\Tools\Manifest\ExportManifest;
 use App\Mcp\Tools\Projects\ActivateProject;
@@ -38,6 +40,8 @@ class ManagementServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        SearchFeedback::class,
+        SendFeedback::class,
         ListProjects::class,
         ResolveProjectByRepo::class,
         ScaffoldGithubSync::class,

@@ -34,6 +34,7 @@ use App\Models\Stakeholder;
 use App\Models\TestCase;
 use App\Models\TestPlan;
 use App\Models\TestRun;
+use App\Models\ToolFeedback;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
@@ -77,6 +78,7 @@ class AppServiceProvider extends ServiceProvider
         'review' => Review::class,
         'review_finding' => ReviewFinding::class,
         'agent' => Agent::class,
+        'tool_feedback' => ToolFeedback::class,
         'user' => User::class,
     ];
 
