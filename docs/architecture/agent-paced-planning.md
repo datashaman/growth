@@ -4,8 +4,8 @@ Design spike for issue #182. Status: **recommendation made — replace the time
 axis with a dependency-ordered scope graph scored by gate satisfaction; drop the
 date / effort / capacity schema and the schedule and capacity tooling; keep
 baselines, the WBS, the dependency graph (collapsed to one edge kind), and
-milestones (reframed as scope bundles). Five implementation issues spun off (see
-end).**
+milestones (reframed as scope bundles). Five implementation issues spun off —
+#198–#202 (see end).**
 
 ## Recommendation
 
@@ -205,26 +205,26 @@ tolerantly rather than rewritten.
 
 ## Implementation issues to spin off
 
-1. **Drop the schedule schema.** Migration removing `planned_start_date`,
+1. **Drop the schedule schema** (#198). Migration removing `planned_start_date`,
    `due_date`, `effort_*`, and `cost_*` from `work_items`; `target_date` from
    `milestones`; `weekly_capacity_hours`, `hourly_rate_amount`, `rate_currency`
    from `roles`. Collapse `work_item_dependencies.kind` to a single precedence
    edge and drop the enum. Update models, factories, the manifest
    import/export, and the input schemas of `upsert-work-items`,
    `upsert-milestone`, and `upsert-role`.
-2. **Retire the schedule and capacity tooling.** Remove the date findings from
+2. **Retire the schedule and capacity tooling** (#199). Remove the date findings from
    `ScheduleHealthSummarizer` (keep and rename the ordering-integrity check),
    delete `PlanCapacitySummarizer`, delete the `SummarizeScheduleHealth` and
    `SummarizePlanCapacity` MCP tools, and delete the date-based `PmpLinter`
    rules. Reframe the `planning` readiness gate onto ordering / scope / RACI.
-3. **Reframe `Milestone`.** Status enum → `pending` / `achieved`. Remove the
+3. **Reframe `Milestone`** (#200). Status enum → `pending` / `achieved`. Remove the
    `MissMilestone` and `DeferMilestone` transitions; keep `HitMilestone`, renamed
    `AchieveMilestone`. Define *achieved* as "all member work items done and the
    milestone gate passes".
-4. **Slim the baseline snapshot.** New `ProjectPlanBaseline` snapshots omit the
+4. **Slim the baseline snapshot** (#201). New `ProjectPlanBaseline` snapshots omit the
    date / effort / cost keys; update `PlanBaselineDiffer` and the snapshot shape
    to ignore those keys when reading historical blobs.
-5. **Dashboard.** Remove the **Schedule** and **Capacity** panels. This is the
+5. **Dashboard** (#202). Remove the **Schedule** and **Capacity** panels. This is the
    change #173 is downstream of: #173's lens-to-panel mapping must drop both
    panels — no lens shows them — and may introduce an ordering / readiness panel
    in their place.
