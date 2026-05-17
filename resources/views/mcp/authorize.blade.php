@@ -102,6 +102,31 @@
                 flex: 0 0 auto;
             }
 
+            .workspace {
+                margin: 0 0 20px;
+            }
+
+            label.label {
+                display: block;
+            }
+
+            select {
+                width: 100%;
+                min-height: 42px;
+                padding: 8px 10px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font: inherit;
+                color: #111827;
+                background: #ffffff;
+                box-sizing: border-box;
+            }
+
+            select:focus {
+                outline: 2px solid #2563eb;
+                outline-offset: 2px;
+            }
+
             .actions {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
@@ -167,24 +192,40 @@
                 </section>
             @endif
 
-            <div class="actions">
-                <form method="POST" action="{{ route('passport.authorizations.deny') }}">
-                    @csrf
-                    @method('DELETE')
-                    <input type="hidden" name="state" value="{{ $request->input('state') }}">
-                    <input type="hidden" name="client_id" value="{{ $client->id }}">
-                    <input type="hidden" name="auth_token" value="{{ $authToken }}">
-                    <button type="submit" class="cancel">Cancel</button>
-                </form>
+            @php($workspaces = $user->workspaces()->orderBy('name')->get())
 
-                <form method="POST" action="{{ route('passport.authorizations.approve') }}">
-                    @csrf
-                    <input type="hidden" name="state" value="{{ $request->input('state') }}">
-                    <input type="hidden" name="client_id" value="{{ $client->id }}">
-                    <input type="hidden" name="auth_token" value="{{ $authToken }}">
+            <form id="oauth-deny" method="POST" action="{{ route('passport.authorizations.deny') }}">
+                @csrf
+                @method('DELETE')
+                <input type="hidden" name="state" value="{{ $request->input('state') }}">
+                <input type="hidden" name="client_id" value="{{ $client->id }}">
+                <input type="hidden" name="auth_token" value="{{ $authToken }}">
+            </form>
+
+            <form method="POST" action="{{ route('passport.authorizations.approve') }}">
+                @csrf
+                <input type="hidden" name="state" value="{{ $request->input('state') }}">
+                <input type="hidden" name="client_id" value="{{ $client->id }}">
+                <input type="hidden" name="auth_token" value="{{ $authToken }}">
+
+                @if($workspaces->count() > 1)
+                    <section class="workspace" aria-label="Workspace">
+                        <label class="label" for="workspace_id">Workspace this connection operates in</label>
+                        <select name="workspace_id" id="workspace_id">
+                            @foreach($workspaces as $workspace)
+                                <option value="{{ $workspace->id }}" @selected($workspace->id === $user->active_workspace_id)>{{ $workspace->name }}</option>
+                            @endforeach
+                        </select>
+                    </section>
+                @elseif($workspaces->isNotEmpty())
+                    <input type="hidden" name="workspace_id" value="{{ $workspaces->first()->id }}">
+                @endif
+
+                <div class="actions">
+                    <button type="submit" form="oauth-deny" class="cancel">Cancel</button>
                     <button type="submit" class="approve">Authorize</button>
-                </form>
-            </div>
+                </div>
+            </form>
         </main>
     </body>
 </html>
