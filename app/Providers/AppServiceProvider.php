@@ -117,7 +117,6 @@ class AppServiceProvider extends ServiceProvider
         'owned_review_participant' => [ReviewParticipant::class, 'review_participants.id'],
         'owned_review_target' => [ReviewTarget::class,    'review_targets.id'],
         'owned_agent' => [Agent::class,           'agents.id'],
-        'owned_tool_feedback' => [ToolFeedback::class, 'tool_feedback.id'],
     ];
 
     public function register(): void

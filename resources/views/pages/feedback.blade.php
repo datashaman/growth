@@ -53,9 +53,11 @@ new #[Title('Feedback')] class extends Component {
 
     private function applyTransition(Transition $transition, string $id): void
     {
-        $feedback = ToolFeedback::findOrFail($id);
+        $feedback = ToolFeedback::query()
+            ->where('workspace_id', auth()->user()?->active_workspace_id)
+            ->find($id);
 
-        abort_if($feedback->workspace_id !== auth()->user()?->active_workspace_id, 404);
+        abort_if($feedback === null, 404);
 
         try {
             $transition->apply($feedback, auth()->user());
