@@ -1,21 +1,10 @@
 <?php
 
 use App\Concerns\ProjectScoped;
-use App\Growth\Transitions\CancelDeployment;
-use App\Growth\Transitions\CancelRelease;
-use App\Growth\Transitions\IllegalTransitionException;
-use App\Growth\Transitions\MarkDeploymentFailed;
-use App\Growth\Transitions\MarkDeploymentSucceeded;
-use App\Growth\Transitions\MarkReleaseReleased;
-use App\Growth\Transitions\PromoteRelease;
-use App\Growth\Transitions\RollBackDeployment;
-use App\Growth\Transitions\StartDeployment;
-use App\Growth\Transitions\Transition;
 use App\Models\UnattributedGithubEvent;
 use App\Models\WorkItemDeliveryLink;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
-use Flux\Flux;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -30,92 +19,10 @@ new #[Title('Evidence')] class extends Component {
         unset($this->releases);
     }
 
-    public function promoteRelease(string $releaseId): void
-    {
-        $this->applyReleaseTransition($releaseId, new PromoteRelease);
-    }
-
-    public function markReleaseReleased(string $releaseId): void
-    {
-        $this->applyReleaseTransition($releaseId, new MarkReleaseReleased);
-    }
-
-    public function cancelRelease(string $releaseId): void
-    {
-        $this->applyReleaseTransition($releaseId, new CancelRelease);
-    }
-
-    private function applyReleaseTransition(string $releaseId, Transition $transition): void
-    {
-        $release = $this->selectedProject?->releases()->find($releaseId);
-
-        abort_if($release === null, 404);
-
-        try {
-            $transition->apply($release, auth()->user());
-        } catch (IllegalTransitionException $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
-
-            return;
-        }
-
-        unset($this->releases);
-
-        Flux::toast(variant: 'success', text: __('Release is now :status.', [
-            'status' => $release->status,
-        ]));
-    }
-
     #[On('deployment-saved')]
     public function refreshDeployments(): void
     {
         unset($this->deployments);
-    }
-
-    public function startDeployment(string $deploymentId): void
-    {
-        $this->applyDeploymentTransition($deploymentId, new StartDeployment);
-    }
-
-    public function markDeploymentSucceeded(string $deploymentId): void
-    {
-        $this->applyDeploymentTransition($deploymentId, new MarkDeploymentSucceeded);
-    }
-
-    public function markDeploymentFailed(string $deploymentId): void
-    {
-        $this->applyDeploymentTransition($deploymentId, new MarkDeploymentFailed);
-    }
-
-    public function rollBackDeployment(string $deploymentId): void
-    {
-        $this->applyDeploymentTransition($deploymentId, new RollBackDeployment);
-    }
-
-    public function cancelDeployment(string $deploymentId): void
-    {
-        $this->applyDeploymentTransition($deploymentId, new CancelDeployment);
-    }
-
-    private function applyDeploymentTransition(string $deploymentId, Transition $transition): void
-    {
-        $deployment = $this->selectedProject?->deployments()->find($deploymentId);
-
-        abort_if($deployment === null, 404);
-
-        try {
-            $transition->apply($deployment, auth()->user());
-        } catch (IllegalTransitionException $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
-
-            return;
-        }
-
-        unset($this->deployments);
-
-        Flux::toast(variant: 'success', text: __('Deployment is now :status.', [
-            'status' => str_replace('_', ' ', $deployment->status),
-        ]));
     }
 
     /**
@@ -280,17 +187,6 @@ new #[Title('Evidence')] class extends Component {
                             <flux:table.cell>{{ \Illuminate\Support\Str::limit($release->notes ?? '—', 100) }}</flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex justify-end gap-1">
-                                    @if ($release->status === 'planned')
-                                        <flux:button size="xs" icon="arrow-up-circle" variant="ghost"
-                                            wire:click="promoteRelease('{{ $release->id }}')">{{ __('Promote') }}</flux:button>
-                                        <flux:button size="xs" icon="x-circle" variant="ghost"
-                                            wire:click="cancelRelease('{{ $release->id }}')">{{ __('Cancel') }}</flux:button>
-                                    @elseif ($release->status === 'candidate')
-                                        <flux:button size="xs" icon="rocket-launch" variant="ghost"
-                                            wire:click="markReleaseReleased('{{ $release->id }}')">{{ __('Mark released') }}</flux:button>
-                                        <flux:button size="xs" icon="x-circle" variant="ghost"
-                                            wire:click="cancelRelease('{{ $release->id }}')">{{ __('Cancel') }}</flux:button>
-                                    @endif
                                     <flux:button size="xs" icon="pencil-square" variant="ghost"
                                         wire:click="$dispatch('edit-release', { releaseId: '{{ $release->id }}' })" />
                                     <flux:button size="xs" icon="trash" variant="ghost"
@@ -345,20 +241,6 @@ new #[Title('Evidence')] class extends Component {
                             </flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex justify-end gap-1">
-                                    @if ($deployment->status === 'planned')
-                                        <flux:button size="xs" icon="play" variant="ghost"
-                                            wire:click="startDeployment('{{ $deployment->id }}')">{{ __('Start') }}</flux:button>
-                                        <flux:button size="xs" icon="x-circle" variant="ghost"
-                                            wire:click="cancelDeployment('{{ $deployment->id }}')">{{ __('Cancel') }}</flux:button>
-                                    @elseif ($deployment->status === 'in_progress')
-                                        <flux:button size="xs" icon="check" variant="ghost"
-                                            wire:click="markDeploymentSucceeded('{{ $deployment->id }}')">{{ __('Mark succeeded') }}</flux:button>
-                                        <flux:button size="xs" icon="x-mark" variant="ghost"
-                                            wire:click="markDeploymentFailed('{{ $deployment->id }}')">{{ __('Mark failed') }}</flux:button>
-                                    @elseif (in_array($deployment->status, ['succeeded', 'failed'], true))
-                                        <flux:button size="xs" icon="arrow-uturn-left" variant="ghost"
-                                            wire:click="rollBackDeployment('{{ $deployment->id }}')">{{ __('Roll back') }}</flux:button>
-                                    @endif
                                     <flux:button size="xs" icon="pencil-square" variant="ghost"
                                         wire:click="$dispatch('edit-deployment', { deploymentId: '{{ $deployment->id }}' })" />
                                     <flux:button size="xs" icon="trash" variant="ghost"
