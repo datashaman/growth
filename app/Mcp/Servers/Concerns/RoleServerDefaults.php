@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Servers\Concerns;
 
+use App\Support\OperatingRole;
 use App\Support\RoleContext;
 
 trait RoleServerDefaults
@@ -16,5 +17,10 @@ trait RoleServerDefaults
         $this->bootTrustedLocalSession();
 
         app(RoleContext::class)->assertServerMatches(static::class);
+
+        $role = OperatingRole::forServer(static::class);
+        if ($role !== null) {
+            $this->instructions = $role->personaInstructions();
+        }
     }
 }

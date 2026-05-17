@@ -18,6 +18,7 @@ use App\Models\Requirement;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
+use App\Support\OperatingRole;
 use Laravel\Passport\Passport;
 
 it('exposes role-specific MCP metadata surfaces', function () {
@@ -45,6 +46,51 @@ it('exposes role-specific MCP metadata surfaces', function () {
     expect(collect($intakeTools)->pluck('name')->all())->toContain('upsert-citation', 'upsert-requirements')
         ->and(collect($planningTools)->pluck('name')->all())->toContain('upsert-work-items', 'summarize-plan-capacity')
         ->and(collect($resources)->pluck('uriTemplate')->all())->toContain('growth://projects/{project}/requirements');
+});
+
+it('delivers the role persona as the server instructions', function () {
+    Passport::actingAs(User::factory()->create(), ['mcp:use']);
+
+    $verification = $this->postJson('/mcp/verification', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'initialize',
+        'params' => [
+            'protocolVersion' => '2025-11-25',
+            'clientInfo' => ['name' => 'test', 'version' => '1.0.0'],
+            'capabilities' => [],
+        ],
+    ])->assertOk()->json('result.instructions');
+
+    $all = $this->postJson('/mcp/all', [
+        'jsonrpc' => '2.0',
+        'id' => 2,
+        'method' => 'initialize',
+        'params' => [
+            'protocolVersion' => '2025-11-25',
+            'clientInfo' => ['name' => 'test', 'version' => '1.0.0'],
+            'capabilities' => [],
+        ],
+    ])->assertOk()->json('result.instructions');
+
+    // The role server delivers its persona; the roleless AllServer keeps its
+    // own generic instructions.
+    expect($verification)->toContain('Verification engineer')
+        ->and($all)->toContain('complete MCP surface')
+        ->and($all)->not->toContain('Verification engineer');
+});
+
+it('authors a distinct, non-empty persona for every role', function () {
+    $personas = array_map(
+        fn (OperatingRole $role): string => $role->personaInstructions(),
+        OperatingRole::cases(),
+    );
+
+    foreach ($personas as $persona) {
+        expect($persona)->not->toBe('');
+    }
+
+    expect($personas)->toHaveCount(count(array_unique($personas)));
 });
 
 it('exposes the doctor tool on every role server', function (string $endpoint) {
