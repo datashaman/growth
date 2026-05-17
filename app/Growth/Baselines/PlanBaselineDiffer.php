@@ -134,14 +134,21 @@ class PlanBaselineDiffer
     }
 
     /**
+     * Compare two artifact states field by field.
+     *
+     * The field set is taken from the current state, not the union of both
+     * sides. A baseline captured before a field was retired still carries that
+     * key in its snapshot; comparing only the fields the current model defines
+     * keeps a legacy snapshot from reporting spurious drift on a column that no
+     * longer exists. For an added or removed artifact one side is empty, so the
+     * non-empty side supplies the field set.
+     *
      * @return list<string>
      */
     private function fieldChanges(array $before, array $after, array $ignored = []): array
     {
-        $fields = array_values(array_diff(
-            array_unique(array_merge(array_keys($before), array_keys($after))),
-            $ignored,
-        ));
+        $canonical = $after !== [] ? array_keys($after) : array_keys($before);
+        $fields = array_values(array_diff($canonical, $ignored));
         sort($fields);
 
         return array_values(array_filter(array_map(

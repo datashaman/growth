@@ -41,8 +41,8 @@ enum ViewLens: string
 
     /**
      * The dashboard panels this lens renders, by panel key. Panel keys are:
-     * counts, readiness, schedule, implementation, capacity, risks, anomalies,
-     * reviews. The project header is unconditional and not listed here.
+     * counts, readiness, schedule, implementation, risks, anomalies, reviews.
+     * The project header is unconditional and not listed here.
      *
      * @return list<string>
      */
