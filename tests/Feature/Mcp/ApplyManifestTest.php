@@ -709,7 +709,6 @@ it('accepts the bare-string dependency form', function () {
     $project = Project::where('name', 'BareDep')->first();
     $b = WorkItem::where('project_id', $project->id)->where('name', 'B')->first();
     expect($b->dependencies()->pluck('name')->all())->toBe(['A']);
-    expect($b->dependencies()->first()->pivot->kind)->toBe('finish_to_start');
 });
 
 it('reports drift on a work item when updated_at is newer than _exported_at', function () {

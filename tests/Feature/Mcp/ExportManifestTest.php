@@ -87,7 +87,7 @@ function fullManifest(): array
                     'kind' => 'task',
                     'status' => 'todo',
                     'requirements' => ['cap-b'],
-                    'dependencies' => [['work_item' => 'wi-1', 'kind' => 'finish_to_start']],
+                    'dependencies' => ['wi-1'],
                 ],
             ],
         ],

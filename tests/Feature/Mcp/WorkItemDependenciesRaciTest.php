@@ -16,26 +16,25 @@ beforeEach(function () {
 
 // ---- dependencies ----
 
-it('records a finish_to_start dependency between two work items', function () {
+it('records a precedence edge between two work items', function () {
     $a = WorkItem::create(['project_id' => $this->project->id, 'kind' => 'task', 'name' => 'A']);
     $b = WorkItem::create(['project_id' => $this->project->id, 'kind' => 'task', 'name' => 'B']);
 
-    $b->dependencies()->attach($a->id, ['kind' => 'finish_to_start']);
+    $b->dependencies()->attach($a->id);
 
     expect($b->dependencies()->count())->toBe(1);
     expect($b->dependencies->first()->id)->toBe($a->id);
-    expect($b->dependencies->first()->pivot->kind)->toBe('finish_to_start');
     expect($a->dependents()->count())->toBe(1);
     expect($a->dependents->first()->id)->toBe($b->id);
 });
 
-it('supports multiple dependency kinds between distinct pairs', function () {
+it('supports multiple dependency edges between distinct pairs', function () {
     $a = WorkItem::create(['project_id' => $this->project->id, 'kind' => 'task', 'name' => 'A']);
     $b = WorkItem::create(['project_id' => $this->project->id, 'kind' => 'task', 'name' => 'B']);
     $c = WorkItem::create(['project_id' => $this->project->id, 'kind' => 'task', 'name' => 'C']);
 
-    $c->dependencies()->attach($a->id, ['kind' => 'finish_to_start']);
-    $c->dependencies()->attach($b->id, ['kind' => 'start_to_start']);
+    $c->dependencies()->attach($a->id);
+    $c->dependencies()->attach($b->id);
 
     expect($c->dependencies()->count())->toBe(2);
 });

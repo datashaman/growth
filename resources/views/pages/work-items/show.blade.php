@@ -298,7 +298,6 @@ new class extends Component {
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Depends on') }}</flux:table.column>
-                    <flux:table.column>{{ __('Kind') }}</flux:table.column>
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
@@ -307,7 +306,6 @@ new class extends Component {
                             <flux:table.cell>
                                 <a href="{{ route('work-items.show', $dep) }}" wire:navigate class="font-medium hover:underline">{{ $dep->name }}</a>
                             </flux:table.cell>
-                            <flux:table.cell>{{ str_replace('_', ' ', $dep->pivot->kind) }}</flux:table.cell>
                             <flux:table.cell>
                                 <flux:badge :color="BadgeVariant::workItemStatus($dep->status)" size="sm">{{ str_replace('_', ' ', $dep->status) }}</flux:badge>
                             </flux:table.cell>
