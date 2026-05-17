@@ -1,11 +1,10 @@
 <?php
 
 use App\Concerns\ProjectScoped;
+use App\Growth\Transitions\AchieveMilestone;
 use App\Growth\Transitions\ActivatePlan;
 use App\Growth\Transitions\ClosePlan;
-use App\Growth\Transitions\HitMilestone;
 use App\Growth\Transitions\IllegalTransitionException;
-use App\Growth\Transitions\MissMilestone;
 use App\Growth\Transitions\Transition;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
@@ -115,14 +114,9 @@ new #[Title('Plan')] class extends Component {
             : collect();
     }
 
-    public function hitMilestone(string $milestoneId): void
+    public function achieveMilestone(string $milestoneId): void
     {
-        $this->transitionMilestone($milestoneId, new HitMilestone);
-    }
-
-    public function missMilestone(string $milestoneId): void
-    {
-        $this->transitionMilestone($milestoneId, new MissMilestone);
+        $this->transitionMilestone($milestoneId, new AchieveMilestone);
     }
 
     private function transitionMilestone(string $milestoneId, Transition $transition): void
@@ -204,13 +198,9 @@ new #[Title('Plan')] class extends Component {
                             <flux:table.cell>
                                 <div class="flex justify-end gap-1">
                                     @if ($milestone->status === 'pending')
-                                        <flux:tooltip content="{{ __('Mark hit') }}">
+                                        <flux:tooltip content="{{ __('Mark achieved') }}">
                                             <flux:button size="xs" icon="check-circle" variant="ghost"
-                                                wire:click="hitMilestone('{{ $milestone->id }}')" />
-                                        </flux:tooltip>
-                                        <flux:tooltip content="{{ __('Mark missed') }}">
-                                            <flux:button size="xs" icon="x-circle" variant="ghost"
-                                                wire:click="missMilestone('{{ $milestone->id }}')" />
+                                                wire:click="achieveMilestone('{{ $milestone->id }}')" />
                                         </flux:tooltip>
                                     @endif
                                     <flux:button size="xs" icon="pencil-square" variant="ghost"

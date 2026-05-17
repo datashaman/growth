@@ -75,9 +75,7 @@ class BadgeVariant
     {
         return match ($status) {
             'pending' => 'sky',
-            'hit' => 'green',
-            'missed' => 'red',
-            'deferred' => 'zinc',
+            'achieved' => 'green',
             default => 'zinc',
         };
     }

@@ -64,13 +64,13 @@ test('owner can edit a milestone via dispatched event', function () {
     Livewire::test('pages::milestones.edit-modal')
         ->call('load', $milestone->id)
         ->set('name', 'Renamed CDR')
-        ->set('status', 'hit')
+        ->set('status', 'achieved')
         ->call('save')
         ->assertHasNoErrors();
 
     $milestone->refresh();
     expect($milestone->name)->toBe('Renamed CDR')
-        ->and($milestone->status)->toBe('hit');
+        ->and($milestone->status)->toBe('achieved');
 });
 
 test('milestone edit 404s for another owner', function () {

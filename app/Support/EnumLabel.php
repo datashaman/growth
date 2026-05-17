@@ -51,7 +51,7 @@ class EnumLabel
     public static function findingRule(string $rule): string
     {
         return match ($rule) {
-            'pmp.milestone.could_hit' => 'Milestone could be marked hit',
+            'pmp.milestone.could_achieve' => 'Milestone could be marked achieved',
             'pmp.milestones.empty' => 'No milestones',
             'pmp.missing' => 'PMP missing',
             'pmp.scope.empty' => 'PMP scope empty',

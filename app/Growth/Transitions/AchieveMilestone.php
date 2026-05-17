@@ -3,9 +3,9 @@
 namespace App\Growth\Transitions;
 
 /**
- * Mark a milestone as reached: `pending` → `hit`.
+ * Mark a milestone as achieved: `pending` → `achieved`.
  */
-class HitMilestone extends Transition
+class AchieveMilestone extends Transition
 {
     public function allowedFrom(): array
     {
@@ -14,12 +14,12 @@ class HitMilestone extends Transition
 
     public function targetStatus(): string
     {
-        return 'hit';
+        return 'achieved';
     }
 
     public function verb(): string
     {
-        return 'hit';
+        return 'achieve';
     }
 
     public function subjectLabel(): string
