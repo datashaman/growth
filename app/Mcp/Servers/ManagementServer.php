@@ -21,6 +21,7 @@ use App\Mcp\Tools\Projects\DeleteProject;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Projects\ResolveProjectByRepo;
 use App\Mcp\Tools\Projects\RestoreProject;
+use App\Mcp\Tools\Projects\ScaffoldGithubSync;
 use App\Mcp\Tools\Projects\UpdateProject;
 use App\Mcp\Tools\Projects\UpsertProject;
 use Laravel\Mcp\Server;
@@ -39,6 +40,7 @@ class ManagementServer extends Server
         WhoAmI::class,
         ListProjects::class,
         ResolveProjectByRepo::class,
+        ScaffoldGithubSync::class,
         CreateProject::class,
         UpdateProject::class,
         UpsertProject::class,

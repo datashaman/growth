@@ -8,6 +8,7 @@ import {
   buildDeploymentArgs,
   buildReleaseArgs,
   buildWorkflowRunArgs,
+  encodeAnnotation,
   isForkPullRequest,
   mapDeploymentState,
   parseBranchReference,
@@ -68,7 +69,7 @@ test('buildDeliveryLinkArgs produces an idempotent pull_request ref', () => {
 });
 
 function silentLog() {
-  return { info: () => {}, warn: () => {} };
+  return { info: () => {}, warn: () => {}, error: () => {} };
 }
 
 test('run records a delivery link on the happy path', async () => {
@@ -966,6 +967,71 @@ test('run posts a failing attribution check when a pull request cannot be attrib
   assert.equal(result.skipped, true);
   assert.equal(checks.length, 1);
   assert.equal(checks[0].conclusion, 'failure');
+});
+
+test('encodeAnnotation escapes percent, carriage returns, and newlines', () => {
+  // Workflow commands are single-line; an unescaped newline truncates the
+  // annotation or breaks the command parser.
+  assert.equal(encodeAnnotation('a\nb%c'), 'a%0Ab%25c');
+  assert.equal(encodeAnnotation('line1\r\nline2'), 'line1%0D%0Aline2');
+  assert.equal(encodeAnnotation('plain text'), 'plain text');
+});
+
+test('run emits a loud error annotation when the attribution check POST is forbidden', async () => {
+  const errors = [];
+  const warnings = [];
+  const result = await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'synchronize',
+      pull_request: {
+        number: 7, html_url: 'u', title: 't',
+        head: { sha: 'sha7', ref: 'feature/lander', repo: { full_name: 'datashaman/growth' } },
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'Work\n\nGrowth-Work-Item: 01WI',
+    callTool: async () => ({ isError: false, structured: { id: 'link1' } }),
+    postCheckRun: async () => {
+      const error = new Error('GitHub API 403 posting check run');
+      error.status = 403;
+      throw error;
+    },
+    log: { ...silentLog(), error: (m) => errors.push(m), warn: (m) => warnings.push(m) },
+  });
+
+  // The delivery link is still recorded; only the check post failed.
+  assert.equal(result.skipped, false);
+  assert.equal(errors.length, 1, 'expected one loud error annotation');
+  assert.match(errors[0], /checks: write/);
+  assert.equal(warnings.length, 0, 'a 403 must not be downgraded to a warning');
+});
+
+test('run keeps a non-permission attribution check failure as a warning', async () => {
+  const errors = [];
+  const warnings = [];
+  await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'synchronize',
+      pull_request: {
+        number: 7, html_url: 'u', title: 't',
+        head: { sha: 'sha7', ref: 'feature/lander', repo: { full_name: 'datashaman/growth' } },
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'Work\n\nGrowth-Work-Item: 01WI',
+    callTool: async () => ({ isError: false, structured: { id: 'link1' } }),
+    postCheckRun: async () => {
+      const error = new Error('GitHub API 500 posting check run');
+      error.status = 500;
+      throw error;
+    },
+    log: { ...silentLog(), error: (m) => errors.push(m), warn: (m) => warnings.push(m) },
+  });
+
+  assert.equal(errors.length, 0, 'a transient failure is not a loud annotation');
+  assert.ok(warnings.some((m) => /Could not post the attribution check/.test(m)));
 });
 
 test('run reports a neutral attribution check in advisory mode', async () => {

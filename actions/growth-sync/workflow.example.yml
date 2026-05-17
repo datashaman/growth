@@ -4,6 +4,11 @@
 # field to this repository (owner/repo) in Growth. Replace growth-url below
 # with your Growth instance URL, or use ${{ vars.GROWTH_URL }} to keep it
 # out of the repo.
+#
+# Name feature branches with a leading "WI-<number>" reference (e.g.
+# WI-42-add-login) and growth-sync attributes the pull request to that work
+# item automatically — see the README "Attribution" section for the other
+# two conventions.
 name: Growth sync
 
 on:
