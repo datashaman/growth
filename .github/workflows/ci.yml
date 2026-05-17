@@ -13,6 +13,32 @@ jobs:
     name: Test & Lint
     runs-on: ubuntu-latest
 
+    # Production runs on PostgreSQL; the suite is exercised against it here so
+    # driver-specific behaviour (schema grammar, transaction semantics) fails
+    # CI rather than the deploy. SQLite stays the fast default for local runs.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: growth
+          POSTGRES_PASSWORD: growth
+          POSTGRES_DB: growth_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U growth"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: growth_ci
+      DB_USERNAME: growth
+      DB_PASSWORD: growth
+
     steps:
       - uses: actions/checkout@v6
 
@@ -21,6 +47,7 @@ jobs:
         with:
           php-version: '8.4'
           coverage: none
+          extensions: pdo_pgsql, pgsql
           tools: composer:v2
 
       - name: Setup Node
