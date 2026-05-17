@@ -7,6 +7,7 @@ use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\StatusTransition;
 use App\Models\User;
+use App\Models\WorkItem;
 use Laravel\Passport\Passport;
 
 beforeEach(function () {
@@ -28,6 +29,12 @@ beforeEach(function () {
 
 it('achieves a pending milestone and records a transition', function () {
     $milestone = ($this->makeMilestone)('pending');
+    $milestone->workItems()->attach(WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => WorkItem::KINDS[0],
+        'name' => 'Ship it',
+        'status' => 'done',
+    ])->id);
 
     PlanningServer::tool(AchieveMilestone::class, ['milestone_id' => $milestone->id])
         ->assertOk()

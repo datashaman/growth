@@ -82,6 +82,8 @@ abstract class Transition
                 throw new IllegalTransitionException($this->rejectionMessage($from));
             }
 
+            $this->assertPreconditions($locked);
+
             $locked->setAttribute('status', $this->targetStatus());
             $this->decorateSubject($locked);
             $locked->save();
@@ -92,6 +94,16 @@ abstract class Transition
             return $this->record($locked, $from, $actor, $reason);
         });
     }
+
+    /**
+     * Assert any non-status precondition for this transition, throwing
+     * {@see IllegalTransitionException} when one is unmet.
+     *
+     * Runs inside the locked transaction, after the source-state check and
+     * before the status is applied, so a failure rolls the transition back.
+     * No-op by default; transitions guarded by a readiness gate override it.
+     */
+    protected function assertPreconditions(Model $subject): void {}
 
     /**
      * Apply any non-status attribute changes that are part of this transition,
