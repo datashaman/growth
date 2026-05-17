@@ -57,6 +57,32 @@ class WorkspaceContext
         return $id;
     }
 
+    /**
+     * Which resolution path produced the active workspace, or null when none did.
+     *
+     * @return 'override'|'token'|'env'|'user'|null
+     */
+    public function source(): ?string
+    {
+        if ($this->overridden) {
+            return $this->override === null ? null : 'override';
+        }
+
+        if ($this->fromToken() !== null) {
+            return 'token';
+        }
+
+        if ($this->fromEnv() !== null) {
+            return 'env';
+        }
+
+        if ($this->fromAuthenticatedUser() !== null) {
+            return 'user';
+        }
+
+        return null;
+    }
+
     public function workspace(): ?Workspace
     {
         $id = $this->id();

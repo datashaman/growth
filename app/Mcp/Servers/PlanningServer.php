@@ -10,6 +10,7 @@ use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Common\BulkLink;
+use App\Mcp\Tools\Common\Doctor;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Feedback\SearchFeedback;
 use App\Mcp\Tools\Feedback\SendFeedback;
@@ -101,6 +102,7 @@ class PlanningServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        Doctor::class,
         SearchFeedback::class,
         SendFeedback::class,
         ListProjects::class,
