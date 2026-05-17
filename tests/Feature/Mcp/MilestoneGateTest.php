@@ -11,6 +11,7 @@ use App\Models\StatusTransition;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
+use Illuminate\Support\Facades\DB;
 use Laravel\Passport\Passport;
 
 beforeEach(function () {
@@ -174,4 +175,82 @@ it('exposes each milestone\'s gate on list-milestones', function () {
                 ->where('results.0.gate.warnings', 0)
                 ->etc();
         });
+});
+
+it('evaluates every milestone gate on list-milestones without an N+1 query', function () {
+    // Three milestones, each bundling a done work item with delivery evidence
+    // and a check run — enough relations to expose lazy loading per milestone.
+    foreach (range(1, 3) as $n) {
+        $milestone = Milestone::create([
+            'project_id' => $this->project->id,
+            'name' => "Release {$n}",
+            'status' => 'pending',
+        ]);
+
+        $workItem = WorkItem::create([
+            'project_id' => $this->project->id,
+            'kind' => WorkItem::KINDS[0],
+            'name' => "Work item {$n}",
+            'status' => 'done',
+        ]);
+        $milestone->workItems()->attach($workItem->id);
+
+        $link = WorkItemDeliveryLink::create([
+            'work_item_id' => $workItem->id,
+            'type' => 'pull_request',
+            'ref' => "#{$n}",
+        ]);
+        CheckRunEvidence::create([
+            'work_item_delivery_link_id' => $link->id,
+            'provider' => 'github-actions',
+            'name' => 'tests',
+            'status' => 'completed',
+            'conclusion' => 'success',
+        ]);
+    }
+
+    DB::connection()->enableQueryLog();
+
+    PlanningServer::tool(ListMilestones::class, ['project_id' => $this->project->id])
+        ->assertOk();
+
+    $listQueries = count(DB::connection()->getQueryLog());
+
+    // Add three more milestones with the same shape; the query count for the
+    // list must not grow with the number of milestones being evaluated.
+    foreach (range(4, 6) as $n) {
+        $milestone = Milestone::create([
+            'project_id' => $this->project->id,
+            'name' => "Release {$n}",
+            'status' => 'pending',
+        ]);
+
+        $workItem = WorkItem::create([
+            'project_id' => $this->project->id,
+            'kind' => WorkItem::KINDS[0],
+            'name' => "Work item {$n}",
+            'status' => 'done',
+        ]);
+        $milestone->workItems()->attach($workItem->id);
+
+        $link = WorkItemDeliveryLink::create([
+            'work_item_id' => $workItem->id,
+            'type' => 'pull_request',
+            'ref' => "#{$n}",
+        ]);
+        CheckRunEvidence::create([
+            'work_item_delivery_link_id' => $link->id,
+            'provider' => 'github-actions',
+            'name' => 'tests',
+            'status' => 'completed',
+            'conclusion' => 'success',
+        ]);
+    }
+
+    DB::connection()->flushQueryLog();
+
+    PlanningServer::tool(ListMilestones::class, ['project_id' => $this->project->id])
+        ->assertOk();
+
+    expect(count(DB::connection()->getQueryLog()))->toBe($listQueries);
 });
