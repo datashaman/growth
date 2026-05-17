@@ -25,6 +25,18 @@ export function parseTrailer(commitMessage) {
 }
 
 /**
+ * Extract a per-project work item reference (`WI-<number>`) from a branch
+ * name, case-insensitively. The reference may sit anywhere in the branch
+ * (`WI-42-add-login`, `feature/wi-42`) as long as it is delimited by a slash,
+ * dash, underscore, or the branch boundary. Returns the canonical
+ * `WI-<number>` form, or null when the branch carries no reference.
+ */
+export function parseBranchReference(branch) {
+  const match = /(?:^|[/_-])WI-(\d+)(?=$|[/_-])/i.exec(branch ?? '');
+  return match ? `WI-${Number(match[1])}` : null;
+}
+
+/**
  * The branch a GitHub event belongs to, or null. pull_request carries it
  * directly; check_run and workflow_run take it from the head pull request.
  * The branch is what binds trailer-less commits to a work item.
@@ -81,6 +93,22 @@ async function resolveWorkItemByBranch({ callTool, repository, branch, log }) {
 }
 
 /**
+ * Resolve a per-project work item reference (`WI-<number>`) found in a branch
+ * name to a work item id within the repository. Returns the work item id, or
+ * null when no work item carries that reference.
+ */
+async function resolveWorkItemByReference({ callTool, repository, reference }) {
+  const result = await callTool('resolve-work-item-by-reference', {
+    github_repo: repository,
+    reference,
+  });
+  if (result.isError) {
+    throw new Error(`Growth rejected the reference lookup: ${result.errorText}`);
+  }
+  return result.structured?.found ? result.structured.work_item_id : null;
+}
+
+/**
  * Record a GitHub event that could not be attributed so the gap surfaces
  * on the Evidence page. Best-effort: a rejected record is logged, not
  * thrown — the triage net must not fail the whole sync.
@@ -127,10 +155,11 @@ async function recordBranchBinding({ callTool, repository, workItemId, branch })
 }
 
 /**
- * Resolve a work item from a commit message, falling back to the branch
- * binding when the commit carries no trailer. When the trailer resolves
- * and a branch is known, the branch is bound so later trailer-less events
- * still attribute. Returns the work item id, or null when unattributable.
+ * Resolve a work item from a commit message, falling back first to a
+ * `WI-NNN` reference in the branch name and then to a branch delivery-link
+ * binding when the commit carries no trailer. When the trailer resolves and
+ * a branch is known, the branch is bound so later trailer-less events still
+ * attribute. Returns the work item id, or null when unattributable.
  */
 async function attributeWorkItem({ callTool, repository, eventName, commitMessage, branch, sha, url, isFork = false, log }) {
   const trailerId = parseTrailer(commitMessage);
@@ -142,6 +171,21 @@ async function attributeWorkItem({ callTool, repository, eventName, commitMessag
       await recordBranchBinding({ callTool, repository, workItemId: trailerId, branch });
     }
     return trailerId;
+  }
+
+  // A `WI-NNN` token in the branch name is a per-project work item reference,
+  // not a branch binding: it names one work item directly, so — unlike a
+  // branch delivery link — it carries no fork collision risk and is resolved
+  // even for fork pull requests. It is checked before the branch binding so
+  // an explicit reference always wins over a (possibly stale) bound branch.
+  const reference = parseBranchReference(branch);
+  if (reference !== null) {
+    const referencedId = await resolveWorkItemByReference({ callTool, repository, reference });
+    if (referencedId !== null) {
+      log.info(`Attributed commit ${sha} to work item ${referencedId} via branch reference ${reference}.`);
+      return referencedId;
+    }
+    log.warn(`Branch ${branch} carries reference ${reference}, but no work item matches it in ${repository}.`);
   }
 
   // A fork's trailer-less commit cannot borrow a base-repo branch binding:
@@ -246,7 +290,7 @@ export function mapDeploymentState(githubState) {
 /**
  * Build the GitHub check-run payload for the work item attribution check.
  * A resolved work item passes; an unresolved one fails (blocking) or is
- * flagged neutral (advisory), with output naming the two ways to fix it.
+ * flagged neutral (advisory), with output naming the ways to fix it.
  */
 export function buildAttributionCheckArgs({ headSha, workItemId, branch, advisory }) {
   const resolved = workItemId !== null && workItemId !== undefined;
@@ -260,10 +304,11 @@ export function buildAttributionCheckArgs({ headSha, workItemId, branch, advisor
         summary: [
           'growth-sync could not attribute this pull request to a Growth work item, ',
           'so its delivery evidence will not be recorded.',
-          '\n\nFix it one of two ways:\n',
+          '\n\nFix it one of three ways:\n',
+          '- Name the branch with a `WI-<number>` reference, e.g. `WI-42-short-description`, or\n',
           `- Add a \`${TRAILER_KEY}: <id>\` trailer to a commit on \`${branch ?? 'this branch'}\`, or\n`,
           '- Bind the branch to a work item with the `upsert-delivery-link` MCP tool (type `branch`).',
-          '\n\nRe-run this workflow once the link exists and the check will pass.',
+          '\n\nRe-run this workflow once the reference or link exists and the check will pass.',
         ].join(''),
       };
 
