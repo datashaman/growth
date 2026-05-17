@@ -43,6 +43,37 @@ it('lets an unbound MCP user self-assign a role using their who-am-i user id', f
     expect($role->users()->whereKey($user->id)->exists())->toBeTrue();
 });
 
+it('accepts the integer user id over the JSON-RPC wire path', function () {
+    $user = User::factory()->create();
+    Passport::actingAs($user, ['mcp:use']);
+
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+    $role = Role::create(['project_id' => $project->id, 'name' => 'Thermal Lead']);
+
+    // A real MCP client posts who-am-i's integer user_id as assignee_id;
+    // confirm the schema does not reject it before the handler runs.
+    $response = $this->postJson('/mcp/planning', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'assign-role',
+            'arguments' => [
+                'role_id' => $role->id,
+                'assignee_type' => 'user',
+                'assignee_id' => $user->id,
+            ],
+        ],
+    ])->assertOk();
+
+    expect($response->json('result.isError'))->not->toBe(true)
+        ->and($role->users()->whereKey($user->id)->exists())->toBeTrue();
+});
+
 it('detaches a self-assigned role through unassign-role with the user id', function () {
     $user = User::factory()->create();
     Passport::actingAs($user, ['mcp:use']);
