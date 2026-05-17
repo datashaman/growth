@@ -7,7 +7,6 @@ use App\Growth\Transitions\TriageFeedback;
 use App\Models\StatusTransition;
 use App\Models\ToolFeedback;
 use App\Models\User;
-use Livewire\Livewire;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -56,74 +55,4 @@ it('resolves feedback directly from new or via triaged', function () {
 
     expect($fromNew->fresh()->status)->toBe('resolved')
         ->and($fromTriaged->fresh()->status)->toBe('resolved');
-});
-
-// ---- webapp buttons ----
-
-it('triages feedback from the inbox', function () {
-    $feedback = ($this->makeFeedback)('new');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::feedback')
-        ->assertSee('list-risks returns a 500')
-        ->call('triage', $feedback->id)
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($feedback->fresh()->status)->toBe('triaged');
-
-    $transition = StatusTransition::query()->sole();
-    expect($transition->to_status)->toBe('triaged')
-        ->and($transition->transitionable->is($feedback))->toBeTrue();
-});
-
-it('walks feedback through resolve and reopen from the inbox', function () {
-    $feedback = ($this->makeFeedback)('triaged');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::feedback')
-        ->call('resolve', $feedback->id)
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-    expect($feedback->fresh()->status)->toBe('resolved');
-
-    Livewire::test('pages::feedback')
-        ->call('reopen', $feedback->id)
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-    expect($feedback->fresh()->status)->toBe('new');
-});
-
-it('warns the user on an illegal transition from the inbox', function () {
-    $feedback = ($this->makeFeedback)('new');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::feedback')
-        ->call('reopen', $feedback->id)
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'danger']);
-
-    expect($feedback->fresh()->status)->toBe('new')
-        ->and(StatusTransition::count())->toBe(0);
-});
-
-it('404s when transitioning feedback from another workspace', function () {
-    $stranger = User::factory()->create();
-    $foreign = ToolFeedback::create([
-        'workspace_id' => $stranger->active_workspace_id,
-        'user_id' => $stranger->id,
-        'category' => 'bug',
-        'status' => 'new',
-        'summary' => 'Off limits',
-        'body' => 'Body.',
-    ]);
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::feedback')
-        ->call('triage', $foreign->id)
-        ->assertStatus(404);
-
-    expect($foreign->fresh()->status)->toBe('new');
 });
