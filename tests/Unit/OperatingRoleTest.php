@@ -36,16 +36,3 @@ it('uses MCP server path names as case values', function (): void {
     expect(OperatingRole::tryFrom('verification'))->toBe(OperatingRole::Verification)
         ->and(OperatingRole::tryFrom('nonsense'))->toBeNull();
 });
-
-it('authors a distinct, non-empty persona for every role', function (): void {
-    $personas = array_map(
-        fn (OperatingRole $role): string => $role->personaInstructions(),
-        OperatingRole::cases(),
-    );
-
-    foreach ($personas as $persona) {
-        expect(trim($persona))->not->toBe('');
-    }
-
-    expect($personas)->toHaveCount(count(array_unique($personas)));
-});

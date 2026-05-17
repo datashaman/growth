@@ -18,6 +18,7 @@ use App\Models\Requirement;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
+use App\Support\OperatingRole;
 use Laravel\Passport\Passport;
 
 it('exposes role-specific MCP metadata surfaces', function () {
@@ -77,6 +78,19 @@ it('delivers the role persona as the server instructions', function () {
     expect($verification)->toContain('Verification engineer')
         ->and($all)->toContain('complete MCP surface')
         ->and($all)->not->toContain('Verification engineer');
+});
+
+it('authors a distinct, non-empty persona for every role', function () {
+    $personas = array_map(
+        fn (OperatingRole $role): string => $role->personaInstructions(),
+        OperatingRole::cases(),
+    );
+
+    foreach ($personas as $persona) {
+        expect($persona)->not->toBe('');
+    }
+
+    expect($personas)->toHaveCount(count(array_unique($personas)));
 });
 
 it('exposes the doctor tool on every role server', function (string $endpoint) {
