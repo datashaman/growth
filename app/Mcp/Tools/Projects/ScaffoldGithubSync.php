@@ -24,7 +24,7 @@ class ScaffoldGithubSync extends Tool
         $data = $request->validate([
             'project_id' => ['required', 'string', 'owned_project'],
             'ci_workflows' => ['nullable', 'array'],
-            'ci_workflows.*' => ['string', 'max:255'],
+            'ci_workflows.*' => ['string', 'max:255', 'regex:/^[^\r\n]+$/'],
         ]);
 
         $project = Project::findOrFail($data['project_id']);
@@ -85,13 +85,24 @@ class ScaffoldGithubSync extends Tool
      * real CI workflow names. The `workflows:` key appears once in the
      * template, under the workflow_run trigger.
      *
+     * The names are JSON-encoded: the result is always a single-line, valid
+     * YAML flow sequence, so a name containing a comma, bracket, hash, or
+     * other YAML metacharacter cannot break or inject into the scaffolded
+     * workflow. A callback replacement keeps any `$`/`\` in a name out of
+     * preg's backreference syntax.
+     *
      * @param  list<string>  $ciWorkflows
      */
     private function applyCiWorkflows(string $yaml, array $ciWorkflows): string
     {
-        $list = '['.implode(', ', $ciWorkflows).']';
+        $list = json_encode($ciWorkflows, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
-        return preg_replace('/^(\s*workflows:) \[.*\]$/m', '$1 '.$list, $yaml, 1);
+        return preg_replace_callback(
+            '/^(\s*workflows:) \[.*\]$/m',
+            fn (array $match): string => $match[1].' '.$list,
+            $yaml,
+            1,
+        );
     }
 
     /**

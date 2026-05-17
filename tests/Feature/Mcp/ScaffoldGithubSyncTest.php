@@ -66,9 +66,30 @@ it('fills in the workflow_run trigger list from ci_workflows', function () {
     ])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
-            $json->where('workflow_yaml', fn (string $yaml) => str_contains($yaml, 'workflows: [tests, linter]'))
+            $json->where('workflow_yaml', fn (string $yaml) => str_contains($yaml, 'workflows: ["tests","linter"]'))
                 ->etc();
         });
+});
+
+it('safely quotes a CI workflow name containing YAML metacharacters', function () {
+    ManagementServer::tool(ScaffoldGithubSync::class, [
+        'project_id' => $this->project->id,
+        'ci_workflows' => ['Build, Test', 'lint'],
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            // The comma in the name must stay inside quotes — otherwise it
+            // would split into two trigger entries or break the YAML.
+            $json->where('workflow_yaml', fn (string $yaml) => str_contains($yaml, 'workflows: ["Build, Test","lint"]'))
+                ->etc();
+        });
+});
+
+it('rejects a CI workflow name spanning multiple lines', function () {
+    ManagementServer::tool(ScaffoldGithubSync::class, [
+        'project_id' => $this->project->id,
+        'ci_workflows' => ["tests\ninjected: true"],
+    ])->assertHasErrors();
 });
 
 it('leaves the placeholder trigger list when no ci_workflows are given', function () {
