@@ -13,7 +13,7 @@ class StatusTransition extends Model
 
     protected $fillable = [
         'from_status', 'to_status', 'reason',
-        'transitioned_by_user_id', 'transitioned_at',
+        'transitioned_by_user_id', 'acting_role', 'transitioned_at',
     ];
 
     protected $casts = [

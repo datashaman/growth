@@ -3,6 +3,7 @@
 namespace App\Growth\Transitions;
 
 use App\Models\User;
+use App\Support\RoleContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -114,6 +115,7 @@ abstract class Transition
             'to_status' => $this->targetStatus(),
             'reason' => $reason,
             'transitioned_by_user_id' => $actor?->getKey(),
+            'acting_role' => app(RoleContext::class)->role()?->value,
             'transitioned_at' => now(),
         ]);
     }
