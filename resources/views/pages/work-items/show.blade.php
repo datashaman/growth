@@ -130,7 +130,7 @@ new class extends Component {
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-detail-page-header
-        :title="$workItem->name"
+        :title="$workItem->reference().' — '.$workItem->name"
         back-route="plan"
         :back-label="__('Back to plan')">
         <x-slot:badges>

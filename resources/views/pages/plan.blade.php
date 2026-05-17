@@ -271,7 +271,10 @@ new #[Title('Plan')] class extends Component {
                     @foreach ($this->workItems as $item)
                         <flux:table.row>
                             <flux:table.cell>
-                                <a href="{{ route('work-items.show', $item) }}" wire:navigate class="font-medium hover:underline">{{ $item->name }}</a>
+                                <a href="{{ route('work-items.show', $item) }}" wire:navigate class="font-medium hover:underline">
+                                    <span class="font-mono text-zinc-500 dark:text-zinc-400">{{ $item->reference() }}</span>
+                                    {{ $item->name }}
+                                </a>
                             </flux:table.cell>
                             <flux:table.cell>
                                 <flux:badge :color="BadgeVariant::workItemKind($item->kind)" size="sm">{{ str_replace('_', ' ', $item->kind) }}</flux:badge>

@@ -2,6 +2,7 @@
 
 use App\Models\Project;
 use App\Models\WorkItem;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -78,7 +79,7 @@ new #[Title('New work item')] class extends Component {
             'cost_currency' => ['nullable', 'string', 'max:8'],
         ]);
 
-        $workItem = $project->workItems()->create([
+        $workItem = DB::transaction(fn () => $project->workItems()->create([
             'name' => $data['name'],
             'kind' => $data['kind'],
             'status' => $data['status'],
@@ -90,7 +91,7 @@ new #[Title('New work item')] class extends Component {
             'effort_estimate_hours' => $data['effort_estimate_hours'] !== null && $data['effort_estimate_hours'] !== '' ? $data['effort_estimate_hours'] : null,
             'cost_estimate_amount' => $data['cost_estimate_amount'] !== null && $data['cost_estimate_amount'] !== '' ? $data['cost_estimate_amount'] : null,
             'cost_currency' => $data['cost_currency'] ?: null,
-        ]);
+        ]));
 
         $this->redirectRoute('work-items.show', ['workItem' => $workItem->id], navigate: true);
     }

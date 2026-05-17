@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Plan;
 
 use App\Models\WorkItem;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
@@ -54,12 +55,14 @@ class UpsertWorkItems extends Tool
 
             $workItem = $id
                 ? tap(WorkItem::findOrFail($id))->update($data)
-                : WorkItem::create($data);
+                : DB::transaction(fn () => WorkItem::create($data));
 
             return [
                 'index' => $index,
                 'ok' => true,
                 'id' => $workItem->id,
+                'number' => $workItem->number,
+                'reference' => $workItem->reference(),
                 'kind' => $workItem->kind,
                 'name' => $workItem->name,
                 'parent_id' => $workItem->parent_id,

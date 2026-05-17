@@ -33,6 +33,7 @@ class WorkItem extends Model
     ];
 
     protected $casts = [
+        'number' => 'integer',
         'planned_start_date' => 'date',
         'due_date' => 'date',
         'effort_estimate_hours' => 'decimal:2',
@@ -40,6 +41,35 @@ class WorkItem extends Model
         'cost_estimate_amount' => 'decimal:2',
         'cost_actual_amount' => 'decimal:2',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (WorkItem $workItem): void {
+            if ($workItem->number === null) {
+                $workItem->number = $workItem->nextNumberForProject();
+            }
+        });
+    }
+
+    /**
+     * Human-readable per-project reference, e.g. "WI-009".
+     */
+    public function reference(): string
+    {
+        return 'WI-'.str_pad((string) $this->number, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Allocate the next sequential number within the project. Callers that
+     * may run concurrently should wrap the create in a transaction so the
+     * project row lock held here spans the insert.
+     */
+    protected function nextNumberForProject(): int
+    {
+        Project::whereKey($this->project_id)->lockForUpdate()->first();
+
+        return (int) static::where('project_id', $this->project_id)->max('number') + 1;
+    }
 
     public function project(): BelongsTo
     {
