@@ -14,7 +14,10 @@ use Throwable;
  *
  * Resolution order, first non-null wins:
  *   1. Token-bound role (HTTP MCP: Passport access token's `role` column).
- *   2. Environment override (local stdio MCP: GROWTH_ROLE).
+ *   2. Environment override (local stdio MCP: GROWTH_ROLE). Like
+ *      WorkspaceContext, this step applies only once a user is bound to the
+ *      session — for stdio that means after the local binding from
+ *      GROWTH_USER_EMAIL/GROWTH_USER_ID has run.
  *   3. Unbound — null. The session is not operating as a role; it gets the
  *      full surface (AllServer) and a self-selected ViewLens.
  *
