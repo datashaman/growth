@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools\Common;
 
 use App\Models\DesignView;
+use App\Models\Milestone;
 use App\Models\WorkItem;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Validator;
@@ -126,6 +127,15 @@ class BulkLink extends Tool
         ])->validate();
 
         $item = WorkItem::findOrFail($workItemId);
+
+        // A milestone is a scope bundle within one project; reject the tuple
+        // if any milestone belongs to a different project than the work item.
+        if (Milestone::whereIn('id', $milestoneIds)->where('project_id', '!=', $item->project_id)->exists()) {
+            throw ValidationException::withMessages([
+                'to_ids' => 'A work item can only be linked to milestones in the same project.',
+            ]);
+        }
+
         $result = $item->milestones()->syncWithoutDetaching($milestoneIds);
 
         return [

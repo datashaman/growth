@@ -124,6 +124,37 @@ it('reports per-tuple errors without aborting the batch', function () {
     });
 });
 
+it('rejects linking a work item to a milestone in another project', function () {
+    $otherProject = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Elsewhere',
+        'rigor_level' => 2,
+    ]);
+    $otherMilestone = Milestone::create([
+        'project_id' => $otherProject->id,
+        'name' => 'Cross',
+    ]);
+
+    $response = PlanningServer::tool(BulkLink::class, [
+        'items' => [
+            [
+                'link_type' => 'work_item_to_milestones',
+                'from_id' => $this->workItem->id,
+                'to_ids' => [$otherMilestone->id],
+            ],
+        ],
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->has('items', 1)
+            ->where('items.0.ok', false)
+            ->has('items.0.errors.to_ids')
+            ->etc();
+    });
+
+    expect($this->workItem->fresh()->milestones()->count())->toBe(0);
+});
+
 it('rejects an empty items array', function () {
     PlanningServer::tool(BulkLink::class, ['items' => []])->assertHasErrors();
 });
