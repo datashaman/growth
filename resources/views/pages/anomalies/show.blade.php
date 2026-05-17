@@ -37,18 +37,7 @@ new class extends Component {
             {{ __('Anomaly in project') }} <a href="{{ route('dashboard', ['project' => $anomaly->project_id]) }}" class="underline">{{ $anomaly->project->name }}</a>
         </x-slot:description>
 
-        <x-slot:actions>
-            <flux:modal.trigger name="edit-anomaly">
-                <flux:button size="sm" icon="pencil-square" variant="primary">{{ __('Edit') }}</flux:button>
-            </flux:modal.trigger>
-            <flux:modal.trigger name="delete-anomaly">
-                <flux:button size="sm" icon="trash" variant="danger">{{ __('Delete') }}</flux:button>
-            </flux:modal.trigger>
-        </x-slot:actions>
     </x-detail-page-header>
-
-    <livewire:pages::anomalies.edit-modal :anomaly-id="$anomaly->id" :key="'edit-anomaly-'.$anomaly->id" />
-    <livewire:pages::anomalies.delete-modal :anomaly-id="$anomaly->id" :key="'delete-anomaly-'.$anomaly->id" />
 
     <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:heading size="lg" class="mb-3">{{ __('Properties') }}</flux:heading>
