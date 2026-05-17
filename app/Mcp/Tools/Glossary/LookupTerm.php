@@ -5,14 +5,14 @@ namespace App\Mcp\Tools\Glossary;
 use App\Growth\Glossary\GlossaryParser;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Look up terms in the approved internal project glossary.')]
+#[Description('Look up terms in the Growth domain glossary.')]
 class LookupTerm extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -27,15 +27,23 @@ class LookupTerm extends Tool
         $limit = $data['limit'] ?? 10;
         $needle = mb_strtolower($data['query']);
 
-        $path = 'growth/glossary/glossary-extract.txt';
-        if (! Storage::disk('local')->exists($path)) {
-            return new ResponseFactory(Response::error('No approved internal glossary extract found at storage/app/growth/glossary/glossary-extract.txt.'));
+        // The glossary ships with the application as a committed resource, so a
+        // lookup never errors. The absent-file branch is a defensive fallback:
+        // an empty result, never a leaked filesystem path.
+        $path = resource_path('glossary/glossary-extract.txt');
+        if (! File::exists($path)) {
+            return Response::structured([
+                'query' => $data['query'],
+                'mode' => $mode,
+                'count' => 0,
+                'matches' => [],
+            ]);
         }
 
         $entries = Cache::remember(
             'growth:glossary:glossary-extract',
             now()->addHour(),
-            fn () => (new GlossaryParser)->parse(Storage::disk('local')->get($path)),
+            fn () => (new GlossaryParser)->parse(File::get($path)),
         );
 
         $matches = [];
