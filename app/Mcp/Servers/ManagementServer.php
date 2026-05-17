@@ -12,8 +12,11 @@ use App\Mcp\Resources\StarterTemplate4Resource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Common\Doctor;
 use App\Mcp\Tools\Common\WhoAmI;
+use App\Mcp\Tools\Feedback\ReopenFeedback;
+use App\Mcp\Tools\Feedback\ResolveFeedback;
 use App\Mcp\Tools\Feedback\SearchFeedback;
 use App\Mcp\Tools\Feedback\SendFeedback;
+use App\Mcp\Tools\Feedback\TriageFeedback;
 use App\Mcp\Tools\Manifest\ApplyManifest;
 use App\Mcp\Tools\Manifest\ExportManifest;
 use App\Mcp\Tools\Projects\ActivateProject;
@@ -42,6 +45,9 @@ class ManagementServer extends Server
         Doctor::class,
         SearchFeedback::class,
         SendFeedback::class,
+        TriageFeedback::class,
+        ResolveFeedback::class,
+        ReopenFeedback::class,
         ListProjects::class,
         ResolveProjectByRepo::class,
         ScaffoldGithubSync::class,

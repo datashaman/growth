@@ -16,8 +16,11 @@ use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Concerns\DeleteConcern;
 use App\Mcp\Tools\Concerns\UpsertConcerns;
 use App\Mcp\Tools\Dashboard\ShowRequirementExplorer;
+use App\Mcp\Tools\Feedback\ReopenFeedback;
+use App\Mcp\Tools\Feedback\ResolveFeedback;
 use App\Mcp\Tools\Feedback\SearchFeedback;
 use App\Mcp\Tools\Feedback\SendFeedback;
+use App\Mcp\Tools\Feedback\TriageFeedback;
 use App\Mcp\Tools\Glossary\LookupTerm;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Projects\DeleteProject;
@@ -52,6 +55,9 @@ class IntakeServer extends Server
         Doctor::class,
         SearchFeedback::class,
         SendFeedback::class,
+        TriageFeedback::class,
+        ResolveFeedback::class,
+        ReopenFeedback::class,
         UpsertProject::class,
         ListProjects::class,
         DeleteProject::class,
