@@ -66,7 +66,9 @@ it('fills in the workflow_run trigger list from ci_workflows', function () {
     ])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
-            $json->where('workflow_yaml', fn (string $yaml) => str_contains($yaml, 'workflows: ["tests","linter"]'))
+            $json->where('workflow_yaml', fn (string $yaml) => str_contains($yaml, 'workflows: ["tests","linter"]')
+                // The list is filled in, so the "EDIT" instruction is dropped.
+                && ! str_contains($yaml, '# EDIT:'))
                 ->etc();
         });
 });
@@ -98,7 +100,9 @@ it('leaves the placeholder trigger list when no ci_workflows are given', functio
     ])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
-            $json->where('workflow_yaml', fn (string $yaml) => str_contains($yaml, 'workflows: [CI]'))
+            $json->where('workflow_yaml', fn (string $yaml) => str_contains($yaml, 'workflows: [CI]')
+                // No ci_workflows given, so the "EDIT" instruction stays.
+                && str_contains($yaml, '# EDIT:'))
                 ->etc();
         });
 });
