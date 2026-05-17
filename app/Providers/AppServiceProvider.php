@@ -38,6 +38,7 @@ use App\Models\ToolFeedback;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
+use App\Support\RoleContext;
 use App\Support\WorkspaceContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -122,6 +123,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(WorkspaceContext::class);
+        $this->app->singleton(RoleContext::class);
         $this->app->bind(CallTool::class, RecordingCallTool::class);
     }
 
