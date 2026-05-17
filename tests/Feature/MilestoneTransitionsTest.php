@@ -6,6 +6,7 @@ use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\StatusTransition;
 use App\Models\User;
+use App\Models\WorkItem;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -40,6 +41,12 @@ it('rejects an illegal milestone transition without writing a row', function () 
 
 it('achieves a milestone from the plan page', function () {
     $milestone = ($this->makeMilestone)('pending');
+    $milestone->workItems()->attach(WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => WorkItem::KINDS[0],
+        'name' => 'Ship it',
+        'status' => 'done',
+    ])->id);
 
     Livewire::test('pages::plan')
         ->call('achieveMilestone', $milestone->id)

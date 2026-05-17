@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
+use App\Growth\Assurance\MilestoneGateEvaluator;
 use App\Models\Milestone;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -10,7 +11,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('List milestones for a project. Returns narrow columns sorted by name.')]
+#[Description('List milestones for a project. Returns narrow columns plus each milestone\'s readiness gate (pass/warn/fail with error and warning counts), sorted by name.')]
 class ListMilestones extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -39,21 +40,33 @@ class ListMilestones extends Tool
         $rows = $query
             ->orderBy('name')
             ->withCount('workItems')
+            ->with(['workItems.deliveryLinks.checkRuns', 'workItems.deliveryLinks.deployments'])
             ->limit($limit)
             ->offset($offset)
             ->get(['id', 'name', 'status', 'exit_criteria']);
+
+        $evaluator = app(MilestoneGateEvaluator::class);
 
         return Response::structured([
             'total' => $total,
             'limit' => $limit,
             'offset' => $offset,
-            'results' => $rows->map(fn ($m) => [
-                'id' => $m->id,
-                'name' => $m->name,
-                'status' => $m->status,
-                'exit_criteria' => $m->exit_criteria,
-                'work_items_count' => $m->work_items_count,
-            ])->all(),
+            'results' => $rows->map(function ($m) use ($evaluator) {
+                $gate = $evaluator->evaluate($m);
+
+                return [
+                    'id' => $m->id,
+                    'name' => $m->name,
+                    'status' => $m->status,
+                    'exit_criteria' => $m->exit_criteria,
+                    'work_items_count' => $m->work_items_count,
+                    'gate' => [
+                        'status' => $gate['status'],
+                        'errors' => $gate['errors'],
+                        'warnings' => $gate['warnings'],
+                    ],
+                ];
+            })->all(),
         ]);
     }
 

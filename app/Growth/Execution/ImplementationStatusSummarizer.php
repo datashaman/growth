@@ -2,6 +2,7 @@
 
 namespace App\Growth\Execution;
 
+use App\Growth\Assurance\MilestoneGateEvaluator;
 use App\Models\Project;
 use App\Models\WorkItem;
 
@@ -35,9 +36,16 @@ class ImplementationStatusSummarizer
     }
 
     /**
+     * Summarize one work item's delivery evidence — links, checks, deployments,
+     * and the derived implementation state. Public so the milestone gate can
+     * reuse the same per-item facts (see {@see MilestoneGateEvaluator}).
+     *
+     * Expects `deliveryLinks.checkRuns` and `deliveryLinks.deployments` to be
+     * loaded; the caller is responsible for eager-loading them.
+     *
      * @return array<string,mixed>
      */
-    private function summarizeItem(WorkItem $item): array
+    public function summarizeItem(WorkItem $item): array
     {
         $checks = $item->deliveryLinks->flatMap->checkRuns;
         $deployments = $item->deliveryLinks->flatMap->deployments->unique('id');
