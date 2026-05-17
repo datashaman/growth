@@ -4,24 +4,11 @@ use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Plan')] class extends Component {
     use ProjectScoped;
-
-    #[On('milestone-saved')]
-    public function refreshMilestones(): void
-    {
-        unset($this->milestones);
-    }
-
-    #[On('role-saved')]
-    public function refreshRoles(): void
-    {
-        unset($this->roles);
-    }
 
     /**
      * @return array<string,string>
@@ -103,17 +90,11 @@ new #[Title('Plan')] class extends Component {
             :count-label="__('planned')"
             :empty="$this->milestones->isEmpty()"
             :empty-message="__('No milestones defined.')">
-            <x-slot:actions>
-                <flux:modal.trigger name="create-milestone">
-                    <flux:button size="sm" icon="plus" variant="primary">{{ __('New milestone') }}</flux:button>
-                </flux:modal.trigger>
-            </x-slot:actions>
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Milestone') }}</flux:table.column>
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
                     <flux:table.column>{{ __('Exit criteria') }}</flux:table.column>
-                    <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->milestones as $milestone)
@@ -123,23 +104,11 @@ new #[Title('Plan')] class extends Component {
                                 <flux:badge :color="BadgeVariant::milestoneStatus($milestone->status)" size="sm">{{ EnumLabel::lower($milestone->status) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>{{ \Illuminate\Support\Str::limit($milestone->exit_criteria ?? '—', 100) }}</flux:table.cell>
-                            <flux:table.cell>
-                                <div class="flex justify-end gap-1">
-                                    <flux:button size="xs" icon="pencil-square" variant="ghost"
-                                        wire:click="$dispatch('edit-milestone', { milestoneId: '{{ $milestone->id }}' })" />
-                                    <flux:button size="xs" icon="trash" variant="ghost"
-                                        wire:click="$dispatch('delete-milestone', { milestoneId: '{{ $milestone->id }}' })" />
-                                </div>
-                            </flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
-
-        <livewire:pages::milestones.create-modal :project-id="$this->selectedProject->id" :key="'create-milestone-'.$this->selectedProject->id" />
-        <livewire:pages::milestones.edit-modal :key="'edit-milestone-'.$this->selectedProject->id" />
-        <livewire:pages::milestones.delete-modal :key="'delete-milestone-'.$this->selectedProject->id" />
 
         <x-data-table
             :title="__('Work items')"
@@ -188,39 +157,21 @@ new #[Title('Plan')] class extends Component {
             :count-label="__('defined')"
             :empty="$this->roles->isEmpty()"
             :empty-message="__('No roles defined.')">
-            <x-slot:actions>
-                <flux:modal.trigger name="create-role">
-                    <flux:button size="sm" icon="plus" variant="primary">{{ __('New role') }}</flux:button>
-                </flux:modal.trigger>
-            </x-slot:actions>
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Role') }}</flux:table.column>
                     <flux:table.column>{{ __('Responsibilities') }}</flux:table.column>
-                    <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->roles as $role)
                         <flux:table.row>
                             <flux:table.cell class="font-medium">{{ $role->name }}</flux:table.cell>
                             <flux:table.cell>{{ $role->responsibilities ?? '—' }}</flux:table.cell>
-                            <flux:table.cell>
-                                <div class="flex justify-end gap-1">
-                                    <flux:button size="xs" icon="pencil-square" variant="ghost"
-                                        wire:click="$dispatch('edit-role', { roleId: '{{ $role->id }}' })" />
-                                    <flux:button size="xs" icon="trash" variant="ghost"
-                                        wire:click="$dispatch('delete-role', { roleId: '{{ $role->id }}' })" />
-                                </div>
-                            </flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
-
-        <livewire:pages::roles.create-modal :project-id="$this->selectedProject->id" :key="'create-role-'.$this->selectedProject->id" />
-        <livewire:pages::roles.edit-modal :key="'edit-role-'.$this->selectedProject->id" />
-        <livewire:pages::roles.delete-modal :key="'delete-role-'.$this->selectedProject->id" />
 
         <x-data-table
             :title="__('Baselines')"
