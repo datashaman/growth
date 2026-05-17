@@ -47,6 +47,18 @@ class MilestoneGateEvaluator
         }
 
         foreach ($items as $item) {
+            if ($item->project_id !== $milestone->project_id) {
+                $findings[] = [
+                    'rule' => 'milestone.work_item.project_mismatch',
+                    'severity' => 'error',
+                    'message' => 'Member work item belongs to a different project; unlink it from this milestone.',
+                    'subject_type' => 'work_item',
+                    'subject_id' => $item->id,
+                ];
+
+                continue;
+            }
+
             $row = $this->summarizer->summarizeItem($item);
 
             if ($row['status'] !== 'done') {

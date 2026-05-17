@@ -69,6 +69,14 @@ class AchieveMilestone extends Transition
             $clauses[] = $count.' done member work item'.($count === 1 ? ' has' : 's have').' failed checks';
         }
 
+        if ($count = $byRule['milestone.work_item.project_mismatch'] ?? 0) {
+            $clauses[] = $count.' member work item'.($count === 1 ? ' belongs' : 's belong').' to a different project';
+        }
+
+        if ($clauses === []) {
+            $clauses[] = 'it has unresolved blocking gate findings';
+        }
+
         return 'Cannot achieve a milestone until its gate passes: '.implode('; ', $clauses).'.';
     }
 }

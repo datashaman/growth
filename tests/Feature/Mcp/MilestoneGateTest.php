@@ -112,6 +112,27 @@ it('warns but does not fail when a done member has no delivery evidence', functi
         ->and($gate['findings'][0]['rule'])->toBe('milestone.work_item.done_without_evidence');
 });
 
+it('fails the gate when a linked member work item belongs to another project', function () {
+    $otherProject = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Elsewhere',
+        'rigor_level' => 2,
+    ]);
+    $foreignItem = WorkItem::create([
+        'project_id' => $otherProject->id,
+        'kind' => WorkItem::KINDS[0],
+        'name' => 'Foreign work item',
+        'status' => 'done',
+    ]);
+    $this->milestone->workItems()->attach($foreignItem->id);
+
+    $gate = ($this->gate)();
+
+    expect($gate['status'])->toBe('fail')
+        ->and($gate['errors'])->toBe(1)
+        ->and(collect($gate['findings'])->pluck('rule'))->toContain('milestone.work_item.project_mismatch');
+});
+
 // ---- transition gate ----
 
 it('rejects achieving an empty milestone', function () {
@@ -149,6 +170,26 @@ it('rejects achieving a milestone whose member has failed checks', function () {
 
     PlanningServer::tool(AchieveMilestone::class, ['milestone_id' => $this->milestone->id])
         ->assertHasErrors(['Cannot achieve a milestone until its gate passes: 1 done member work item has failed checks.']);
+
+    expect($this->milestone->fresh()->status)->toBe('pending');
+});
+
+it('rejects achieving a milestone with a cross-project member', function () {
+    $otherProject = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Elsewhere',
+        'rigor_level' => 2,
+    ]);
+    $foreignItem = WorkItem::create([
+        'project_id' => $otherProject->id,
+        'kind' => WorkItem::KINDS[0],
+        'name' => 'Foreign work item',
+        'status' => 'done',
+    ]);
+    $this->milestone->workItems()->attach($foreignItem->id);
+
+    PlanningServer::tool(AchieveMilestone::class, ['milestone_id' => $this->milestone->id])
+        ->assertHasErrors(['Cannot achieve a milestone until its gate passes: 1 member work item belongs to a different project.']);
 
     expect($this->milestone->fresh()->status)->toBe('pending');
 });
