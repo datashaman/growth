@@ -2,7 +2,6 @@
 
 use App\Models\ChangeRequest;
 use App\Support\BadgeVariant;
-use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -12,12 +11,6 @@ new class extends Component {
     public function mount(ChangeRequest $changeRequest): void
     {
         $this->reload($changeRequest);
-    }
-
-    #[On('change-request-saved')]
-    public function refresh(): void
-    {
-        $this->reload($this->changeRequest->fresh());
     }
 
     private function reload(ChangeRequest $cr): void
@@ -53,25 +46,7 @@ new class extends Component {
             {{ __('Change request in project') }} <a href="{{ route('dashboard', ['project' => $changeRequest->project_id]) }}" class="underline">{{ $changeRequest->project->name }}</a>
         </x-slot:description>
 
-        <x-slot:actions>
-            <flux:button
-                size="sm"
-                icon="pencil-square"
-                variant="primary"
-                wire:click="$dispatch('edit-change-request', { changeRequestId: '{{ $changeRequest->id }}' })">
-                {{ __('Edit') }}
-            </flux:button>
-            <flux:modal.trigger name="delete-change-request">
-                <flux:button size="sm" icon="trash" variant="danger">{{ __('Delete') }}</flux:button>
-            </flux:modal.trigger>
-        </x-slot:actions>
     </x-detail-page-header>
-
-    <livewire:pages::change-requests.edit-modal :key="'edit-change-request-'.$changeRequest->id" />
-    <livewire:pages::change-requests.delete-modal
-        :change-request-id="$changeRequest->id"
-        redirect-after="changes"
-        :key="'delete-change-request-'.$changeRequest->id" />
 
     <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:heading size="lg" class="mb-3">{{ __('Properties') }}</flux:heading>
