@@ -2,7 +2,6 @@
 
 use App\Models\Project;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\Livewire;
 
@@ -19,12 +18,6 @@ new class extends Component {
     public function projects()
     {
         return Project::query()->orderBy('created_at')->get(['id', 'name']);
-    }
-
-    #[On('project-saved')]
-    public function refreshProjects(): void
-    {
-        unset($this->projects);
     }
 
     public function updatedSelectedProjectId(?string $value): void
@@ -54,13 +47,5 @@ new class extends Component {
                 </flux:select>
             </div>
         @endif
-        <flux:modal.trigger name="create-project">
-            <flux:button size="sm" variant="ghost" icon="plus" :tooltip="__('New project')" />
-        </flux:modal.trigger>
     </div>
-
-    <livewire:pages::projects.create-modal />
-    <livewire:pages::projects.edit-modal />
-    <livewire:pages::projects.move-modal />
-    <livewire:pages::projects.delete-modal />
 </div>

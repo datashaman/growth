@@ -4,7 +4,6 @@ use App\Models\Project;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMembership;
-use Livewire\Livewire;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 function moveTestDestination(User $user, string $role = WorkspaceMembership::ROLE_OWNER): Workspace
@@ -113,45 +112,4 @@ test('destination must differ from source', function () {
 
     expect(fn () => $project->move($user->active_workspace_id, $user))
         ->toThrow(HttpException::class);
-});
-
-test('move modal flips active workspace and preserves selected_project_id', function () {
-    $user = User::factory()->create();
-    $project = moveTestProject($user->active_workspace_id, 'Selected Mover');
-    $destination = moveTestDestination($user);
-
-    session(['selected_project_id' => $project->id]);
-    $this->actingAs($user);
-
-    Livewire::test('pages::projects.move-modal')
-        ->call('load', $project->id)
-        ->set('destinationId', $destination->id)
-        ->call('move');
-
-    expect($user->fresh()->active_workspace_id)->toBe($destination->id);
-    expect(session('selected_project_id'))->toBe($project->id);
-    expect(Project::withoutGlobalScope('workspace')->find($project->id)->workspace_id)
-        ->toBe($destination->id);
-
-    $destinationMembership = WorkspaceMembership::query()
-        ->where('user_id', $user->id)
-        ->where('workspace_id', $destination->id)
-        ->first();
-    expect($destinationMembership->last_accessed_at->diffInSeconds(now()))->toBeLessThan(5);
-});
-
-test('move modal only lists eligible destinations', function () {
-    $user = User::factory()->create();
-    $eligible = moveTestDestination($user);
-    $viewerOnly = moveTestDestination($user, WorkspaceMembership::ROLE_VIEWER);
-    $project = moveTestProject($user->active_workspace_id);
-    $currentWorkspaceName = $user->activeWorkspace->name;
-
-    $this->actingAs($user);
-
-    Livewire::test('pages::projects.move-modal')
-        ->call('load', $project->id)
-        ->assertSee($eligible->name)
-        ->assertDontSee($viewerOnly->name)
-        ->assertDontSeeHtml('value="'.$user->active_workspace_id.'"');
 });
