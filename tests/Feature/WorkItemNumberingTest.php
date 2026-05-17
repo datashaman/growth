@@ -85,3 +85,36 @@ test('the upsert-work-items tool returns the assigned number and reference', fun
                 ->etc();
         });
 });
+
+test('a work item cannot be moved to another project', function () {
+    $other = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Mars Lander',
+        'rigor_level' => 2,
+    ]);
+    $item = makeWorkItem($this->project, 'Stays put');
+
+    expect(fn () => $item->update(['project_id' => $other->id]))
+        ->toThrow(RuntimeException::class);
+});
+
+test('the upsert-work-items tool rejects moving an item to another project', function () {
+    $other = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Mars Lander',
+        'rigor_level' => 2,
+    ]);
+    $item = makeWorkItem($this->project, 'Stays put');
+
+    PlanningServer::tool(UpsertWorkItems::class, [
+        'items' => [
+            ['id' => $item->id, 'project_id' => $other->id, 'kind' => 'task', 'name' => 'Stays put'],
+        ],
+    ])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->where('items.0.ok', false)->etc());
+
+    $item->refresh();
+    expect($item->project_id)->toBe($this->project->id)
+        ->and($item->number)->toBe(1);
+});

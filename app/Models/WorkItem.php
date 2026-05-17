@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use RuntimeException;
 
 class WorkItem extends Model
 {
@@ -47,6 +48,16 @@ class WorkItem extends Model
         static::creating(function (WorkItem $workItem): void {
             if ($workItem->number === null) {
                 $workItem->number = $workItem->nextNumberForProject();
+            }
+        });
+
+        // The per-project number is assigned once on create; a work item's
+        // parent, requirement links, and milestones are all project-scoped,
+        // so moving it between projects is not a real operation. Block it
+        // rather than leave a stale WI-NNN reference or a unique collision.
+        static::updating(function (WorkItem $workItem): void {
+            if ($workItem->isDirty('project_id')) {
+                throw new RuntimeException('A work item cannot be moved to another project.');
             }
         });
     }
