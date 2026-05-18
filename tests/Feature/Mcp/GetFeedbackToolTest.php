@@ -59,3 +59,28 @@ it('does not return feedback from another workspace', function () {
     ReadonlyServer::tool(GetFeedback::class, ['feedback_id' => $otherFeedback->id])
         ->assertHasErrors();
 });
+
+it('returns the comment thread oldest first', function () {
+    $feedback = ($this->makeFeedback)();
+    $first = $feedback->comments()->create([
+        'user_id' => $this->user->id,
+        'body' => 'First comment',
+    ]);
+    // Eloquent stamps created_at on insert, so backdate the first comment
+    // after the fact to give the thread an unambiguous order.
+    $first->forceFill(['created_at' => now()->subHour()])->save();
+    $feedback->comments()->create([
+        'user_id' => $this->user->id,
+        'body' => 'Second comment',
+    ]);
+
+    ReadonlyServer::tool(GetFeedback::class, ['feedback_id' => $feedback->id])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->count('comments', 2)
+                ->where('comments.0.body', 'First comment')
+                ->where('comments.0.author', $this->user->name)
+                ->where('comments.1.body', 'Second comment')
+                ->etc();
+        });
+});

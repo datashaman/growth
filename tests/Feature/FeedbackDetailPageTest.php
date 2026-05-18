@@ -67,3 +67,16 @@ it('links each inbox row to its detail page', function () {
         ->get(route('feedback'))
         ->assertSee(route('feedback.show', $feedback));
 });
+
+it('renders the comment thread', function () {
+    $feedback = ($this->makeFeedback)();
+    $feedback->comments()->create([
+        'user_id' => $this->user->id,
+        'body' => 'A follow-up question on this feedback',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get(route('feedback.show', $feedback))
+        ->assertSee('Comments')
+        ->assertSee('A follow-up question on this feedback');
+});

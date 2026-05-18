@@ -20,6 +20,7 @@ use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Concerns\DeleteConcern;
 use App\Mcp\Tools\Concerns\UpsertConcerns;
 use App\Mcp\Tools\Dashboard\ShowRequirementExplorer;
+use App\Mcp\Tools\Feedback\CommentFeedback;
 use App\Mcp\Tools\Feedback\GetFeedback;
 use App\Mcp\Tools\Feedback\ReopenFeedback;
 use App\Mcp\Tools\Feedback\ResolveFeedback;
@@ -67,6 +68,7 @@ class IntakeServer extends Server
         Doctor::class,
         GetFeedback::class,
         SearchFeedback::class,
+        CommentFeedback::class,
         SendFeedback::class,
         TriageFeedback::class,
         ResolveFeedback::class,

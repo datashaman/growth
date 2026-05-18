@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Models\Concerns\BroadcastsWorkspaceChanges;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class ToolFeedback extends Model
@@ -47,5 +49,36 @@ class ToolFeedback extends Model
     public function statusTransitions(): MorphMany
     {
         return $this->morphMany(StatusTransition::class, 'transitionable');
+    }
+
+    /**
+     * @return HasMany<FeedbackComment, $this>
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(FeedbackComment::class);
+    }
+
+    /**
+     * The users on this feedback's thread: the filer and everyone who has
+     * commented. Agent-attributed participants have no user account and are
+     * absent — they cannot be reached on the notification rail.
+     *
+     * Call this after persisting a new comment: it reads the comments table
+     * live, so a freshly-saved author is only in the set once the row exists.
+     * The set always includes the latest commenter — a caller notifying a
+     * thread must filter the acting author out itself.
+     *
+     * @return Collection<int, User>
+     */
+    public function commentParticipants(): Collection
+    {
+        $userIds = $this->comments()->whereNotNull('user_id')->pluck('user_id');
+
+        if ($this->user_id !== null) {
+            $userIds->push($this->user_id);
+        }
+
+        return User::whereIn('id', $userIds->unique())->get();
     }
 }

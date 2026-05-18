@@ -18,6 +18,7 @@ new #[Title('Feedback')] class extends Component {
 
         $this->feedback = $toolFeedback->load([
             'user', 'agent', 'project',
+            'comments' => fn ($query) => $query->with('author')->orderBy('created_at'),
             'statusTransitions' => fn ($query) => $query->with('transitionedBy')->orderBy('transitioned_at'),
         ]);
     }
@@ -74,6 +75,30 @@ new #[Title('Feedback')] class extends Component {
     <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:heading size="lg" class="mb-3">{{ __('Detail') }}</flux:heading>
         <flux:text class="whitespace-pre-line">{{ $feedback->body }}</flux:text>
+    </section>
+
+    <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+        <flux:heading size="lg" class="mb-3">{{ __('Comments') }}</flux:heading>
+        @if ($feedback->comments->isEmpty())
+            <flux:text class="text-zinc-500 dark:text-zinc-400">{{ __('No comments yet.') }}</flux:text>
+        @else
+            <ol class="flex flex-col gap-4">
+                @foreach ($feedback->comments as $comment)
+                    <li class="flex flex-col gap-1">
+                        <div class="text-xs text-zinc-500 dark:text-zinc-400">
+                            <span class="font-medium text-zinc-700 dark:text-zinc-200">{{ $comment->author?->name ?? __('System') }}</span>
+                            @if ($comment->acting_role)
+                                <span class="text-zinc-400 dark:text-zinc-500">· {{ $comment->acting_role }}</span>
+                            @endif
+                            <span class="text-zinc-400 dark:text-zinc-500" title="{{ $comment->created_at?->toIso8601String() }}">
+                                · {{ $comment->created_at?->diffForHumans() }}
+                            </span>
+                        </div>
+                        <flux:text class="whitespace-pre-line">{{ $comment->body }}</flux:text>
+                    </li>
+                @endforeach
+            </ol>
+        @endif
     </section>
 
     <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
