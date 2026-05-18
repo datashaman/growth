@@ -67,6 +67,7 @@ class ProjectPlan extends Model
             'work_items' => $this->project->workItems()
                 ->orderBy('kind')
                 ->orderBy('name')
+                ->orderBy('id')
                 ->get(['id', 'parent_id', 'responsible_role_id', 'kind', 'name', 'status'])
                 ->map(fn ($w) => [
                     'id' => $w->id,

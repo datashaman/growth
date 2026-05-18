@@ -57,6 +57,39 @@ it('is idempotent — re-adopting a bound repo creates nothing new', function ()
         ->and($project->fresh()->name)->toBe('Legacy API');
 });
 
+it('adopts in place a repo bound to a project that was never adopted', function () {
+    $project = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Created Earlier',
+        'rigor_level' => 2,
+        'github_repo' => 'datashaman/legacy-api',
+    ]);
+
+    expect($project->adopted_at)->toBeNull();
+
+    ManagementServer::tool(AdoptProject::class, [
+        'github_repo' => 'datashaman/legacy-api',
+        'name' => 'Ignored',
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('adopted', true)
+                ->where('rigor_level', 2)
+                ->where('adoption_baseline_version', 1)
+                ->etc();
+        });
+
+    $project->refresh();
+    expect($project->adopted_at)->not->toBeNull()
+        ->and($project->name)->toBe('Created Earlier');
+
+    $baseline = $project->projectPlan->baselines()->sole();
+    expect($baseline->kind)->toBe('adoption')
+        ->and($baseline->version)->toBe(1);
+
+    expect(Project::where('github_repo', 'datashaman/legacy-api')->count())->toBe(1);
+});
+
 it('refuses a repo already bound to a project in another workspace', function () {
     $other = User::factory()->create();
     Project::create([

@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools\Projects;
 
 use App\Growth\Plan\PlanBaseliner;
+use App\Growth\Transitions\IllegalTransitionException;
 use App\Models\Project;
 use App\Models\ProjectPlan;
 use App\Support\WorkspaceContext;
@@ -14,7 +15,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Adopt an existing GitHub repository as a Growth project: bind the repo, stamp the adoption time, and set an `adoption`-kind plan baseline at HEAD. Idempotent — adopting an already-bound repo returns the existing project unchanged. Adopted projects start at rigor level 1; raise rigor as the backfill catches up.')]
+#[Description('Adopt an existing GitHub repository as a Growth project: bind the repo, stamp the adoption time, and set an `adoption`-kind plan baseline at HEAD. A repo already bound to a project that was never adopted (e.g. via create-project) is adopted in place. Idempotent — adopting an already-adopted repo returns it unchanged. Newly created adopted projects start at rigor level 1; raise rigor as the backfill catches up.')]
 class AdoptProject extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -24,12 +25,28 @@ class AdoptProject extends Tool
             'name' => 'required|string|max:255',
         ]);
 
-        // Idempotency: a repo already bound within this workspace returns its
-        // project untouched — no duplicate, no re-stamp, no second baseline.
         $existing = Project::query()->where('github_repo', $data['github_repo'])->first();
 
         if ($existing !== null) {
-            return $this->respond($existing, adopted: false);
+            // Already adopted — idempotent no-op, no re-stamp, no second baseline.
+            if ($existing->adopted_at !== null) {
+                return $this->respond($existing, adopted: false);
+            }
+
+            // Bound but never adopted (e.g. created with create-project): adopt
+            // the existing project in place rather than refusing or duplicating.
+            try {
+                DB::transaction(function () use ($existing): void {
+                    $existing->update(['adopted_at' => now()]);
+                    $this->baselineAdoption($existing);
+                });
+            } catch (IllegalTransitionException) {
+                return new ResponseFactory(Response::error(
+                    'The repository '.$data['github_repo'].' is bound to a project whose plan is not in draft and cannot be adopted in place.'
+                ));
+            }
+
+            return $this->respond($existing->fresh(), adopted: true);
         }
 
         // github_repo is globally unique; refuse a repo bound in another
@@ -55,17 +72,35 @@ class AdoptProject extends Tool
                 'created_by_user_id' => auth()->id(),
             ]);
 
-            $plan = ProjectPlan::create([
-                'project_id' => $project->id,
-                'status' => 'draft',
-            ]);
-
-            app(PlanBaseliner::class)->baseline($plan, auth()->user(), 'Adoption baseline at HEAD.', 'adoption');
+            $this->baselineAdoption($project);
 
             return $project;
         });
 
         return $this->respond($project, adopted: true);
+    }
+
+    /**
+     * Snapshot the project's plan as an `adoption` baseline at HEAD, creating a
+     * draft plan first when the project has none.
+     *
+     * Throws {@see IllegalTransitionException} when the project already has a
+     * plan that is not in `draft`.
+     */
+    private function baselineAdoption(Project $project): void
+    {
+        $plan = $project->projectPlan;
+
+        if ($plan === null) {
+            $plan = ProjectPlan::create([
+                'project_id' => $project->id,
+                'status' => 'draft',
+            ]);
+            // Keep the cached relation in step so respond() sees the new plan.
+            $project->setRelation('projectPlan', $plan);
+        }
+
+        app(PlanBaseliner::class)->baseline($plan, auth()->user(), 'Adoption baseline at HEAD.', 'adoption');
     }
 
     /**
@@ -112,7 +147,7 @@ class AdoptProject extends Tool
             'status' => $schema->string()->required(),
             'github_repo' => $schema->string()->required(),
             'adopted_at' => $schema->string()->required(),
-            'adopted' => $schema->boolean()->description('True when this call created the project; false when it already existed')->required(),
+            'adopted' => $schema->boolean()->description('True when this call performed adoption (created the project or adopted an existing one in place); false when the project was already adopted')->required(),
             'adoption_baseline_id' => $schema->string(),
             'adoption_baseline_version' => $schema->integer(),
         ];

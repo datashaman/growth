@@ -8,6 +8,7 @@ use App\Models\ProjectPlan;
 use App\Models\ProjectPlanBaseline;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 /**
  * Creates an immutable baseline of a draft plan: snapshots the plan, then
@@ -28,6 +29,10 @@ class PlanBaseliner
         ?string $note = null,
         string $kind = 'planned',
     ): ProjectPlanBaseline {
+        if (! in_array($kind, ProjectPlanBaseline::KINDS, true)) {
+            throw new InvalidArgumentException("Unknown baseline kind [{$kind}].");
+        }
+
         return DB::transaction(function () use ($plan, $actor, $note, $kind): ProjectPlanBaseline {
             $baseline = ProjectPlanBaseline::create([
                 'project_plan_id' => $plan->id,
