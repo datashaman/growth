@@ -112,6 +112,35 @@ it('warns but does not fail when a done member has no delivery evidence', functi
         ->and($gate['findings'][0]['rule'])->toBe('milestone.work_item.done_without_evidence');
 });
 
+it('reports a pre-adoption evidence gap as informational without moving the gate', function () {
+    $this->project->update(['adopted_at' => now()]);
+    // A done member with no completion trail predates adoption.
+    ($this->addWorkItem)('done');
+
+    $gate = ($this->gate)();
+
+    expect($gate['status'])->toBe('pass')
+        ->and($gate['warnings'])->toBe(0)
+        ->and($gate['findings'][0]['rule'])->toBe('milestone.work_item.done_without_evidence')
+        ->and($gate['findings'][0]['severity'])->toBe('informational');
+});
+
+it('still warns for a post-adoption evidence gap when the project is adopted', function () {
+    $this->project->update(['adopted_at' => now()->subDays(30)]);
+    $workItem = ($this->addWorkItem)('done');
+    $workItem->statusTransitions()->create([
+        'from_status' => 'in_progress',
+        'to_status' => 'done',
+        'transitioned_at' => now(),
+    ]);
+
+    $gate = ($this->gate)();
+
+    expect($gate['status'])->toBe('warn')
+        ->and($gate['warnings'])->toBe(1)
+        ->and($gate['findings'][0]['severity'])->toBe('warning');
+});
+
 it('fails the gate when a linked member work item belongs to another project', function () {
     $otherProject = Project::create([
         'workspace_id' => $this->user->active_workspace_id,

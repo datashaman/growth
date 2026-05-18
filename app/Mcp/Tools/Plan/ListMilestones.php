@@ -40,7 +40,12 @@ class ListMilestones extends Tool
         $rows = $query
             ->orderBy('name')
             ->withCount('workItems')
-            ->with(['workItems.deliveryLinks.checkRuns', 'workItems.deliveryLinks.deployments'])
+            ->with([
+                'project',
+                'workItems.deliveryLinks.checkRuns',
+                'workItems.deliveryLinks.deployments',
+                'workItems.statusTransitions',
+            ])
             ->limit($limit)
             ->offset($offset)
             ->get(['id', 'name', 'status', 'exit_criteria']);
