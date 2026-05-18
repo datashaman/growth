@@ -3,6 +3,7 @@
 use App\Growth\Search\SearchService;
 use App\Models\DesignElement;
 use App\Models\DesignView;
+use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\Risk;
 use App\Models\TestCase as TestCaseModel;
@@ -178,6 +179,60 @@ it('isolates test cases by workspace through the nested plan relation', function
 
 it('returns nothing for a query shorter than two characters', function () {
     expect(($this->search)('a'))->toBeEmpty();
+});
+
+it('carries the owning project into a shared index-page route', function () {
+    $milestone = Milestone::create([
+        'project_id' => $this->project->id,
+        'name' => 'Apollo first flight',
+        'status' => 'pending',
+    ]);
+
+    $hit = ($this->search)('apollo first flight', ['milestone'])->first();
+
+    expect($hit->route)->toBe('/plan?project='.$this->project->id);
+});
+
+it('treats LIKE wildcard characters in the query as literal text', function () {
+    Project::create([
+        'workspace_id' => $this->workspaceId,
+        'name' => 'Nimbus_alpha release',
+        'rigor_level' => 2,
+    ]);
+    Project::create([
+        'workspace_id' => $this->workspaceId,
+        'name' => 'NimbusXalpha release',
+        'rigor_level' => 2,
+    ]);
+
+    $labels = ($this->search)('nimbus_alpha', ['project'])->pluck('label')->all();
+
+    expect($labels)
+        ->toContain('Nimbus_alpha release')
+        ->not->toContain('NimbusXalpha release');
+});
+
+it('keeps a high-ranked match that sorts past the per-type fetch window', function () {
+    // More word-boundary matches than PER_TYPE_FETCH, all sorting before the
+    // exact-prefix match alphabetically — an alphabetical cut would drop it.
+    foreach (range(1, 30) as $i) {
+        WorkItem::create([
+            'project_id' => $this->project->id,
+            'kind' => 'task',
+            'name' => "Apollo comet sweep {$i}",
+            'status' => 'todo',
+        ]);
+    }
+    WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'task',
+        'name' => 'Comet retrospective',
+        'status' => 'todo',
+    ]);
+
+    $hits = ($this->search)('comet', ['work_item']);
+
+    expect($hits->first()->label)->toBe('Comet retrospective');
 });
 
 it('resolves a webapp route and matched field for a hit', function () {

@@ -81,6 +81,9 @@ new class extends Component {
         <div class="absolute inset-0 bg-zinc-900/50" @click="open = false"></div>
 
         <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="{{ __('Search') }}"
             class="relative w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-zinc-800"
             @keydown.down.prevent="move(1)"
             @keydown.up.prevent="move(-1)"
@@ -93,6 +96,7 @@ new class extends Component {
                     type="text"
                     wire:model.live.debounce.300ms="query"
                     @input="selected = 0"
+                    aria-label="{{ __('Search projects, work items, risks') }}"
                     placeholder="{{ __('Search projects, work items, risks…') }}"
                     class="w-full border-0 bg-transparent py-3 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-0 dark:text-zinc-100"
                 />

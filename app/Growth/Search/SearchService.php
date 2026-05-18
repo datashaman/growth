@@ -126,14 +126,32 @@ class SearchService
             $query->with($descriptor['projectIdVia'].':id,project_id');
         }
 
-        $query->where(function (Builder $sub) use ($columns, $term): void {
+        // Escape LIKE wildcards so a query containing `%` or `_` is matched as
+        // literal text rather than as a pattern.
+        $escaped = addcslashes($term, '%_\\');
+
+        $query->where(function (Builder $sub) use ($columns, $escaped): void {
             foreach ($columns as $column) {
-                $sub->orWhereRaw('lower('.$column.') like ?', ['%'.$term.'%']);
+                $sub->orWhereRaw('lower('.$column.") like ? escape '\\'", ['%'.$escaped.'%']);
             }
         });
 
+        // Order the fetch by the same tiers the in-memory ranking uses, so the
+        // best-ranked rows always survive the PER_TYPE_FETCH cut even when a
+        // type has more substring matches than that — an alphabetical cut would
+        // drop a high-ranked match that happens to sort late.
+        $labelColumn = $descriptor['label'];
+
         return $query
-            ->orderBy($descriptor['label'])
+            ->orderByRaw(
+                "case
+                    when lower({$labelColumn}) like ? escape '\\' then 0
+                    when lower({$labelColumn}) like ? escape '\\' then 1
+                    else 2
+                end",
+                [$escaped.'%', '% '.$escaped.'%']
+            )
+            ->orderBy($labelColumn)
             ->limit(self::PER_TYPE_FETCH)
             ->get()
             ->map(fn (Model $row): SearchHit => $this->toHit($descriptor, $row, $term))
@@ -228,9 +246,16 @@ class SearchService
             return null;
         }
 
-        return $descriptor['routeParam']
-            ? route($descriptor['route'], $row->getKey(), false)
-            : route($descriptor['route'], [], false);
+        if ($descriptor['routeParam']) {
+            return route($descriptor['route'], $row->getKey(), false);
+        }
+
+        // Shared index pages pick their project from `?project=`; carry the
+        // hit's owning project so the target page opens on the right one
+        // rather than whatever was last selected in the session.
+        $projectId = $this->projectId($descriptor, $row);
+
+        return route($descriptor['route'], $projectId !== null ? ['project' => $projectId] : [], false);
     }
 
     /**
@@ -241,7 +266,9 @@ class SearchService
      * - `projectIdVia`  — how to resolve the owning project id: null = self,
      *                     `project_id` = own column, else a relation to read it from.
      * - `route` / `routeParam` — webapp navigation target; types without a
-     *                     dedicated detail route land on their index page.
+     *                     dedicated detail route land on their index page,
+     *                     which is told which project to scope to via a
+     *                     `?project=` query parameter.
      *
      * @return list<array<string, mixed>>
      */
