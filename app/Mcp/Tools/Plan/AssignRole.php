@@ -3,6 +3,9 @@
 namespace App\Mcp\Tools\Plan;
 
 use App\Models\Role;
+use App\Models\User;
+use App\Notifications\RoleAssigned;
+use App\Notifications\WorkspaceNotifier;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -33,6 +36,16 @@ class AssignRole extends Tool
         $role = Role::findOrFail($data['role_id']);
         $relation = $data['assignee_type'] === 'user' ? 'users' : 'agents';
         $result = $role->{$relation}()->syncWithoutDetaching([$data['assignee_id']]);
+
+        // Tell a user when they are newly assigned to a role — a personal
+        // catalogue event. Re-syncing an existing assignment notifies no one.
+        if ($data['assignee_type'] === 'user' && $result['attached'] !== []) {
+            $assignee = User::find($data['assignee_id']);
+
+            if ($assignee !== null) {
+                app(WorkspaceNotifier::class)->notifyUser($assignee, new RoleAssigned($role));
+            }
+        }
 
         return Response::structured([
             'role_id' => $role->id,

@@ -3,7 +3,10 @@
 namespace App\Mcp\Tools\Verification;
 
 use App\Models\Anomaly;
+use App\Notifications\AnomalyOpened;
+use App\Notifications\WorkspaceNotifier;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -45,6 +48,11 @@ class UpsertAnomaly extends Tool
 
             return $anomaly;
         });
+
+        // A newly opened anomaly is a catalogue event; an update is not.
+        if ($anomaly->wasRecentlyCreated) {
+            app(WorkspaceNotifier::class)->notifyWorkspace($anomaly, new AnomalyOpened($anomaly), Auth::user());
+        }
 
         return Response::structured([
             'id' => $anomaly->id,
