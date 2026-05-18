@@ -51,6 +51,7 @@ use App\Mcp\Tools\Plan\ListAgents;
 use App\Mcp\Tools\Plan\ListDeliveryLinks;
 use App\Mcp\Tools\Plan\ListDeployments;
 use App\Mcp\Tools\Plan\ListMilestones;
+use App\Mcp\Tools\Plan\ListMockupRevisions;
 use App\Mcp\Tools\Plan\ListMockups;
 use App\Mcp\Tools\Plan\ListPlanBaselines;
 use App\Mcp\Tools\Plan\ListProjectPlans;
@@ -68,6 +69,7 @@ use App\Mcp\Tools\Plan\RecordUnattributedEvent;
 use App\Mcp\Tools\Plan\ReopenWorkItem;
 use App\Mcp\Tools\Plan\ResolveWorkItemByBranch;
 use App\Mcp\Tools\Plan\ResolveWorkItemByReference;
+use App\Mcp\Tools\Plan\RevertMockup;
 use App\Mcp\Tools\Plan\RollBackDeployment;
 use App\Mcp\Tools\Plan\StartDeployment;
 use App\Mcp\Tools\Plan\StartRiskMitigation;
@@ -161,6 +163,8 @@ class PlanningServer extends Server
         ListDeliveryLinks::class,
         UpsertMockup::class,
         ListMockups::class,
+        ListMockupRevisions::class,
+        RevertMockup::class,
         DeleteMockup::class,
         UpsertRisk::class,
         ListRisks::class,

@@ -34,11 +34,14 @@ it('stores a mockup for a work item', function () {
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('name', 'Checkout layout')
+                ->where('revision', 1)
                 ->where('created', true)
                 ->etc();
         });
 
-    expect(SpecMockup::where('work_item_id', $this->workItem->id)->count())->toBe(1);
+    $mockups = SpecMockup::where('work_item_id', $this->workItem->id)->get();
+    expect($mockups)->toHaveCount(1)
+        ->and($mockups->first()->currentRevision->html)->toContain('<h1>Checkout</h1>');
 });
 
 it('adds a second mockup under a new name', function () {
@@ -65,7 +68,7 @@ it('adds a second mockup under a new name', function () {
         ->toBe(['Compact layout', 'Roomy layout']);
 });
 
-it('replaces a mockup when upserted under an existing name', function () {
+it('appends a revision when upserted under an existing name', function () {
     $args = [
         'work_item_id' => $this->workItem->id,
         'name' => 'Roomy layout',
@@ -80,11 +83,14 @@ it('replaces a mockup when upserted under an existing name', function () {
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('name', 'Roomy layout')
+                ->where('revision', 2)
                 ->where('created', false)
                 ->etc();
         });
 
+    // One mockup, two revisions retained — its current state is the latest.
     $mockups = SpecMockup::where('work_item_id', $this->workItem->id)->get();
     expect($mockups)->toHaveCount(1)
-        ->and($mockups->first()->html)->toContain('v2');
+        ->and($mockups->first()->revisions)->toHaveCount(2)
+        ->and($mockups->first()->currentRevision->html)->toContain('v2');
 });

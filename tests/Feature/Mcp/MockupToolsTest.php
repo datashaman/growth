@@ -27,16 +27,8 @@ beforeEach(function () {
 });
 
 it('lists a work item mockups without their html', function () {
-    SpecMockup::create([
-        'work_item_id' => $this->workItem->id,
-        'name' => 'Roomy layout',
-        'html' => '<!doctype html><html><body>roomy</body></html>',
-    ]);
-    SpecMockup::create([
-        'work_item_id' => $this->workItem->id,
-        'name' => 'Compact layout',
-        'html' => '<!doctype html><html><body>compact</body></html>',
-    ]);
+    createMockup($this->workItem->id, 'Roomy layout', '<!doctype html><html><body>roomy</body></html>');
+    createMockup($this->workItem->id, 'Compact layout', '<!doctype html><html><body>compact</body></html>');
 
     PlanningServer::tool(ListMockups::class, ['work_item_id' => $this->workItem->id])
         ->assertOk()
@@ -66,11 +58,7 @@ it('does not list mockups for a work item in another workspace', function () {
 });
 
 it('deletes a mockup', function () {
-    $mockup = SpecMockup::create([
-        'work_item_id' => $this->workItem->id,
-        'name' => 'Roomy layout',
-        'html' => '<!doctype html><html><body>roomy</body></html>',
-    ]);
+    $mockup = createMockup($this->workItem->id, 'Roomy layout', '<!doctype html><html><body>roomy</body></html>');
 
     PlanningServer::tool(DeleteMockup::class, ['id' => $mockup->id])
         ->assertOk()
@@ -95,11 +83,7 @@ it('does not delete a mockup from another workspace', function () {
         'kind' => WorkItem::KINDS[0],
         'name' => 'Theirs',
     ]);
-    $otherMockup = SpecMockup::create([
-        'work_item_id' => $otherItem->id,
-        'name' => 'Their layout',
-        'html' => '<!doctype html><html><body>secret</body></html>',
-    ]);
+    $otherMockup = createMockup($otherItem->id, 'Their layout', '<!doctype html><html><body>secret</body></html>');
 
     PlanningServer::tool(DeleteMockup::class, ['id' => $otherMockup->id])
         ->assertHasErrors();

@@ -9,7 +9,11 @@ use Symfony\Component\HttpFoundation\Response as BaseResponse;
 class SpecMockupController extends Controller
 {
     /**
-     * Serve a spec mockup's raw, agent-authored HTML.
+     * Serve a spec mockup revision's raw, agent-authored HTML.
+     *
+     * The `revision` query parameter selects a revision by ULID; without it
+     * the mockup's current (latest) revision is served. A revision id that
+     * does not belong to this mockup 404s.
      *
      * This is the document embedded by the mockup page's sandboxed iframe.
      * The Content-Security-Policy lets a self-contained mockup pull styling
@@ -44,7 +48,14 @@ class SpecMockupController extends Controller
             return redirect()->route('mockups.show', $mockup);
         }
 
-        return response($mockup->html)
+        $revisionId = $request->query('revision');
+        $revision = $revisionId !== null
+            ? $mockup->revisions()->findOrFail($revisionId)
+            : $mockup->currentRevision;
+
+        abort_if($revision === null, 404);
+
+        return response($revision->html)
             ->header('Content-Type', 'text/html; charset=UTF-8')
             ->header('Content-Security-Policy', implode('; ', [
                 "default-src 'none'",

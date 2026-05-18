@@ -1,9 +1,9 @@
 <?php
 
 use App\Models\Project;
-use App\Models\SpecMockup;
 use App\Models\User;
 use App\Models\WorkItem;
+use Livewire\Livewire;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -17,11 +17,11 @@ beforeEach(function () {
         'kind' => WorkItem::KINDS[0],
         'name' => 'Checkout',
     ]);
-    $this->mockup = SpecMockup::create([
-        'work_item_id' => $this->workItem->id,
-        'name' => 'Checkout layout',
-        'html' => '<!doctype html><html><body><h1>Checkout mockup</h1></body></html>',
-    ]);
+    $this->mockup = createMockup(
+        $this->workItem->id,
+        'Checkout layout',
+        '<!doctype html><html><body><h1>Checkout mockup</h1></body></html>',
+    );
 });
 
 it('renders the mockup inside a sandboxed iframe with no same-origin access', function () {
@@ -75,12 +75,67 @@ it('bounces a top-level navigation to the raw route back to the wrapper page', f
     expect($response->getContent())->not->toContain('Checkout mockup');
 });
 
+it('serves a chosen revision and 404s an unknown one', function () {
+    $this->mockup->appendRevision('<!doctype html><html><body><h1>Second cut</h1></body></html>');
+    [$first, $second] = $this->mockup->revisions()->get()->all();
+
+    $this->actingAs($this->user)
+        ->withHeader('Sec-Fetch-Dest', 'iframe')
+        ->get(route('mockups.raw', ['mockup' => $this->mockup, 'revision' => $first->id]))
+        ->assertOk()
+        ->assertSee('Checkout mockup', false);
+
+    // No revision parameter falls through to the current (latest) revision.
+    $this->actingAs($this->user)
+        ->withHeader('Sec-Fetch-Dest', 'iframe')
+        ->get(route('mockups.raw', $this->mockup))
+        ->assertOk()
+        ->assertSee('Second cut', false);
+
+    // A revision id that is not this mockup's 404s.
+    $this->actingAs($this->user)
+        ->withHeader('Sec-Fetch-Dest', 'iframe')
+        ->get(route('mockups.raw', ['mockup' => $this->mockup, 'revision' => 'not-a-revision']))
+        ->assertNotFound();
+
+    // A real revision belonging to a sibling mockup is not served under this one.
+    $sibling = createMockup(
+        $this->workItem->id,
+        'Compact layout',
+        '<!doctype html><html><body>compact</body></html>',
+    );
+    $this->actingAs($this->user)
+        ->withHeader('Sec-Fetch-Dest', 'iframe')
+        ->get(route('mockups.raw', ['mockup' => $this->mockup, 'revision' => $sibling->currentRevision->id]))
+        ->assertNotFound();
+});
+
+it('switches the iframe to a chosen revision', function () {
+    $this->mockup->appendRevision('<!doctype html><html><body><h1>Second cut</h1></body></html>');
+    $first = $this->mockup->revisions()->orderBy('number')->first();
+
+    Livewire::test('pages::mockups.show', ['mockup' => $this->mockup])
+        ->call('selectRevision', $first->id)
+        ->assertSet('revisionId', $first->id)
+        ->assertSee('revision='.$first->id);
+});
+
+it('shows a mockup revision history', function () {
+    $this->mockup->appendRevision('<!doctype html><html><body><h1>Second cut</h1></body></html>');
+
+    $this->actingAs($this->user)
+        ->get(route('mockups.show', $this->mockup))
+        ->assertOk()
+        ->assertSee('Revision 1')
+        ->assertSee('Revision 2');
+});
+
 it('lists sibling mockups and links between them', function () {
-    $sibling = SpecMockup::create([
-        'work_item_id' => $this->workItem->id,
-        'name' => 'Compact layout',
-        'html' => '<!doctype html><html><body><h1>Compact mockup</h1></body></html>',
-    ]);
+    $sibling = createMockup(
+        $this->workItem->id,
+        'Compact layout',
+        '<!doctype html><html><body><h1>Compact mockup</h1></body></html>',
+    );
 
     $this->actingAs($this->user)
         ->get(route('mockups.show', $this->mockup))
@@ -92,11 +147,11 @@ it('lists sibling mockups and links between them', function () {
 });
 
 it('links to every mockup from the work item page', function () {
-    $sibling = SpecMockup::create([
-        'work_item_id' => $this->workItem->id,
-        'name' => 'Compact layout',
-        'html' => '<!doctype html><html><body>compact</body></html>',
-    ]);
+    $sibling = createMockup(
+        $this->workItem->id,
+        'Compact layout',
+        '<!doctype html><html><body>compact</body></html>',
+    );
 
     $this->actingAs($this->user)
         ->get(route('work-items.show', $this->workItem))
@@ -118,11 +173,11 @@ it('does not serve a mockup from another workspace', function () {
         'kind' => WorkItem::KINDS[0],
         'name' => 'Theirs',
     ]);
-    $otherMockup = SpecMockup::create([
-        'work_item_id' => $otherItem->id,
-        'name' => 'Their layout',
-        'html' => '<!doctype html><html><body>secret</body></html>',
-    ]);
+    $otherMockup = createMockup(
+        $otherItem->id,
+        'Their layout',
+        '<!doctype html><html><body>secret</body></html>',
+    );
 
     $this->actingAs($this->user)
         ->get(route('mockups.show', $otherMockup))
