@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Add or replace a named spec mockup on a work item — a self-contained HTML page expressing a UI idea. A new name adds a mockup; an existing name replaces it.')]
+#[Description('Add or refine a named spec mockup on a work item — a self-contained HTML page expressing a UI idea. A new name creates the mockup; an existing name appends a revision, keeping the earlier rounds.')]
 class UpsertMockup extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -21,16 +21,20 @@ class UpsertMockup extends Tool
             'html' => 'required|string',
         ]);
 
-        $mockup = SpecMockup::updateOrCreate(
-            ['work_item_id' => $data['work_item_id'], 'name' => $data['name']],
-            $data,
-        );
+        $mockup = SpecMockup::firstOrCreate([
+            'work_item_id' => $data['work_item_id'],
+            'name' => $data['name'],
+        ]);
+        $created = $mockup->wasRecentlyCreated;
+
+        $revision = $mockup->appendRevision($data['html']);
 
         return Response::structured([
             'id' => $mockup->id,
             'work_item_id' => $mockup->work_item_id,
             'name' => $mockup->name,
-            'created' => $mockup->wasRecentlyCreated,
+            'revision' => $revision->number,
+            'created' => $created,
         ]);
     }
 
@@ -49,7 +53,8 @@ class UpsertMockup extends Tool
             'id' => $schema->string()->required(),
             'work_item_id' => $schema->string()->required(),
             'name' => $schema->string()->required(),
-            'created' => $schema->boolean()->required(),
+            'revision' => $schema->integer()->description('Number of the revision this call appended')->required(),
+            'created' => $schema->boolean()->description('Whether this call created the mockup')->required(),
         ];
     }
 }

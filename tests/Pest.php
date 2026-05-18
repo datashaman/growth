@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\SpecMockup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -55,6 +56,20 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+/**
+ * Create a spec mockup with an initial revision holding the given HTML.
+ */
+function createMockup(string $workItemId, string $name, string $html): SpecMockup
+{
+    $mockup = SpecMockup::create([
+        'work_item_id' => $workItemId,
+        'name' => $name,
+    ]);
+    $mockup->appendRevision($html);
+
+    return $mockup;
+}
 
 function readResource(string $serverClass, string $uri): TestResponse
 {

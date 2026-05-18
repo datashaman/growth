@@ -6,9 +6,23 @@ use Livewire\Component;
 new class extends Component {
     public SpecMockup $mockup;
 
+    /** ULID of the revision currently shown in the iframe. */
+    public string $revisionId = '';
+
     public function mount(SpecMockup $mockup): void
     {
-        $this->mockup = $mockup->load('workItem.project', 'workItem.mockups');
+        $this->mockup = $mockup->load('workItem.project', 'workItem.mockups', 'revisions');
+        $this->revisionId = (string) ($this->mockup->revisions->last()?->id ?? '');
+    }
+
+    /**
+     * Switch the iframe to a past revision — only if it belongs to this mockup.
+     */
+    public function selectRevision(string $revisionId): void
+    {
+        if ($this->mockup->revisions->contains('id', $revisionId)) {
+            $this->revisionId = $revisionId;
+        }
     }
 }; ?>
 
@@ -42,8 +56,25 @@ new class extends Component {
             </nav>
         @endif
 
+        @if ($mockup->revisions->count() > 1)
+            <nav class="mb-3 flex flex-wrap gap-2" aria-label="{{ __('Revisions') }}">
+                @foreach ($mockup->revisions->sortByDesc('number') as $revision)
+                    <button type="button" wire:click="selectRevision('{{ $revision->id }}')"
+                        @class([
+                            'rounded-md px-2.5 py-1 text-sm',
+                            'bg-sky-600 font-medium text-white' => $revision->id === $revisionId,
+                            'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700' => $revision->id !== $revisionId,
+                        ])
+                        @if ($revision->id === $revisionId) aria-current="true" @endif>
+                        {{ __('Revision :number', ['number' => $revision->number]) }}@if ($revision->is($mockup->revisions->last())) · {{ __('current') }}@endif
+                    </button>
+                @endforeach
+            </nav>
+        @endif
+
         <iframe
-            src="{{ route('mockups.raw', $mockup) }}"
+            wire:key="revision-{{ $revisionId }}"
+            src="{{ route('mockups.raw', ['mockup' => $mockup, 'revision' => $revisionId]) }}"
             sandbox="allow-scripts"
             title="{{ $mockup->name }}"
             class="h-[70vh] w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-700"></iframe>
