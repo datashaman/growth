@@ -33,7 +33,9 @@ use App\Mcp\Tools\Changes\ListArtifactRelations;
 use App\Mcp\Tools\Changes\ListChangeApprovalEvents;
 use App\Mcp\Tools\Changes\ListChangeRequests;
 use App\Mcp\Tools\Common\Doctor;
+use App\Mcp\Tools\Common\ListNotifications;
 use App\Mcp\Tools\Common\ListUsers;
+use App\Mcp\Tools\Common\MarkNotificationRead;
 use App\Mcp\Tools\Common\SendNotification;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Dashboard\GetProjectDashboardData;
@@ -85,7 +87,9 @@ class ReadonlyServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        ListNotifications::class,
         ListUsers::class,
+        MarkNotificationRead::class,
         SendNotification::class,
         Search::class,
         Doctor::class,

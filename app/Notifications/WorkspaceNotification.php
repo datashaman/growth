@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
@@ -19,6 +20,33 @@ use Illuminate\Notifications\Notification;
  */
 abstract class WorkspaceNotification extends Notification
 {
+    /** Workspace the event belongs to — stamped by {@see WorkspaceNotifier}. */
+    protected ?string $workspaceId = null;
+
+    /** ULID of the user who caused the event, or null for a system event. */
+    protected ?string $senderId = null;
+
+    /** Display name of that user. */
+    protected ?string $senderName = null;
+
+    /** Operating role the sender was acting in, or null when unbound. */
+    protected ?string $actingRole = null;
+
+    /**
+     * Stamp the originating context onto the notification. Called by
+     * {@see WorkspaceNotifier} once, before fan-out, so the stored payload
+     * records which workspace the event belongs to and who caused it.
+     */
+    public function withContext(?string $workspaceId, ?User $sender, ?string $actingRole): static
+    {
+        $this->workspaceId = $workspaceId;
+        $this->senderId = $sender === null ? null : (string) $sender->getKey();
+        $this->senderName = $sender === null ? null : ($sender->name ?: $sender->email);
+        $this->actingRole = $actingRole;
+
+        return $this;
+    }
+
     /**
      * Stable catalogue event name, e.g. `change_request.decided`.
      */
@@ -70,6 +98,12 @@ abstract class WorkspaceNotification extends Notification
             'url' => $this->url(),
             'subject_type' => $subjectType,
             'subject_id' => $subjectId,
+            'workspace_id' => $this->workspaceId,
+            'sender' => $this->senderId === null ? null : [
+                'id' => $this->senderId,
+                'name' => $this->senderName,
+            ],
+            'acting_role' => $this->actingRole,
         ];
     }
 

@@ -25,6 +25,7 @@ beforeEach(function () {
                 'url' => '/dashboard',
                 'subject_type' => 'project',
                 'subject_id' => 'p1',
+                'workspace_id' => $user->active_workspace_id,
             ],
             'read_at' => $readAt,
         ]);
@@ -82,6 +83,18 @@ test('the bell only shows the current user\'s notifications', function () {
 
     Livewire::test('notification-bell')
         ->assertDontSee('Someone else\'s notification')
+        ->assertDontSeeHtml('notification-indicator');
+});
+
+test('the bell does not show notifications from another workspace', function () {
+    $other = User::factory()->create();
+    ($this->notify)($this->user, 'Cross-workspace leak');
+    $this->user->notifications()->latest()->first()->update([
+        'data->workspace_id' => $other->active_workspace_id,
+    ]);
+
+    Livewire::test('notification-bell')
+        ->assertDontSee('Cross-workspace leak')
         ->assertDontSeeHtml('notification-indicator');
 });
 

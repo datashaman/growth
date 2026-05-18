@@ -123,6 +123,17 @@ test('a workspace notification never reaches another workspace', function () {
     Notification::assertNotSentTo($outsider, ProjectStatusChanged::class);
 });
 
+test('a workspace notification is stamped with workspace, sender, and acting role', function () {
+    (new ActivateProject)->apply($this->project, $this->actor);
+
+    $data = $this->member->notifications()->firstOrFail()->data;
+
+    expect($data['workspace_id'])->toBe($this->workspaceId)
+        ->and($data['sender']['id'])->toBe((string) $this->actor->id)
+        ->and($data['sender']['name'])->toBe($this->actor->name)
+        ->and($data)->toHaveKey('acting_role');
+});
+
 test('a workspace notification fans across the database and broadcast channels', function () {
     expect((new ProjectStatusChanged($this->project))->via($this->member))
         ->toBe(['database', 'broadcast']);
