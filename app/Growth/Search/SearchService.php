@@ -276,7 +276,7 @@ class SearchService
     {
         return [
             ['type' => 'project', 'model' => Project::class, 'label' => 'name', 'columns' => ['name', 'description'], 'workspaceVia' => null, 'projectIdVia' => null, 'route' => 'dashboard', 'routeParam' => false],
-            ['type' => 'requirement', 'model' => Requirement::class, 'label' => 'slug', 'columns' => ['slug', 'text', 'rationale'], 'workspaceVia' => 'project', 'projectIdVia' => 'project_id', 'route' => 'requirements.show', 'routeParam' => true],
+            ['type' => 'requirement', 'model' => Requirement::class, 'label' => 'text', 'columns' => ['slug', 'text', 'rationale'], 'workspaceVia' => 'project', 'projectIdVia' => 'project_id', 'route' => 'requirements.show', 'routeParam' => true],
             ['type' => 'work_item', 'model' => WorkItem::class, 'label' => 'name', 'columns' => ['name', 'description'], 'workspaceVia' => 'project', 'projectIdVia' => 'project_id', 'route' => 'work-items.show', 'routeParam' => true],
             ['type' => 'risk', 'model' => Risk::class, 'label' => 'title', 'columns' => ['title', 'description'], 'workspaceVia' => 'project', 'projectIdVia' => 'project_id', 'route' => 'risks.show', 'routeParam' => true],
             ['type' => 'review', 'model' => Review::class, 'label' => 'title', 'columns' => ['title', 'objective', 'summary'], 'workspaceVia' => 'project', 'projectIdVia' => 'project_id', 'route' => 'reviews.show', 'routeParam' => true],

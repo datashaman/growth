@@ -5,6 +5,7 @@ use App\Models\DesignElement;
 use App\Models\DesignView;
 use App\Models\Milestone;
 use App\Models\Project;
+use App\Models\Requirement;
 use App\Models\Risk;
 use App\Models\TestCase as TestCaseModel;
 use App\Models\TestPlan;
@@ -233,6 +234,23 @@ it('keeps a high-ranked match that sorts past the per-type fetch window', functi
     $hits = ($this->search)('comet', ['work_item']);
 
     expect($hits->first()->label)->toBe('Comet retrospective');
+});
+
+it('labels a requirement by its text and still finds it by slug', function () {
+    Requirement::create([
+        'project_id' => $this->project->id,
+        'slug' => 'REQ-NEBULA-01',
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The system shall chart the nebula drift.',
+    ]);
+
+    $byText = ($this->search)('nebula drift', ['requirement'])->first();
+    expect($byText->label)->toBe('The system shall chart the nebula drift.');
+
+    // The slug stays searchable even though it is no longer the label.
+    $bySlug = ($this->search)('req-nebula', ['requirement'])->first();
+    expect($bySlug?->label)->toBe('The system shall chart the nebula drift.');
 });
 
 it('resolves a webapp route and matched field for a hit', function () {

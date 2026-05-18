@@ -115,12 +115,9 @@ new class extends Component {
                             data-omni-index="{{ $hit['index'] }}"
                             @mouseenter="selected = {{ $hit['index'] }}"
                             :class="selected === {{ $hit['index'] }} ? 'bg-zinc-100 dark:bg-zinc-700' : ''"
-                            class="flex items-center gap-2 px-3 py-2 text-sm"
+                            class="block px-3 py-2 text-sm"
                         >
-                            <flux:badge size="sm" :color="\App\Support\BadgeVariant::searchType($type)">
-                                {{ str_replace('_', ' ', $type) }}
-                            </flux:badge>
-                            <span class="truncate text-zinc-700 dark:text-zinc-200">{{ $hit['label'] }}</span>
+                            <span class="block truncate text-zinc-700 dark:text-zinc-200">{{ $hit['label'] }}</span>
                         </a>
                     @endforeach
                 @empty
