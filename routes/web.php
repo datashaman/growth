@@ -26,6 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('reviews/{review}', 'pages::reviews.show')->name('reviews.show');
     Route::livewire('tool-invocations', 'pages::tool-invocations')->name('tool-invocations');
     Route::livewire('feedback', 'pages::feedback')->name('feedback');
+    Route::livewire('feedback/{toolFeedback}', 'pages::feedback.show')->name('feedback.show');
     Route::livewire('notifications', 'pages::notifications')->name('notifications');
 });
 

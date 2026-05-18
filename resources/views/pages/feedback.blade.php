@@ -77,7 +77,7 @@ new #[Title('Feedback')] class extends Component {
                             <flux:badge :color="BadgeVariant::feedbackCategory($item->category)" size="sm">{{ EnumLabel::lower($item->category) }}</flux:badge>
                         </flux:table.cell>
                         <flux:table.cell>
-                            <div class="font-medium">{{ $item->summary }}</div>
+                            <a href="{{ route('feedback.show', $item) }}" wire:navigate class="font-medium hover:underline">{{ $item->summary }}</a>
                             <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400" title="{{ $item->body }}">{{ Str::limit($item->body, 160) }}</div>
                         </flux:table.cell>
                         <flux:table.cell class="whitespace-nowrap">{{ $item->tool_name ?? '—' }}</flux:table.cell>
