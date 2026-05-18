@@ -8,9 +8,9 @@ return new class extends Migration
 {
     /**
      * A spec mockup — agent-authored HTML expressing a UI idea — stored
-     * against a work item. The tracer slice keeps one mockup per work item;
-     * naming and revisions arrive in later slices, so a `name` column lands
-     * now to spare a reshape.
+     * against a work item. A mockup's name identifies it within its work
+     * item, so the pair is unique: the tracer slice attaches one mockup,
+     * later slices the named layout alternatives, with no reshape.
      */
     public function up(): void
     {
@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('name');
             $table->longText('html');
             $table->timestamps();
+
+            $table->unique(['work_item_id', 'name']);
         });
     }
 

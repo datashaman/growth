@@ -54,10 +54,12 @@ it('serves the raw mockup HTML under a locked-down content security policy', fun
     $csp = $response->headers->get('Content-Security-Policy');
 
     // connect-src and form-action denied: the mockup has no channel to phone
-    // home. frame-ancestors 'self': only Growth may embed it.
+    // home. frame-ancestors 'self': only Growth may embed it. The sandbox
+    // directive sandboxes the document from the response itself.
     expect($csp)->toContain("connect-src 'none'")
         ->and($csp)->toContain("form-action 'none'")
         ->and($csp)->toContain("frame-ancestors 'self'")
+        ->and($csp)->toContain('sandbox allow-scripts')
         ->and($response->headers->get('X-Content-Type-Options'))->toBe('nosniff');
 });
 

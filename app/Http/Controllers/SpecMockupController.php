@@ -25,6 +25,18 @@ class SpecMockupController extends Controller
      * so a request that is not a sub-resource frame fetch is bounced to the
      * wrapper page. `Sec-Fetch-Dest` is `iframe` for a framed load and
      * `document` for top-level navigation; modern browsers always send it.
+     *
+     * The CSP `sandbox` directive is defence-in-depth on top of that bounce:
+     * it sandboxes the document into an opaque origin from the response
+     * itself, so the mockup stays walled off from Growth even if the
+     * `Sec-Fetch-Dest` guard is bypassed by a browser that omits the header.
+     *
+     * `script-src`/`style-src`/`img-src` stay open to any HTTPS origin by
+     * design — mockups pull from whichever CDN the agent reached for, and an
+     * allowlist would silently break them. The opaque origin plus
+     * `connect-src 'none'` and `form-action 'none'` are what contain it; a
+     * resource load can still leak via its URL, an accepted cost of that
+     * flexibility.
      */
     public function raw(Request $request, SpecMockup $mockup): BaseResponse
     {
@@ -44,6 +56,7 @@ class SpecMockupController extends Controller
                 "form-action 'none'",
                 "frame-ancestors 'self'",
                 "base-uri 'none'",
+                'sandbox allow-scripts',
             ]))
             ->header('X-Content-Type-Options', 'nosniff');
     }
