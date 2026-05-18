@@ -3,10 +3,16 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         defaultTestSuite="Feature"
 >
     <testsuites>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
+        </testsuite>
+        <!-- Browser tests need Playwright; they are excluded from the default
+             run (defaultTestSuite above) and exercised by their own CI job. -->
+        <testsuite name="Browser">
+            <directory>tests/Browser</directory>
         </testsuite>
     </testsuites>
     <source>

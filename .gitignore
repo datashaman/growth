@@ -30,3 +30,5 @@ Homestead.yaml
 Thumbs.db
 .vapor/
 .env.staging
+/tests/Browser/Screenshots
+/test-results
