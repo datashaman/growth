@@ -24,7 +24,7 @@ beforeEach(function () {
         'name' => 'Ship it',
     ]);
 
-    $this->mockup = createMockup($this->workItem->id, 'Checkout layout', '<html><body>v1</body></html>');
+    $this->mockup = createMockup($this->workItem, 'Checkout layout', '<html><body>v1</body></html>');
     $this->mockup->appendRevision('<html><body>v2</body></html>');
 });
 
@@ -79,7 +79,7 @@ it('does not list revisions for a mockup in another workspace', function () {
         'kind' => WorkItem::KINDS[0],
         'name' => 'Theirs',
     ]);
-    $otherMockup = createMockup($otherItem->id, 'Their layout', '<html><body>secret</body></html>');
+    $otherMockup = createMockup($otherItem, 'Their layout', '<html><body>secret</body></html>');
 
     PlanningServer::tool(ListMockupRevisions::class, ['mockup_id' => $otherMockup->id])
         ->assertHasErrors();

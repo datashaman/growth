@@ -3,6 +3,7 @@
 use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Tools\Plan\UpsertMockup;
 use App\Models\Project;
+use App\Models\Requirement;
 use App\Models\SpecMockup;
 use App\Models\User;
 use App\Models\WorkItem;
@@ -27,26 +28,98 @@ beforeEach(function () {
 
 it('stores a mockup for a work item', function () {
     PlanningServer::tool(UpsertMockup::class, [
-        'work_item_id' => $this->workItem->id,
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
         'name' => 'Checkout layout',
         'html' => '<!doctype html><html><body><h1>Checkout</h1></body></html>',
     ])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('name', 'Checkout layout')
+                ->where('owner_type', 'work_item')
                 ->where('revision', 1)
                 ->where('created', true)
                 ->etc();
         });
 
-    $mockups = SpecMockup::where('work_item_id', $this->workItem->id)->get();
+    $mockups = SpecMockup::where('owner_id', $this->workItem->id)->get();
     expect($mockups)->toHaveCount(1)
         ->and($mockups->first()->currentRevision->html)->toContain('<h1>Checkout</h1>');
 });
 
+it('stores a mockup for a requirement', function () {
+    $requirement = Requirement::create([
+        'project_id' => $this->project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The checkout must be one page',
+    ]);
+
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'requirement',
+        'owner_id' => $requirement->id,
+        'name' => 'One-page checkout',
+        'html' => '<!doctype html><html><body>one page</body></html>',
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use ($requirement) {
+            $json->where('owner_type', 'requirement')
+                ->where('owner_id', $requirement->id)
+                ->where('revision', 1)
+                ->where('created', true)
+                ->etc();
+        });
+
+    expect($requirement->mockups()->count())->toBe(1);
+});
+
+it('rejects an owner from another workspace', function () {
+    $other = User::factory()->create();
+    $otherProject = Project::create([
+        'workspace_id' => $other->active_workspace_id,
+        'name' => 'Theirs',
+        'rigor_level' => 2,
+    ]);
+    $otherItem = WorkItem::create([
+        'project_id' => $otherProject->id,
+        'kind' => WorkItem::KINDS[0],
+        'name' => 'Theirs',
+    ]);
+
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $otherItem->id,
+        'name' => 'Checkout layout',
+        'html' => '<!doctype html><html><body>x</body></html>',
+    ])->assertHasErrors();
+});
+
+it('rejects a requirement from another workspace', function () {
+    $other = User::factory()->create();
+    $otherProject = Project::create([
+        'workspace_id' => $other->active_workspace_id,
+        'name' => 'Theirs',
+        'rigor_level' => 2,
+    ]);
+    $otherRequirement = Requirement::create([
+        'project_id' => $otherProject->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'Their requirement',
+    ]);
+
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'requirement',
+        'owner_id' => $otherRequirement->id,
+        'name' => 'Checkout layout',
+        'html' => '<!doctype html><html><body>x</body></html>',
+    ])->assertHasErrors();
+});
+
 it('adds a second mockup under a new name', function () {
     $args = [
-        'work_item_id' => $this->workItem->id,
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
         'name' => 'Roomy layout',
         'html' => '<!doctype html><html><body>roomy</body></html>',
     ];
@@ -64,13 +137,14 @@ it('adds a second mockup under a new name', function () {
                 ->etc();
         });
 
-    expect(SpecMockup::where('work_item_id', $this->workItem->id)->pluck('name')->sort()->values()->all())
+    expect($this->workItem->mockups()->pluck('name')->sort()->values()->all())
         ->toBe(['Compact layout', 'Roomy layout']);
 });
 
 it('appends a revision when upserted under an existing name', function () {
     $args = [
-        'work_item_id' => $this->workItem->id,
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
         'name' => 'Roomy layout',
         'html' => '<!doctype html><html><body>v1</body></html>',
     ];
@@ -89,7 +163,7 @@ it('appends a revision when upserted under an existing name', function () {
         });
 
     // One mockup, two revisions retained — its current state is the latest.
-    $mockups = SpecMockup::where('work_item_id', $this->workItem->id)->get();
+    $mockups = $this->workItem->mockups()->get();
     expect($mockups)->toHaveCount(1)
         ->and($mockups->first()->revisions)->toHaveCount(2)
         ->and($mockups->first()->currentRevision->html)->toContain('v2');

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Project;
+use App\Models\Requirement;
 use App\Models\User;
 use App\Models\WorkItem;
 use Livewire\Livewire;
@@ -18,7 +19,7 @@ beforeEach(function () {
         'name' => 'Checkout',
     ]);
     $this->mockup = createMockup(
-        $this->workItem->id,
+        $this->workItem,
         'Checkout layout',
         '<!doctype html><html><body><h1>Checkout mockup</h1></body></html>',
     );
@@ -107,7 +108,7 @@ it('serves a chosen revision and 404s an unknown one', function () {
 
     // A real revision belonging to a sibling mockup is not served under this one.
     $sibling = createMockup(
-        $this->workItem->id,
+        $this->workItem,
         'Compact layout',
         '<!doctype html><html><body>compact</body></html>',
     );
@@ -139,7 +140,7 @@ it('shows a mockup revision history', function () {
 
 it('lists sibling mockups and links between them', function () {
     $sibling = createMockup(
-        $this->workItem->id,
+        $this->workItem,
         'Compact layout',
         '<!doctype html><html><body><h1>Compact mockup</h1></body></html>',
     );
@@ -155,7 +156,7 @@ it('lists sibling mockups and links between them', function () {
 
 it('links to every mockup from the work item page', function () {
     $sibling = createMockup(
-        $this->workItem->id,
+        $this->workItem,
         'Compact layout',
         '<!doctype html><html><body>compact</body></html>',
     );
@@ -166,6 +167,35 @@ it('links to every mockup from the work item page', function () {
         ->assertSee('Spec mockups')
         ->assertSee(route('mockups.show', $this->mockup))
         ->assertSee(route('mockups.show', $sibling));
+});
+
+it('renders a requirement-owned mockup and links it from the requirement page', function () {
+    $requirement = Requirement::create([
+        'project_id' => $this->project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The checkout must be one page',
+    ]);
+    $mockup = createMockup(
+        $requirement,
+        'One-page checkout',
+        '<!doctype html><html><body><h1>One-page</h1></body></html>',
+    );
+
+    // The requirement page offers the mockup in its gallery.
+    $this->actingAs($this->user)
+        ->get(route('requirements.show', $requirement))
+        ->assertOk()
+        ->assertSee('Spec mockups')
+        ->assertSee(route('mockups.show', $mockup));
+
+    // The mockup page renders sandboxed and points back to the requirement.
+    $this->actingAs($this->user)
+        ->get(route('mockups.show', $mockup))
+        ->assertOk()
+        ->assertSee('One-page checkout')
+        ->assertSee(route('requirements.show', $requirement))
+        ->assertSee(route('mockups.raw', $mockup));
 });
 
 it('does not serve a mockup from another workspace', function () {
@@ -181,7 +211,7 @@ it('does not serve a mockup from another workspace', function () {
         'name' => 'Theirs',
     ]);
     $otherMockup = createMockup(
-        $otherItem->id,
+        $otherItem,
         'Their layout',
         '<!doctype html><html><body>secret</body></html>',
     );

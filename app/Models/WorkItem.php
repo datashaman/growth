@@ -146,9 +146,9 @@ class WorkItem extends Model
         return $this->hasMany(WorkItemDeliveryLink::class);
     }
 
-    public function mockups(): HasMany
+    public function mockups(): MorphMany
     {
-        return $this->hasMany(SpecMockup::class);
+        return $this->morphMany(SpecMockup::class, 'owner');
     }
 
     public function releases(): BelongsToMany

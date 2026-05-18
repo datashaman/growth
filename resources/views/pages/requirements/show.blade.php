@@ -17,6 +17,7 @@ new class extends Component {
             'workItems',
             'testCases',
             'anomalies',
+            'mockups',
         ]);
     }
 }; ?>
@@ -198,5 +199,20 @@ new class extends Component {
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
+    @endif
+
+    @if ($requirement->mockups->isNotEmpty())
+        <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+            <flux:heading size="lg" class="mb-3">{{ __('Spec mockups') }}</flux:heading>
+            <ul class="flex flex-col gap-1">
+                @foreach ($requirement->mockups as $mockup)
+                    <li>
+                        <flux:link :href="route('mockups.show', $mockup)" wire:navigate class="underline">
+                            {{ $mockup->name }}
+                        </flux:link>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
     @endif
 </div>

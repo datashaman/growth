@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Requirement;
 use App\Models\SpecMockup;
+use Illuminate\Support\Str;
 use Livewire\Component;
 
 new class extends Component {
@@ -11,7 +13,7 @@ new class extends Component {
 
     public function mount(SpecMockup $mockup): void
     {
-        $this->mockup = $mockup->load('workItem.project', 'workItem.mockups', 'revisions');
+        $this->mockup = $mockup->load('owner.mockups', 'revisions');
         $this->revisionId = (string) ($this->mockup->revisions->last()?->id ?? '');
     }
 
@@ -24,16 +26,41 @@ new class extends Component {
             $this->revisionId = $revisionId;
         }
     }
+
+    /** Route to the owning spec entity's detail page. */
+    public function ownerHref(): string
+    {
+        return $this->mockup->owner instanceof Requirement
+            ? route('requirements.show', $this->mockup->owner)
+            : route('work-items.show', $this->mockup->owner);
+    }
+
+    /** Human label for the owning spec entity. */
+    public function ownerLabel(): string
+    {
+        $owner = $this->mockup->owner;
+
+        return $owner instanceof Requirement
+            ? Str::limit($owner->text, 80)
+            : $owner->reference().' — '.$owner->name;
+    }
+
+    public function ownerBackLabel(): string
+    {
+        return $this->mockup->owner instanceof Requirement
+            ? __('Back to requirement')
+            : __('Back to work item');
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-detail-page-header
         :title="$mockup->name"
-        :back-href="route('work-items.show', $mockup->workItem)"
-        :back-label="__('Back to work item')">
+        :back-href="$this->ownerHref()"
+        :back-label="$this->ownerBackLabel()">
         <x-slot:description>
             {{ __('Spec mockup for') }}
-            <a href="{{ route('work-items.show', $mockup->workItem) }}" wire:navigate class="underline">{{ $mockup->workItem->reference().' — '.$mockup->workItem->name }}</a>
+            <a href="{{ $this->ownerHref() }}" wire:navigate class="underline">{{ $this->ownerLabel() }}</a>
         </x-slot:description>
     </x-detail-page-header>
 
@@ -43,9 +70,9 @@ new class extends Component {
             {{ __('Agent-authored HTML, rendered in an isolated sandbox.') }}
         </flux:text>
 
-        @if ($mockup->workItem->mockups->count() > 1)
+        @if ($mockup->owner->mockups->count() > 1)
             <nav class="mb-3 flex flex-wrap gap-2" aria-label="{{ __('Mockups') }}">
-                @foreach ($mockup->workItem->mockups as $alternative)
+                @foreach ($mockup->owner->mockups as $alternative)
                     @if ($alternative->is($mockup))
                         <span class="rounded-md bg-sky-600 px-2.5 py-1 text-sm font-medium text-white" aria-current="true">{{ $alternative->name }}</span>
                     @else

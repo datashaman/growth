@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Delete a spec mockup from its work item.')]
+#[Description('Delete a spec mockup from the work item or requirement it belongs to.')]
 class DeleteMockup extends Tool
 {
     public function handle(Request $request): ResponseFactory
