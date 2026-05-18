@@ -46,6 +46,14 @@ test('the bell shows the unread indicator when an unread notification exists', f
         ->assertSee('Project status changed');
 });
 
+test('the bar variant shows the unread indicator with the unread count', function () {
+    ($this->notify)($this->user);
+
+    Livewire::test('notification-bell', ['variant' => 'bar'])
+        ->assertSeeHtml('notification-indicator')
+        ->assertSee('Project status changed');
+});
+
 test('marking a notification as read clears the indicator', function () {
     $id = ($this->notify)($this->user);
 

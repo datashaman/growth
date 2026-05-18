@@ -14,8 +14,12 @@
                 <livewire:workspace-switcher />
                 <livewire:project-switcher />
                 <livewire:lens-switcher />
-                <livewire:omni-search />
-                <livewire:notification-bell />
+
+                {{-- On desktop these live in the top bar; the sidebar keeps them for mobile. --}}
+                <div class="grid gap-2 lg:hidden">
+                    <livewire:omni-search />
+                    <livewire:notification-bell />
+                </div>
             @endauth
 
             @php($lens = auth()->check() ? auth()->user()->lens() : \App\Support\ViewLens::All)
@@ -72,19 +76,24 @@
                     </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
-
-            <flux:spacer />
-
-            <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>
 
-        <!-- Mobile User Menu -->
-        <flux:header class="lg:hidden">
+        <!-- Top bar: sidebar toggle (mobile), omni-search + notifications (desktop), user menu -->
+        <flux:header class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
             <flux:spacer />
 
-            <flux:dropdown position="top" align="end">
+            @auth
+                <div class="me-2 hidden items-center gap-2 lg:flex">
+                    <div class="w-64">
+                        <livewire:omni-search />
+                    </div>
+                    <livewire:notification-bell variant="bar" />
+                </div>
+            @endauth
+
+            <flux:dropdown position="bottom" align="end">
                 <flux:profile
                     :initials="auth()->user()->initials()"
                     icon-trailing="chevron-down"
