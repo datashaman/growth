@@ -15,11 +15,9 @@ use App\Models\Risk;
 use App\Models\TestCase;
 use App\Models\TestPlan;
 use App\Models\WorkItem;
-use App\Models\WorkspaceMembership;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -40,12 +38,6 @@ new #[Title('Dashboard')] class extends Component {
         if ($this->selectedProjectId !== null && $this->selectedProjectId !== $fromSession) {
             session(['selected_project_id' => $this->selectedProjectId]);
         }
-    }
-
-    #[On('project-saved')]
-    public function refreshProject(): void
-    {
-        unset($this->projects, $this->project);
     }
 
     /**
@@ -175,28 +167,6 @@ new #[Title('Dashboard')] class extends Component {
         ];
     }
 
-    #[Computed]
-    public function canMoveProject(): bool
-    {
-        $userId = auth()->id();
-        $mutators = [WorkspaceMembership::ROLE_OWNER, WorkspaceMembership::ROLE_ADMIN];
-
-        $sourceRole = WorkspaceMembership::query()
-            ->where('user_id', $userId)
-            ->where('workspace_id', auth()->user()->active_workspace_id)
-            ->value('role');
-
-        if (! in_array($sourceRole, $mutators, true)) {
-            return false;
-        }
-
-        return WorkspaceMembership::query()
-            ->where('user_id', $userId)
-            ->whereIn('role', $mutators)
-            ->where('workspace_id', '!=', auth()->user()->active_workspace_id)
-            ->exists();
-    }
-
     /**
      * Resolve readable labels (and optional routes) for every (subject_type, subject_id)
      * referenced by any readiness gate finding, in a single query per type.
@@ -263,12 +233,7 @@ new #[Title('Dashboard')] class extends Component {
         @if ($this->projects->isEmpty())
             <flux:callout icon="information-circle">
                 <flux:callout.heading>{{ __('No projects yet') }}</flux:callout.heading>
-                <flux:callout.text>{{ __('Create your first project to start tracking stakeholders, requirements, work, and evidence.') }}</flux:callout.text>
-                <div class="mt-3">
-                    <flux:modal.trigger name="create-project">
-                        <flux:button icon="plus" variant="primary">{{ __('New project') }}</flux:button>
-                    </flux:modal.trigger>
-                </div>
+                <flux:callout.text>{{ __('Create your first project with the create-project MCP tool.') }}</flux:callout.text>
             </flux:callout>
         @elseif ($this->project === null)
             <flux:callout icon="cursor-arrow-rays">
@@ -280,28 +245,15 @@ new #[Title('Dashboard')] class extends Component {
                 $lens = auth()->user()->lens();
             @endphp
             <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="flex items-start justify-between gap-4">
-                    <div class="flex flex-col gap-2">
-                        <div class="flex items-center gap-2">
-                            <flux:heading size="lg">{{ $this->project->name }}</flux:heading>
-                            <flux:badge color="zinc" size="sm">{{ __('Rigor :level', ['level' => $this->project->rigor_level]) }}</flux:badge>
-                            <flux:badge :color="BadgeVariant::projectStatus($this->project->status)" size="sm">{{ EnumLabel::lower($this->project->status) }}</flux:badge>
-                        </div>
-                        @if ($this->project->description)
-                            <flux:text class="text-zinc-600 dark:text-zinc-400">{{ $this->project->description }}</flux:text>
-                        @endif
+                <div class="flex flex-col gap-2">
+                    <div class="flex items-center gap-2">
+                        <flux:heading size="lg">{{ $this->project->name }}</flux:heading>
+                        <flux:badge color="zinc" size="sm">{{ __('Rigor :level', ['level' => $this->project->rigor_level]) }}</flux:badge>
+                        <flux:badge :color="BadgeVariant::projectStatus($this->project->status)" size="sm">{{ EnumLabel::lower($this->project->status) }}</flux:badge>
                     </div>
-                    <div class="flex gap-1">
-                        <flux:button size="sm" icon="pencil-square" variant="ghost" :tooltip="__('Edit project')"
-                            wire:click="$dispatch('edit-project', { projectId: '{{ $this->project->id }}' })" />
-                        @if ($this->canMoveProject)
-                            <flux:button size="sm" icon="arrows-right-left" variant="ghost" :tooltip="__('Move to another workspace')"
-                                wire:click="$dispatch('move-project', { projectId: '{{ $this->project->id }}' })"
-                                data-test="move-project-button" />
-                        @endif
-                        <flux:button size="sm" icon="trash" variant="ghost" :tooltip="__('Delete project')"
-                            wire:click="$dispatch('delete-project', { projectId: '{{ $this->project->id }}' })" />
-                    </div>
+                    @if ($this->project->description)
+                        <flux:text class="text-zinc-600 dark:text-zinc-400">{{ $this->project->description }}</flux:text>
+                    @endif
                 </div>
             </section>
 
