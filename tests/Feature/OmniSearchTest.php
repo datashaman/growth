@@ -28,7 +28,8 @@ test('surfaces matching artifacts grouped by type when a query is typed', functi
         ->set('query', 'apollo')
         ->assertSee('Apollo Platform')
         ->assertSee('Apollo launch checklist')
-        ->assertSee('work item');
+        ->assertSee('Work Items')
+        ->assertSee('data-omni-index', false);
 });
 
 test('exposes the detail route for a hit', function () {

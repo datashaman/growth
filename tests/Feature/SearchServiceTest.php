@@ -1,8 +1,12 @@
 <?php
 
 use App\Growth\Search\SearchService;
+use App\Models\DesignElement;
+use App\Models\DesignView;
 use App\Models\Project;
 use App\Models\Risk;
+use App\Models\TestCase as TestCaseModel;
+use App\Models\TestPlan;
 use App\Models\User;
 use App\Models\WorkItem;
 
@@ -98,6 +102,78 @@ it('never returns artifacts from another workspace', function () {
     expect($labels)
         ->toContain('Apollo Platform')
         ->not->toContain('Apollo secret');
+});
+
+it('isolates design elements by workspace through the nested view relation', function () {
+    $view = DesignView::create([
+        'project_id' => $this->project->id,
+        'viewpoint' => 'logical',
+        'name' => 'Apollo logical view',
+    ]);
+    DesignElement::create([
+        'design_view_id' => $view->id,
+        'kind' => 'entity',
+        'name' => 'Quasar entity',
+    ]);
+
+    $other = User::factory()->create();
+    $otherProject = Project::create([
+        'workspace_id' => $other->active_workspace_id,
+        'name' => 'Other project',
+        'rigor_level' => 2,
+    ]);
+    $otherView = DesignView::create([
+        'project_id' => $otherProject->id,
+        'viewpoint' => 'logical',
+        'name' => 'Other logical view',
+    ]);
+    DesignElement::create([
+        'design_view_id' => $otherView->id,
+        'kind' => 'entity',
+        'name' => 'Quasar secret',
+    ]);
+
+    $labels = ($this->search)('quasar', ['design_element'])->pluck('label')->all();
+
+    expect($labels)
+        ->toContain('Quasar entity')
+        ->not->toContain('Quasar secret');
+});
+
+it('isolates test cases by workspace through the nested plan relation', function () {
+    $plan = TestPlan::create([
+        'project_id' => $this->project->id,
+        'level' => 'unit',
+        'name' => 'Apollo unit plan',
+    ]);
+    TestCaseModel::create([
+        'test_plan_id' => $plan->id,
+        'name' => 'Pulsar regression case',
+        'expected_results' => 'Passes.',
+    ]);
+
+    $other = User::factory()->create();
+    $otherProject = Project::create([
+        'workspace_id' => $other->active_workspace_id,
+        'name' => 'Other project',
+        'rigor_level' => 2,
+    ]);
+    $otherPlan = TestPlan::create([
+        'project_id' => $otherProject->id,
+        'level' => 'unit',
+        'name' => 'Other unit plan',
+    ]);
+    TestCaseModel::create([
+        'test_plan_id' => $otherPlan->id,
+        'name' => 'Pulsar secret case',
+        'expected_results' => 'Passes.',
+    ]);
+
+    $labels = ($this->search)('pulsar', ['test_case'])->pluck('label')->all();
+
+    expect($labels)
+        ->toContain('Pulsar regression case')
+        ->not->toContain('Pulsar secret case');
 });
 
 it('returns nothing for a query shorter than two characters', function () {
