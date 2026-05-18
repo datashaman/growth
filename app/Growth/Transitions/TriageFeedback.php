@@ -5,7 +5,7 @@ namespace App\Growth\Transitions;
 /**
  * Triage submitted feedback: `new` → `triaged`.
  */
-class TriageFeedback extends Transition
+class TriageFeedback extends FeedbackTransition
 {
     public function allowedFrom(): array
     {
@@ -20,10 +20,5 @@ class TriageFeedback extends Transition
     public function verb(): string
     {
         return 'triage';
-    }
-
-    public function subjectLabel(): string
-    {
-        return 'feedback';
     }
 }

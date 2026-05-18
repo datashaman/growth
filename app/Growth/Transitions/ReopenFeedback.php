@@ -5,7 +5,7 @@ namespace App\Growth\Transitions;
 /**
  * Reopen submitted feedback: `triaged`/`resolved` → `new`.
  */
-class ReopenFeedback extends Transition
+class ReopenFeedback extends FeedbackTransition
 {
     public function allowedFrom(): array
     {
@@ -20,10 +20,5 @@ class ReopenFeedback extends Transition
     public function verb(): string
     {
         return 'reopen';
-    }
-
-    public function subjectLabel(): string
-    {
-        return 'feedback';
     }
 }

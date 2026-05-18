@@ -101,12 +101,26 @@ abstract class Transition
 
         // Fan a catalogue notification out only once the transition has
         // committed, so a rolled-back transition notifies no one.
-        $notification = $this->notification($applied);
-        if ($notification !== null) {
-            app(WorkspaceNotifier::class)->notifyWorkspace($applied, $notification, $actor);
-        }
+        $this->dispatchNotification($applied, $actor);
 
         return $record;
+    }
+
+    /**
+     * Deliver this transition's catalogue notification, once the transition
+     * has committed.
+     *
+     * The default fans {@see notification()} to every member of the subject's
+     * workspace minus the actor. Transitions that instead reach a single,
+     * specific recipient override this.
+     */
+    protected function dispatchNotification(Model $subject, ?User $actor): void
+    {
+        $notification = $this->notification($subject);
+
+        if ($notification !== null) {
+            app(WorkspaceNotifier::class)->notifyWorkspace($subject, $notification, $actor);
+        }
     }
 
     /**
