@@ -9,7 +9,6 @@ use App\Models\Review;
 use App\Models\ReviewDecisionEvent;
 use App\Models\StatusTransition;
 use App\Models\User;
-use Livewire\Livewire;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -65,71 +64,7 @@ it('cancels a review from either planned or in_progress', function () {
         ->and($inProgress->fresh()->status)->toBe('cancelled');
 });
 
-// ---- webapp buttons ----
-
-it('shows a start button for a planned review and starts it', function () {
-    $review = ($this->makeReview)('planned');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::reviews.show', ['review' => $review])
-        ->assertSee('Start')
-        ->call('startReview')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($review->fresh()->status)->toBe('in_progress');
-
-    $event = ReviewDecisionEvent::query()->sole();
-    expect($event->to_status)->toBe('in_progress')
-        ->and($event->recorded_by_user_id)->toBe($this->user->id);
-});
-
-it('walks a review through hold and close from the webapp', function () {
-    $review = ($this->makeReview)('in_progress');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::reviews.show', ['review' => $review])
-        ->assertSee('Hold')
-        ->call('holdReview')
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-    expect($review->fresh()->status)->toBe('held');
-
-    Livewire::test('pages::reviews.show', ['review' => $review->fresh()])
-        ->assertSee('Close')
-        ->call('closeReview')
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-    expect($review->fresh()->status)->toBe('closed');
-});
-
-it('cancels a review from the webapp', function () {
-    $review = ($this->makeReview)('planned');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::reviews.show', ['review' => $review])
-        ->assertSee('Cancel')
-        ->call('cancelReview')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($review->fresh()->status)->toBe('cancelled');
-});
-
-it('rejects an illegal review transition from the webapp and warns the user', function () {
-    $review = ($this->makeReview)('held');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::reviews.show', ['review' => $review])
-        ->call('startReview')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'danger']);
-
-    expect($review->fresh()->status)->toBe('held')
-        ->and(ReviewDecisionEvent::count())->toBe(0);
-});
+// ---- page access ----
 
 it('404s the review page for a user from another workspace', function () {
     $stranger = User::factory()->create();

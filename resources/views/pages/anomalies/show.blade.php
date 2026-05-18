@@ -1,15 +1,8 @@
 <?php
 
-use App\Growth\Transitions\CloseAnomaly;
-use App\Growth\Transitions\IllegalTransitionException;
-use App\Growth\Transitions\ReopenAnomaly;
-use App\Growth\Transitions\ResolveAnomaly;
-use App\Growth\Transitions\StartAnomalyInvestigation;
-use App\Growth\Transitions\Transition;
 use App\Models\Anomaly;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
-use Flux\Flux;
 use Livewire\Component;
 
 new class extends Component {
@@ -29,43 +22,6 @@ new class extends Component {
     {
         return ['project', 'testRun', 'affectedRequirements'];
     }
-
-    public function startAnomalyInvestigation(): void
-    {
-        $this->applyTransition(new StartAnomalyInvestigation);
-    }
-
-    public function resolveAnomaly(): void
-    {
-        $this->applyTransition(new ResolveAnomaly);
-    }
-
-    public function closeAnomaly(): void
-    {
-        $this->applyTransition(new CloseAnomaly);
-    }
-
-    public function reopenAnomaly(): void
-    {
-        $this->applyTransition(new ReopenAnomaly);
-    }
-
-    private function applyTransition(Transition $transition): void
-    {
-        try {
-            $transition->apply($this->anomaly, auth()->user());
-        } catch (IllegalTransitionException $e) {
-            Flux::toast(variant: 'danger', text: $e->getMessage());
-
-            return;
-        }
-
-        $this->anomaly = $this->anomaly->fresh($this->relations());
-
-        Flux::toast(variant: 'success', text: __('Anomaly is now :status.', [
-            'status' => str_replace('_', ' ', $this->anomaly->status),
-        ]));
-    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -82,18 +38,6 @@ new class extends Component {
         </x-slot:description>
 
         <x-slot:actions>
-            @if ($anomaly->status === 'open')
-                <flux:button size="sm" icon="magnifying-glass" variant="primary" wire:click="startAnomalyInvestigation">{{ __('Start investigation') }}</flux:button>
-            @endif
-            @if ($anomaly->status === 'investigating')
-                <flux:button size="sm" icon="check" variant="primary" wire:click="resolveAnomaly">{{ __('Resolve') }}</flux:button>
-            @endif
-            @if ($anomaly->status === 'resolved')
-                <flux:button size="sm" icon="archive-box" wire:click="closeAnomaly">{{ __('Close') }}</flux:button>
-            @endif
-            @if (in_array($anomaly->status, ['resolved', 'closed'], true))
-                <flux:button size="sm" icon="arrow-path" wire:click="reopenAnomaly">{{ __('Reopen') }}</flux:button>
-            @endif
             <flux:modal.trigger name="edit-anomaly">
                 <flux:button size="sm" icon="pencil-square" variant="primary">{{ __('Edit') }}</flux:button>
             </flux:modal.trigger>

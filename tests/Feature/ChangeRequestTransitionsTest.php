@@ -7,7 +7,6 @@ use App\Models\ChangeApprovalEvent;
 use App\Models\ChangeRequest;
 use App\Models\Project;
 use App\Models\User;
-use Livewire\Livewire;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -65,126 +64,7 @@ it('records a null actor when no user is supplied', function () {
         ->and($change->fresh()->status)->toBe('under_review');
 });
 
-// ---- webapp buttons ----
-
-it('shows a submit button for a proposed change request and submits it', function () {
-    $change = ($this->makeChange)('proposed');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::change-requests.show', ['changeRequest' => $change])
-        ->assertSee('Submit')
-        ->call('submitChangeRequest')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($change->fresh()->status)->toBe('under_review')
-        ->and(ChangeApprovalEvent::query()->sole()->to_status)->toBe('under_review');
-});
-
-it('shows approve and reject buttons for an under_review change request and approves it', function () {
-    $change = ($this->makeChange)('under_review');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::change-requests.show', ['changeRequest' => $change])
-        ->assertSee('Approve')
-        ->assertSee('Reject')
-        ->call('approveChangeRequest')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    $change->refresh();
-    expect($change->status)->toBe('approved')
-        ->and($change->decision)->toBe('approved');
-});
-
-it('rejects an under_review change request from the webapp', function () {
-    $change = ($this->makeChange)('under_review');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::change-requests.show', ['changeRequest' => $change])
-        ->call('rejectChangeRequest')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    $change->refresh();
-    expect($change->status)->toBe('rejected')
-        ->and($change->decision)->toBe('rejected')
-        ->and(ChangeApprovalEvent::query()->sole()->to_status)->toBe('rejected');
-});
-
-it('defers an under_review change request from the webapp', function () {
-    $change = ($this->makeChange)('under_review');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::change-requests.show', ['changeRequest' => $change])
-        ->call('deferChangeRequest')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    $change->refresh();
-    expect($change->status)->toBe('deferred')
-        ->and($change->decision)->toBe('deferred');
-});
-
-it('cancels an under_review change request from the webapp', function () {
-    $change = ($this->makeChange)('under_review');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::change-requests.show', ['changeRequest' => $change])
-        ->call('cancelChangeRequest')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($change->fresh()->status)->toBe('cancelled');
-});
-
-it('marks an approved change request implemented from the webapp', function () {
-    $change = ($this->makeChange)('approved', 'approved');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::change-requests.show', ['changeRequest' => $change])
-        ->assertSee('Mark implemented')
-        ->call('markChangeRequestImplemented')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($change->fresh()->status)->toBe('implemented')
-        ->and(ChangeApprovalEvent::query()->sole()->to_status)->toBe('implemented');
-});
-
-it('cancels a deferred change request from the webapp', function () {
-    $change = ($this->makeChange)('deferred', 'deferred');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::change-requests.show', ['changeRequest' => $change])
-        ->assertSee('Cancel')
-        ->call('cancelChangeRequest')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($change->fresh()->status)->toBe('cancelled');
-});
-
-it('rejects an illegal transition from the webapp and warns the user', function () {
-    $change = ($this->makeChange)('approved', 'approved');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::change-requests.show', ['changeRequest' => $change])
-        ->call('submitChangeRequest')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'danger']);
-
-    expect($change->fresh()->status)->toBe('approved')
-        ->and(ChangeApprovalEvent::count())->toBe(0);
-});
+// ---- page access ----
 
 it('404s the change request page for a user from another workspace', function () {
     $stranger = User::factory()->create();

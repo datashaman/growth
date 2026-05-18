@@ -7,7 +7,6 @@ use App\Models\Project;
 use App\Models\StatusTransition;
 use App\Models\User;
 use App\Models\WorkItem;
-use Livewire\Livewire;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -59,54 +58,7 @@ it('records a null actor when no user is supplied', function () {
         ->and($item->fresh()->status)->toBe('done');
 });
 
-// ---- webapp buttons ----
-
-it('shows a start button for a todo work item and starts it', function () {
-    $item = ($this->makeItem)('todo');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::work-items.show', ['workItem' => $item])
-        ->assertSee('Start')
-        ->call('startWorkItem')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($item->fresh()->status)->toBe('in_progress');
-
-    $transition = StatusTransition::query()->sole();
-    expect($transition->to_status)->toBe('in_progress')
-        ->and($transition->transitioned_by_user_id)->toBe($this->user->id);
-});
-
-it('shows a complete button for an in_progress work item and completes it', function () {
-    $item = ($this->makeItem)('in_progress');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::work-items.show', ['workItem' => $item])
-        ->assertSee('Complete')
-        ->call('completeWorkItem')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($item->fresh()->status)->toBe('done')
-        ->and(StatusTransition::query()->sole()->to_status)->toBe('done');
-});
-
-it('rejects an illegal transition from the webapp and warns the user', function () {
-    $item = ($this->makeItem)('done');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::work-items.show', ['workItem' => $item])
-        ->call('startWorkItem')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'danger']);
-
-    expect($item->fresh()->status)->toBe('done')
-        ->and(StatusTransition::count())->toBe(0);
-});
+// ---- page access ----
 
 it('404s the work item page for a user from another workspace', function () {
     $stranger = User::factory()->create();

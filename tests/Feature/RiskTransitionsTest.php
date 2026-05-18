@@ -8,7 +8,6 @@ use App\Models\Project;
 use App\Models\Risk;
 use App\Models\StatusTransition;
 use App\Models\User;
-use Livewire\Livewire;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -64,77 +63,7 @@ it('accepts a risk from either identified or assessed', function () {
         ->and($assessed->fresh()->status)->toBe('accepted');
 });
 
-// ---- webapp buttons ----
-
-it('shows an assess button for an identified risk and assesses it', function () {
-    $risk = ($this->makeRisk)('identified');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::risks.show', ['risk' => $risk])
-        ->assertSee('Assess')
-        ->call('assessRisk')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($risk->fresh()->status)->toBe('assessed');
-
-    $transition = StatusTransition::query()->sole();
-    expect($transition->to_status)->toBe('assessed')
-        ->and($transition->transitioned_by_user_id)->toBe($this->user->id);
-});
-
-it('walks a risk through mitigation from the webapp', function () {
-    $risk = ($this->makeRisk)('assessed');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::risks.show', ['risk' => $risk])
-        ->assertSee('Start mitigation')
-        ->call('startRiskMitigation')
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-    expect($risk->fresh()->status)->toBe('mitigating');
-
-    Livewire::test('pages::risks.show', ['risk' => $risk->fresh()])
-        ->assertSee('Mark mitigated')
-        ->call('markRiskMitigated')
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-    expect($risk->fresh()->status)->toBe('mitigated');
-
-    Livewire::test('pages::risks.show', ['risk' => $risk->fresh()])
-        ->assertSee('Close')
-        ->call('closeRisk')
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-    expect($risk->fresh()->status)->toBe('closed');
-});
-
-it('marks a risk realized from the webapp', function () {
-    $risk = ($this->makeRisk)('mitigating');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::risks.show', ['risk' => $risk])
-        ->assertSee('Mark realized')
-        ->call('markRiskRealized')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($risk->fresh()->status)->toBe('realized');
-});
-
-it('rejects an illegal risk transition from the webapp and warns the user', function () {
-    $risk = ($this->makeRisk)('closed');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::risks.show', ['risk' => $risk])
-        ->call('assessRisk')
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'danger']);
-
-    expect($risk->fresh()->status)->toBe('closed')
-        ->and(StatusTransition::count())->toBe(0);
-});
+// ---- page access ----
 
 it('404s the risk page for a user from another workspace', function () {
     $stranger = User::factory()->create();

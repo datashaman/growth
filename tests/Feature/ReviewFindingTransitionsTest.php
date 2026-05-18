@@ -8,7 +8,6 @@ use App\Models\Review;
 use App\Models\ReviewFinding;
 use App\Models\StatusTransition;
 use App\Models\User;
-use Livewire\Livewire;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -68,85 +67,4 @@ it('accepts a finding from either open or dispositioned', function () {
 
     expect($open->fresh()->status)->toBe('accepted')
         ->and($dispositioned->fresh()->status)->toBe('accepted');
-});
-
-// ---- webapp buttons ----
-
-it('shows a disposition button for an open finding and dispositions it', function () {
-    $finding = ($this->makeFinding)('open');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::reviews.show', ['review' => $this->review])
-        ->assertSee('Disposition')
-        ->call('dispositionFinding', $finding->id)
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-
-    expect($finding->fresh()->status)->toBe('dispositioned');
-
-    $transition = StatusTransition::query()->sole();
-    expect($transition->to_status)->toBe('dispositioned')
-        ->and($transition->transitioned_by_user_id)->toBe($this->user->id);
-});
-
-it('walks a finding through disposition, resolve, and close from the webapp', function () {
-    $finding = ($this->makeFinding)('dispositioned');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::reviews.show', ['review' => $this->review])
-        ->call('resolveFinding', $finding->id)
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-    expect($finding->fresh()->status)->toBe('resolved');
-
-    Livewire::test('pages::reviews.show', ['review' => $this->review])
-        ->call('closeFinding', $finding->id)
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-    expect($finding->fresh()->status)->toBe('closed');
-
-    Livewire::test('pages::reviews.show', ['review' => $this->review])
-        ->call('reopenFinding', $finding->id)
-        ->assertDispatched('toast-show', dataset: ['variant' => 'success']);
-    expect($finding->fresh()->status)->toBe('open');
-});
-
-it('rejects an illegal finding transition from the webapp and warns the user', function () {
-    $finding = ($this->makeFinding)('closed');
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::reviews.show', ['review' => $this->review])
-        ->call('dispositionFinding', $finding->id)
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'danger']);
-
-    expect($finding->fresh()->status)->toBe('closed')
-        ->and(StatusTransition::count())->toBe(0);
-});
-
-it('rejects transitioning a finding that belongs to another review', function () {
-    $otherReview = Review::create([
-        'project_id' => $this->project->id,
-        'type' => 'inspection',
-        'title' => 'Other review',
-        'status' => 'in_progress',
-    ]);
-    $otherFinding = ReviewFinding::create([
-        'project_id' => $this->project->id,
-        'review_id' => $otherReview->id,
-        'title' => 'Belongs elsewhere',
-        'severity' => 'low',
-        'status' => 'open',
-    ]);
-
-    $this->actingAs($this->user);
-
-    Livewire::test('pages::reviews.show', ['review' => $this->review])
-        ->call('dispositionFinding', $otherFinding->id)
-        ->assertHasNoErrors()
-        ->assertDispatched('toast-show', dataset: ['variant' => 'danger']);
-
-    expect($otherFinding->fresh()->status)->toBe('open')
-        ->and(StatusTransition::count())->toBe(0);
 });
