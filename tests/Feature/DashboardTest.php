@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Project;
+use App\Models\Role;
 use App\Models\User;
 use App\Support\ViewLens;
 
@@ -259,4 +260,45 @@ test('dashboard only lists projects owned by the authed user', function () {
         ->assertOk()
         ->assertSee('Alice project')
         ->assertDontSee('Bob project');
+});
+
+test('dashboard my queue panel lists items routed to the viewer', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+    $role = Role::create(['project_id' => $project->id, 'name' => 'Builder']);
+    $user->roles()->attach($role);
+
+    $project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Wire the descent engine',
+        'status' => 'blocked',
+        'responsible_role_id' => $role->id,
+    ]);
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('My Queue')
+        ->assertSee('Wire the descent engine');
+});
+
+test('dashboard my queue panel always shows and lists unowned lint errors', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+
+    // The viewer holds no role, so nothing is routed to them — but the panel
+    // still renders and surfaces lint errors on artifacts with no owning role.
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('My Queue')
+        ->assertSee('lint error (unowned)');
 });

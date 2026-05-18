@@ -20,6 +20,7 @@ use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Concerns\DeleteConcern;
 use App\Mcp\Tools\Concerns\UpsertConcerns;
 use App\Mcp\Tools\Dashboard\ShowRequirementExplorer;
+use App\Mcp\Tools\Dashboard\SummarizeMyQueue;
 use App\Mcp\Tools\Decisions\AnswerDecisionRequest;
 use App\Mcp\Tools\Decisions\CancelDecisionRequest;
 use App\Mcp\Tools\Decisions\CreateDecisionRequest;
@@ -66,6 +67,7 @@ class IntakeServer extends Server
         WhoAmI::class,
         CreateDecisionRequest::class,
         ListDecisionQueue::class,
+        SummarizeMyQueue::class,
         AnswerDecisionRequest::class,
         CancelDecisionRequest::class,
         ListNotifications::class,
