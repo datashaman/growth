@@ -18,10 +18,11 @@ class Project extends Model
 
     public const STATUSES = ['draft', 'active', 'archived', 'closed'];
 
-    protected $fillable = ['workspace_id', 'created_by_user_id', 'name', 'description', 'github_repo', 'rigor_level', 'status'];
+    protected $fillable = ['workspace_id', 'created_by_user_id', 'name', 'description', 'github_repo', 'rigor_level', 'status', 'adopted_at'];
 
     protected $casts = [
         'rigor_level' => 'integer',
+        'adopted_at' => 'datetime',
     ];
 
     protected $attributes = [

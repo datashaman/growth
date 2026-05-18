@@ -2,6 +2,7 @@
 
 namespace App\Growth\Assurance;
 
+use App\Growth\Adoption\AdoptionClassifier;
 use App\Growth\Execution\ImplementationStatusSummarizer;
 use App\Growth\Lint\BaselineLinter;
 use App\Growth\Lint\ChangeLinter;
@@ -23,6 +24,7 @@ class ReadinessGateEvaluator
         private readonly ChangeLinter $changeLinter,
         private readonly BaselineLinter $baselineLinter,
         private readonly ImplementationStatusSummarizer $implementationStatus,
+        private readonly AdoptionClassifier $adoptionClassifier,
     ) {}
 
     /**
@@ -36,6 +38,24 @@ class ReadinessGateEvaluator
         }
 
         $implementation = $this->implementationStatus->summarize($project);
+
+        // Only a done work item with no delivery evidence needs an adoption
+        // check; load just those, and only their `done` transition trail —
+        // the rest of the project's work items never reach the classifier.
+        $gapWorkItemIds = collect($implementation['results'])
+            ->filter(fn (array $row): bool => $row['status'] === 'done' && $row['delivery_links'] === 0)
+            ->pluck('id');
+
+        $gapWorkItems = $gapWorkItemIds->isEmpty()
+            ? collect()
+            : $project->workItems()
+                ->whereKey($gapWorkItemIds)
+                ->with(['statusTransitions' => fn ($query) => $query
+                    ->where('to_status', 'done')
+                    ->select('transitionable_type', 'transitionable_id', 'to_status', 'transitioned_at')])
+                ->get()
+                ->keyBy('id');
+
         $implementationFindings = [];
         foreach ($implementation['results'] as $row) {
             if ($row['failed_checks'] > 0) {
@@ -48,10 +68,16 @@ class ReadinessGateEvaluator
                 ];
             }
             if ($row['status'] === 'done' && $row['delivery_links'] === 0) {
+                $workItem = $gapWorkItems->get($row['id']);
+                $preAdoption = $workItem !== null
+                    && $this->adoptionClassifier->isPreAdoption($workItem, $project->adopted_at);
+
                 $implementationFindings[] = [
                     'rule' => 'implementation.done_without_evidence',
-                    'severity' => 'warning',
-                    'message' => 'Done work item has no delivery evidence',
+                    'severity' => $preAdoption ? 'informational' : 'warning',
+                    'message' => $preAdoption
+                        ? 'Done work item has no delivery evidence; completed before Growth adoption'
+                        : 'Done work item has no delivery evidence',
                     'subject_type' => 'work_item',
                     'subject_id' => $row['id'],
                 ];
@@ -85,8 +111,10 @@ class ReadinessGateEvaluator
      */
     private function gate(string $id, string $description, array $findings): array
     {
+        // `informational` findings (pre-adoption gaps) are reported but never
+        // counted — they must not move the gate off `pass`.
         $errors = count(array_filter($findings, fn (array $finding): bool => $finding['severity'] === 'error'));
-        $warnings = count(array_filter($findings, fn (array $finding): bool => $finding['severity'] !== 'error'));
+        $warnings = count(array_filter($findings, fn (array $finding): bool => $finding['severity'] === 'warning'));
 
         return [
             'id' => $id,

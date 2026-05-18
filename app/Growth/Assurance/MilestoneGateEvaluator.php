@@ -2,6 +2,7 @@
 
 namespace App\Growth\Assurance;
 
+use App\Growth\Adoption\AdoptionClassifier;
 use App\Growth\Execution\ImplementationStatusSummarizer;
 use App\Models\Milestone;
 
@@ -11,7 +12,9 @@ use App\Models\Milestone;
  * A milestone is a named scope bundle: a set of work items that together
  * deliver something. Its gate passes when every member work item is `done`
  * and carries clean delivery evidence — failed checks block, a done item with
- * no delivery evidence warns. An empty milestone bundles nothing and fails.
+ * no delivery evidence warns (or, when it was completed before Growth
+ * adoption, is reported as informational). An empty milestone bundles nothing
+ * and fails.
  *
  * The result is consumed two ways: as a precondition on the AchieveMilestone
  * transition (a `fail` blocks the transition) and as a read-only field on
@@ -21,6 +24,7 @@ class MilestoneGateEvaluator
 {
     public function __construct(
         private readonly ImplementationStatusSummarizer $summarizer,
+        private readonly AdoptionClassifier $adoptionClassifier,
     ) {}
 
     /**
@@ -29,8 +33,15 @@ class MilestoneGateEvaluator
     public function evaluate(Milestone $milestone): array
     {
         $milestone->loadMissing([
+            'project',
             'workItems.deliveryLinks.checkRuns',
             'workItems.deliveryLinks.deployments',
+            // The adoption classifier only needs each work item's `done`
+            // transitions — constrain the load so a long status history does
+            // not balloon the query payload.
+            'workItems.statusTransitions' => fn ($query) => $query
+                ->where('to_status', 'done')
+                ->select('transitionable_type', 'transitionable_id', 'to_status', 'transitioned_at'),
         ]);
 
         $items = $milestone->workItems;
@@ -84,18 +95,27 @@ class MilestoneGateEvaluator
             }
 
             if ($row['delivery_links'] === 0) {
+                $preAdoption = $this->adoptionClassifier->isPreAdoption(
+                    $item,
+                    $milestone->project?->adopted_at,
+                );
+
                 $findings[] = [
                     'rule' => 'milestone.work_item.done_without_evidence',
-                    'severity' => 'warning',
-                    'message' => 'Done member work item has no delivery evidence.',
+                    'severity' => $preAdoption ? 'informational' : 'warning',
+                    'message' => $preAdoption
+                        ? 'Done member work item has no delivery evidence; completed before Growth adoption.'
+                        : 'Done member work item has no delivery evidence.',
                     'subject_type' => 'work_item',
                     'subject_id' => $item->id,
                 ];
             }
         }
 
+        // `informational` findings (pre-adoption gaps) are reported but never
+        // counted — they must not move the gate off `pass`.
         $errors = count(array_filter($findings, fn (array $finding): bool => $finding['severity'] === 'error'));
-        $warnings = count($findings) - $errors;
+        $warnings = count(array_filter($findings, fn (array $finding): bool => $finding['severity'] === 'warning'));
 
         return [
             'milestone_id' => $milestone->id,

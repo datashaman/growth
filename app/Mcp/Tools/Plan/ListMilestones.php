@@ -40,7 +40,16 @@ class ListMilestones extends Tool
         $rows = $query
             ->orderBy('name')
             ->withCount('workItems')
-            ->with(['workItems.deliveryLinks.checkRuns', 'workItems.deliveryLinks.deployments'])
+            ->with([
+                'project',
+                'workItems.deliveryLinks.checkRuns',
+                'workItems.deliveryLinks.deployments',
+                // The milestone gate's adoption check only reads each work
+                // item's `done` transitions — constrain the load to those.
+                'workItems.statusTransitions' => fn ($query) => $query
+                    ->where('to_status', 'done')
+                    ->select('transitionable_type', 'transitionable_id', 'to_status', 'transitioned_at'),
+            ])
             ->limit($limit)
             ->offset($offset)
             ->get(['id', 'name', 'status', 'exit_criteria']);
