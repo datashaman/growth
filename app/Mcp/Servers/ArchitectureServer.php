@@ -19,6 +19,8 @@ use App\Mcp\Tools\Architecture\UpsertArchitectureView;
 use App\Mcp\Tools\Architecture\UpsertArchitectureViewpoint;
 use App\Mcp\Tools\Common\BulkLink;
 use App\Mcp\Tools\Common\Doctor;
+use App\Mcp\Tools\Common\ListUsers;
+use App\Mcp\Tools\Common\SendNotification;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Feedback\ReopenFeedback;
 use App\Mcp\Tools\Feedback\ResolveFeedback;
@@ -42,6 +44,8 @@ class ArchitectureServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        ListUsers::class,
+        SendNotification::class,
         Search::class,
         Doctor::class,
         SearchFeedback::class,
