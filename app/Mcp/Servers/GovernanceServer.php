@@ -60,6 +60,7 @@ use App\Mcp\Tools\Reviews\UpsertReview;
 use App\Mcp\Tools\Reviews\UpsertReviewFinding;
 use App\Mcp\Tools\Reviews\UpsertReviewParticipant;
 use App\Mcp\Tools\Reviews\UpsertReviewPlan;
+use App\Mcp\Tools\Search\Search;
 use App\Mcp\Tools\Trace\TraceQuery;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -73,6 +74,7 @@ class GovernanceServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        Search::class,
         Doctor::class,
         SearchFeedback::class,
         SendFeedback::class,

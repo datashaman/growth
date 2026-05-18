@@ -14,6 +14,7 @@
                 <livewire:workspace-switcher />
                 <livewire:project-switcher />
                 <livewire:lens-switcher />
+                <livewire:omni-search />
             @endauth
 
             @php($lens = auth()->check() ? auth()->user()->lens() : \App\Support\ViewLens::All)

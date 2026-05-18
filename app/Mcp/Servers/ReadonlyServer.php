@@ -62,6 +62,7 @@ use App\Mcp\Tools\Reviews\ListReviewFindings;
 use App\Mcp\Tools\Reviews\ListReviewParticipants;
 use App\Mcp\Tools\Reviews\ListReviewPlans;
 use App\Mcp\Tools\Reviews\ListReviews;
+use App\Mcp\Tools\Search\Search;
 use App\Mcp\Tools\Sources\ListCitations;
 use App\Mcp\Tools\Sources\ListSources;
 use App\Mcp\Tools\Trace\TraceQuery;
@@ -81,6 +82,7 @@ class ReadonlyServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        Search::class,
         Doctor::class,
         SearchFeedback::class,
         SendFeedback::class,

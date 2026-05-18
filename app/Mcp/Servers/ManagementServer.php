@@ -31,6 +31,7 @@ use App\Mcp\Tools\Projects\RestoreProject;
 use App\Mcp\Tools\Projects\ScaffoldGithubSync;
 use App\Mcp\Tools\Projects\UpdateProject;
 use App\Mcp\Tools\Projects\UpsertProject;
+use App\Mcp\Tools\Search\Search;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
@@ -43,6 +44,7 @@ class ManagementServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        Search::class,
         Doctor::class,
         SearchFeedback::class,
         SendFeedback::class,

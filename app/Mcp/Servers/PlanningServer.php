@@ -86,6 +86,7 @@ use App\Mcp\Tools\Plan\UpsertRole;
 use App\Mcp\Tools\Plan\UpsertWorkItems;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Requirements\ListRequirements;
+use App\Mcp\Tools\Search\Search;
 use App\Mcp\Tools\Trace\TraceQuery;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -99,6 +100,7 @@ class PlanningServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        Search::class,
         Doctor::class,
         SearchFeedback::class,
         SendFeedback::class,

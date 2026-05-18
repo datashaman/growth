@@ -359,6 +359,21 @@ class BadgeVariant
         };
     }
 
+    public static function searchType(string $type): string
+    {
+        return match ($type) {
+            'project', 'design_element' => 'purple',
+            'work_item', 'design_view', 'stakeholder' => 'indigo',
+            'requirement', 'test_plan', 'deployment' => 'blue',
+            'review', 'release' => 'teal',
+            'change_request', 'test_case' => 'sky',
+            'milestone' => 'green',
+            'risk' => 'amber',
+            'anomaly' => 'red',
+            default => 'zinc',
+        };
+    }
+
     private static function levelScore(?string $level): int
     {
         return match ($level) {
