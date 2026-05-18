@@ -41,22 +41,45 @@ it('stores a mockup for a work item', function () {
     expect(SpecMockup::where('work_item_id', $this->workItem->id)->count())->toBe(1);
 });
 
-it('replaces the work item mockup on a second call', function () {
+it('adds a second mockup under a new name', function () {
     $args = [
         'work_item_id' => $this->workItem->id,
-        'name' => 'First draft',
+        'name' => 'Roomy layout',
+        'html' => '<!doctype html><html><body>roomy</body></html>',
+    ];
+
+    PlanningServer::tool(UpsertMockup::class, $args)->assertOk();
+    PlanningServer::tool(UpsertMockup::class, [
+        ...$args,
+        'name' => 'Compact layout',
+        'html' => '<!doctype html><html><body>compact</body></html>',
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('name', 'Compact layout')
+                ->where('created', true)
+                ->etc();
+        });
+
+    expect(SpecMockup::where('work_item_id', $this->workItem->id)->pluck('name')->sort()->values()->all())
+        ->toBe(['Compact layout', 'Roomy layout']);
+});
+
+it('replaces a mockup when upserted under an existing name', function () {
+    $args = [
+        'work_item_id' => $this->workItem->id,
+        'name' => 'Roomy layout',
         'html' => '<!doctype html><html><body>v1</body></html>',
     ];
 
     PlanningServer::tool(UpsertMockup::class, $args)->assertOk();
     PlanningServer::tool(UpsertMockup::class, [
         ...$args,
-        'name' => 'Second draft',
         'html' => '<!doctype html><html><body>v2</body></html>',
     ])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
-            $json->where('name', 'Second draft')
+            $json->where('name', 'Roomy layout')
                 ->where('created', false)
                 ->etc();
         });

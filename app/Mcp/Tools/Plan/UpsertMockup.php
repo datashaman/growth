@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description("Create or replace a work item's spec mockup — a self-contained HTML page expressing a UI idea for the work item.")]
+#[Description('Add or replace a named spec mockup on a work item — a self-contained HTML page expressing a UI idea. A new name adds a mockup; an existing name replaces it.')]
 class UpsertMockup extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -22,7 +22,7 @@ class UpsertMockup extends Tool
         ]);
 
         $mockup = SpecMockup::updateOrCreate(
-            ['work_item_id' => $data['work_item_id']],
+            ['work_item_id' => $data['work_item_id'], 'name' => $data['name']],
             $data,
         );
 

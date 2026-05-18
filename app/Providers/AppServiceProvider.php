@@ -30,6 +30,7 @@ use App\Models\ReviewTarget;
 use App\Models\Risk;
 use App\Models\Role;
 use App\Models\Source;
+use App\Models\SpecMockup;
 use App\Models\Stakeholder;
 use App\Models\TestCase;
 use App\Models\TestPlan;
@@ -115,6 +116,7 @@ class AppServiceProvider extends ServiceProvider
         'owned_project_plan_baseline' => [ProjectPlanBaseline::class, 'project_plan_baselines.id'],
         'owned_release' => [Release::class,         'releases.id'],
         'owned_milestone' => [Milestone::class,       'milestones.id'],
+        'owned_mockup' => [SpecMockup::class,        'spec_mockups.id'],
         'owned_role' => [Role::class,            'roles.id'],
         'owned_work_item' => [WorkItem::class,        'work_items.id'],
         'owned_work_item_delivery_link' => [WorkItemDeliveryLink::class, 'work_item_delivery_links.id'],

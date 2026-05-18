@@ -36,6 +36,7 @@ use App\Mcp\Tools\Plan\CompleteWorkItem;
 use App\Mcp\Tools\Plan\DeleteAgent;
 use App\Mcp\Tools\Plan\DeleteDeployment;
 use App\Mcp\Tools\Plan\DeleteMilestone;
+use App\Mcp\Tools\Plan\DeleteMockup;
 use App\Mcp\Tools\Plan\DeletePlan;
 use App\Mcp\Tools\Plan\DeleteRelease;
 use App\Mcp\Tools\Plan\DeleteRisk;
@@ -48,6 +49,7 @@ use App\Mcp\Tools\Plan\ListAgents;
 use App\Mcp\Tools\Plan\ListDeliveryLinks;
 use App\Mcp\Tools\Plan\ListDeployments;
 use App\Mcp\Tools\Plan\ListMilestones;
+use App\Mcp\Tools\Plan\ListMockups;
 use App\Mcp\Tools\Plan\ListPlanBaselines;
 use App\Mcp\Tools\Plan\ListProjectPlans;
 use App\Mcp\Tools\Plan\ListReleases;
@@ -154,6 +156,8 @@ class PlanningServer extends Server
         UpsertDeliveryLink::class,
         ListDeliveryLinks::class,
         UpsertMockup::class,
+        ListMockups::class,
+        DeleteMockup::class,
         UpsertRisk::class,
         ListRisks::class,
         DeleteRisk::class,

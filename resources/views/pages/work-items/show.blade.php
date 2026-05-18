@@ -30,7 +30,7 @@ new class extends Component {
             'dependencies',
             'deliveryLinks.checkRuns',
             'releases',
-            'mockup',
+            'mockups',
         ];
     }
 
@@ -269,12 +269,18 @@ new class extends Component {
         </x-data-table>
     @endif
 
-    @if ($workItem->mockup)
+    @if ($workItem->mockups->isNotEmpty())
         <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-            <flux:heading size="lg" class="mb-3">{{ __('Spec mockup') }}</flux:heading>
-            <flux:link :href="route('mockups.show', $workItem->mockup)" wire:navigate class="underline">
-                {{ $workItem->mockup->name }}
-            </flux:link>
+            <flux:heading size="lg" class="mb-3">{{ __('Spec mockups') }}</flux:heading>
+            <ul class="flex flex-col gap-1">
+                @foreach ($workItem->mockups as $mockup)
+                    <li>
+                        <flux:link :href="route('mockups.show', $mockup)" wire:navigate class="underline">
+                            {{ $mockup->name }}
+                        </flux:link>
+                    </li>
+                @endforeach
+            </ul>
         </section>
     @endif
 </div>

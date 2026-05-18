@@ -75,12 +75,35 @@ it('bounces a top-level navigation to the raw route back to the wrapper page', f
     expect($response->getContent())->not->toContain('Checkout mockup');
 });
 
-it('links to the mockup from the work item page', function () {
+it('lists sibling mockups and links between them', function () {
+    $sibling = SpecMockup::create([
+        'work_item_id' => $this->workItem->id,
+        'name' => 'Compact layout',
+        'html' => '<!doctype html><html><body><h1>Compact mockup</h1></body></html>',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get(route('mockups.show', $this->mockup))
+        ->assertOk()
+        // The selected mockup renders; its sibling is offered as a switch.
+        ->assertSee(route('mockups.raw', $this->mockup))
+        ->assertSee('Compact layout')
+        ->assertSee(route('mockups.show', $sibling));
+});
+
+it('links to every mockup from the work item page', function () {
+    $sibling = SpecMockup::create([
+        'work_item_id' => $this->workItem->id,
+        'name' => 'Compact layout',
+        'html' => '<!doctype html><html><body>compact</body></html>',
+    ]);
+
     $this->actingAs($this->user)
         ->get(route('work-items.show', $this->workItem))
         ->assertOk()
-        ->assertSee('Spec mockup')
-        ->assertSee(route('mockups.show', $this->mockup));
+        ->assertSee('Spec mockups')
+        ->assertSee(route('mockups.show', $this->mockup))
+        ->assertSee(route('mockups.show', $sibling));
 });
 
 it('does not serve a mockup from another workspace', function () {
