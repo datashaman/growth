@@ -4,18 +4,11 @@ use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Changes')] class extends Component {
     use ProjectScoped;
-
-    #[On('change-request-saved')]
-    public function refreshChangeRequests(): void
-    {
-        unset($this->changeRequests);
-    }
 
     /**
      * @return array<string,string>
@@ -44,15 +37,8 @@ new #[Title('Changes')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-project-page-header
         :title="__('Changes')"
-        :description="__('Proposed changes to scope, requirements, design, plan, or risk — and their decisions.')">
-        @if ($this->selectedProject)
-            <x-slot:actions>
-                <flux:modal.trigger name="create-change-request">
-                    <flux:button size="sm" icon="plus" variant="primary">{{ __('New change') }}</flux:button>
-                </flux:modal.trigger>
-            </x-slot:actions>
-        @endif
-    </x-project-page-header>
+        :description="__('Proposed changes to scope, requirements, design, plan, or risk — and their decisions.')" />
+
 
     @if ($this->selectedProject === null)
         <flux:callout icon="cursor-arrow-rays">
@@ -74,7 +60,6 @@ new #[Title('Changes')] class extends Component {
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
                     <flux:table.column>{{ __('Decision') }}</flux:table.column>
                     <flux:table.column>{{ __('Requester') }}</flux:table.column>
-                    <flux:table.column></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->changeRequests as $cr)
@@ -108,22 +93,10 @@ new #[Title('Changes')] class extends Component {
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell>{{ $cr->requesterRole?->name ?? '—' }}</flux:table.cell>
-                            <flux:table.cell>
-                                <div class="flex justify-end gap-1">
-                                    <flux:button size="xs" icon="pencil-square" variant="ghost"
-                                        wire:click="$dispatch('edit-change-request', { changeRequestId: '{{ $cr->id }}' })" />
-                                    <flux:button size="xs" icon="trash" variant="ghost"
-                                        wire:click="$dispatch('delete-change-request', { changeRequestId: '{{ $cr->id }}' })" />
-                                </div>
-                            </flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
-
-        <livewire:pages::change-requests.create-modal :project-id="$this->selectedProject->id" :key="'create-change-request-'.$this->selectedProject->id" />
-        <livewire:pages::change-requests.edit-modal :key="'edit-change-request-'.$this->selectedProject->id" />
-        <livewire:pages::change-requests.delete-modal :key="'delete-change-request-'.$this->selectedProject->id" />
     @endif
 </div>
