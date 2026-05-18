@@ -16,6 +16,7 @@ use App\Mcp\Tools\Common\ListUsers;
 use App\Mcp\Tools\Common\MarkNotificationRead;
 use App\Mcp\Tools\Common\SendNotification;
 use App\Mcp\Tools\Common\WhoAmI;
+use App\Mcp\Tools\Feedback\CommentFeedback;
 use App\Mcp\Tools\Feedback\GetFeedback;
 use App\Mcp\Tools\Feedback\ReopenFeedback;
 use App\Mcp\Tools\Feedback\ResolveFeedback;
@@ -58,6 +59,7 @@ class ManagementServer extends Server
         Doctor::class,
         GetFeedback::class,
         SearchFeedback::class,
+        CommentFeedback::class,
         SendFeedback::class,
         TriageFeedback::class,
         ResolveFeedback::class,

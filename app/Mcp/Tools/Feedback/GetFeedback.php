@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Feedback;
 
+use App\Models\FeedbackComment;
 use App\Models\ToolFeedback;
 use App\Support\WorkspaceContext;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -40,6 +41,17 @@ class GetFeedback extends Tool
             'user_id' => $feedback->user_id,
             'created_at' => $feedback->created_at?->toIso8601String(),
             'updated_at' => $feedback->updated_at?->toIso8601String(),
+            'comments' => $feedback->comments()
+                ->with('author')
+                ->orderBy('created_at')
+                ->get()
+                ->map(fn (FeedbackComment $comment): array => [
+                    'id' => $comment->id,
+                    'body' => $comment->body,
+                    'author' => $comment->author?->name,
+                    'acting_role' => $comment->acting_role,
+                    'created_at' => $comment->created_at?->toIso8601String(),
+                ])->all(),
         ]);
     }
 
@@ -64,6 +76,7 @@ class GetFeedback extends Tool
             'user_id' => $schema->string()->description('User that filed the feedback, if any'),
             'created_at' => $schema->string()->required(),
             'updated_at' => $schema->string()->required(),
+            'comments' => $schema->array()->description('The comment thread, oldest first')->required(),
         ];
     }
 }
