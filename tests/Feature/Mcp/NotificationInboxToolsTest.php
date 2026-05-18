@@ -63,6 +63,23 @@ it('filters to unread notifications', function () {
         });
 });
 
+it('pages results with limit and offset', function () {
+    ($this->makeNotification)(['title' => 'Oldest'], createdAt: now()->subHours(2)->toDateTimeString());
+    ($this->makeNotification)(['title' => 'Middle'], createdAt: now()->subHour()->toDateTimeString());
+    ($this->makeNotification)(['title' => 'Newest']);
+
+    ReadonlyServer::tool(ListNotifications::class, ['limit' => 1, 'offset' => 1])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('total', 3)
+                ->where('limit', 1)
+                ->where('offset', 1)
+                ->where('results.0.title', 'Middle')
+                ->count('results', 1)
+                ->etc();
+        });
+});
+
 it('does not list notifications from another workspace', function () {
     $other = User::factory()->create();
     ($this->makeNotification)(['workspace_id' => $other->active_workspace_id]);

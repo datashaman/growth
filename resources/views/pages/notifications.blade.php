@@ -1,28 +1,23 @@
 <?php
 
-use Illuminate\Notifications\DatabaseNotification;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Notifications')] class extends Component {
     /**
+     * Live arrival: refresh when a notification broadcasts to this user.
+     *
      * @return array<string,string>
      */
     public function getListeners(): array
     {
-        $workspaceId = auth()->user()?->active_workspace_id;
-
-        if ($workspaceId === null) {
-            return [];
-        }
-
         return [
-            'echo-private:workspaces.'.$workspaceId.',WorkspaceDataChanged' => 'onWorkspaceDataChanged',
+            'echo-private:App.Models.User.'.auth()->id().',.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated' => 'onNotificationReceived',
         ];
     }
 
-    public function onWorkspaceDataChanged(): void
+    public function onNotificationReceived(): void
     {
         unset($this->items);
     }
@@ -32,7 +27,7 @@ new #[Title('Notifications')] class extends Component {
      */
     public function markRead(string $id): void
     {
-        $this->scopedQuery()->whereKey($id)->update(['read_at' => now()]);
+        $this->scopedQuery()->whereKey($id)->whereNull('read_at')->update(['read_at' => now()]);
         unset($this->items);
     }
 

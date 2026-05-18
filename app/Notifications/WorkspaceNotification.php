@@ -23,7 +23,7 @@ abstract class WorkspaceNotification extends Notification
     /** Workspace the event belongs to — stamped by {@see WorkspaceNotifier}. */
     protected ?string $workspaceId = null;
 
-    /** ULID of the user who caused the event, or null for a system event. */
+    /** Id of the user who caused the event, or null for a system event. */
     protected ?string $senderId = null;
 
     /** Display name of that user. */
