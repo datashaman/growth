@@ -28,18 +28,27 @@ new class extends Component {
     }
 
     /**
+     * The caller's notifications scoped to the active workspace.
+     */
+    private function scopedQuery()
+    {
+        return auth()->user()->notifications()
+            ->where('data->workspace_id', auth()->user()?->active_workspace_id);
+    }
+
+    /**
      * The most recent notifications, newest first.
      */
     #[Computed]
     public function items()
     {
-        return auth()->user()->notifications()->latest()->limit(20)->get();
+        return $this->scopedQuery()->latest()->limit(20)->get();
     }
 
     #[Computed]
     public function unreadCount(): int
     {
-        return auth()->user()->unreadNotifications()->count();
+        return $this->scopedQuery()->whereNull('read_at')->count();
     }
 
     public function refreshInbox(): void
@@ -49,7 +58,7 @@ new class extends Component {
 
     public function markAsRead(string $id): void
     {
-        auth()->user()->notifications()
+        $this->scopedQuery()
             ->whereKey($id)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
@@ -59,7 +68,7 @@ new class extends Component {
 
     public function markAllAsRead(): void
     {
-        auth()->user()->unreadNotifications()->update(['read_at' => now()]);
+        $this->scopedQuery()->whereNull('read_at')->update(['read_at' => now()]);
 
         $this->refreshInbox();
     }

@@ -5,6 +5,8 @@ namespace App\Notifications;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\RoleContext;
+use App\Support\WorkspaceContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Notification;
 
@@ -35,16 +37,32 @@ class WorkspaceNotifier
             ->values();
 
         if ($recipients->isNotEmpty()) {
+            $notification->withContext($workspace->id, $actor, $this->actingRole());
             Notification::send($recipients, $notification);
         }
     }
 
     /**
-     * Send to a single user — used for personal events.
+     * Send to a single user — used for personal events. The sender is the
+     * authenticated user (the actor of the request that triggered it).
      */
     public function notifyUser(User $user, WorkspaceNotification $notification): void
     {
+        $notification->withContext(
+            app(WorkspaceContext::class)->id(),
+            auth()->user(),
+            $this->actingRole(),
+        );
+
         $user->notify($notification);
+    }
+
+    /**
+     * The operating role bound to the current session, as its stored value.
+     */
+    private function actingRole(): ?string
+    {
+        return app(RoleContext::class)->role()?->value;
     }
 
     /**

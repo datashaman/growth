@@ -74,6 +74,9 @@
                     <flux:sidebar.item icon="chat-bubble-left-right" :href="route('feedback')" :current="request()->routeIs('feedback')" wire:navigate>
                         {{ __('Feedback') }}
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="bell" :href="route('notifications')" :current="request()->routeIs('notifications')" wire:navigate>
+                        {{ __('Notifications') }}
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
         </flux:sidebar>

@@ -12,7 +12,9 @@ use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Common\Doctor;
+use App\Mcp\Tools\Common\ListNotifications;
 use App\Mcp\Tools\Common\ListUsers;
+use App\Mcp\Tools\Common\MarkNotificationRead;
 use App\Mcp\Tools\Common\SendNotification;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Concerns\DeleteConcern;
@@ -57,7 +59,9 @@ class IntakeServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        ListNotifications::class,
         ListUsers::class,
+        MarkNotificationRead::class,
         SendNotification::class,
         Search::class,
         Doctor::class,

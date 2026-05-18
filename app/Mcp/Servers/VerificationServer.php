@@ -15,7 +15,9 @@ use App\Mcp\Tools\Assurance\BuildEvidenceBundle;
 use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
 use App\Mcp\Tools\Assurance\ReportEvidenceGaps;
 use App\Mcp\Tools\Common\Doctor;
+use App\Mcp\Tools\Common\ListNotifications;
 use App\Mcp\Tools\Common\ListUsers;
+use App\Mcp\Tools\Common\MarkNotificationRead;
 use App\Mcp\Tools\Common\SendNotification;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Feedback\GetFeedback;
@@ -59,7 +61,9 @@ class VerificationServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        ListNotifications::class,
         ListUsers::class,
+        MarkNotificationRead::class,
         SendNotification::class,
         Search::class,
         Doctor::class,
