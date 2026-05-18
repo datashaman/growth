@@ -1235,9 +1235,21 @@ test('buildGalleryComment lists screenshots grouped by folder under the marker',
   });
   assert.ok(findGalleryComment([{ body }]), 'the comment carries the gallery marker');
   assert.match(body, /2 screenshots/);
-  assert.match(body, /### dashboard/);
+  assert.match(body, /### `dashboard`/);
   assert.match(body, /dashboard\/a\.png/);
   assert.match(body, /https:\/\/example\.com\/artifact/);
+});
+
+test('buildGalleryComment neutralises crafted folder and file names', () => {
+  const body = buildGalleryComment({
+    groups: [{ folder: 'evil`/@acme', files: ['evil`/@acme/shot\n.png'] }],
+    artifactUrl: 'https://example.com/artifact',
+  });
+  // Backticks are replaced so they cannot terminate the code span, control
+  // characters are stripped, and the name stays inside an inline code span so
+  // an embedded @ never renders as a mention.
+  assert.match(body, /### `evil'\/@acme`/);
+  assert.match(body, /- `evil'\/@acme\/shot\.png`/);
 });
 
 test('findGalleryComment returns null when no comment carries the marker', () => {

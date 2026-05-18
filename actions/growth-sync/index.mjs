@@ -150,6 +150,16 @@ export function groupEvidenceFiles(paths) {
 }
 
 /**
+ * Render an artifact-supplied name (folder or file) inside a Markdown inline
+ * code span. The name comes from ZIP entries, so it is untrusted: control
+ * characters are stripped and backticks neutralised so a crafted filename
+ * cannot break the span or inject headings, links, or `@mentions`.
+ */
+function codeSpan(name) {
+  return `\`${String(name).replace(/[\u0000-\u001f\u007f]/g, '').replace(/`/g, "'")}\``;
+}
+
+/**
  * Build the screenshot-gallery comment body: the hidden marker, a header, and
  * a manifest of the captured screenshots grouped by folder, with a link to
  * the artifact. A comment posted through the API cannot embed images from a
@@ -168,9 +178,9 @@ export function buildGalleryComment({ groups, artifactUrl }) {
     '',
   ];
   for (const group of groups) {
-    lines.push(`### ${group.folder}`);
+    lines.push(`### ${codeSpan(group.folder)}`);
     for (const file of group.files) {
-      lines.push(`- \`${file}\``);
+      lines.push(`- ${codeSpan(file)}`);
     }
     lines.push('');
   }
@@ -1011,14 +1021,23 @@ function makeCommentClient({ apiUrl, repository, token, fetchFn }) {
   };
   return {
     listIssueComments: async (issueNumber) => {
-      const response = await fetchFn(
-        `${apiUrl}/repos/${repository}/issues/${issueNumber}/comments?per_page=100`,
-        { headers },
-      );
-      if (!response.ok) {
-        throw new Error(`GitHub API ${response.status} listing comments on #${issueNumber}`);
+      // Page through every comment: a long-lived pull request can carry more
+      // than one page, and missing the gallery marker would post a duplicate.
+      const comments = [];
+      for (let page = 1; ; page++) {
+        const response = await fetchFn(
+          `${apiUrl}/repos/${repository}/issues/${issueNumber}/comments?per_page=100&page=${page}`,
+          { headers },
+        );
+        if (!response.ok) {
+          throw new Error(`GitHub API ${response.status} listing comments on #${issueNumber}`);
+        }
+        const batch = await response.json();
+        comments.push(...batch);
+        if (batch.length < 100) {
+          return comments;
+        }
       }
-      return response.json();
     },
     createComment: async (issueNumber, body) => {
       const response = await fetchFn(
