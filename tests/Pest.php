@@ -22,6 +22,15 @@ pest()->extend(TestCase::class)
     ->in('Feature');
 
 /*
+| Browser tests drive real pages through Playwright. They run the app in a
+| separate server process, so an in-memory SQLite database is not shared with
+| the test process — RefreshDatabase is deliberately omitted here. Tests that
+| need seeded data must use a file-based or external database.
+*/
+pest()->extend(TestCase::class)
+    ->in('Browser');
+
+/*
 |--------------------------------------------------------------------------
 | Expectations
 |--------------------------------------------------------------------------

@@ -90,3 +90,69 @@ jobs:
       - name: Growth-sync action tests
         run: node --test
         working-directory: actions/growth-sync
+
+  browser:
+    name: Browser
+    runs-on: ubuntu-latest
+
+    # Browser tests render real pages through Playwright; they run in their own
+    # job so the fast Test & Lint job is not blocked on a browser install. They
+    # use a SQLite file — these tests exercise rendering, not pg-specific SQL.
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build Vite assets
+        run: npm run build
+
+      - name: Copy env
+        run: cp .env.example .env
+
+      - name: Generate key
+        run: php artisan key:generate
+
+      - name: Generate Passport keys
+        run: php artisan passport:keys --no-interaction
+
+      - name: Prepare SQLite database
+        run: |
+          touch database/database.sqlite
+          php artisan migrate --force
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+
+      - name: Browser tests
+        run: php artisan test --testsuite=Browser --compact
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-screenshots
+          path: tests/Browser/Screenshots
+          if-no-files-found: ignore
