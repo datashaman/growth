@@ -4,24 +4,11 @@ use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Intent')] class extends Component {
     use ProjectScoped;
-
-    #[On('stakeholder-saved')]
-    public function refreshStakeholders(): void
-    {
-        unset($this->stakeholders);
-    }
-
-    #[On('concern-saved')]
-    public function refreshConcerns(): void
-    {
-        unset($this->concerns);
-    }
 
     #[Computed]
     public function stakeholders()
@@ -53,18 +40,12 @@ new #[Title('Intent')] class extends Component {
             :count-label="__('listed')"
             :empty="$this->stakeholders->isEmpty()"
             :empty-message="__('No stakeholders recorded.')">
-            <x-slot:actions>
-                <flux:modal.trigger name="create-stakeholder">
-                    <flux:button size="sm" icon="plus" variant="primary">{{ __('New stakeholder') }}</flux:button>
-                </flux:modal.trigger>
-            </x-slot:actions>
             <flux:table class="w-full table-fixed [&_td]:align-top [&_td]:break-words">
                 <flux:table.columns>
                     <flux:table.column class="w-40">{{ __('Name') }}</flux:table.column>
                     <flux:table.column class="w-32">{{ __('Role') }}</flux:table.column>
                     <flux:table.column class="w-24">{{ __('Kind') }}</flux:table.column>
                     <flux:table.column>{{ __('Description') }}</flux:table.column>
-                    <flux:table.column class="w-20"></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->stakeholders as $stakeholder)
@@ -75,23 +56,11 @@ new #[Title('Intent')] class extends Component {
                                 <flux:badge :color="BadgeVariant::stakeholderKind($stakeholder->kind)" size="sm">{{ EnumLabel::lower($stakeholder->kind) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell class="whitespace-normal">{{ $stakeholder->description ?? '—' }}</flux:table.cell>
-                            <flux:table.cell>
-                                <div class="flex justify-end gap-1">
-                                    <flux:button size="xs" icon="pencil-square" variant="ghost"
-                                        wire:click="$dispatch('edit-stakeholder', { stakeholderId: '{{ $stakeholder->id }}' })" />
-                                    <flux:button size="xs" icon="trash" variant="ghost"
-                                        wire:click="$dispatch('delete-stakeholder', { stakeholderId: '{{ $stakeholder->id }}' })" />
-                                </div>
-                            </flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
-
-        <livewire:pages::stakeholders.create-modal :project-id="$this->selectedProject->id" :key="'create-stakeholder-'.$this->selectedProject->id" />
-        <livewire:pages::stakeholders.edit-modal :key="'edit-stakeholder-'.$this->selectedProject->id" />
-        <livewire:pages::stakeholders.delete-modal :key="'delete-stakeholder-'.$this->selectedProject->id" />
 
         <x-data-table
             :title="__('Concerns')"
@@ -99,17 +68,11 @@ new #[Title('Intent')] class extends Component {
             :count-label="__('raised')"
             :empty="$this->concerns->isEmpty()"
             :empty-message="__('No concerns raised.')">
-            <x-slot:actions>
-                <flux:modal.trigger name="create-concern">
-                    <flux:button size="sm" icon="plus" variant="primary">{{ __('New concern') }}</flux:button>
-                </flux:modal.trigger>
-            </x-slot:actions>
             <flux:table class="w-full table-fixed [&_td]:align-top [&_td]:break-words">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Concern') }}</flux:table.column>
                     <flux:table.column class="w-40">{{ __('Raised by') }}</flux:table.column>
                     <flux:table.column class="w-48">{{ __('Viewpoint hints') }}</flux:table.column>
-                    <flux:table.column class="w-20"></flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->concerns as $concern)
@@ -123,22 +86,10 @@ new #[Title('Intent')] class extends Component {
                                     —
                                 @endif
                             </flux:table.cell>
-                            <flux:table.cell>
-                                <div class="flex justify-end gap-1">
-                                    <flux:button size="xs" icon="pencil-square" variant="ghost"
-                                        wire:click="$dispatch('edit-concern', { concernId: '{{ $concern->id }}' })" />
-                                    <flux:button size="xs" icon="trash" variant="ghost"
-                                        wire:click="$dispatch('delete-concern', { concernId: '{{ $concern->id }}' })" />
-                                </div>
-                            </flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
-
-        <livewire:pages::concerns.create-modal :project-id="$this->selectedProject->id" :key="'create-concern-'.$this->selectedProject->id" />
-        <livewire:pages::concerns.edit-modal :key="'edit-concern-'.$this->selectedProject->id" />
-        <livewire:pages::concerns.delete-modal :key="'delete-concern-'.$this->selectedProject->id" />
     @endif
 </div>
