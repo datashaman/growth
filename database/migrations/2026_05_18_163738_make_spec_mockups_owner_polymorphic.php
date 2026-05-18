@@ -39,10 +39,15 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations.
+     * Reverse the migration. The old schema only knows work-item owners, so
+     * requirement-owned mockups — which exist only because of this migration —
+     * cannot survive the rollback and are dropped before `work_item_id` is
+     * restored to a non-nullable, foreign-keyed column.
      */
     public function down(): void
     {
+        DB::table('spec_mockups')->where('owner_type', '!=', 'work_item')->delete();
+
         Schema::table('spec_mockups', function (Blueprint $table) {
             $table->ulid('work_item_id')->nullable()->after('id');
         });
