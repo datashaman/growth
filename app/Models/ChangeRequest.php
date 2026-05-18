@@ -52,6 +52,13 @@ class ChangeRequest extends Model
                 throw new RuntimeException('A change request cannot be moved to another project.');
             }
         });
+
+        // Polymorphic rows cannot cascade at the database level, so clear the
+        // subscriptions here — once the change request is gone the unsubscribe
+        // tool can no longer reach them.
+        static::deleting(function (ChangeRequest $changeRequest): void {
+            $changeRequest->subscriptions()->delete();
+        });
     }
 
     /**
@@ -102,5 +109,10 @@ class ChangeRequest extends Model
     public function citations(): MorphMany
     {
         return $this->morphMany(Citation::class, 'citable');
+    }
+
+    public function subscriptions(): MorphMany
+    {
+        return $this->morphMany(Subscription::class, 'subscribable');
     }
 }
