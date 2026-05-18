@@ -39,12 +39,22 @@ class ReadinessGateEvaluator
 
         $implementation = $this->implementationStatus->summarize($project);
 
-        // Work items keyed by id, with the transition trail the adoption
-        // classifier needs to tell a pre-adoption gap from a real regression.
-        $workItemsById = $project->workItems()
-            ->with('statusTransitions:id,transitionable_type,transitionable_id,to_status,transitioned_at')
-            ->get()
-            ->keyBy('id');
+        // Only a done work item with no delivery evidence needs an adoption
+        // check; load just those, and only their `done` transition trail —
+        // the rest of the project's work items never reach the classifier.
+        $gapWorkItemIds = collect($implementation['results'])
+            ->filter(fn (array $row): bool => $row['status'] === 'done' && $row['delivery_links'] === 0)
+            ->pluck('id');
+
+        $gapWorkItems = $gapWorkItemIds->isEmpty()
+            ? collect()
+            : $project->workItems()
+                ->whereKey($gapWorkItemIds)
+                ->with(['statusTransitions' => fn ($query) => $query
+                    ->where('to_status', 'done')
+                    ->select('transitionable_type', 'transitionable_id', 'to_status', 'transitioned_at')])
+                ->get()
+                ->keyBy('id');
 
         $implementationFindings = [];
         foreach ($implementation['results'] as $row) {
@@ -58,7 +68,7 @@ class ReadinessGateEvaluator
                 ];
             }
             if ($row['status'] === 'done' && $row['delivery_links'] === 0) {
-                $workItem = $workItemsById->get($row['id']);
+                $workItem = $gapWorkItems->get($row['id']);
                 $preAdoption = $workItem !== null
                     && $this->adoptionClassifier->isPreAdoption($workItem, $project->adopted_at);
 

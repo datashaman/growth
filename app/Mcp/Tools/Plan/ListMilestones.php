@@ -44,7 +44,11 @@ class ListMilestones extends Tool
                 'project',
                 'workItems.deliveryLinks.checkRuns',
                 'workItems.deliveryLinks.deployments',
-                'workItems.statusTransitions',
+                // The milestone gate's adoption check only reads each work
+                // item's `done` transitions — constrain the load to those.
+                'workItems.statusTransitions' => fn ($query) => $query
+                    ->where('to_status', 'done')
+                    ->select('transitionable_type', 'transitionable_id', 'to_status', 'transitioned_at'),
             ])
             ->limit($limit)
             ->offset($offset)

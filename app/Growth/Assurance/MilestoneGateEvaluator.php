@@ -36,7 +36,12 @@ class MilestoneGateEvaluator
             'project',
             'workItems.deliveryLinks.checkRuns',
             'workItems.deliveryLinks.deployments',
-            'workItems.statusTransitions',
+            // The adoption classifier only needs each work item's `done`
+            // transitions — constrain the load so a long status history does
+            // not balloon the query payload.
+            'workItems.statusTransitions' => fn ($query) => $query
+                ->where('to_status', 'done')
+                ->select('transitionable_type', 'transitionable_id', 'to_status', 'transitioned_at'),
         ]);
 
         $items = $milestone->workItems;
