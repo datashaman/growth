@@ -20,6 +20,7 @@ use App\Mcp\Tools\Feedback\TriageFeedback;
 use App\Mcp\Tools\Manifest\ApplyManifest;
 use App\Mcp\Tools\Manifest\ExportManifest;
 use App\Mcp\Tools\Projects\ActivateProject;
+use App\Mcp\Tools\Projects\AdoptProject;
 use App\Mcp\Tools\Projects\ArchiveProject;
 use App\Mcp\Tools\Projects\CloseProject;
 use App\Mcp\Tools\Projects\CreateProject;
@@ -55,6 +56,7 @@ class ManagementServer extends Server
         ResolveProjectByRepo::class,
         ScaffoldGithubSync::class,
         CreateProject::class,
+        AdoptProject::class,
         UpdateProject::class,
         UpsertProject::class,
         ActivateProject::class,

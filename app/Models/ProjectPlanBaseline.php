@@ -14,8 +14,14 @@ class ProjectPlanBaseline extends Model
 
     public const OWNER_SCOPE_RELATION = 'projectPlan';
 
+    /**
+     * `planned` — an ordinary committed baseline.
+     * `adoption` — the snapshot taken when a brownfield repo is adopted.
+     */
+    public const KINDS = ['planned', 'adoption'];
+
     protected $fillable = [
-        'project_plan_id', 'version', 'snapshot', 'baselined_at',
+        'project_plan_id', 'version', 'kind', 'snapshot', 'baselined_at',
         'baselined_by_user_id', 'baselined_by_agent_id', 'note',
     ];
 

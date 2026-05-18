@@ -2,12 +2,10 @@
 
 namespace App\Mcp\Tools\Plan;
 
-use App\Growth\Transitions\BaselinePlan as BaselinePlanTransition;
+use App\Growth\Plan\PlanBaseliner;
 use App\Growth\Transitions\IllegalTransitionException;
 use App\Models\ProjectPlan;
-use App\Models\ProjectPlanBaseline;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Illuminate\Support\Facades\DB;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
@@ -24,27 +22,10 @@ class BaselinePlan extends Tool
             'note' => 'nullable|string',
         ]);
 
+        $plan = ProjectPlan::findOrFail($data['project_plan_id']);
+
         try {
-            $baseline = DB::transaction(function () use ($data) {
-                $plan = ProjectPlan::with([
-                    'project.workItems' => fn ($q) => $q->orderBy('kind')->orderBy('name'),
-                ])->findOrFail($data['project_plan_id']);
-
-                $version = ((int) $plan->baselines()->max('version')) + 1;
-
-                $baseline = ProjectPlanBaseline::create([
-                    'project_plan_id' => $plan->id,
-                    'version' => $version,
-                    'snapshot' => $this->snapshot($plan),
-                    'baselined_at' => now(),
-                    'baselined_by_user_id' => auth()->id(),
-                    'note' => $data['note'] ?? null,
-                ]);
-
-                (new BaselinePlanTransition)->apply($plan, auth()->user(), $data['note'] ?? null);
-
-                return $baseline;
-            });
+            $baseline = app(PlanBaseliner::class)->baseline($plan, auth()->user(), $data['note'] ?? null);
         } catch (IllegalTransitionException $e) {
             return new ResponseFactory(Response::error($e->getMessage()));
         }
@@ -77,33 +58,6 @@ class BaselinePlan extends Tool
             'version' => $schema->integer()->required(),
             'baselined_at' => $schema->string()->required(),
             'note' => $schema->string(),
-        ];
-    }
-
-    private function snapshot(ProjectPlan $plan): array
-    {
-        return [
-            'project_plan' => [
-                'id' => $plan->id,
-                'project_id' => $plan->project_id,
-                'status' => $plan->status,
-                'scope_summary' => $plan->scope_summary,
-                'objectives' => $plan->objectives,
-                'deliverables_summary' => $plan->deliverables_summary,
-                'approach' => $plan->approach,
-                'organization_summary' => $plan->organization_summary,
-                'assumptions' => $plan->assumptions,
-                'constraints' => $plan->constraints,
-                'budget_summary' => $plan->budget_summary,
-            ],
-            'work_items' => $plan->project->workItems->map(fn ($w) => [
-                'id' => $w->id,
-                'parent_id' => $w->parent_id,
-                'responsible_role_id' => $w->responsible_role_id,
-                'kind' => $w->kind,
-                'name' => $w->name,
-                'status' => $w->status,
-            ])->values()->all(),
         ];
     }
 }
