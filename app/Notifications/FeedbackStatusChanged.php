@@ -33,7 +33,7 @@ class FeedbackStatusChanged extends WorkspaceNotification
 
     public function url(): ?string
     {
-        return route('feedback', [], false);
+        return route('feedback.show', $this->feedback, false);
     }
 
     public function subject(): array

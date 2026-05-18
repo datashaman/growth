@@ -90,7 +90,7 @@ test('the notification names the new status and links to the feedback', function
         ->and($data['title'])->toBe('Feedback resolved')
         ->and($data['subject_type'])->toBe('feedback')
         ->and($data['subject_id'])->toBe($feedback->id)
-        ->and($data['url'])->toBe(route('feedback', [], false));
+        ->and($data['url'])->toBe(route('feedback.show', $feedback, false));
 });
 
 test('a reopened feedback notification reads "reopened"', function () {
