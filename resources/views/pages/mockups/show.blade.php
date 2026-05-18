@@ -8,7 +8,7 @@ new class extends Component {
 
     public function mount(SpecMockup $mockup): void
     {
-        $this->mockup = $mockup->load('workItem.project');
+        $this->mockup = $mockup->load('workItem.project', 'workItem.mockups');
     }
 }; ?>
 
@@ -28,6 +28,20 @@ new class extends Component {
         <flux:text class="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
             {{ __('Agent-authored HTML, rendered in an isolated sandbox.') }}
         </flux:text>
+
+        @if ($mockup->workItem->mockups->count() > 1)
+            <nav class="mb-3 flex flex-wrap gap-2" aria-label="{{ __('Mockups') }}">
+                @foreach ($mockup->workItem->mockups as $alternative)
+                    @if ($alternative->is($mockup))
+                        <span class="rounded-md bg-sky-600 px-2.5 py-1 text-sm font-medium text-white" aria-current="true">{{ $alternative->name }}</span>
+                    @else
+                        <a href="{{ route('mockups.show', $alternative) }}" wire:navigate
+                            class="rounded-md bg-zinc-100 px-2.5 py-1 text-sm text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">{{ $alternative->name }}</a>
+                    @endif
+                @endforeach
+            </nav>
+        @endif
+
         <iframe
             src="{{ route('mockups.raw', $mockup) }}"
             sandbox="allow-scripts"
