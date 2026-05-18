@@ -16,12 +16,13 @@ class ExpireDecisionRequests extends Command
     public function handle(): int
     {
         // Runs unauthenticated, so the ScopedByOwner global scope is a no-op
-        // and the scan covers overdue requests across every workspace.
+        // and the scan covers overdue requests across every workspace. The
+        // backlog is walked in bounded id-keyed chunks to cap memory use.
         $overdue = DecisionRequest::query()
             ->where('status', 'open')
             ->whereNotNull('deadline')
             ->where('deadline', '<', now())
-            ->get();
+            ->lazyById(100);
 
         $expired = 0;
 

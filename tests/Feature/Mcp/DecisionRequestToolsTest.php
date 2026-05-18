@@ -136,6 +136,29 @@ it('rejects a decision request with an unknown subject type', function () {
     expect(DecisionRequest::query()->count())->toBe(0);
 });
 
+it('rejects a decision request linked to a nonexistent subject', function () {
+    ReadonlyServer::tool(CreateDecisionRequest::class, [
+        'target_role_id' => $this->role->id,
+        'question' => 'Which venue?',
+        'options' => ['Stadium', 'Park'],
+        'subject_type' => 'change_request',
+        'subject_id' => 'nonexistent-ulid',
+    ])->assertHasErrors();
+
+    expect(DecisionRequest::query()->count())->toBe(0);
+});
+
+it('rejects a subject id supplied without a subject type', function () {
+    ReadonlyServer::tool(CreateDecisionRequest::class, [
+        'target_role_id' => $this->role->id,
+        'question' => 'Which venue?',
+        'options' => ['Stadium', 'Park'],
+        'subject_id' => 'orphan-ulid',
+    ])->assertHasErrors();
+
+    expect(DecisionRequest::query()->count())->toBe(0);
+});
+
 it('lists open decision requests for roles the caller is assigned to', function () {
     $this->actor->roles()->attach($this->role);
     $decisionRequest = ($this->makeRequest)();

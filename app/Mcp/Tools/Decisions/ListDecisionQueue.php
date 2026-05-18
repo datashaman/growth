@@ -18,6 +18,8 @@ class ListDecisionQueue extends Tool
         $data = $request->validate([
             'role_id' => 'nullable|string|owned_role',
             'status' => 'nullable|string|in:'.implode(',', DecisionRequest::STATUSES),
+            'limit' => 'nullable|integer|min:1|max:200',
+            'offset' => 'nullable|integer|min:0',
         ]);
 
         $roleIds = isset($data['role_id'])
@@ -25,16 +27,27 @@ class ListDecisionQueue extends Tool
             : auth()->user()?->roles()->pluck('roles.id')->all() ?? [];
 
         $status = $data['status'] ?? 'open';
+        $limit = $data['limit'] ?? 50;
+        $offset = $data['offset'] ?? 0;
 
-        $requests = DecisionRequest::query()
+        $query = DecisionRequest::query()
             ->whereIn('target_role_id', $roleIds)
-            ->where('status', $status)
+            ->where('status', $status);
+
+        $total = (clone $query)->count();
+
+        $requests = $query
             ->with(['options', 'requester', 'targetRole'])
             ->orderBy('created_at')
+            ->limit($limit)
+            ->offset($offset)
             ->get();
 
         return Response::structured([
             'status' => $status,
+            'total' => $total,
+            'limit' => $limit,
+            'offset' => $offset,
             'count' => $requests->count(),
             'decision_requests' => $requests->map(fn (DecisionRequest $decisionRequest): array => [
                 'id' => $decisionRequest->id,
@@ -58,6 +71,8 @@ class ListDecisionQueue extends Tool
         return [
             'role_id' => $schema->string()->description('Optional Role ULID; defaults to every role you are assigned to'),
             'status' => $schema->string()->description('Lifecycle status to list (default open)')->enum(DecisionRequest::STATUSES),
+            'limit' => $schema->integer()->description('Page size (1-200, default 50)'),
+            'offset' => $schema->integer()->description('Offset for pagination (default 0)'),
         ];
     }
 
@@ -65,6 +80,9 @@ class ListDecisionQueue extends Tool
     {
         return [
             'status' => $schema->string()->required(),
+            'total' => $schema->integer()->required(),
+            'limit' => $schema->integer()->required(),
+            'offset' => $schema->integer()->required(),
             'count' => $schema->integer()->required(),
             'decision_requests' => $schema->array()->description('The queued decision requests, oldest first')->required(),
         ];

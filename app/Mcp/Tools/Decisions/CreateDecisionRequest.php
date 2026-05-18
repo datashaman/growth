@@ -27,11 +27,19 @@ class CreateDecisionRequest extends Tool
             'options' => 'required|array|min:2|max:10',
             'options.*' => 'required|string|max:255',
             'deadline' => 'nullable|date',
-            'subject_type' => 'nullable|string|in:'.implode(',', array_keys(AppServiceProvider::MORPH_MAP)),
+            'subject_type' => 'nullable|string|required_with:subject_id|in:'.implode(',', array_keys(AppServiceProvider::MORPH_MAP)),
             'subject_id' => 'nullable|string|required_with:subject_type',
         ]);
 
         $role = Role::findOrFail($data['target_role_id']);
+
+        if (isset($data['subject_type'])) {
+            $subjectClass = AppServiceProvider::MORPH_MAP[$data['subject_type']];
+
+            if (! $subjectClass::query()->whereKey($data['subject_id'])->exists()) {
+                return new ResponseFactory(Response::error('The linked subject does not exist or is not in your workspace.'));
+            }
+        }
 
         $decisionRequest = DB::transaction(function () use ($data, $role): DecisionRequest {
             $decisionRequest = DecisionRequest::create([

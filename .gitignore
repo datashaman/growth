@@ -32,3 +32,4 @@ Thumbs.db
 .env.staging
 /tests/Browser/Screenshots
 /test-results
+/.claude/scheduled_tasks.lock
