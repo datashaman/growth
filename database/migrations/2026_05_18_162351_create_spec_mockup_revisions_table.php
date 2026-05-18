@@ -48,8 +48,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Added nullable: a longText column cannot carry a default on
+        // MySQL/MariaDB, and the values are backfilled immediately below.
         Schema::table('spec_mockups', function (Blueprint $table) {
-            $table->longText('html')->default('');
+            $table->longText('html')->nullable();
         });
 
         // Restore each mockup's current state from its latest revision.

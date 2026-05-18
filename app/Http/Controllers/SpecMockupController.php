@@ -48,7 +48,9 @@ class SpecMockupController extends Controller
             return redirect()->route('mockups.show', $mockup);
         }
 
-        $revisionId = $request->query('revision');
+        // An empty `?revision=` is treated as absent, falling through to the
+        // current revision rather than a findOrFail('') 404.
+        $revisionId = $request->query('revision') ?: null;
         $revision = $revisionId !== null
             ? $mockup->revisions()->findOrFail($revisionId)
             : $mockup->currentRevision;

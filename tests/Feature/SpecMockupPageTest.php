@@ -92,6 +92,13 @@ it('serves a chosen revision and 404s an unknown one', function () {
         ->assertOk()
         ->assertSee('Second cut', false);
 
+    // An empty revision parameter falls through the same way.
+    $this->actingAs($this->user)
+        ->withHeader('Sec-Fetch-Dest', 'iframe')
+        ->get(route('mockups.raw', ['mockup' => $this->mockup, 'revision' => '']))
+        ->assertOk()
+        ->assertSee('Second cut', false);
+
     // A revision id that is not this mockup's 404s.
     $this->actingAs($this->user)
         ->withHeader('Sec-Fetch-Dest', 'iframe')
