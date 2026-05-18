@@ -26,6 +26,7 @@ use App\Mcp\Tools\Plan\ListCheckRuns;
 use App\Mcp\Tools\Plan\UpsertCheckRun;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Requirements\ListRequirements;
+use App\Mcp\Tools\Search\Search;
 use App\Mcp\Tools\Trace\TraceQuery;
 use App\Mcp\Tools\Verification\CloseAnomaly;
 use App\Mcp\Tools\Verification\DeleteAnomaly;
@@ -55,6 +56,7 @@ class VerificationServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        Search::class,
         Doctor::class,
         SearchFeedback::class,
         SendFeedback::class,

@@ -30,6 +30,7 @@ use App\Mcp\Tools\Projects\UpsertProject;
 use App\Mcp\Tools\Requirements\DeleteRequirement;
 use App\Mcp\Tools\Requirements\ListRequirements;
 use App\Mcp\Tools\Requirements\UpsertRequirements;
+use App\Mcp\Tools\Search\Search;
 use App\Mcp\Tools\Sources\CiteArtifact;
 use App\Mcp\Tools\Sources\DeleteCitation;
 use App\Mcp\Tools\Sources\DeleteSource;
@@ -53,6 +54,7 @@ class IntakeServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        Search::class,
         Doctor::class,
         SearchFeedback::class,
         SendFeedback::class,
