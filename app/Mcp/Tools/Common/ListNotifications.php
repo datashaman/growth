@@ -47,6 +47,7 @@ class ListNotifications extends Tool
             'offset' => $offset,
             'results' => $rows->map(fn (DatabaseNotification $row): array => [
                 'id' => $row->id,
+                'thread_id' => $row->data['thread_id'] ?? $row->id,
                 'event' => $row->data['event'] ?? null,
                 'title' => $row->data['title'] ?? null,
                 'body' => $row->data['body'] ?? null,

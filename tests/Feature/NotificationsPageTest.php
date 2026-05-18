@@ -52,14 +52,34 @@ it('does not show notifications from another workspace', function () {
         ->assertDontSee('Cross-workspace leak');
 });
 
-it('marks a single notification read', function () {
+it('marks an unthreaded notification read by its own id', function () {
     $notification = ($this->makeNotification)();
 
     Livewire::actingAs($this->user)
         ->test('pages::notifications')
-        ->call('markRead', $notification->id);
+        ->call('markThreadRead', $notification->id);
 
     expect($this->user->notifications()->whereNull('read_at')->count())->toBe(0);
+});
+
+it('groups a thread together and marks the whole thread read at once', function () {
+    $threadId = (string) Str::uuid();
+    ($this->makeNotification)(['title' => 'Original question', 'thread_id' => $threadId]);
+    ($this->makeNotification)(['title' => 'Threaded reply', 'thread_id' => $threadId, 'event' => 'notification.reply']);
+    ($this->makeNotification)(['title' => 'Unrelated message', 'thread_id' => (string) Str::uuid()]);
+
+    $component = Livewire::actingAs($this->user)
+        ->test('pages::notifications')
+        ->assertSee('Original question')
+        ->assertSee('Threaded reply')
+        ->assertSee('Unrelated message');
+
+    // Two threads: the two-message exchange and the lone message.
+    expect($component->instance()->threads)->toHaveCount(2);
+
+    $component->call('markThreadRead', $threadId);
+
+    expect($this->user->notifications()->whereNull('read_at')->count())->toBe(1);
 });
 
 it('marks every notification read', function () {
