@@ -38,7 +38,9 @@ it('baselines a draft plan, snapshots it, and records a transition', function ()
         });
 
     expect($plan->fresh()->status)->toBe('baselined');
-    expect(ProjectPlanBaseline::where('project_plan_id', $plan->id)->count())->toBe(1);
+
+    $baseline = ProjectPlanBaseline::where('project_plan_id', $plan->id)->sole();
+    expect($baseline->kind)->toBe('planned');
 
     $transition = StatusTransition::query()->sole();
     expect($transition->from_status)->toBe('draft')

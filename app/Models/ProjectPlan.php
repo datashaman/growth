@@ -41,4 +41,42 @@ class ProjectPlan extends Model
     {
         return $this->morphMany(StatusTransition::class, 'transitionable');
     }
+
+    /**
+     * The immutable snapshot stored on a baseline: the plan's narrative fields
+     * plus its project's work-breakdown state, in a stable order.
+     *
+     * @return array<string, mixed>
+     */
+    public function baselineSnapshot(): array
+    {
+        return [
+            'project_plan' => [
+                'id' => $this->id,
+                'project_id' => $this->project_id,
+                'status' => $this->status,
+                'scope_summary' => $this->scope_summary,
+                'objectives' => $this->objectives,
+                'deliverables_summary' => $this->deliverables_summary,
+                'approach' => $this->approach,
+                'organization_summary' => $this->organization_summary,
+                'assumptions' => $this->assumptions,
+                'constraints' => $this->constraints,
+                'budget_summary' => $this->budget_summary,
+            ],
+            'work_items' => $this->project->workItems()
+                ->orderBy('kind')
+                ->orderBy('name')
+                ->orderBy('id')
+                ->get(['id', 'parent_id', 'responsible_role_id', 'kind', 'name', 'status'])
+                ->map(fn ($w) => [
+                    'id' => $w->id,
+                    'parent_id' => $w->parent_id,
+                    'responsible_role_id' => $w->responsible_role_id,
+                    'kind' => $w->kind,
+                    'name' => $w->name,
+                    'status' => $w->status,
+                ])->all(),
+        ];
+    }
 }
