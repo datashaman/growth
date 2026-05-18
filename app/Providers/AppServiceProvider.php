@@ -13,6 +13,7 @@ use App\Models\CheckRunEvidence;
 use App\Models\Citation;
 use App\Models\Concern;
 use App\Models\CustomViewpoint;
+use App\Models\DecisionRequest;
 use App\Models\Deployment;
 use App\Models\DesignElement;
 use App\Models\DesignView;
@@ -66,6 +67,7 @@ class AppServiceProvider extends ServiceProvider
         'artifact_relation' => ArtifactRelation::class,
         'change_request' => ChangeRequest::class,
         'change_approval_event' => ChangeApprovalEvent::class,
+        'decision_request' => DecisionRequest::class,
         'check_run_evidence' => CheckRunEvidence::class,
         'concern' => Concern::class,
         'deployment' => Deployment::class,
@@ -97,6 +99,7 @@ class AppServiceProvider extends ServiceProvider
         'owned_artifact_relation' => [ArtifactRelation::class, 'artifact_relations.id'],
         'owned_change_approval_event' => [ChangeApprovalEvent::class, 'change_approval_events.id'],
         'owned_change_request' => [ChangeRequest::class,   'change_requests.id'],
+        'owned_decision_request' => [DecisionRequest::class, 'decision_requests.id'],
         'owned_change_impact' => [ChangeImpact::class,    'change_impacts.id'],
         'owned_check_run_evidence' => [CheckRunEvidence::class, 'check_run_evidences.id'],
         'owned_requirement' => [Requirement::class,     'requirements.id'],
