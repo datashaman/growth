@@ -11,7 +11,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Create or update an implementation evidence link from a work item to a commit, pull request, or branch.')]
+#[Description('Create or update an implementation evidence link from a work item to a commit, pull request, branch, or visual-evidence gallery.')]
 class UpsertDeliveryLink extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -86,8 +86,8 @@ class UpsertDeliveryLink extends Tool
             'id' => $schema->string()->description('Existing delivery link ULID. Omit to create.'),
             'work_item_id' => $schema->string()->description('Work item ULID')->required(),
             'type' => $schema->string()->description('Delivery link type')->enum(WorkItemDeliveryLink::TYPES)->required(),
-            'ref' => $schema->string()->description('Commit SHA, pull request number/ref, or branch name')->required(),
-            'url' => $schema->string()->description('Optional URL to the commit, pull request, or branch'),
+            'ref' => $schema->string()->description('Commit SHA, pull request number/ref, branch name, or — for an evidence link — the pull request ref the gallery belongs to')->required(),
+            'url' => $schema->string()->description('Optional URL to the commit, pull request, branch, or evidence gallery'),
             'description' => $schema->string()->description('Optional delivery evidence notes'),
         ];
     }

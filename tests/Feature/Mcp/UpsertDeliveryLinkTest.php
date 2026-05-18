@@ -48,6 +48,28 @@ it('accepts a GitHub pull request payload from the sync action', function () {
         ->toBe(1);
 });
 
+it('accepts a visual-evidence gallery link from the sync action', function () {
+    $args = [
+        'work_item_id' => $this->workItem->id,
+        'type' => 'evidence',
+        'ref' => '#42',
+        'url' => 'https://github.com/datashaman/growth/pull/42#issuecomment-1',
+        'description' => 'Visual evidence: 8 screenshots',
+    ];
+
+    PlanningServer::tool(UpsertDeliveryLink::class, $args)
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('type', 'evidence')
+                ->where('ref', '#42')
+                ->where('created', true)
+                ->etc();
+        });
+
+    expect(WorkItemDeliveryLink::where('work_item_id', $this->workItem->id)->where('type', 'evidence')->count())
+        ->toBe(1);
+});
+
 it('clears unattributed events for a branch once it is bound', function () {
     $this->project->update(['github_repo' => 'datashaman/growth']);
 

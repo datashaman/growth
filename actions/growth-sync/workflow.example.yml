@@ -28,11 +28,14 @@ on:
   release:
     types: [published]
 
-# checks:write lets growth-sync post the "Growth: work item attribution"
-# check back onto pull requests.
+# checks:write   — post the "Growth: work item attribution" check.
+# actions:read   — find and download the "growth-evidence" build artifact.
+# pull-requests:write — post and update the screenshot-gallery comment.
 permissions:
   contents: read
   checks: write
+  actions: read
+  pull-requests: write
 
 jobs:
   sync:
