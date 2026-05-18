@@ -77,6 +77,15 @@ it('unsubscribes the calling user from a change request', function () {
     expect(Subscription::query()->count())->toBe(0);
 });
 
+it('removes subscriptions when the change request is deleted', function () {
+    $change = ($this->makeChange)();
+    Subscription::factory()->for($this->user)->for($change, 'subscribable')->create();
+
+    $change->delete();
+
+    expect(Subscription::query()->count())->toBe(0);
+});
+
 it('is a clean no-op when unsubscribing without a subscription', function () {
     $change = ($this->makeChange)();
 

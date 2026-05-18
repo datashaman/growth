@@ -20,10 +20,18 @@ class UnsubscribeChangeRequest extends Tool
             'change_request_id' => 'required|string|owned_change_request',
         ]);
 
+        $userId = auth()->id();
+
+        // Subscriptions are user-bound — reject an anonymous caller rather
+        // than reporting a misleading clean no-op, mirroring the subscribe tool.
+        if ($userId === null) {
+            return new ResponseFactory(Response::error('Unsubscribing from a change request requires an authenticated user.'));
+        }
+
         $changeRequest = ChangeRequest::findOrFail($data['change_request_id']);
 
         $removed = Subscription::query()
-            ->where('user_id', auth()->id())
+            ->where('user_id', $userId)
             ->where('subscribable_type', $changeRequest->getMorphClass())
             ->where('subscribable_id', $changeRequest->getKey())
             ->delete();

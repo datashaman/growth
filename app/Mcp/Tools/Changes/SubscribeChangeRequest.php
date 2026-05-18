@@ -20,10 +20,19 @@ class SubscribeChangeRequest extends Tool
             'change_request_id' => 'required|string|owned_change_request',
         ]);
 
+        $userId = auth()->id();
+
+        // A subscription is bound to a user; a session with no authenticated
+        // caller has no one to subscribe. Fail cleanly rather than letting the
+        // null hit the non-null user_id column as a database error.
+        if ($userId === null) {
+            return new ResponseFactory(Response::error('Subscribing to a change request requires an authenticated user.'));
+        }
+
         $changeRequest = ChangeRequest::findOrFail($data['change_request_id']);
 
         $subscription = Subscription::firstOrCreate([
-            'user_id' => auth()->id(),
+            'user_id' => $userId,
             'subscribable_type' => $changeRequest->getMorphClass(),
             'subscribable_id' => $changeRequest->getKey(),
         ]);
