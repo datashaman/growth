@@ -79,6 +79,7 @@ use App\Mcp\Tools\Plan\UpsertAgent;
 use App\Mcp\Tools\Plan\UpsertDeliveryLink;
 use App\Mcp\Tools\Plan\UpsertDeployment;
 use App\Mcp\Tools\Plan\UpsertMilestone;
+use App\Mcp\Tools\Plan\UpsertMockup;
 use App\Mcp\Tools\Plan\UpsertPlan;
 use App\Mcp\Tools\Plan\UpsertRelease;
 use App\Mcp\Tools\Plan\UpsertRisk;
@@ -152,6 +153,7 @@ class PlanningServer extends Server
         UnassignWorkItemRaci::class,
         UpsertDeliveryLink::class,
         ListDeliveryLinks::class,
+        UpsertMockup::class,
         UpsertRisk::class,
         ListRisks::class,
         DeleteRisk::class,

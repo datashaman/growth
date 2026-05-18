@@ -30,6 +30,7 @@ new class extends Component {
             'dependencies',
             'deliveryLinks.checkRuns',
             'releases',
+            'mockup',
         ];
     }
 
@@ -266,5 +267,14 @@ new class extends Component {
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
+    @endif
+
+    @if ($workItem->mockup)
+        <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+            <flux:heading size="lg" class="mb-3">{{ __('Spec mockup') }}</flux:heading>
+            <flux:link :href="route('mockups.show', $workItem->mockup)" wire:navigate class="underline">
+                {{ $workItem->mockup->name }}
+            </flux:link>
+        </section>
     @endif
 </div>

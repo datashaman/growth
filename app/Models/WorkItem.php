@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use RuntimeException;
 
@@ -144,6 +145,11 @@ class WorkItem extends Model
     public function deliveryLinks(): HasMany
     {
         return $this->hasMany(WorkItemDeliveryLink::class);
+    }
+
+    public function mockup(): HasOne
+    {
+        return $this->hasOne(SpecMockup::class);
     }
 
     public function releases(): BelongsToMany
