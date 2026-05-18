@@ -56,11 +56,11 @@ class CommentFeedback extends Tool
      */
     private function notifyParticipants(ToolFeedback $feedback, FeedbackComment $comment, ?User $author): void
     {
-        $notifier = app(WorkspaceNotifier::class);
-
-        $feedback->commentParticipants()
+        $recipients = $feedback->commentParticipants()
             ->reject(fn (User $user): bool => $author !== null && $user->is($author))
-            ->each(fn (User $user) => $notifier->notifyUser($user, new FeedbackCommented($comment)));
+            ->values();
+
+        app(WorkspaceNotifier::class)->notifyUsers($recipients, new FeedbackCommented($comment));
     }
 
     public function schema(JsonSchema $schema): array

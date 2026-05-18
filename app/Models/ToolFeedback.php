@@ -66,6 +66,8 @@ class ToolFeedback extends Model
      *
      * Call this after persisting a new comment: it reads the comments table
      * live, so a freshly-saved author is only in the set once the row exists.
+     * The set always includes the latest commenter — a caller notifying a
+     * thread must filter the acting author out itself.
      *
      * @return Collection<int, User>
      */

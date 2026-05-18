@@ -8,6 +8,7 @@ use App\Models\Workspace;
 use App\Support\RoleContext;
 use App\Support\WorkspaceContext;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Notification;
 
 /**
@@ -55,6 +56,29 @@ class WorkspaceNotifier
         );
 
         $user->notify($notification);
+    }
+
+    /**
+     * Send to an explicit set of users in a single dispatch — used for
+     * personal events with more than one recipient, such as a feedback
+     * thread. The caller is responsible for the recipient set; this method
+     * does not skip the actor. No-op when the set is empty.
+     *
+     * @param  Collection<int, User>  $users
+     */
+    public function notifyUsers(Collection $users, WorkspaceNotification $notification): void
+    {
+        if ($users->isEmpty()) {
+            return;
+        }
+
+        $notification->withContext(
+            app(WorkspaceContext::class)->id(),
+            auth()->user(),
+            $this->actingRole(),
+        );
+
+        Notification::send($users, $notification);
     }
 
     /**

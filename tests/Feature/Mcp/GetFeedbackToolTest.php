@@ -62,11 +62,13 @@ it('does not return feedback from another workspace', function () {
 
 it('returns the comment thread oldest first', function () {
     $feedback = ($this->makeFeedback)();
-    $feedback->comments()->create([
+    $first = $feedback->comments()->create([
         'user_id' => $this->user->id,
         'body' => 'First comment',
-        'created_at' => now()->subHour(),
     ]);
+    // Eloquent stamps created_at on insert, so backdate the first comment
+    // after the fact to give the thread an unambiguous order.
+    $first->forceFill(['created_at' => now()->subHour()])->save();
     $feedback->comments()->create([
         'user_id' => $this->user->id,
         'body' => 'Second comment',
