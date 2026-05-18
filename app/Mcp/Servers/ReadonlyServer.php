@@ -43,6 +43,10 @@ use App\Mcp\Tools\Dashboard\ShowGateStatus;
 use App\Mcp\Tools\Dashboard\ShowProjectDashboard;
 use App\Mcp\Tools\Dashboard\ShowRequirementExplorer;
 use App\Mcp\Tools\Dashboard\ShowTraceGraph;
+use App\Mcp\Tools\Decisions\AnswerDecisionRequest;
+use App\Mcp\Tools\Decisions\CancelDecisionRequest;
+use App\Mcp\Tools\Decisions\CreateDecisionRequest;
+use App\Mcp\Tools\Decisions\ListDecisionQueue;
 use App\Mcp\Tools\Feedback\CommentFeedback;
 use App\Mcp\Tools\Feedback\GetFeedback;
 use App\Mcp\Tools\Feedback\ListToolInvocations;
@@ -88,6 +92,10 @@ class ReadonlyServer extends Server
 
     protected array $tools = [
         WhoAmI::class,
+        CreateDecisionRequest::class,
+        ListDecisionQueue::class,
+        AnswerDecisionRequest::class,
+        CancelDecisionRequest::class,
         ListNotifications::class,
         ListUsers::class,
         MarkNotificationRead::class,

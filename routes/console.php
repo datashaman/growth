@@ -12,3 +12,4 @@ if (config('queue.default') === 'redis') {
     Schedule::command('horizon:snapshot')->everyFiveMinutes();
 }
 Schedule::command('model:prune')->daily();
+Schedule::command('decision-requests:expire')->hourly();
