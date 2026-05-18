@@ -9,6 +9,16 @@ const TRAILER_KEY = 'Growth-Work-Item';
 // make a missed work item attribution loud instead of silent.
 const ATTRIBUTION_CHECK_NAME = 'Growth: work item attribution';
 
+// Fixed name of the build artifact a project uploads its `docs/evidence/`
+// screenshots under. growth-sync ingests the artifact with this exact name;
+// the contract is documented in docs/evidence/README.md.
+const EVIDENCE_ARTIFACT_NAME = 'growth-evidence';
+
+// Hidden marker on the screenshot-gallery comment. growth-sync finds its own
+// comment by this marker so each push updates the one comment in place rather
+// than posting a fresh one.
+const GALLERY_MARKER = '<!-- growth-sync:evidence-gallery -->';
+
 /**
  * Extract the work item id from a commit message's `Growth-Work-Item:`
  * trailer. The last matching trailer wins, per git trailer convention.
@@ -65,6 +75,115 @@ export function resolveEventBranch(eventName, event, pullRequest = null) {
 export function isForkPullRequest(pullRequest, repository) {
   const headRepo = pullRequest?.head?.repo?.full_name;
   return Boolean(headRepo && headRepo !== repository);
+}
+
+/**
+ * List the file paths inside a ZIP buffer by reading its central directory.
+ * The central directory stores file names uncompressed, so the manifest of
+ * names — all the gallery needs — is read without inflating any entry.
+ * Directory entries (names ending in `/`) are dropped. Throws on a buffer
+ * that is not a ZIP archive.
+ */
+export function listZipEntries(buffer) {
+  const EOCD_SIGNATURE = 0x06054b50;
+  const CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
+
+  // The end-of-central-directory record is 22 bytes plus an optional trailing
+  // comment (max 65535). Scan back from the end for its signature.
+  let eocd = -1;
+  const earliest = Math.max(0, buffer.length - 22 - 0xffff);
+  for (let i = buffer.length - 22; i >= earliest; i--) {
+    if (buffer.readUInt32LE(i) === EOCD_SIGNATURE) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd === -1) {
+    throw new Error('Not a ZIP archive: no end-of-central-directory record.');
+  }
+
+  const entryCount = buffer.readUInt16LE(eocd + 10);
+  let offset = buffer.readUInt32LE(eocd + 16);
+  const names = [];
+  for (let i = 0; i < entryCount; i++) {
+    if (buffer.readUInt32LE(offset) !== CENTRAL_DIRECTORY_SIGNATURE) {
+      throw new Error('Corrupt ZIP archive: bad central-directory entry.');
+    }
+    const nameLength = buffer.readUInt16LE(offset + 28);
+    const extraLength = buffer.readUInt16LE(offset + 30);
+    const commentLength = buffer.readUInt16LE(offset + 32);
+    const name = buffer.toString('utf8', offset + 46, offset + 46 + nameLength);
+    if (!name.endsWith('/')) {
+      names.push(name);
+    }
+    offset += 46 + nameLength + extraLength + commentLength;
+  }
+  return names;
+}
+
+/**
+ * Group evidence screenshot paths by their top-level folder. The artifact
+ * root is `docs/evidence/`, so a path is `<slug>/<screenshot>.png`. Non-PNG
+ * files and files sitting at the artifact root (no folder) are dropped.
+ * Returns folders sorted by name, each with its files sorted — a stable
+ * gallery across runs.
+ */
+export function groupEvidenceFiles(paths) {
+  const groups = new Map();
+  for (const path of paths ?? []) {
+    if (!path.toLowerCase().endsWith('.png')) {
+      continue;
+    }
+    const slash = path.indexOf('/');
+    if (slash <= 0) {
+      continue;
+    }
+    const folder = path.slice(0, slash);
+    if (!groups.has(folder)) {
+      groups.set(folder, []);
+    }
+    groups.get(folder).push(path);
+  }
+  return [...groups.entries()]
+    .map(([folder, files]) => ({ folder, files: files.sort() }))
+    .sort((a, b) => a.folder.localeCompare(b.folder));
+}
+
+/**
+ * Build the screenshot-gallery comment body: the hidden marker, a header, and
+ * a manifest of the captured screenshots grouped by folder, with a link to
+ * the artifact. A comment posted through the API cannot embed images from a
+ * private repository, so the gallery is a manifest, not inline thumbnails.
+ */
+export function buildGalleryComment({ groups, artifactUrl }) {
+  const total = groups.reduce((sum, group) => sum + group.files.length, 0);
+  const lines = [
+    GALLERY_MARKER,
+    '## 📸 Visual evidence',
+    '',
+    `${total} screenshot${total === 1 ? '' : 's'} captured by CI across `
+      + `${groups.length} folder${groups.length === 1 ? '' : 's'}. `
+      + `[Download the artifact](${artifactUrl}) — GitHub expires run artifacts, `
+      + 'so download it to keep the screenshots.',
+    '',
+  ];
+  for (const group of groups) {
+    lines.push(`### ${group.folder}`);
+    for (const file of group.files) {
+      lines.push(`- \`${file}\``);
+    }
+    lines.push('');
+  }
+  return `${lines.join('\n').trimEnd()}\n`;
+}
+
+/**
+ * Find growth-sync's own screenshot-gallery comment among a pull request's
+ * comments by its hidden marker. Returns the comment, or null when none has
+ * been posted yet.
+ */
+export function findGalleryComment(comments) {
+  return (comments ?? []).find((comment) => (comment.body ?? '').includes(GALLERY_MARKER)) ?? null;
 }
 
 /**
@@ -504,12 +623,98 @@ export function buildWorkflowRunArgs(event, deliveryLinkId) {
 }
 
 /**
+ * Ingest a CI run's visual-evidence artifact: post — or update in place — the
+ * per-pull-request screenshot-gallery comment, and cite the gallery on the
+ * matched work item as an `evidence` delivery link. A run with no evidence
+ * artifact, or one whose branch resolves to no work item, is not a failure:
+ * the artifact is skipped or the gallery posted uncited. The caller treats a
+ * throw as best-effort so a flaky artifact API never fails the whole sync.
+ */
+async function ingestEvidence({
+  runId,
+  repository,
+  pullRequest,
+  workItemId,
+  listRunArtifacts,
+  downloadArtifact,
+  listIssueComments,
+  createComment,
+  updateComment,
+  callTool,
+  log,
+}) {
+  if (typeof listRunArtifacts !== 'function') {
+    return; // Evidence ingestion is not wired into this caller.
+  }
+
+  const artifacts = await listRunArtifacts(runId);
+  const artifact = (artifacts ?? []).find(
+    (candidate) => candidate.name === EVIDENCE_ARTIFACT_NAME && !candidate.expired,
+  );
+  if (!artifact) {
+    log.info(`No ${EVIDENCE_ARTIFACT_NAME} artifact on run ${runId}; nothing to ingest.`);
+    return;
+  }
+  if (!pullRequest) {
+    log.info('Workflow run has no pull request; cannot post an evidence gallery.');
+    return;
+  }
+
+  const groups = groupEvidenceFiles(listZipEntries(await downloadArtifact(artifact.id)));
+  if (groups.length === 0) {
+    log.warn(`The ${EVIDENCE_ARTIFACT_NAME} artifact held no screenshots; skipping the gallery.`);
+    return;
+  }
+
+  const artifactUrl = `https://github.com/${repository}/actions/runs/${runId}/artifacts/${artifact.id}`;
+  const body = buildGalleryComment({ groups, artifactUrl });
+  const existing = findGalleryComment(await listIssueComments(pullRequest.number));
+  const comment = existing
+    ? await updateComment(existing.id, body)
+    : await createComment(pullRequest.number, body);
+
+  const total = groups.reduce((sum, group) => sum + group.files.length, 0);
+  log.info(
+    `${existing ? 'Updated' : 'Posted'} the evidence gallery (${total} screenshot(s)) `
+    + `on pull request #${pullRequest.number}.`,
+  );
+
+  if (workItemId === null || workItemId === undefined) {
+    log.info('No work item resolved for this run; the gallery is posted but not cited.');
+    return;
+  }
+
+  const result = await callTool('upsert-delivery-link', {
+    work_item_id: workItemId,
+    type: 'evidence',
+    ref: `#${pullRequest.number}`,
+    url: comment.html_url,
+    description: `Visual evidence: ${total} screenshot${total === 1 ? '' : 's'}`,
+  });
+  if (result.isError) {
+    throw new Error(`Growth rejected the evidence link: ${result.errorText}`);
+  }
+  log.info(`Cited the evidence gallery on work item ${workItemId}.`);
+}
+
+/**
  * Orchestrate one workflow_run event: resolve the PR's delivery link
  * (creating it if the PR event has not been seen yet) then record the
  * run as check evidence. This is the GitHub Actions counterpart to
  * runCheckRun, which only fires for third-party CI providers.
  */
-async function runWorkflowRun({ event, repository, getCommitMessage, callTool, log }) {
+async function runWorkflowRun({
+  event,
+  repository,
+  getCommitMessage,
+  callTool,
+  listRunArtifacts,
+  downloadArtifact,
+  listIssueComments,
+  createComment,
+  updateComment,
+  log,
+}) {
   const pullRequest = resolveWorkflowRunPullRequest(event);
   if (pullRequest === null) {
     log.warn('Workflow run has no associated pull request; skipping.');
@@ -529,6 +734,29 @@ async function runWorkflowRun({ event, repository, getCommitMessage, callTool, l
     url: run.html_url,
     log,
   });
+
+  // Ingest the run's visual-evidence artifact, if any. Runs whether or not a
+  // work item resolved — an unresolved branch still gets the gallery posted,
+  // uncited. Best-effort: a flaky artifact or comment API must not fail the
+  // delivery-link and check-run sync below.
+  try {
+    await ingestEvidence({
+      runId: run.id,
+      repository,
+      pullRequest,
+      workItemId,
+      listRunArtifacts,
+      downloadArtifact,
+      listIssueComments,
+      createComment,
+      updateComment,
+      callTool,
+      log,
+    });
+  } catch (error) {
+    log.warn(`Could not ingest visual evidence: ${error.message}`);
+  }
+
   if (workItemId === null) {
     return { skipped: true };
   }
@@ -723,6 +951,99 @@ function makeCheckRunPoster({ apiUrl, repository, token, fetchFn }) {
 }
 
 /**
+ * List the artifacts a workflow run produced. growth-sync looks among them
+ * for the visual-evidence artifact to ingest.
+ */
+function makeArtifactLister({ apiUrl, repository, token, fetchFn }) {
+  return async function listRunArtifacts(runId) {
+    const response = await fetchFn(
+      `${apiUrl}/repos/${repository}/actions/runs/${runId}/artifacts?per_page=100`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'growth-sync',
+        },
+      },
+    );
+    if (!response.ok) {
+      throw new Error(`GitHub API ${response.status} listing artifacts for run ${runId}`);
+    }
+    const body = await response.json();
+    return body.artifacts ?? [];
+  };
+}
+
+/**
+ * Download a run artifact's zip into a Buffer. The endpoint 302-redirects to
+ * a short-lived signed blob URL; fetch follows the redirect.
+ */
+function makeArtifactDownloader({ apiUrl, repository, token, fetchFn }) {
+  return async function downloadArtifact(artifactId) {
+    const response = await fetchFn(
+      `${apiUrl}/repos/${repository}/actions/artifacts/${artifactId}/zip`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'growth-sync',
+        },
+      },
+    );
+    if (!response.ok) {
+      throw new Error(`GitHub API ${response.status} downloading artifact ${artifactId}`);
+    }
+    return Buffer.from(await response.arrayBuffer());
+  };
+}
+
+/**
+ * List, create, and update issue comments — a pull request's comments are
+ * issue comments — so growth-sync can keep a single screenshot-gallery
+ * comment per pull request, updated in place.
+ */
+function makeCommentClient({ apiUrl, repository, token, fetchFn }) {
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/vnd.github+json',
+    'Content-Type': 'application/json',
+    'User-Agent': 'growth-sync',
+  };
+  return {
+    listIssueComments: async (issueNumber) => {
+      const response = await fetchFn(
+        `${apiUrl}/repos/${repository}/issues/${issueNumber}/comments?per_page=100`,
+        { headers },
+      );
+      if (!response.ok) {
+        throw new Error(`GitHub API ${response.status} listing comments on #${issueNumber}`);
+      }
+      return response.json();
+    },
+    createComment: async (issueNumber, body) => {
+      const response = await fetchFn(
+        `${apiUrl}/repos/${repository}/issues/${issueNumber}/comments`,
+        { method: 'POST', headers, body: JSON.stringify({ body }) },
+      );
+      if (!response.ok) {
+        throw new Error(`GitHub API ${response.status} creating a comment on #${issueNumber}`);
+      }
+      return response.json();
+    },
+    updateComment: async (commentId, body) => {
+      const response = await fetchFn(
+        `${apiUrl}/repos/${repository}/issues/comments/${commentId}`,
+        { method: 'PATCH', headers, body: JSON.stringify({ body }) },
+      );
+      if (!response.ok) {
+        throw new Error(`GitHub API ${response.status} updating comment ${commentId}`);
+      }
+      return response.json();
+    },
+  };
+}
+
+/**
  * Call a Growth MCP tool over the stateless HTTP transport. Protocol-level
  * JSON-RPC errors throw; tool-level errors are returned as { isError }.
  */
@@ -788,6 +1109,24 @@ async function main() {
     token: githubToken,
     fetchFn: fetch,
   });
+  const listRunArtifacts = makeArtifactLister({
+    apiUrl,
+    repository: GITHUB_REPOSITORY,
+    token: githubToken,
+    fetchFn: fetch,
+  });
+  const downloadArtifact = makeArtifactDownloader({
+    apiUrl,
+    repository: GITHUB_REPOSITORY,
+    token: githubToken,
+    fetchFn: fetch,
+  });
+  const { listIssueComments, createComment, updateComment } = makeCommentClient({
+    apiUrl,
+    repository: GITHUB_REPOSITORY,
+    token: githubToken,
+    fetchFn: fetch,
+  });
   const callTool = makeMcpClient({ growthUrl, token: growthToken, fetchFn: fetch });
 
   await run({
@@ -796,6 +1135,11 @@ async function main() {
     repository: GITHUB_REPOSITORY,
     getCommitMessage,
     postCheckRun,
+    listRunArtifacts,
+    downloadArtifact,
+    listIssueComments,
+    createComment,
+    updateComment,
     attributionCheckAdvisory: process.env.GROWTH_ATTRIBUTION_CHECK === 'advisory',
     callTool,
     log: {

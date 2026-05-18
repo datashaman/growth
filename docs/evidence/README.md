@@ -10,18 +10,20 @@ never shows what the screen actually renders. Visual evidence closes that gap.
 
 Visual evidence is a Growth capability for **any tracked project**, whatever its
 stack. Growth does not care *how* the screenshots are produced — only that a
-project follows the contract:
+project follows this contract:
 
-1. The project's browser tests write full-page PNGs to `docs/evidence/<slug>/`.
-2. CI uploads that directory as a build artifact.
-3. growth-sync ingests it — posting the per-PR gallery and citing it on the
-   matched work item.
+1. The project's browser tests write full-page PNGs to `docs/evidence/<slug>/`,
+   one folder per captured subject (see [Layout](#layout)).
+2. CI uploads that directory as a build artifact named **`growth-evidence`**.
+3. growth-sync ingests that artifact on the CI run it belongs to — posting the
+   per-PR gallery comment and, when the branch resolves to a work item, citing
+   the gallery on it as an `evidence` delivery link.
 
 A Laravel project produces the PNGs with the Pest browser suite (below); a Node
 project would use Playwright or Cypress, a Python project pytest-playwright, a
 Go project chromedp, an Elixir project Wallaby. The capture tooling is the
-project's own. The folder layout and the growth-sync ingestion are the shared,
-language-neutral part.
+project's own. Steps 2 and 3 — the artifact name and the growth-sync ingestion
+— are the shared, language-neutral part.
 
 ## Layout
 
@@ -30,23 +32,47 @@ docs/evidence/<work-item>/   one folder per work item, named by its slug
 docs/evidence/<branch>/      fallback when a branch resolves to no work item
 ```
 
-Each folder holds full-page PNG screenshots, one per captured state.
+Each folder holds full-page PNG screenshots, one per captured state. The folder
+name is the project's choice — growth-sync ingests whatever folders the artifact
+contains and groups the gallery by them. Non-PNG files and files at the artifact
+root are ignored.
 
-## Status
+## Uploading the artifact
 
-This is the **foundation slice** ([#243](https://github.com/datashaman/growth/issues/243)).
-It establishes:
+The CI job that runs the browser tests uploads `docs/evidence/` under the fixed
+artifact name growth-sync looks for:
 
-- the Pest browser suite (`tests/Browser/`, driven by Playwright) — *this*
-  repo's capture tooling, since this repo is a Laravel app;
-- its own CI job that runs the suite;
-- this folder convention.
+```yaml
+- name: Upload visual evidence
+  if: always()
+  uses: actions/upload-artifact@v7
+  with:
+    name: growth-evidence
+    path: docs/evidence
+    if-no-files-found: ignore
+```
 
-The **ingestion** half — growth-sync resolving branch → work item, posting the
-idempotent per-PR screenshot gallery, and citing it on the work item — is the
-follow-up slice ([#253](https://github.com/datashaman/growth/issues/253)), and
-is where the language-neutral product capability lives. Until it lands, this
-directory stays empty by design.
+growth-sync needs `actions: read` (to find and download the artifact) and
+`pull-requests: write` (to post the gallery comment) — see
+`actions/growth-sync/workflow.example.yml`.
+
+## What growth-sync does with it
+
+On the `workflow_run` of the CI run that produced the artifact, growth-sync:
+
+- posts **exactly one** gallery comment on the pull request — a manifest of the
+  captured screenshots grouped by folder, with a link to the artifact. The
+  comment is found by a hidden marker and updated in place on every push, never
+  duplicated;
+- cites that gallery on the matched work item as an `evidence` delivery link,
+  when the branch resolves to one. An unresolved branch is not a failure — the
+  gallery is still posted, just not cited.
+
+The gallery is a **manifest, not embedded thumbnails**: a comment posted through
+the API cannot embed images that live inside a private repository, and GitHub
+Actions artifacts expire (download them to keep them). Durable, Growth-hosted
+evidence — which would let the gallery show the images inline for every project
+— is tracked as a follow-up.
 
 ## Browser tests
 
@@ -66,5 +92,7 @@ npx playwright install
 ```
 
 Screenshots written during a run land in `tests/Browser/Screenshots/`, which is
-gitignored — once #253 lands, this repo's capture will route curated captures
-here under `docs/evidence/<work-item>/` instead.
+gitignored. Routing this repo's own curated captures into `docs/evidence/<slug>/`
+is per-project capture tooling and is deliberately not wired up here — this
+repo's value to the contract is the growth-sync ingestion, which is
+language-neutral and exercised by `actions/growth-sync`'s test suite.

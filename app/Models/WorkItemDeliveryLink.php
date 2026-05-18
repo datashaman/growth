@@ -16,7 +16,7 @@ class WorkItemDeliveryLink extends Model
 
     public const OWNER_SCOPE_RELATION = 'workItem.project';
 
-    public const TYPES = ['commit', 'pull_request', 'branch'];
+    public const TYPES = ['commit', 'pull_request', 'branch', 'evidence'];
 
     protected $fillable = [
         'work_item_id', 'type', 'ref', 'url', 'description',

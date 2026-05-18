@@ -277,6 +277,7 @@ class BadgeVariant
             'pull_request' => 'indigo',
             'commit' => 'blue',
             'branch' => 'sky',
+            'evidence' => 'purple',
             default => 'zinc',
         };
     }

@@ -9,7 +9,7 @@ inputs:
     description: Passport personal access token with the mcp:use scope.
     required: true
   github-token:
-    description: Token used to read commit messages and post the attribution check via the GitHub REST API. Needs the checks:write permission.
+    description: Token used to read commit messages, post the attribution check, and ingest the visual-evidence artifact into a screenshot-gallery comment via the GitHub REST API. Needs the checks:write, actions:read, and pull-requests:write permissions.
     required: false
     default: ${{ github.token }}
   attribution-check:

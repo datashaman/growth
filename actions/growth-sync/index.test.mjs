@@ -6,10 +6,14 @@ import {
   buildCheckRunArgs,
   buildDeliveryLinkArgs,
   buildDeploymentArgs,
+  buildGalleryComment,
   buildReleaseArgs,
   buildWorkflowRunArgs,
   encodeAnnotation,
+  findGalleryComment,
+  groupEvidenceFiles,
   isForkPullRequest,
+  listZipEntries,
   mapDeploymentState,
   parseBranchReference,
   parseTrailer,
@@ -1169,4 +1173,212 @@ test('run ignores its own attribution check run without further calls', async ()
   });
 
   assert.equal(result.skipped, true);
+});
+
+// --- Visual evidence ingestion -------------------------------------------
+
+/**
+ * Build a minimal ZIP buffer holding just a central directory and an
+ * end-of-central-directory record — enough for listZipEntries, which only
+ * reads names from the central directory and never follows local headers.
+ */
+function makeZip(names) {
+  const records = names.map((name) => {
+    const nameBuffer = Buffer.from(name, 'utf8');
+    const header = Buffer.alloc(46);
+    header.writeUInt32LE(0x02014b50, 0);
+    header.writeUInt16LE(nameBuffer.length, 28);
+    return Buffer.concat([header, nameBuffer]);
+  });
+  const centralDirectory = Buffer.concat(records);
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(names.length, 8);
+  eocd.writeUInt16LE(names.length, 10);
+  eocd.writeUInt32LE(centralDirectory.length, 12);
+  eocd.writeUInt32LE(0, 16);
+  return Buffer.concat([centralDirectory, eocd]);
+}
+
+test('listZipEntries reads file names from the central directory', () => {
+  const zip = makeZip(['dashboard/a.png', 'dashboard/b.png', 'plan/c.png']);
+  assert.deepEqual(listZipEntries(zip), ['dashboard/a.png', 'dashboard/b.png', 'plan/c.png']);
+});
+
+test('listZipEntries skips directory entries', () => {
+  assert.deepEqual(listZipEntries(makeZip(['dashboard/', 'dashboard/a.png'])), ['dashboard/a.png']);
+});
+
+test('listZipEntries throws on a buffer that is not a ZIP archive', () => {
+  assert.throws(() => listZipEntries(Buffer.from('not a zip archive at all')), /not a zip archive/i);
+});
+
+test('groupEvidenceFiles groups PNGs by top folder, dropping non-PNGs and root files', () => {
+  const groups = groupEvidenceFiles([
+    'plan/draft.png',
+    'dashboard/b.png',
+    'dashboard/a.png',
+    'dashboard/notes.txt',
+    'README.md',
+    'loose.png',
+  ]);
+  assert.deepEqual(groups, [
+    { folder: 'dashboard', files: ['dashboard/a.png', 'dashboard/b.png'] },
+    { folder: 'plan', files: ['plan/draft.png'] },
+  ]);
+});
+
+test('buildGalleryComment lists screenshots grouped by folder under the marker', () => {
+  const body = buildGalleryComment({
+    groups: [{ folder: 'dashboard', files: ['dashboard/a.png', 'dashboard/b.png'] }],
+    artifactUrl: 'https://example.com/artifact',
+  });
+  assert.ok(findGalleryComment([{ body }]), 'the comment carries the gallery marker');
+  assert.match(body, /2 screenshots/);
+  assert.match(body, /### dashboard/);
+  assert.match(body, /dashboard\/a\.png/);
+  assert.match(body, /https:\/\/example\.com\/artifact/);
+});
+
+test('findGalleryComment returns null when no comment carries the marker', () => {
+  assert.equal(findGalleryComment([{ body: 'hello' }, { body: 'world' }]), null);
+  assert.equal(findGalleryComment([]), null);
+  assert.equal(findGalleryComment(undefined), null);
+});
+
+function evidenceContext(overrides = {}) {
+  return {
+    eventName: 'workflow_run',
+    event: workflowRunEvent(),
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'Work\n\nGrowth-Work-Item: 01WI',
+    listRunArtifacts: async () => [{ id: 9, name: 'growth-evidence', expired: false }],
+    downloadArtifact: async () => makeZip(['dashboard/empty.png', 'dashboard/full.png', 'plan/draft.png']),
+    listIssueComments: async () => [],
+    createComment: async (issueNumber, body) => ({
+      id: 100,
+      html_url: `https://github.com/datashaman/growth/pull/${issueNumber}#issuecomment-100`,
+      body,
+    }),
+    updateComment: async (id, body) => ({ id, html_url: `https://example.com/c/${id}`, body }),
+    log: silentLog(),
+    ...overrides,
+  };
+}
+
+test('run posts an evidence gallery comment and cites it on the work item', async () => {
+  const calls = [];
+  let created = 0;
+  const result = await run(evidenceContext({
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      return name === 'upsert-delivery-link'
+        ? { isError: false, structured: { id: 'link1' } }
+        : { isError: false, structured: { id: 'check1' } };
+    },
+    createComment: async (issueNumber, body) => {
+      created++;
+      return {
+        id: 100,
+        html_url: `https://github.com/datashaman/growth/pull/${issueNumber}#issuecomment-100`,
+        body,
+      };
+    },
+    updateComment: async () => { throw new Error('should not update a comment'); },
+  }));
+
+  assert.equal(result.skipped, false);
+  assert.equal(created, 1);
+  const evidence = calls.find((c) => c.name === 'upsert-delivery-link' && c.args.type === 'evidence');
+  assert.ok(evidence, 'expected an evidence delivery link');
+  assert.equal(evidence.args.ref, '#8');
+  assert.equal(evidence.args.url, 'https://github.com/datashaman/growth/pull/8#issuecomment-100');
+  assert.match(evidence.args.description, /3 screenshots/);
+});
+
+test('run posts the gallery uncited when a workflow run resolves no work item', async () => {
+  const calls = [];
+  let created = 0;
+  const result = await run(evidenceContext({
+    getCommitMessage: async () => 'No trailer on this commit',
+    downloadArtifact: async () => makeZip(['dashboard/only.png']),
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      return { isError: false };
+    },
+    createComment: async (issueNumber, body) => {
+      created++;
+      return { id: 100, html_url: 'u', body };
+    },
+    updateComment: async () => { throw new Error('should not update a comment'); },
+  }));
+
+  assert.equal(result.skipped, true);
+  assert.equal(created, 1, 'the gallery is still posted');
+  assert.ok(
+    !calls.some((c) => c.name === 'upsert-delivery-link' && c.args.type === 'evidence'),
+    'an unresolved branch must not cite an evidence link',
+  );
+});
+
+test('run updates the existing gallery comment in place rather than posting another', async () => {
+  let created = 0;
+  let updatedId = null;
+  const existingBody = buildGalleryComment({
+    groups: [{ folder: 'old', files: ['old/stale.png'] }],
+    artifactUrl: 'https://example.com/old',
+  });
+  await run(evidenceContext({
+    callTool: async () => ({ isError: false, structured: { id: 'x' } }),
+    listIssueComments: async () => [
+      { id: 50, body: 'an unrelated comment' },
+      { id: 51, body: existingBody },
+    ],
+    createComment: async () => { created++; return { id: 0, html_url: 'u', body: '' }; },
+    updateComment: async (id, body) => { updatedId = id; return { id, html_url: 'u', body }; },
+  }));
+
+  assert.equal(created, 0, 'no second gallery comment is created');
+  assert.equal(updatedId, 51, 'the marked comment is updated in place');
+});
+
+test('run records the check run and skips the gallery when there is no evidence artifact', async () => {
+  const calls = [];
+  let touchedComments = false;
+  const result = await run(evidenceContext({
+    listRunArtifacts: async () => [{ id: 1, name: 'some-other-artifact', expired: false }],
+    downloadArtifact: async () => { throw new Error('should not download'); },
+    listIssueComments: async () => { touchedComments = true; return []; },
+    createComment: async () => { touchedComments = true; return {}; },
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      return name === 'upsert-delivery-link'
+        ? { isError: false, structured: { id: 'link1' } }
+        : { isError: false, structured: { id: 'check1' } };
+    },
+  }));
+
+  assert.equal(result.skipped, false);
+  assert.equal(touchedComments, false);
+  assert.ok(calls.some((c) => c.name === 'upsert-check-run'), 'the check run is still recorded');
+  assert.ok(!calls.some((c) => c.name === 'upsert-delivery-link' && c.args.type === 'evidence'));
+});
+
+test('run does not fail the sync when evidence ingestion throws', async () => {
+  const calls = [];
+  const warnings = [];
+  const result = await run(evidenceContext({
+    listRunArtifacts: async () => { throw new Error('artifacts API down'); },
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      return name === 'upsert-delivery-link'
+        ? { isError: false, structured: { id: 'link1' } }
+        : { isError: false, structured: { id: 'check1' } };
+    },
+    log: { ...silentLog(), warn: (m) => warnings.push(m) },
+  }));
+
+  assert.equal(result.skipped, false);
+  assert.ok(calls.some((c) => c.name === 'upsert-check-run'), 'the check run is still recorded');
+  assert.ok(warnings.some((m) => /ingest visual evidence/i.test(m)), 'the failure is warned, not thrown');
 });
