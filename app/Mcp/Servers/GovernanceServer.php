@@ -31,6 +31,7 @@ use App\Mcp\Tools\Changes\UpsertChangeRequest;
 use App\Mcp\Tools\Common\Doctor;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Dashboard\ShowGateStatus;
+use App\Mcp\Tools\Feedback\GetFeedback;
 use App\Mcp\Tools\Feedback\ReopenFeedback;
 use App\Mcp\Tools\Feedback\ResolveFeedback;
 use App\Mcp\Tools\Feedback\SearchFeedback;
@@ -76,6 +77,7 @@ class GovernanceServer extends Server
         WhoAmI::class,
         Search::class,
         Doctor::class,
+        GetFeedback::class,
         SearchFeedback::class,
         SendFeedback::class,
         TriageFeedback::class,

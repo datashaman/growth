@@ -39,6 +39,7 @@ use App\Mcp\Tools\Dashboard\ShowGateStatus;
 use App\Mcp\Tools\Dashboard\ShowProjectDashboard;
 use App\Mcp\Tools\Dashboard\ShowRequirementExplorer;
 use App\Mcp\Tools\Dashboard\ShowTraceGraph;
+use App\Mcp\Tools\Feedback\GetFeedback;
 use App\Mcp\Tools\Feedback\ListToolInvocations;
 use App\Mcp\Tools\Feedback\SearchFeedback;
 use App\Mcp\Tools\Feedback\SendFeedback;
@@ -84,6 +85,7 @@ class ReadonlyServer extends Server
         WhoAmI::class,
         Search::class,
         Doctor::class,
+        GetFeedback::class,
         SearchFeedback::class,
         SendFeedback::class,
         ListProjects::class,
