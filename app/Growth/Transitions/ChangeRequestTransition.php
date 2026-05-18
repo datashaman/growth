@@ -3,7 +3,10 @@
 namespace App\Growth\Transitions;
 
 use App\Models\ChangeApprovalEvent;
+use App\Models\ChangeRequest;
 use App\Models\User;
+use App\Notifications\ChangeRequestDecided;
+use App\Notifications\WorkspaceNotification;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -44,6 +47,20 @@ abstract class ChangeRequestTransition extends Transition
             $subject->setAttribute('decision', $decision);
             $subject->setAttribute('decided_at', now());
         }
+    }
+
+    /**
+     * Decision transitions (approve / reject / defer) are catalogue events;
+     * lifecycle-only moves (submit, implement, cancel) are not.
+     */
+    protected function notification(Model $subject): ?WorkspaceNotification
+    {
+        if ($this->decision() === null) {
+            return null;
+        }
+
+        /** @var ChangeRequest $subject */
+        return new ChangeRequestDecided($subject);
     }
 
     protected function record(Model $subject, string $from, ?User $actor, ?string $reason): Model

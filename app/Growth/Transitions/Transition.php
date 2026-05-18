@@ -3,6 +3,8 @@
 namespace App\Growth\Transitions;
 
 use App\Models\User;
+use App\Notifications\WorkspaceNotification;
+use App\Notifications\WorkspaceNotifier;
 use App\Support\RoleContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -67,7 +69,9 @@ abstract class Transition
             throw new IllegalTransitionException("A reason is required to {$this->verb()} a {$this->subjectLabel()}.");
         }
 
-        return DB::transaction(function () use ($subject, $actor, $reason): Model {
+        $applied = null;
+
+        $record = DB::transaction(function () use ($subject, $actor, $reason, &$applied): Model {
             // Lock the subject row and re-read it under the lock, so two
             // concurrent transitions cannot both observe the same source state
             // and double-apply. Mutate the locked instance — not the caller's
@@ -90,9 +94,31 @@ abstract class Transition
 
             // Keep the caller's instance in sync with the persisted row.
             $subject->setRawAttributes($locked->getAttributes(), true);
+            $applied = $locked;
 
             return $this->record($locked, $from, $actor, $reason);
         });
+
+        // Fan a catalogue notification out only once the transition has
+        // committed, so a rolled-back transition notifies no one.
+        $notification = $this->notification($applied);
+        if ($notification !== null) {
+            app(WorkspaceNotifier::class)->notifyWorkspace($applied, $notification, $actor);
+        }
+
+        return $record;
+    }
+
+    /**
+     * The catalogue notification this transition emits once it has committed,
+     * or null when the transition is not part of the notification catalogue.
+     *
+     * No-op by default; catalogue transitions override it. The notification
+     * is fanned to every member of the subject's workspace minus the actor.
+     */
+    protected function notification(Model $subject): ?WorkspaceNotification
+    {
+        return null;
     }
 
     /**
