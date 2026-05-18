@@ -4,6 +4,7 @@ use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Tools\Plan\DeleteMockup;
 use App\Mcp\Tools\Plan\ListMockups;
 use App\Models\Project;
+use App\Models\Requirement;
 use App\Models\SpecMockup;
 use App\Models\User;
 use App\Models\WorkItem;
@@ -27,15 +28,39 @@ beforeEach(function () {
 });
 
 it('lists a work item mockups without their html', function () {
-    createMockup($this->workItem->id, 'Roomy layout', '<!doctype html><html><body>roomy</body></html>');
-    createMockup($this->workItem->id, 'Compact layout', '<!doctype html><html><body>compact</body></html>');
+    createMockup($this->workItem, 'Roomy layout', '<!doctype html><html><body>roomy</body></html>');
+    createMockup($this->workItem, 'Compact layout', '<!doctype html><html><body>compact</body></html>');
 
-    PlanningServer::tool(ListMockups::class, ['work_item_id' => $this->workItem->id])
+    PlanningServer::tool(ListMockups::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+    ])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('total', 2)
                 ->where('results.0.name', 'Compact layout')
                 ->where('results.1.name', 'Roomy layout')
+                ->etc();
+        });
+});
+
+it('lists a requirement mockups', function () {
+    $requirement = Requirement::create([
+        'project_id' => $this->project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The checkout must be one page',
+    ]);
+    createMockup($requirement, 'One-page checkout', '<!doctype html><html><body>one page</body></html>');
+
+    PlanningServer::tool(ListMockups::class, [
+        'owner_type' => 'requirement',
+        'owner_id' => $requirement->id,
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('total', 1)
+                ->where('results.0.name', 'One-page checkout')
                 ->etc();
         });
 });
@@ -53,12 +78,14 @@ it('does not list mockups for a work item in another workspace', function () {
         'name' => 'Theirs',
     ]);
 
-    PlanningServer::tool(ListMockups::class, ['work_item_id' => $otherItem->id])
-        ->assertHasErrors();
+    PlanningServer::tool(ListMockups::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $otherItem->id,
+    ])->assertHasErrors();
 });
 
 it('deletes a mockup', function () {
-    $mockup = createMockup($this->workItem->id, 'Roomy layout', '<!doctype html><html><body>roomy</body></html>');
+    $mockup = createMockup($this->workItem, 'Roomy layout', '<!doctype html><html><body>roomy</body></html>');
 
     PlanningServer::tool(DeleteMockup::class, ['id' => $mockup->id])
         ->assertOk()
@@ -83,7 +110,7 @@ it('does not delete a mockup from another workspace', function () {
         'kind' => WorkItem::KINDS[0],
         'name' => 'Theirs',
     ]);
-    $otherMockup = createMockup($otherItem->id, 'Their layout', '<!doctype html><html><body>secret</body></html>');
+    $otherMockup = createMockup($otherItem, 'Their layout', '<!doctype html><html><body>secret</body></html>');
 
     PlanningServer::tool(DeleteMockup::class, ['id' => $otherMockup->id])
         ->assertHasErrors();

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\SpecMockup;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -58,14 +59,12 @@ expect()->extend('toBeOne', function () {
 */
 
 /**
- * Create a spec mockup with an initial revision holding the given HTML.
+ * Create a spec mockup against an owning spec entity — a work item or a
+ * requirement — with an initial revision holding the given HTML.
  */
-function createMockup(string $workItemId, string $name, string $html): SpecMockup
+function createMockup(Model $owner, string $name, string $html): SpecMockup
 {
-    $mockup = SpecMockup::create([
-        'work_item_id' => $workItemId,
-        'name' => $name,
-    ]);
+    $mockup = $owner->mockups()->create(['name' => $name]);
     $mockup->appendRevision($html);
 
     return $mockup;

@@ -94,6 +94,11 @@ class Requirement extends Model
         return $this->belongsToMany(WorkItem::class, 'requirement_work_item');
     }
 
+    public function mockups(): MorphMany
+    {
+        return $this->morphMany(SpecMockup::class, 'owner');
+    }
+
     public function reviewTargets(): MorphMany
     {
         return $this->morphMany(ReviewTarget::class, 'reviewable');

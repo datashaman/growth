@@ -5,24 +5,28 @@ namespace App\Models;
 use App\Models\Concerns\ScopedByOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class SpecMockup extends Model
 {
     use HasUlids;
     use ScopedByOwner;
 
-    public const OWNER_SCOPE_RELATION = 'workItem.project';
+    public const OWNER_SCOPE_RELATION = 'owner';
 
     protected $fillable = [
-        'work_item_id', 'name',
+        'owner_type', 'owner_id', 'name',
     ];
 
-    public function workItem(): BelongsTo
+    /**
+     * The spec entity this mockup is a visual companion to — a work item
+     * or a requirement.
+     */
+    public function owner(): MorphTo
     {
-        return $this->belongsTo(WorkItem::class);
+        return $this->morphTo();
     }
 
     public function revisions(): HasMany

@@ -10,21 +10,26 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description("List a work item's spec mockups — the named layout alternatives held against it. The HTML is omitted; fetch a single mockup to see it.")]
+#[Description('List the spec mockups on a work item or a requirement — the named layout alternatives held against it. The HTML is omitted; fetch a single mockup to see it.')]
 class ListMockups extends Tool
 {
+    use ResolvesMockupOwner;
+
     public function handle(Request $request): ResponseFactory
     {
         $data = $request->validate([
-            'work_item_id' => 'required|string|owned_work_item',
+            'owner_type' => 'required|string|in:work_item,requirement',
+            'owner_id' => ['required', 'string', $this->ownerExistsRule($request->get('owner_type'))],
         ]);
 
-        $mockups = SpecMockup::where('work_item_id', $data['work_item_id'])
+        $mockups = SpecMockup::where('owner_type', $data['owner_type'])
+            ->where('owner_id', $data['owner_id'])
             ->orderBy('name')
             ->get();
 
         return Response::structured([
-            'work_item_id' => $data['work_item_id'],
+            'owner_type' => $data['owner_type'],
+            'owner_id' => $data['owner_id'],
             'total' => $mockups->count(),
             'results' => $mockups->map(fn (SpecMockup $mockup): array => [
                 'id' => $mockup->id,
@@ -37,14 +42,16 @@ class ListMockups extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'work_item_id' => $schema->string()->description('Work item ULID whose mockups to list')->required(),
+            'owner_type' => $schema->string()->enum(['work_item', 'requirement'])->description('The spec entity whose mockups to list')->required(),
+            'owner_id' => $schema->string()->description('ULID of the work item or requirement whose mockups to list')->required(),
         ];
     }
 
     public function outputSchema(JsonSchema $schema): array
     {
         return [
-            'work_item_id' => $schema->string()->required(),
+            'owner_type' => $schema->string()->required(),
+            'owner_id' => $schema->string()->required(),
             'total' => $schema->integer()->required(),
             'results' => $schema->array()->required(),
         ];

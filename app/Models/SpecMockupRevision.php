@@ -17,7 +17,7 @@ class SpecMockupRevision extends Model
     use HasUlids;
     use ScopedByOwner;
 
-    public const OWNER_SCOPE_RELATION = 'mockup.workItem.project';
+    public const OWNER_SCOPE_RELATION = 'mockup.owner';
 
     protected $fillable = [
         'spec_mockup_id', 'number', 'html',
