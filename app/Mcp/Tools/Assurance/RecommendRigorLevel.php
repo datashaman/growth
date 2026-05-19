@@ -155,7 +155,7 @@ class RecommendRigorLevel extends Tool
             'current_level' => $schema->integer()->description('The project\'s current rigor level.')->required(),
             'at_ceiling' => $schema->boolean()->description('Whether the project is already at the maximum rigor level.')->required(),
             'qualifies_for_next' => $schema->boolean()->description('Whether the project qualifies to climb one rigor level.')->required(),
-            'next_level' => $schema->integer()->description('The level the project would climb to, or null when not applicable or at ceiling.'),
+            'next_level' => $schema->integer()->nullable()->description('The level the project would climb to; null when not applicable or at ceiling.')->required(),
             'blocking_findings' => $schema->array()->description('Error-severity findings introduced by the next level that block advancement.')->required(),
             'warnings' => $schema->array()->description('Warning-severity findings at the next level — they do not block, but are surfaced before a bump.')->required(),
         ];
