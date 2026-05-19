@@ -5,6 +5,7 @@ use App\Mcp\Tools\Lint\LintProject;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\User;
+use App\Models\WorkItem;
 use Laravel\Passport\Passport;
 
 beforeEach(function () {
@@ -149,4 +150,44 @@ it('counts adoption findings as informational, not warnings', function () {
         ->and($withAdoption['errors'])->toBe($withoutAdoption['errors'])
         ->and($withAdoption['informational'])->toBeGreaterThan(0)
         ->and($withoutAdoption['informational'])->toBe(0);
+});
+
+it('counts a ui_no_mockup planning finding under informational, not warnings', function () {
+    $project = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'p',
+        'rigor_level' => 1,
+    ]);
+    $requirement = Requirement::create([
+        'project_id' => $project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The dashboard shall render a chart.',
+        'renders_ui' => true,
+    ]);
+    $workItem = WorkItem::create([
+        'project_id' => $project->id,
+        'kind' => 'task',
+        'name' => 'Build the dashboard',
+        'needs_mockups' => false,
+    ]);
+    $requirement->workItems()->attach($workItem);
+
+    $captured = null;
+    ReadonlyServer::tool(LintProject::class, ['project_id' => $project->id, 'sections' => ['planning']])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use (&$captured) {
+            $captured = $json->toArray();
+            $json->etc();
+        });
+
+    $planning = collect($captured['sections']['planning']);
+    $finding = $planning->firstWhere('rule', 'pmp.requirement.ui_no_mockup');
+
+    expect($finding)->not->toBeNull()
+        ->and($finding['severity'])->toBe('informational')
+        ->and($captured['informational'])->toBeGreaterThanOrEqual(1)
+        // The informational finding must not leak into the error/warning tallies.
+        ->and($captured['warnings'])->toBe($planning->where('severity', 'warning')->count())
+        ->and($captured['errors'])->toBe($planning->where('severity', 'error')->count());
 });
