@@ -15,7 +15,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Raise a decision request: ask a named role to choose between options. Routes the question to the role\'s queue and notifies everyone assigned to it. Optionally links the request to an artifact and sets a deadline. Answer it later with answer-decision-request.')]
 class CreateDecisionRequest extends Tool
 {

@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description("Revert a spec mockup to an earlier revision. The chosen revision's HTML is appended as a new latest revision — history is never discarded.")]
 class RevertMockup extends Tool
 {

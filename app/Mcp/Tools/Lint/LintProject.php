@@ -18,7 +18,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('Run Growth quality checks for a project. Returns findings grouped into sections (requirements, architecture, verification, planning, reviews, baselines, changes, adoption). Pass `sections` to compute only the listed sections; omit it to run them all. `errors` and `warnings` counts cover the returned sections only; `informational` counts adoption findings separately.')]
 class LintProject extends Tool
 {

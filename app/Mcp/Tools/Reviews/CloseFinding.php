@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Close a review finding: move it from resolved or accepted to closed. Rejects any other source status with a clear message. Records a status transition with the acting user and timestamp.')]
 class CloseFinding extends Tool
 {

@@ -11,8 +11,10 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Throwable;
 
+#[IsDestructive(false)]
 #[Description('Create or update up to 100 architecture elements in one call. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
 class UpsertArchitectureElements extends Tool
 {

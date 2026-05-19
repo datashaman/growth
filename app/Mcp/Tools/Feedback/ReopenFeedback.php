@@ -12,7 +12,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Reopen submitted feedback: move it from triaged or resolved back to new. Rejects feedback that is already new with a clear message. Records a status transition with the acting user and timestamp.')]
 class ReopenFeedback extends Tool
 {

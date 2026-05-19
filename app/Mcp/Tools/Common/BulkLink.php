@@ -13,8 +13,10 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Throwable;
 
+#[IsDestructive(false)]
 #[Description('Attach existing artifacts to each other in bulk: up to 100 (link_type, from_id, to_ids[]) tuples in one call. Each tuple is applied independently with syncWithoutDetaching — per-tuple validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied links. Supported link_type values: work_item_to_requirements (requirements are requirements, so this also covers requirement links), work_item_to_milestones, concerns_to_view.')]
 class BulkLink extends Tool
 {

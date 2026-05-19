@@ -1,0 +1,88 @@
+<?php
+
+use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
+
+/**
+ * Every concrete Tool class under app/Mcp/Tools.
+ *
+ * @return list<class-string<Tool>>
+ */
+function mcpToolClasses(): array
+{
+    // Memoized: the dataset, count assertion, and Delete* check all call this.
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+
+    // Resolved from this file's location, not app_path(): datasets are built at
+    // Pest collection time, before the application container is bound.
+    $base = dirname(__DIR__, 3).'/app/Mcp/Tools';
+    $classes = [];
+
+    $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base));
+    foreach ($iterator as $file) {
+        if (! $file->isFile() || $file->getExtension() !== 'php') {
+            continue;
+        }
+
+        $relative = str_replace(
+            [$base.DIRECTORY_SEPARATOR, '/', '.php'],
+            ['', '\\', ''],
+            $file->getPathname(),
+        );
+        $fqcn = 'App\\Mcp\\Tools\\'.$relative;
+
+        if (! class_exists($fqcn)) {
+            continue;
+        }
+
+        $reflection = new ReflectionClass($fqcn);
+        if ($reflection->isAbstract() || ! $reflection->isSubclassOf(Tool::class)) {
+            continue;
+        }
+
+        $classes[] = $fqcn;
+    }
+
+    sort($classes);
+
+    return $cached = $classes;
+}
+
+it('classifies every MCP tool as exactly one of read-only or write', function (string $toolClass) {
+    $reflection = new ReflectionClass($toolClass);
+    // #[IsDestructive] and #[IsDestructive(false)] both carry the attribute;
+    // the boolean only tunes the destructiveHint. Either way the tool writes.
+    $isReadOnly = $reflection->getAttributes(IsReadOnly::class) !== [];
+    $isWrite = $reflection->getAttributes(IsDestructive::class) !== [];
+
+    expect($isReadOnly || $isWrite)->toBeTrue(
+        "{$toolClass} carries neither #[IsReadOnly] nor #[IsDestructive] — classify it (#184).",
+    );
+    expect($isReadOnly && $isWrite)->toBeFalse(
+        "{$toolClass} carries both #[IsReadOnly] and #[IsDestructive] — a tool is one or the other.",
+    );
+})->with(mcpToolClasses());
+
+it('discovers the full tool surface', function () {
+    expect(count(mcpToolClasses()))->toBeGreaterThanOrEqual(200);
+});
+
+it('marks every Delete* tool as destructive', function () {
+    $deleteTools = array_filter(
+        mcpToolClasses(),
+        fn (string $class) => str_starts_with(class_basename($class), 'Delete'),
+    );
+
+    expect($deleteTools)->not->toBeEmpty();
+
+    foreach ($deleteTools as $toolClass) {
+        $isDestructive = (new ReflectionClass($toolClass))->getAttributes(IsDestructive::class) !== [];
+        expect($isDestructive)->toBeTrue(
+            "{$toolClass} deletes data but is not marked #[IsDestructive].",
+        );
+    }
+});

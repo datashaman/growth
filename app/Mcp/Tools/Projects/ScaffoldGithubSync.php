@@ -10,7 +10,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Produce a ready-to-commit growth-sync GitHub Actions workflow for a project, plus the remaining one-time setup steps, so a repository can be onboarded to Growth in a single call.')]
 class ScaffoldGithubSync extends Tool
 {

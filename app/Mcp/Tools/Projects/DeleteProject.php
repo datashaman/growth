@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive]
 #[Description('Delete a project AND every artifact below it — stakeholders, concerns, requirements, design views/elements, custom viewpoints, test plans/cases/runs, anomalies. Destructive and irreversible. Requires a confirmation argument matching the project name to prevent accidents.')]
 class DeleteProject extends Tool
 {

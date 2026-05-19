@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('List work items for a project. Filterable by kind, status, responsible_role_id, parent_id, and substring. "root_only=true" returns only top-level deliverables. For the requirements, milestones, and roles a work item is linked to, use `trace-query` with the work-item id.')]
 class ListWorkItems extends Tool
 {

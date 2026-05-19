@@ -10,7 +10,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('Summarise what is open and waiting on you in a project — your queue. Returns, grouped by kind: approved-but-unimplemented change requests, lint errors, reviews awaiting your sign-off, blocked work items, and open decision requests routed to a role you hold. Lint errors on subjects with no owning role are listed separately as unowned.')]
 class SummarizeMyQueue extends Tool
 {

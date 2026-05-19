@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Mark a milestone as achieved: move it from pending to achieved. Rejects a milestone that is not pending, or whose readiness gate is failing — the milestone must bundle at least one work item, every member work item must be done, and no done member may have failed checks. A gate that only warns (e.g. a done item with no delivery evidence) does not block. Failures come back with a clear message. Records a status transition with the acting user and timestamp.')]
 class AchieveMilestone extends Tool
 {

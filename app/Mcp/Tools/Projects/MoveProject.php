@@ -9,8 +9,10 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
+#[IsDestructive(false)]
 #[Description('Move a project to another workspace. The caller must be an owner or admin of both the current workspace and the destination, and the destination must differ from the current workspace. This reassigns the project only — it does not change which workspace your session is pointed at.')]
 class MoveProject extends Tool
 {

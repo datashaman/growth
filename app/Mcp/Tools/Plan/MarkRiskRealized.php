@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Mark a risk as realized: move it to realized from any active state. Rejects closed and already-realized risks with a clear message. Records a status transition with the acting user and timestamp.')]
 class MarkRiskRealized extends Tool
 {

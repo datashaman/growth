@@ -9,8 +9,10 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use RuntimeException;
 
+#[IsDestructive(false)]
 #[Description('Apply a Growth project manifest (project + stakeholders + concerns + requirements + architecture + plan + verification) in a single transaction. Three modes: `fail` aborts on any difference, `merge` updates by natural keys (project id; stakeholder/role/milestone/view/work-item/verification-plan name; concern text; requirement slug; element name within view; verification case name within plan; ProjectPlan is singleton per project), `replace` wipes the project\'s child entities first and requires `confirm` to match the project name. Pass `dry_run: true` to roll back and preview the report.')]
 class ApplyManifest extends Tool
 {

@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Mark your notifications read. Pass a notification_id to clear one; omit it to clear every unread notification in the active workspace. Already-read notifications are left untouched.')]
 class MarkNotificationRead extends Tool
 {

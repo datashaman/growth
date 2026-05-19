@@ -10,7 +10,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Cite one or more evidence assets (screenshots already uploaded to Growth) as visual evidence on an existing verification run. Idempotent — pre-existing citations are kept, new ones are added. Use this when a run was logged before its screenshots existed; otherwise pass evidence_asset_ids to log-verification-run directly.')]
 class LinkVerificationRunEvidence extends Tool
 {

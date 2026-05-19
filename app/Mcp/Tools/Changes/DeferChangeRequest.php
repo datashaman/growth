@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Defer a decision on a change request under review: move it from under_review to deferred and record the deferred decision. Rejects any other source status with a clear message. Records a change approval event with the acting user and timestamp.')]
 class DeferChangeRequest extends Tool
 {

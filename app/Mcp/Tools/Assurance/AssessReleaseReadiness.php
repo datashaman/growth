@@ -12,7 +12,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('Assess risk-adjusted release readiness from lifecycle gates, high-exposure risks, check evidence, and deployment state.')]
 class AssessReleaseReadiness extends Tool
 {

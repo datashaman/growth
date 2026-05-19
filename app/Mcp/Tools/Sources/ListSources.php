@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('List sources for a project. Always projects narrow columns (id, title, kind, uri, external_ref) — source bodies are excluded to keep payloads small. Use trace-query or a direct resource fetch to retrieve a source body.')]
 class ListSources extends Tool
 {

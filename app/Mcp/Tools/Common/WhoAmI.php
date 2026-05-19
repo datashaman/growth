@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('Report the authenticated user for this session, the active workspace, and every workspace the user belongs to (with role). Includes project count + most recently touched project inside the active workspace, and every RACI role the user holds across projects in that workspace. Returns `{authenticated: false}` for anonymous local sessions without GROWTH_USER_EMAIL or GROWTH_USER_ID.')]
 class WhoAmI extends Tool
 {

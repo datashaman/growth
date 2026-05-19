@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Create or update a project risk register item (risk management). Use owner_role_id for the role accountable for mitigation. New risks start as `identified`; status is not set here — it moves only through the assess-risk, start-risk-mitigation, mark-risk-mitigated, accept-risk, mark-risk-realized, and close-risk transitions.')]
 class UpsertRisk extends Tool
 {

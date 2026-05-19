@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Link a work item to one or more requirements ("this work item covers these requirements"). Idempotent — pre-existing links are kept, new ones are added.')]
 class LinkWorkItemToRequirements extends Tool
 {

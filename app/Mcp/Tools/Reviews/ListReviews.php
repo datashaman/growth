@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('List review records for a project. Filterable by review readiness review type, status, decision, owner role, and substring. For findings, participants, and decision events tied to a review, use `trace-query` with the review id.')]
 class ListReviews extends Tool
 {

@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Create or update the delivery plan for a Growth project. Status is not set here: a new plan starts as draft and moves only through the baseline-plan, activate-plan, and close-plan transitions.')]
 class UpsertPlan extends Tool
 {

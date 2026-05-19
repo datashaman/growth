@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('List the decision requests routed to you — your queue. Defaults to open requests targeting any role you are assigned to; pass role_id to inspect one specific role\'s queue, or status to see answered, expired, or cancelled requests.')]
 class ListDecisionQueue extends Tool
 {

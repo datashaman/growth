@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('Export a Growth project as a manifest (project + stakeholders + concerns + requirements + architecture + plan + verification). Output uses deterministic ordering and stable slugs so two exports of the same project produce byte-identical JSON; each entity carries an `_exported_at` timestamp that lets `apply-manifest` detect post-export drift on re-apply.')]
 class ExportManifest extends Tool
 {

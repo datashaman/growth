@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('Fetch a single feedback entry by id, including its full body. Use this after `search-feedback`, which returns only the summary, to read the complete payload.')]
 class GetFeedback extends Tool
 {

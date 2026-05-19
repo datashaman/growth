@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('Search feedback already submitted about the Growth MCP tools. Call this before `send-feedback` to avoid filing a duplicate: if an equivalent entry already exists, do not submit again. Filter by free-text query, category, tool name, or triage status.')]
 class SearchFeedback extends Tool
 {

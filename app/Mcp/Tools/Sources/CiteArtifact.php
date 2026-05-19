@@ -10,7 +10,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Cite a source from a project artifact (requirement, concern, design_view, custom_viewpoint, test_case, anomaly). Idempotent on (source_id, citable_type, citable_id, locator) — citing the same source/artifact/locator returns the existing citation row.')]
 class CiteArtifact extends Tool
 {

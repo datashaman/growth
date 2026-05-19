@@ -10,7 +10,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Patch a Growth project — update name, description, rigor level, and/or GitHub repo. A project in `archived` or `closed` status is read-only; restore it to `active` with the restore-project tool before sending content changes. Status is not set here: it moves only through the activate-project, archive-project, close-project, and restore-project transitions.')]
 class UpdateProject extends Tool
 {

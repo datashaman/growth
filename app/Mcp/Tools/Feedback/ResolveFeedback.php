@@ -12,7 +12,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Resolve submitted feedback: move it from new or triaged to resolved. Rejects feedback that is already resolved with a clear message. Records a status transition with the acting user and timestamp.')]
 class ResolveFeedback extends Tool
 {

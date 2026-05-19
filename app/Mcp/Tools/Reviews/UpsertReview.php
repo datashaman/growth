@@ -15,7 +15,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Create or update a review record. Supports management reviews, technical reviews, inspections, walkthroughs, and audits, with optional reviewed artifact targets. New reviews start as `planned`; status is not set here — it moves only through the start-review, hold-review, close-review, and cancel-review transitions. The response includes a missing_prerequisites list summarising which lint-reviews readiness checks the review will currently fail (targets, participants, entry/exit criteria, inspection roles, review-plan expected responsibilities) so you can address them before running lint-reviews.')]
 class UpsertReview extends Tool
 {

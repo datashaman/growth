@@ -12,7 +12,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('Advisory rigor ratchet for an adopted project: report whether the backfill has caught up enough to climb one rigor level. Evaluates the readiness linters with the rigor level hypothetically raised by one — it never persists a change. Bumping rigor stays a confirmed decision made via update-project.')]
 class RecommendRigorLevel extends Tool
 {

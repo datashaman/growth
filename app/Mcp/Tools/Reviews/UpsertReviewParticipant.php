@@ -12,7 +12,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Create or update a review participant role assignment. Use this to record review readiness review roles such as moderator, reviewer, recorder, auditor, and approver, including attendance and signoff.')]
 class UpsertReviewParticipant extends Tool
 {

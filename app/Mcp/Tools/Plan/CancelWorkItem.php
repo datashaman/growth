@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Cancel a work item: move it from todo, in_progress, or blocked to cancelled. Rejects an already done or cancelled work item with a clear message. Records a status transition with the acting user and timestamp.')]
 class CancelWorkItem extends Tool
 {

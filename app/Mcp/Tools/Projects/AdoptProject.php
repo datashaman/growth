@@ -14,7 +14,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Adopt an existing GitHub repository as a Growth project: bind the repo, stamp the adoption time, and set an `adoption`-kind plan baseline at HEAD. A repo already bound to a project that was never adopted (e.g. via create-project) is adopted in place. Idempotent — adopting an already-adopted repo returns it unchanged. Newly created adopted projects start at rigor level 1; raise rigor as the backfill catches up.')]
 class AdoptProject extends Tool
 {

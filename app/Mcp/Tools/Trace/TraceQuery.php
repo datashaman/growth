@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('Walk the traceability graph from any artifact (requirement, concern, design view/element, test plan/case/run, anomaly, stakeholder). Returns a flat `nodes` + `edges` graph up to a configurable depth — preferred over chained `list-*` calls when you need relationships across entity types.
 
 Common queries:

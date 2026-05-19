@@ -13,7 +13,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Create or update an anomaly found during verification or delivery. New anomalies start as `open`; status is not set here — it moves only through the start-anomaly-investigation, resolve-anomaly, close-anomaly, and reopen-anomaly transitions.')]
 class UpsertAnomaly extends Tool
 {

@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Cancel a change request before it is implemented: move it from proposed, under_review, or deferred to cancelled. Rejects any other source status with a clear message. Records a change approval event with the acting user and timestamp.')]
 class CancelChangeRequest extends Tool
 {

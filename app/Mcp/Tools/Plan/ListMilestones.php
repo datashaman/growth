@@ -10,7 +10,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('List milestones for a project. Returns narrow columns plus each milestone\'s readiness gate (pass/warn/fail with error and warning counts), sorted by name.')]
 class ListMilestones extends Tool
 {
