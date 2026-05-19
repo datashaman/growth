@@ -47,7 +47,7 @@ no implementation issue assumes it was delivered.
 ## The current model
 
 - The `agents` table is a bare per-project registry: `id, project_id, name,
-  kind, description`, unique on `(project_id, name)`, FK to `project` with
+  kind, description`, unique on `(project_id, name)`, FK to `projects` with
   `cascadeOnDelete`. No credential, no session link.
 - `Agent` already `morphToMany`s `Role` — the #183/#188 role work landed; an
   agent can hold roles.
