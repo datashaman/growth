@@ -122,6 +122,9 @@ it('includes an agent with no attributed work as an all-zero row', function () {
             ->where('agents.0.durations.max_ms', 0)
             ->where('agents.0.feedback.total', 0)
             ->where('agents.0.baselines_authored', 0)
+            ->has('agents.0.tool_usage')
+            ->has('agents.0.errors')
+            ->has('agents.0.feedback.by_category')
             ->etc());
 });
 
@@ -188,6 +191,8 @@ it('never includes another workspace events in an agent metrics', function () {
             ->has('agents', 1)
             ->where('agents.0.identity.name', 'Scout')
             ->where('agents.0.activity.total_invocations', 1)
+            ->where('agents.0.feedback.total', 0)
+            ->where('agents.0.baselines_authored', 0)
             ->etc());
 });
 
