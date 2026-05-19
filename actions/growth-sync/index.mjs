@@ -81,6 +81,13 @@ export function isForkPullRequest(pullRequest, repository) {
 }
 
 /**
+ * Per-entry uncompressed-size ceiling for evidence ZIP extraction. Full-page
+ * PNG screenshots run a few MiB; 64 MiB is generous headroom while still
+ * bounding a zip bomb's blast radius on the action runner.
+ */
+const MAX_EVIDENCE_ENTRY_BYTES = 64 * 1024 * 1024;
+
+/**
  * Extract every file from a ZIP buffer as `{ name, bytes }`. The central
  * directory carries each entry's name, compression method, compressed size,
  * and the offset of its local header; the local header is consulted only for
@@ -89,7 +96,9 @@ export function isForkPullRequest(pullRequest, repository) {
  * descriptor (general-purpose bit 3) leaves the local header's size fields
  * zero. Stored (method 0) and DEFLATE (method 8) entries are supported.
  * Directory entries (names ending in `/`) are dropped. Throws on a buffer
- * that is not a ZIP archive.
+ * that is not a ZIP archive, or on an entry whose uncompressed size exceeds
+ * the evidence limit — the artifact is effectively untrusted input, so a
+ * highly-compressed "zip bomb" must not be allowed to exhaust the runner.
  */
 export function extractZipFiles(buffer) {
   const EOCD_SIGNATURE = 0x06054b50;
@@ -119,6 +128,7 @@ export function extractZipFiles(buffer) {
     }
     const compression = buffer.readUInt16LE(offset + 10);
     const compressedSize = buffer.readUInt32LE(offset + 20);
+    const uncompressedSize = buffer.readUInt32LE(offset + 24);
     const nameLength = buffer.readUInt16LE(offset + 28);
     const extraLength = buffer.readUInt16LE(offset + 30);
     const commentLength = buffer.readUInt16LE(offset + 32);
@@ -136,11 +146,22 @@ export function extractZipFiles(buffer) {
       const dataStart = localOffset + 30 + localNameLength + localExtraLength;
       const compressed = buffer.subarray(dataStart, dataStart + compressedSize);
 
+      // The central directory's uncompressed size is trustworthy even for
+      // data-descriptor entries; reject an oversized entry before inflating.
+      if (uncompressedSize > MAX_EVIDENCE_ENTRY_BYTES) {
+        throw new Error(
+          `ZIP entry "${name}" declares ${uncompressedSize} uncompressed bytes, `
+          + `exceeding the ${MAX_EVIDENCE_ENTRY_BYTES}-byte evidence limit.`,
+        );
+      }
+
       let bytes;
       if (compression === 0) {
         bytes = Buffer.from(compressed);
       } else if (compression === 8) {
-        bytes = inflateRawSync(compressed);
+        // maxOutputLength caps the actual inflated size too, in case the
+        // declared uncompressed size understates a crafted entry.
+        bytes = inflateRawSync(compressed, { maxOutputLength: MAX_EVIDENCE_ENTRY_BYTES });
       } else {
         throw new Error(`Unsupported ZIP compression method ${compression} for "${name}".`);
       }
@@ -755,13 +776,31 @@ async function ingestEvidence({
     if (linkResult.isError) {
       throw new Error(`Growth rejected the evidence link: ${linkResult.errorText}`);
     }
+    const deliveryLinkId = linkResult.structured?.id;
+    if (!deliveryLinkId) {
+      throw new Error('Growth accepted the evidence link but returned no id; cannot scope the upload.');
+    }
 
-    // The gallery's paths, in folder/name order, paired back to their bytes.
-    const galleryFiles = groups
-      .flatMap((group) => group.files)
-      .map((path) => files.find((file) => file.name === path));
-    const uploaded = await uploadEvidence(linkResult.structured?.id, galleryFiles);
+    // The gallery's paths, in folder/name order, paired back to their bytes
+    // via a single name→file index — constant-time lookup per path.
+    const filesByName = new Map(files.map((file) => [file.name, file]));
+    const galleryFiles = groups.flatMap((group) => group.files).map((path) => {
+      const file = filesByName.get(path);
+      if (!file) {
+        throw new Error(`Evidence artifact is missing screenshot bytes for "${path}".`);
+      }
+      return file;
+    });
+    const uploaded = await uploadEvidence(deliveryLinkId, galleryFiles);
     assets = new Map(uploaded.map((asset) => [asset.caption, asset.url]));
+
+    // Every gallery path must have come back with a hosted URL, or the inline
+    // comment would render `![alt](undefined)`. Fail loudly instead.
+    for (const file of galleryFiles) {
+      if (!assets.has(file.name)) {
+        throw new Error(`Growth returned no hosted URL for screenshot "${file.name}".`);
+      }
+    }
   }
 
   const body = buildGalleryComment(assets ? { groups, assets } : { groups, artifactUrl });

@@ -1209,7 +1209,9 @@ function makeZipWithData(entries) {
     central.writeUInt32LE(0x02014b50, 0);
     central.writeUInt16LE(method, 10);
     central.writeUInt32LE(stored.length, 20);
-    central.writeUInt32LE(raw.length, 24);
+    // A crafted entry can declare a huge uncompressed size in the central
+    // directory; `uncompressedSizeOverride` lets a test forge that.
+    central.writeUInt32LE(entry.uncompressedSizeOverride ?? raw.length, 24);
     central.writeUInt16LE(nameBuffer.length, 28);
     central.writeUInt32LE(offset, 42);
     centralParts.push(Buffer.concat([central, nameBuffer]));
@@ -1265,6 +1267,15 @@ test('extractZipFiles skips directory entries', () => {
 
 test('extractZipFiles throws on a buffer that is not a ZIP archive', () => {
   assert.throws(() => extractZipFiles(Buffer.from('not a zip archive at all')), /not a zip archive/i);
+});
+
+test('extractZipFiles rejects an entry that declares an oversized uncompressed size', () => {
+  assert.throws(
+    () => extractZipFiles(makeZipWithData([
+      { name: 'dashboard/bomb.png', bytes: Buffer.from('tiny'), uncompressedSizeOverride: 256 * 1024 * 1024 },
+    ])),
+    /exceeding the .* evidence limit/,
+  );
 });
 
 test('groupEvidenceFiles groups PNGs by top folder, dropping non-PNGs and root files', () => {
@@ -1410,6 +1421,39 @@ test('run uploads screenshots, embeds them inline, and cites the gallery', async
   assert.equal(evidence[1].args.ref, '#8');
   assert.equal(evidence[1].args.url, 'https://github.com/datashaman/growth/pull/8#issuecomment-100');
   assert.match(evidence[1].args.description, /3 screenshots/);
+});
+
+test('run skips the gallery when the evidence delivery link upsert returns no id', async () => {
+  let created = 0;
+  const result = await run(evidenceContext({
+    callTool: async (name) => (name === 'upsert-delivery-link'
+      ? { isError: false, structured: {} }
+      : { isError: false, structured: { id: 'check1' } }),
+    createComment: async () => { created++; return { id: 0, html_url: 'u', body: '' }; },
+  }));
+
+  // Evidence ingestion throws on the missing id; the sync still completes and
+  // simply posts no gallery rather than embedding broken image URLs.
+  assert.equal(result.skipped, false);
+  assert.equal(created, 0, 'no gallery comment is posted without a delivery link id');
+});
+
+test('run skips the gallery when an uploaded screenshot has no hosted URL', async () => {
+  let created = 0;
+  const result = await run(evidenceContext({
+    callTool: async (name) => (name === 'upsert-delivery-link'
+      ? { isError: false, structured: { id: 'link1' } }
+      : { isError: false, structured: { id: 'check1' } }),
+    // The upload drops one screenshot — its caption never comes back.
+    uploadEvidence: async (deliveryLinkId, files) => files.slice(1).map((file) => ({
+      caption: file.name,
+      url: `https://growth.test/evidence-assets/${file.name}`,
+    })),
+    createComment: async () => { created++; return { id: 0, html_url: 'u', body: '' }; },
+  }));
+
+  assert.equal(result.skipped, false);
+  assert.equal(created, 0, 'incomplete upload coverage posts no gallery rather than a broken one');
 });
 
 test('run posts the gallery uncited when a workflow run resolves no work item', async () => {
