@@ -2040,12 +2040,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/datashaman/mcp.git",
-                "reference": "f87f3401968d806d91d95c8a5fc5b47ef8682dc1"
+                "reference": "3cc9bd96aece7a8860d239147432ce6280b30ceb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/datashaman/mcp/zipball/f87f3401968d806d91d95c8a5fc5b47ef8682dc1",
-                "reference": "f87f3401968d806d91d95c8a5fc5b47ef8682dc1",
+                "url": "https://api.github.com/repos/datashaman/mcp/zipball/3cc9bd96aece7a8860d239147432ce6280b30ceb",
+                "reference": "3cc9bd96aece7a8860d239147432ce6280b30ceb",
                 "shasum": ""
             },
             "require": {
@@ -2152,7 +2152,7 @@
                 "issues": "https://github.com/laravel/mcp/issues",
                 "source": "https://github.com/laravel/mcp"
             },
-            "time": "2026-05-19T16:30:14+00:00"
+            "time": "2026-05-19T18:54:46+00:00"
         },
         {
             "name": "laravel/passport",

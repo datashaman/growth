@@ -3,12 +3,14 @@
 namespace App\Mcp\Tools\Manifest;
 
 use App\Growth\Manifest\ManifestExporter;
+use App\Mcp\McpLogReporter;
 use App\Mcp\McpProgressReporter;
 use Generator;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Logging\Logging;
 use Laravel\Mcp\Server\Notifications\ProgressNotification;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
@@ -19,15 +21,16 @@ class ExportManifest extends Tool
 {
     public function __construct(private readonly ManifestExporter $exporter) {}
 
-    public function handle(Request $request, ProgressNotification $progress): Generator
+    public function handle(Request $request, ProgressNotification $progress, Logging $logging): Generator
     {
         $request->validate([
             'project_id' => 'required|string|owned_project',
         ]);
 
         $reporter = McpProgressReporter::forRequest($request, $progress);
+        $log = new McpLogReporter($logging);
 
-        $manifest = $this->exporter->export($request->get('project_id'), $reporter);
+        $manifest = $this->exporter->export($request->get('project_id'), $reporter, $log);
 
         yield Response::structured(['manifest' => $manifest]);
     }
