@@ -90,7 +90,7 @@ class UpsertWorkItems extends Tool
             'kind' => 'required|in:'.implode(',', WorkItem::KINDS),
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'needs_mockups' => 'nullable|boolean',
+            'needs_mockups' => 'sometimes|boolean',
             'status' => 'prohibited',
         ];
     }

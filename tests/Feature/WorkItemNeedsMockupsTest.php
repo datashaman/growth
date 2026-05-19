@@ -45,6 +45,25 @@ test('needs_mockups defaults to false when the flag is omitted', function () {
     expect(WorkItem::sole()->needs_mockups)->toBeFalse();
 });
 
+test('an explicit null needs_mockups is reported as a per-item validation error', function () {
+    PlanningServer::tool(UpsertWorkItems::class, [
+        'items' => [
+            [
+                'project_id' => $this->project->id,
+                'kind' => 'task',
+                'name' => 'Null flag',
+                'needs_mockups' => null,
+            ],
+        ],
+    ])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->where('items.0.ok', false)
+            ->has('items.0.errors.needs_mockups')
+            ->etc());
+
+    expect(WorkItem::count())->toBe(0);
+});
+
 test('upsert-work-items can toggle needs_mockups on an existing item', function () {
     $item = WorkItem::create([
         'project_id' => $this->project->id,
