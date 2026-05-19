@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive(false)]
-#[Description('Create or update a reusable review review plan with objective, procedure, entry/exit criteria, expected responsibilities, and checklist.')]
+#[Description('Create or update a reusable review plan with objective, procedure, entry/exit criteria, expected responsibilities, and checklist.')]
 class UpsertReviewPlan extends Tool
 {
     public function handle(Request $request): ResponseFactory

@@ -11,6 +11,12 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
  */
 function mcpToolClasses(): array
 {
+    // Memoized: the dataset, count assertion, and Delete* check all call this.
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+
     // Resolved from this file's location, not app_path(): datasets are built at
     // Pest collection time, before the application container is bound.
     $base = dirname(__DIR__, 3).'/app/Mcp/Tools';
@@ -43,18 +49,20 @@ function mcpToolClasses(): array
 
     sort($classes);
 
-    return $classes;
+    return $cached = $classes;
 }
 
-it('classifies every MCP tool as exactly one of read-only or destructive', function (string $toolClass) {
+it('classifies every MCP tool as exactly one of read-only or write', function (string $toolClass) {
     $reflection = new ReflectionClass($toolClass);
+    // #[IsDestructive] and #[IsDestructive(false)] both carry the attribute;
+    // the boolean only tunes the destructiveHint. Either way the tool writes.
     $isReadOnly = $reflection->getAttributes(IsReadOnly::class) !== [];
-    $isDestructive = $reflection->getAttributes(IsDestructive::class) !== [];
+    $isWrite = $reflection->getAttributes(IsDestructive::class) !== [];
 
-    expect($isReadOnly || $isDestructive)->toBeTrue(
+    expect($isReadOnly || $isWrite)->toBeTrue(
         "{$toolClass} carries neither #[IsReadOnly] nor #[IsDestructive] — classify it (#184).",
     );
-    expect($isReadOnly && $isDestructive)->toBeFalse(
+    expect($isReadOnly && $isWrite)->toBeFalse(
         "{$toolClass} carries both #[IsReadOnly] and #[IsDestructive] — a tool is one or the other.",
     );
 })->with(mcpToolClasses());
