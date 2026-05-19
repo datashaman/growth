@@ -60,19 +60,23 @@ growth-sync needs `actions: read` (to find and download the artifact) and
 
 On the `workflow_run` of the CI run that produced the artifact, growth-sync:
 
-- posts **exactly one** gallery comment on the pull request — a manifest of the
-  captured screenshots grouped by folder, with a link to the artifact. The
-  comment is found by a hidden marker and updated in place on every push, never
-  duplicated;
-- cites that gallery on the matched work item as an `evidence` delivery link,
-  when the branch resolves to one. An unresolved branch is not a failure — the
-  gallery is still posted, just not cited.
+- records the matched work item's `evidence` delivery link, then uploads every
+  screenshot to Growth scoped to that link, and posts **exactly one** gallery
+  comment on the pull request with the Growth-hosted images embedded inline,
+  grouped by folder. The comment is found by a hidden marker and updated in
+  place on every push, never duplicated;
+- cites the gallery on the matched work item by re-recording that `evidence`
+  delivery link with the posted comment's URL.
 
-The gallery is a **manifest, not embedded thumbnails**: a comment posted through
-the API cannot embed images that live inside a private repository, and GitHub
-Actions artifacts expire (download them to keep them). Durable, Growth-hosted
-evidence — which would let the gallery show the images inline for every project
-— is tracked as a follow-up.
+When the branch resolves to **no work item** there is no delivery link to
+upload against — not a failure. The gallery is still posted, but falls back to
+a **manifest**: the screenshot names grouped by folder, with a link to the run
+artifact (download it to keep the screenshots, since GitHub Actions artifacts
+expire). Such a gallery is posted uncited.
+
+Inline embedding works because Growth hosts the images at durable, public URLs
+(see `EvidenceAssetController`), so a comment posted through the API can render
+them even for a private repository.
 
 ## Browser tests
 
