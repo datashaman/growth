@@ -13,6 +13,13 @@ class ToolInvocation extends Model
 {
     use BroadcastsWorkspaceChanges, HasUlids, MassPrunable;
 
+    /**
+     * Rows older than this are mass-pruned. Any metric derived from
+     * tool_invocations is therefore a trailing window of this many days,
+     * never a lifetime total.
+     */
+    public const PRUNE_AFTER_DAYS = 90;
+
     protected $fillable = [
         'workspace_id',
         'user_id',
@@ -60,6 +67,6 @@ class ToolInvocation extends Model
 
     public function prunable(): Builder
     {
-        return static::where('started_at', '<', now()->subDays(90));
+        return static::where('started_at', '<', now()->subDays(self::PRUNE_AFTER_DAYS));
     }
 }
