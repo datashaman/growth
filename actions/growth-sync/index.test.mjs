@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { deflateRawSync } from 'node:zlib';
 
 import {
   buildAttributionCheckArgs,
@@ -10,10 +11,10 @@ import {
   buildReleaseArgs,
   buildWorkflowRunArgs,
   encodeAnnotation,
+  extractZipFiles,
   findGalleryComment,
   groupEvidenceFiles,
   isForkPullRequest,
-  listZipEntries,
   mapDeploymentState,
   parseBranchReference,
   parseTrailer,
@@ -1178,39 +1179,92 @@ test('run ignores its own attribution check run without further calls', async ()
 // --- Visual evidence ingestion -------------------------------------------
 
 /**
- * Build a minimal ZIP buffer holding just a central directory and an
- * end-of-central-directory record — enough for listZipEntries, which only
- * reads names from the central directory and never follows local headers.
+ * Build a real ZIP buffer with local file headers, entry data, and a central
+ * directory — enough for extractZipFiles, which follows local headers to
+ * inflate each entry. Each entry is `{ name, bytes?, deflate? }`: a name
+ * ending in `/` is a directory (no data); `deflate: true` stores the bytes
+ * DEFLATE-compressed (method 8) rather than stored (method 0).
  */
-function makeZip(names) {
-  const records = names.map((name) => {
-    const nameBuffer = Buffer.from(name, 'utf8');
-    const header = Buffer.alloc(46);
-    header.writeUInt32LE(0x02014b50, 0);
-    header.writeUInt16LE(nameBuffer.length, 28);
-    return Buffer.concat([header, nameBuffer]);
-  });
-  const centralDirectory = Buffer.concat(records);
+function makeZipWithData(entries) {
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+  for (const entry of entries) {
+    const nameBuffer = Buffer.from(entry.name, 'utf8');
+    const raw = entry.bytes ?? Buffer.alloc(0);
+    const deflate = entry.deflate === true;
+    const stored = deflate ? deflateRawSync(raw) : raw;
+    const method = deflate ? 8 : 0;
+
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(method, 8);
+    local.writeUInt32LE(stored.length, 18);
+    local.writeUInt32LE(raw.length, 22);
+    local.writeUInt16LE(nameBuffer.length, 26);
+    const localRecord = Buffer.concat([local, nameBuffer, stored]);
+    localParts.push(localRecord);
+
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(method, 10);
+    central.writeUInt32LE(stored.length, 20);
+    central.writeUInt32LE(raw.length, 24);
+    central.writeUInt16LE(nameBuffer.length, 28);
+    central.writeUInt32LE(offset, 42);
+    centralParts.push(Buffer.concat([central, nameBuffer]));
+
+    offset += localRecord.length;
+  }
+  const localBlock = Buffer.concat(localParts);
+  const centralBlock = Buffer.concat(centralParts);
   const eocd = Buffer.alloc(22);
   eocd.writeUInt32LE(0x06054b50, 0);
-  eocd.writeUInt16LE(names.length, 8);
-  eocd.writeUInt16LE(names.length, 10);
-  eocd.writeUInt32LE(centralDirectory.length, 12);
-  eocd.writeUInt32LE(0, 16);
-  return Buffer.concat([centralDirectory, eocd]);
+  eocd.writeUInt16LE(entries.length, 8);
+  eocd.writeUInt16LE(entries.length, 10);
+  eocd.writeUInt32LE(centralBlock.length, 12);
+  eocd.writeUInt32LE(localBlock.length, 16);
+  return Buffer.concat([localBlock, centralBlock, eocd]);
 }
 
-test('listZipEntries reads file names from the central directory', () => {
-  const zip = makeZip(['dashboard/a.png', 'dashboard/b.png', 'plan/c.png']);
-  assert.deepEqual(listZipEntries(zip), ['dashboard/a.png', 'dashboard/b.png', 'plan/c.png']);
+/** A ZIP of evidence screenshots, each entry's bytes a marker of its name. */
+function evidenceZip(names, { deflate = false } = {}) {
+  return makeZipWithData(names.map((name) => ({
+    name,
+    bytes: Buffer.from(`png-bytes-of-${name}`),
+    deflate,
+  })));
+}
+
+test('extractZipFiles inflates stored entries with their names and bytes', () => {
+  const files = extractZipFiles(makeZipWithData([
+    { name: 'dashboard/a.png', bytes: Buffer.from('alpha') },
+    { name: 'plan/c.png', bytes: Buffer.from('charlie') },
+  ]));
+  assert.deepEqual(files.map((file) => file.name), ['dashboard/a.png', 'plan/c.png']);
+  assert.equal(files[0].bytes.toString(), 'alpha');
+  assert.equal(files[1].bytes.toString(), 'charlie');
 });
 
-test('listZipEntries skips directory entries', () => {
-  assert.deepEqual(listZipEntries(makeZip(['dashboard/', 'dashboard/a.png'])), ['dashboard/a.png']);
+test('extractZipFiles inflates DEFLATE-compressed entries', () => {
+  const original = Buffer.from('a fairly repetitive payload '.repeat(20));
+  const files = extractZipFiles(makeZipWithData([
+    { name: 'dashboard/big.png', bytes: original, deflate: true },
+  ]));
+  assert.equal(files.length, 1);
+  assert.deepEqual(files[0].bytes, original);
 });
 
-test('listZipEntries throws on a buffer that is not a ZIP archive', () => {
-  assert.throws(() => listZipEntries(Buffer.from('not a zip archive at all')), /not a zip archive/i);
+test('extractZipFiles skips directory entries', () => {
+  const files = extractZipFiles(makeZipWithData([
+    { name: 'dashboard/' },
+    { name: 'dashboard/a.png', bytes: Buffer.from('alpha') },
+  ]));
+  assert.deepEqual(files.map((file) => file.name), ['dashboard/a.png']);
+});
+
+test('extractZipFiles throws on a buffer that is not a ZIP archive', () => {
+  assert.throws(() => extractZipFiles(Buffer.from('not a zip archive at all')), /not a zip archive/i);
 });
 
 test('groupEvidenceFiles groups PNGs by top folder, dropping non-PNGs and root files', () => {
@@ -1240,6 +1294,23 @@ test('buildGalleryComment lists screenshots grouped by folder under the marker',
   assert.match(body, /https:\/\/example\.com\/artifact/);
 });
 
+test('buildGalleryComment embeds images inline when given Growth-hosted assets', () => {
+  const body = buildGalleryComment({
+    groups: [{ folder: 'dashboard', files: ['dashboard/a.png', 'dashboard/b.png'] }],
+    assets: new Map([
+      ['dashboard/a.png', 'https://growth.test/evidence-assets/01A'],
+      ['dashboard/b.png', 'https://growth.test/evidence-assets/01B'],
+    ]),
+  });
+  assert.ok(findGalleryComment([{ body }]), 'the comment carries the gallery marker');
+  assert.match(body, /2 screenshots/);
+  assert.match(body, /### `dashboard`/);
+  assert.match(body, /!\[dashboard\/a\.png\]\(https:\/\/growth\.test\/evidence-assets\/01A\)/);
+  assert.match(body, /!\[dashboard\/b\.png\]\(https:\/\/growth\.test\/evidence-assets\/01B\)/);
+  // The inline gallery has no artifact download link — the images are durable.
+  assert.doesNotMatch(body, /Download the artifact/);
+});
+
 test('buildGalleryComment neutralises crafted folder and file names', () => {
   const body = buildGalleryComment({
     groups: [{ folder: 'evil`/@acme', files: ['evil`/@acme/shot\n.png'] }],
@@ -1265,7 +1336,12 @@ function evidenceContext(overrides = {}) {
     repository: 'datashaman/growth',
     getCommitMessage: async () => 'Work\n\nGrowth-Work-Item: 01WI',
     listRunArtifacts: async () => [{ id: 9, name: 'growth-evidence', expired: false }],
-    downloadArtifact: async () => makeZip(['dashboard/empty.png', 'dashboard/full.png', 'plan/draft.png']),
+    downloadArtifact: async () => evidenceZip(['dashboard/empty.png', 'dashboard/full.png', 'plan/draft.png']),
+    // The upload echoes each screenshot back as an asset with a Growth URL.
+    uploadEvidence: async (deliveryLinkId, files) => files.map((file) => ({
+      caption: file.name,
+      url: `https://growth.test/evidence-assets/${deliveryLinkId}/${file.name}`,
+    })),
     listIssueComments: async () => [],
     createComment: async (issueNumber, body) => ({
       id: 100,
@@ -1278,9 +1354,11 @@ function evidenceContext(overrides = {}) {
   };
 }
 
-test('run posts an evidence gallery comment and cites it on the work item', async () => {
+test('run uploads screenshots, embeds them inline, and cites the gallery', async () => {
   const calls = [];
+  const uploads = [];
   let created = 0;
+  let createdBody = '';
   const result = await run(evidenceContext({
     callTool: async (name, args) => {
       calls.push({ name, args });
@@ -1288,8 +1366,16 @@ test('run posts an evidence gallery comment and cites it on the work item', asyn
         ? { isError: false, structured: { id: 'link1' } }
         : { isError: false, structured: { id: 'check1' } };
     },
+    uploadEvidence: async (deliveryLinkId, files) => {
+      uploads.push({ deliveryLinkId, files });
+      return files.map((file) => ({
+        caption: file.name,
+        url: `https://growth.test/evidence-assets/${file.name}`,
+      }));
+    },
     createComment: async (issueNumber, body) => {
       created++;
+      createdBody = body;
       return {
         id: 100,
         html_url: `https://github.com/datashaman/growth/pull/${issueNumber}#issuecomment-100`,
@@ -1301,25 +1387,46 @@ test('run posts an evidence gallery comment and cites it on the work item', asyn
 
   assert.equal(result.skipped, false);
   assert.equal(created, 1);
-  const evidence = calls.find((c) => c.name === 'upsert-delivery-link' && c.args.type === 'evidence');
-  assert.ok(evidence, 'expected an evidence delivery link');
-  assert.equal(evidence.args.ref, '#8');
-  assert.equal(evidence.args.url, 'https://github.com/datashaman/growth/pull/8#issuecomment-100');
-  assert.match(evidence.args.description, /3 screenshots/);
+
+  // One upload, scoped to the evidence delivery link, carrying every PNG with
+  // its inflated bytes.
+  assert.equal(uploads.length, 1, 'all screenshots go in a single upload');
+  assert.equal(uploads[0].deliveryLinkId, 'link1');
+  assert.deepEqual(
+    uploads[0].files.map((file) => file.name),
+    ['dashboard/empty.png', 'dashboard/full.png', 'plan/draft.png'],
+  );
+  assert.equal(uploads[0].files[0].bytes.toString(), 'png-bytes-of-dashboard/empty.png');
+
+  // The comment embeds the Growth-hosted images inline.
+  assert.match(createdBody, /!\[dashboard\/empty\.png\]\(https:\/\/growth\.test\/evidence-assets\/dashboard\/empty\.png\)/);
+
+  // Two evidence-link upserts on the same ref: a minimal create before the
+  // upload, then a final one carrying the posted comment's URL.
+  const evidence = calls.filter((c) => c.name === 'upsert-delivery-link' && c.args.type === 'evidence');
+  assert.equal(evidence.length, 2);
+  assert.equal(evidence[0].args.ref, '#8');
+  assert.equal(evidence[0].args.url, undefined, 'the first upsert precedes the comment');
+  assert.equal(evidence[1].args.ref, '#8');
+  assert.equal(evidence[1].args.url, 'https://github.com/datashaman/growth/pull/8#issuecomment-100');
+  assert.match(evidence[1].args.description, /3 screenshots/);
 });
 
 test('run posts the gallery uncited when a workflow run resolves no work item', async () => {
   const calls = [];
   let created = 0;
+  let createdBody = '';
   const result = await run(evidenceContext({
     getCommitMessage: async () => 'No trailer on this commit',
-    downloadArtifact: async () => makeZip(['dashboard/only.png']),
+    downloadArtifact: async () => evidenceZip(['dashboard/only.png']),
+    uploadEvidence: async () => { throw new Error('should not upload without a work item'); },
     callTool: async (name, args) => {
       calls.push({ name, args });
       return { isError: false };
     },
     createComment: async (issueNumber, body) => {
       created++;
+      createdBody = body;
       return { id: 100, html_url: 'u', body };
     },
     updateComment: async () => { throw new Error('should not update a comment'); },
@@ -1327,6 +1434,10 @@ test('run posts the gallery uncited when a workflow run resolves no work item', 
 
   assert.equal(result.skipped, true);
   assert.equal(created, 1, 'the gallery is still posted');
+  // With no delivery link to upload against, the gallery falls back to the
+  // name manifest with the artifact download link.
+  assert.match(createdBody, /Download the artifact/);
+  assert.doesNotMatch(createdBody, /!\[/);
   assert.ok(
     !calls.some((c) => c.name === 'upsert-delivery-link' && c.args.type === 'evidence'),
     'an unresolved branch must not cite an evidence link',
@@ -1336,6 +1447,7 @@ test('run posts the gallery uncited when a workflow run resolves no work item', 
 test('run updates the existing gallery comment in place rather than posting another', async () => {
   let created = 0;
   let updatedId = null;
+  let updatedBody = null;
   const existingBody = buildGalleryComment({
     groups: [{ folder: 'old', files: ['old/stale.png'] }],
     artifactUrl: 'https://example.com/old',
@@ -1347,11 +1459,12 @@ test('run updates the existing gallery comment in place rather than posting anot
       { id: 51, body: existingBody },
     ],
     createComment: async () => { created++; return { id: 0, html_url: 'u', body: '' }; },
-    updateComment: async (id, body) => { updatedId = id; return { id, html_url: 'u', body }; },
+    updateComment: async (id, body) => { updatedId = id; updatedBody = body; return { id, html_url: 'u', body }; },
   }));
 
   assert.equal(created, 0, 'no second gallery comment is created');
   assert.equal(updatedId, 51, 'the marked comment is updated in place');
+  assert.match(updatedBody, /!\[/, 'the updated comment embeds the screenshots inline');
 });
 
 test('run records the check run and skips the gallery when there is no evidence artifact', async () => {

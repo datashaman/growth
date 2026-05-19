@@ -3,6 +3,9 @@
 // `run` function are exported for testing; the bottom of the file is the
 // GitHub Action entrypoint.
 
+import { inflateRawSync } from 'node:zlib';
+import { basename } from 'node:path';
+
 const TRAILER_KEY = 'Growth-Work-Item';
 
 // Name of the GitHub check growth-sync posts back to a pull request to
@@ -78,15 +81,20 @@ export function isForkPullRequest(pullRequest, repository) {
 }
 
 /**
- * List the file paths inside a ZIP buffer by reading its central directory.
- * The central directory stores file names uncompressed, so the manifest of
- * names — all the gallery needs — is read without inflating any entry.
+ * Extract every file from a ZIP buffer as `{ name, bytes }`. The central
+ * directory carries each entry's name, compression method, compressed size,
+ * and the offset of its local header; the local header is consulted only for
+ * its own name/extra lengths, to find where the entry's data begins. Sizes
+ * are taken from the central directory because an entry written with a data
+ * descriptor (general-purpose bit 3) leaves the local header's size fields
+ * zero. Stored (method 0) and DEFLATE (method 8) entries are supported.
  * Directory entries (names ending in `/`) are dropped. Throws on a buffer
  * that is not a ZIP archive.
  */
-export function listZipEntries(buffer) {
+export function extractZipFiles(buffer) {
   const EOCD_SIGNATURE = 0x06054b50;
   const CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
+  const LOCAL_HEADER_SIGNATURE = 0x04034b50;
 
   // The end-of-central-directory record is 22 bytes plus an optional trailing
   // comment (max 65535). Scan back from the end for its signature.
@@ -104,21 +112,43 @@ export function listZipEntries(buffer) {
 
   const entryCount = buffer.readUInt16LE(eocd + 10);
   let offset = buffer.readUInt32LE(eocd + 16);
-  const names = [];
+  const files = [];
   for (let i = 0; i < entryCount; i++) {
     if (buffer.readUInt32LE(offset) !== CENTRAL_DIRECTORY_SIGNATURE) {
       throw new Error('Corrupt ZIP archive: bad central-directory entry.');
     }
+    const compression = buffer.readUInt16LE(offset + 10);
+    const compressedSize = buffer.readUInt32LE(offset + 20);
     const nameLength = buffer.readUInt16LE(offset + 28);
     const extraLength = buffer.readUInt16LE(offset + 30);
     const commentLength = buffer.readUInt16LE(offset + 32);
+    const localOffset = buffer.readUInt32LE(offset + 42);
     const name = buffer.toString('utf8', offset + 46, offset + 46 + nameLength);
+
     if (!name.endsWith('/')) {
-      names.push(name);
+      if (buffer.readUInt32LE(localOffset) !== LOCAL_HEADER_SIGNATURE) {
+        throw new Error('Corrupt ZIP archive: bad local file header.');
+      }
+      // The local header's own name/extra lengths can differ from the
+      // central-directory entry's, so re-read them to find the data offset.
+      const localNameLength = buffer.readUInt16LE(localOffset + 26);
+      const localExtraLength = buffer.readUInt16LE(localOffset + 28);
+      const dataStart = localOffset + 30 + localNameLength + localExtraLength;
+      const compressed = buffer.subarray(dataStart, dataStart + compressedSize);
+
+      let bytes;
+      if (compression === 0) {
+        bytes = Buffer.from(compressed);
+      } else if (compression === 8) {
+        bytes = inflateRawSync(compressed);
+      } else {
+        throw new Error(`Unsupported ZIP compression method ${compression} for "${name}".`);
+      }
+      files.push({ name, bytes });
     }
     offset += 46 + nameLength + extraLength + commentLength;
   }
-  return names;
+  return files;
 }
 
 /**
@@ -160,29 +190,53 @@ function codeSpan(name) {
 }
 
 /**
- * Build the screenshot-gallery comment body: the hidden marker, a header, and
- * a manifest of the captured screenshots grouped by folder, with a link to
- * the artifact. A comment posted through the API cannot embed images from a
- * private repository, so the gallery is a manifest, not inline thumbnails.
+ * Sanitise a screenshot path for use as Markdown image alt text. The path
+ * comes from a ZIP entry, so it is untrusted: control characters are
+ * stripped and square brackets removed so a crafted filename cannot break
+ * out of the `![ ... ]` span.
  */
-export function buildGalleryComment({ groups, artifactUrl }) {
+function altText(name) {
+  return String(name).replace(/[\u0000-\u001f\u007f]/g, '').replace(/[[\]]/g, '');
+}
+
+/**
+ * Build the screenshot-gallery comment body: the hidden marker, a header, and
+ * the captured screenshots grouped by folder.
+ *
+ * With `assets` — a Map of screenshot path to its Growth-hosted public URL —
+ * each screenshot is embedded inline as a Markdown image. Without it (no work
+ * item resolved, so nothing was uploaded) the gallery falls back to a
+ * manifest of names with a link to the run artifact.
+ */
+export function buildGalleryComment({ groups, assets, artifactUrl }) {
   const total = groups.reduce((sum, group) => sum + group.files.length, 0);
+  const inline = assets != null;
   const lines = [
     GALLERY_MARKER,
     '## 📸 Visual evidence',
     '',
-    `${total} screenshot${total === 1 ? '' : 's'} captured by CI across `
-      + `${groups.length} folder${groups.length === 1 ? '' : 's'}. `
-      + `[Download the artifact](${artifactUrl}) — GitHub expires run artifacts, `
-      + 'so download it to keep the screenshots.',
+    inline
+      ? `${total} screenshot${total === 1 ? '' : 's'} captured by CI across `
+        + `${groups.length} folder${groups.length === 1 ? '' : 's'}.`
+      : `${total} screenshot${total === 1 ? '' : 's'} captured by CI across `
+        + `${groups.length} folder${groups.length === 1 ? '' : 's'}. `
+        + `[Download the artifact](${artifactUrl}) — GitHub expires run artifacts, `
+        + 'so download it to keep the screenshots.',
     '',
   ];
   for (const group of groups) {
     lines.push(`### ${codeSpan(group.folder)}`);
     for (const file of group.files) {
-      lines.push(`- ${codeSpan(file)}`);
+      if (inline) {
+        lines.push(`![${altText(file)}](${assets.get(file)})`);
+        lines.push('');
+      } else {
+        lines.push(`- ${codeSpan(file)}`);
+      }
     }
-    lines.push('');
+    if (!inline) {
+      lines.push('');
+    }
   }
   return `${lines.join('\n').trimEnd()}\n`;
 }
@@ -633,12 +687,18 @@ export function buildWorkflowRunArgs(event, deliveryLinkId) {
 }
 
 /**
- * Ingest a CI run's visual-evidence artifact: post — or update in place — the
- * per-pull-request screenshot-gallery comment, and cite the gallery on the
- * matched work item as an `evidence` delivery link. A run with no evidence
- * artifact, or one whose branch resolves to no work item, is not a failure:
- * the artifact is skipped or the gallery posted uncited. The caller treats a
- * throw as best-effort so a flaky artifact API never fails the whole sync.
+ * Ingest a CI run's visual-evidence artifact: upload its screenshots to
+ * Growth, post — or update in place — the per-pull-request gallery comment
+ * with the images embedded inline, and cite the gallery on the matched work
+ * item as an `evidence` delivery link.
+ *
+ * The evidence delivery link is recorded first because the upload is scoped
+ * to it; it is then re-upserted with the posted comment's URL. A run whose
+ * branch resolves to no work item has no delivery link to upload against, so
+ * its gallery falls back to the name-manifest rendering and is posted uncited.
+ * A run with no evidence artifact is skipped. None of these are failures —
+ * the caller treats a throw as best-effort so a flaky artifact API never
+ * fails the whole sync.
  */
 async function ingestEvidence({
   runId,
@@ -647,6 +707,7 @@ async function ingestEvidence({
   workItemId,
   listRunArtifacts,
   downloadArtifact,
+  uploadEvidence,
   listIssueComments,
   createComment,
   updateComment,
@@ -670,30 +731,57 @@ async function ingestEvidence({
     return;
   }
 
-  const groups = groupEvidenceFiles(listZipEntries(await downloadArtifact(artifact.id)));
+  const files = extractZipFiles(await downloadArtifact(artifact.id));
+  const groups = groupEvidenceFiles(files.map((file) => file.name));
   if (groups.length === 0) {
     log.warn(`The ${EVIDENCE_ARTIFACT_NAME} artifact held no screenshots; skipping the gallery.`);
     return;
   }
 
+  const total = groups.reduce((sum, group) => sum + group.files.length, 0);
   const artifactUrl = `https://github.com/${repository}/actions/runs/${runId}/artifacts/${artifact.id}`;
-  const body = buildGalleryComment({ groups, artifactUrl });
+  const hasWorkItem = workItemId !== null && workItemId !== undefined;
+
+  // The evidence delivery link must exist before the upload, which is scoped
+  // to it. With no work item there is nothing to scope an upload to, so the
+  // gallery falls back to the name manifest.
+  let assets = null;
+  if (hasWorkItem) {
+    const linkResult = await callTool('upsert-delivery-link', {
+      work_item_id: workItemId,
+      type: 'evidence',
+      ref: `#${pullRequest.number}`,
+    });
+    if (linkResult.isError) {
+      throw new Error(`Growth rejected the evidence link: ${linkResult.errorText}`);
+    }
+
+    // The gallery's paths, in folder/name order, paired back to their bytes.
+    const galleryFiles = groups
+      .flatMap((group) => group.files)
+      .map((path) => files.find((file) => file.name === path));
+    const uploaded = await uploadEvidence(linkResult.structured?.id, galleryFiles);
+    assets = new Map(uploaded.map((asset) => [asset.caption, asset.url]));
+  }
+
+  const body = buildGalleryComment(assets ? { groups, assets } : { groups, artifactUrl });
   const existing = findGalleryComment(await listIssueComments(pullRequest.number));
   const comment = existing
     ? await updateComment(existing.id, body)
     : await createComment(pullRequest.number, body);
 
-  const total = groups.reduce((sum, group) => sum + group.files.length, 0);
   log.info(
     `${existing ? 'Updated' : 'Posted'} the evidence gallery (${total} screenshot(s)) `
     + `on pull request #${pullRequest.number}.`,
   );
 
-  if (workItemId === null || workItemId === undefined) {
+  if (!hasWorkItem) {
     log.info('No work item resolved for this run; the gallery is posted but not cited.');
     return;
   }
 
+  // Re-upsert the same evidence link — keyed on (work item, type, ref) — now
+  // that the gallery comment exists, to record its URL and screenshot count.
   const result = await callTool('upsert-delivery-link', {
     work_item_id: workItemId,
     type: 'evidence',
@@ -720,6 +808,7 @@ async function runWorkflowRun({
   callTool,
   listRunArtifacts,
   downloadArtifact,
+  uploadEvidence,
   listIssueComments,
   createComment,
   updateComment,
@@ -757,6 +846,7 @@ async function runWorkflowRun({
       workItemId,
       listRunArtifacts,
       downloadArtifact,
+      uploadEvidence,
       listIssueComments,
       createComment,
       updateComment,
@@ -1063,6 +1153,39 @@ function makeCommentClient({ apiUrl, repository, token, fetchFn }) {
 }
 
 /**
+ * Upload a pull request's visual-evidence screenshots to Growth in a single
+ * multipart request. The endpoint replaces the delivery link's whole gallery
+ * on every call, so all of a run's screenshots must go in one POST. Returns
+ * the stored assets, each carrying a stable public URL to embed.
+ */
+function makeEvidenceUploader({ growthUrl, token, fetchFn }) {
+  return async function uploadEvidence(deliveryLinkId, files) {
+    const form = new FormData();
+    form.append('delivery_link_id', deliveryLinkId);
+    for (const file of files) {
+      // The caption is the screenshot's full artifact path so the gallery can
+      // group the uploaded assets back by folder; the multipart filename is
+      // just its base name.
+      form.append('images[]', new Blob([file.bytes], { type: 'image/png' }), basename(file.name));
+      form.append('captions[]', file.name);
+    }
+    const response = await fetchFn(`${growthUrl.replace(/\/$/, '')}/api/evidence-assets`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+      },
+      body: form,
+    });
+    if (!response.ok) {
+      throw new Error(`Growth evidence upload HTTP ${response.status}`);
+    }
+    const body = await response.json();
+    return body.assets ?? [];
+  };
+}
+
+/**
  * Call a Growth MCP tool over the stateless HTTP transport. Protocol-level
  * JSON-RPC errors throw; tool-level errors are returned as { isError }.
  */
@@ -1147,6 +1270,7 @@ async function main() {
     fetchFn: fetch,
   });
   const callTool = makeMcpClient({ growthUrl, token: growthToken, fetchFn: fetch });
+  const uploadEvidence = makeEvidenceUploader({ growthUrl, token: growthToken, fetchFn: fetch });
 
   await run({
     eventName: GITHUB_EVENT_NAME,
@@ -1156,6 +1280,7 @@ async function main() {
     postCheckRun,
     listRunArtifacts,
     downloadArtifact,
+    uploadEvidence,
     listIssueComments,
     createComment,
     updateComment,
