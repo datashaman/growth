@@ -17,6 +17,7 @@ use App\Mcp\Tools\Architecture\ListArchitectureViews;
 use App\Mcp\Tools\Architecture\UpsertArchitectureElements;
 use App\Mcp\Tools\Architecture\UpsertArchitectureView;
 use App\Mcp\Tools\Architecture\UpsertArchitectureViewpoint;
+use App\Mcp\Tools\Common\AdoptRole;
 use App\Mcp\Tools\Common\BulkLink;
 use App\Mcp\Tools\Common\Doctor;
 use App\Mcp\Tools\Common\ListNotifications;
@@ -53,6 +54,7 @@ class ArchitectureServer extends Server
     use SurfaceServerDefaults;
 
     protected array $tools = [
+        AdoptRole::class,
         WhoAmI::class,
         CreateDecisionRequest::class,
         ListDecisionQueue::class,

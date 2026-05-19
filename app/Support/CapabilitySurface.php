@@ -9,7 +9,6 @@ use App\Mcp\Servers\ManagementServer;
 use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Servers\ReadonlyServer;
 use App\Mcp\Servers\VerificationServer;
-use Illuminate\Support\Facades\File;
 
 /**
  * The capability surface a session is bound to (#183) — a structural grouping
@@ -82,19 +81,6 @@ enum CapabilitySurface: string
             self::Management => 'Management',
             self::Readonly => 'Readonly',
         };
-    }
-
-    /**
-     * The persona delivered to a surface-bound agent as the MCP server's
-     * `instructions` (#189) — what the surface is accountable for, the
-     * judgement it brings, what it must not do, and which sibling surface owns
-     * the adjacent work. Authored as Markdown under `resources/prompts/roles/`
-     * (one file per case value) so the persona is versioned in the repo, edits
-     * as plain Markdown, and arrives over the wire with no client-side install.
-     */
-    public function personaInstructions(): string
-    {
-        return trim(File::get(resource_path("prompts/roles/{$this->value}.md")));
     }
 
     /**

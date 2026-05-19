@@ -25,6 +25,8 @@ class ToolInvocation extends Model
         'user_id',
         'agent_id',
         'acting_surface',
+        'acting_role_id',
+        'acting_role_name',
         'tool_name',
         'transport',
         'success',
@@ -63,6 +65,11 @@ class ToolInvocation extends Model
     public function agent(): BelongsTo
     {
         return $this->belongsTo(Agent::class);
+    }
+
+    public function actingRole(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'acting_role_id');
     }
 
     public function prunable(): Builder

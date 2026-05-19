@@ -11,6 +11,7 @@ use App\Mcp\Resources\RequirementExplorerApp;
 use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
+use App\Mcp\Tools\Common\AdoptRole;
 use App\Mcp\Tools\Common\Doctor;
 use App\Mcp\Tools\Common\ListNotifications;
 use App\Mcp\Tools\Common\ListUsers;
@@ -65,6 +66,7 @@ class IntakeServer extends Server
     use SurfaceServerDefaults;
 
     protected array $tools = [
+        AdoptRole::class,
         WhoAmI::class,
         CreateDecisionRequest::class,
         ListDecisionQueue::class,

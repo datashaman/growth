@@ -17,10 +17,11 @@ which tool to call and whether to ask the user first. Runs entirely client-side.
 _Avoid_: "the agent" without a qualifier
 
 **Persona**:
-The instruction set Growth serves as a Capability Surface's MCP `instructions`
-— what a context is accountable for, the judgement it brings, what it must not
-do. Advisory: the Client Agent chooses whether to honour it.
-_Avoid_: "personality", "mode"
+The instruction set a project Role carries — what that role is accountable for,
+the judgement it brings, what it must not do, and which operations are routine
+for it versus warrant user confirmation. Served to a Client Agent when it adopts
+the Role. Advisory: the Client Agent chooses whether to honour it.
+_Avoid_: "personality", "mode"; a Capability Surface has no Persona
 
 **Capability Surface**:
 A structural and semantic grouping of MCP tools, one per role-scoped MCP server.
@@ -30,8 +31,16 @@ _Avoid_: "operating role", "role" (for this concept)
 
 **Role**:
 A project-defined RACI accountability — `Engineering Lead`, `Product Lead`,
-`Developer`. Named by the project, an open set. Held by Users and/or Agents.
+`Developer`. Named by the project, an open set. Held by Users and/or Agents,
+carries a Persona, and is adopted by a session to colour how it operates.
 _Avoid_: "operating role", "capability surface"
+
+**Session**:
+One Client Agent's connection to a Capability Surface. It may adopt at most one
+Role; doing so binds that Role's Persona and attribution to everything the
+session records thereafter. A session that adopts no Role still works — it just
+operates without a Persona.
+_Avoid_: "the agent" (a Session is a connection, not a reasoning loop)
 
 **Agent**:
 A named principal a Client Agent session may authenticate as, so recorded
@@ -45,8 +54,9 @@ The tenant boundary. Every Project, and every recorded event, belongs to one.
 ## Relationships
 
 - A **Workspace** contains **Projects**; a **Project** defines its own **Roles**.
-- A **Role** is held by zero or more **Users** and/or **Agents**.
-- A **Capability Surface** exposes a subset of MCP tools; a session binds to one.
+- A **Role** is held by zero or more **Users** and/or **Agents** and carries one **Persona**.
+- A **Capability Surface** exposes a subset of MCP tools; a **Session** connects to one.
+- A **Session** adopts at most one **Role**; the **Role**, not the **Surface**, carries the **Persona**.
 - Growth **serves** Personas, tools, and tool annotations, and **records**
   attribution. The **Client Agent** decides and acts. Growth never supervises it.
 
