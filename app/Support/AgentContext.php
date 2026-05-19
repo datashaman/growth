@@ -48,15 +48,11 @@ class AgentContext
 
         $id = $this->fromToken() ?? $this->fromEnv();
 
-        if ($id === null) {
-            return null;
-        }
-
-        try {
-            return Agent::find($id);
-        } catch (Throwable) {
-            return null;
-        }
+        // A missing, stale, or foreign-workspace id simply finds nothing —
+        // Agent::find returns null, and the owner scope already excludes
+        // agents outside the active workspace. A genuine DB failure is left
+        // to surface rather than being masked as an unbound session.
+        return $id === null ? null : Agent::find($id);
     }
 
     /**
