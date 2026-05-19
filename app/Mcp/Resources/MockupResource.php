@@ -7,10 +7,12 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\MimeType;
+use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Contracts\HasUriTemplate;
 use Laravel\Mcp\Server\Resource;
 use Laravel\Mcp\Support\UriTemplate;
 
+#[Name('Mockup')]
 #[Description('The current rendered HTML of a spec mockup — a renderable visual companion to a work item or requirement that a client can attach as context.')]
 #[MimeType('text/html')]
 class MockupResource extends Resource implements HasUriTemplate
