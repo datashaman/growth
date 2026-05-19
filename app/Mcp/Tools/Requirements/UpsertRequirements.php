@@ -69,6 +69,12 @@ class UpsertRequirements extends Tool
                 'tags' => $data['tags'] ?? null,
             ];
 
+            // Only write renders_ui when supplied — an omitted flag must not
+            // silently clear it on update (the column defaults to false).
+            if (array_key_exists('renders_ui', $data)) {
+                $payload['renders_ui'] = $data['renders_ui'];
+            }
+
             $requirement = $id
                 ? tap(Requirement::findOrFail($id))->update($payload)
                 : Requirement::create($payload);
@@ -108,6 +114,7 @@ class UpsertRequirements extends Tool
             'source' => 'nullable|string|max:255',
             'priority' => 'nullable|in:high,medium,low',
             'tags' => 'nullable|array',
+            'renders_ui' => 'sometimes|boolean',
         ];
     }
 
@@ -127,6 +134,7 @@ class UpsertRequirements extends Tool
                     'source' => $s->string()->description('Originating stakeholder, source, or decision'),
                     'priority' => $s->string()->description('Delivery priority')->enum(['high', 'medium', 'low']),
                     'tags' => $s->array()->description('Free-form tags'),
+                    'renders_ui' => $s->boolean()->description('Whether this requirement renders UI — when true, a rigor-3+ readiness check warns until a passing verification run carries visual evidence. Defaults to false.'),
                 ]))
                 ->min(1)
                 ->max(100)

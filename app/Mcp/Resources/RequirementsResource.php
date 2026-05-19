@@ -55,6 +55,7 @@ class RequirementsResource extends Resource implements HasUriTemplate
                             'items' => $requirements->map(fn ($requirement): array => [
                                 'id' => $requirement->id,
                                 'priority' => $requirement->priority,
+                                'renders_ui' => $requirement->renders_ui,
                                 'text' => $requirement->text,
                                 'rationale' => $requirement->rationale,
                                 'acceptance_checks' => $requirement->acceptance_criteria ?? [],

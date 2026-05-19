@@ -5,6 +5,7 @@ use App\Mcp\Servers\ManagementServer;
 use App\Mcp\Tools\Manifest\ApplyManifest;
 use App\Mcp\Tools\Manifest\ExportManifest;
 use App\Models\Project;
+use App\Models\Requirement;
 use App\Models\User;
 use Laravel\Passport\Passport;
 
@@ -199,6 +200,26 @@ it('round-trips a fully populated project through apply→export→re-apply with
             ->where('drift', [])
             ->etc();
     });
+});
+
+it('round-trips the renders_ui flag through apply and export', function () {
+    $manifest = fullManifest();
+    $manifest['requirements'][0]['renders_ui'] = true; // cap-a is UI-bearing
+
+    $projectId = applyAndGetProjectId($manifest);
+
+    // apply read the flag — cap-a is UI-bearing, cap-b defaults to false
+    $capA = Requirement::where('project_id', $projectId)->where('slug', 'cap-a')->sole();
+    $capB = Requirement::where('project_id', $projectId)->where('slug', 'cap-b')->sole();
+    expect($capA->renders_ui)->toBeTrue()
+        ->and($capB->renders_ui)->toBeFalse();
+
+    // export emits the flag, and only for the UI-bearing requirement
+    $exported = app(ManifestExporter::class)->export($projectId);
+    $exportedA = collect($exported['requirements'])->firstWhere('slug', 'cap-a');
+    $exportedB = collect($exported['requirements'])->firstWhere('slug', 'cap-b');
+    expect($exportedA['renders_ui'])->toBeTrue()
+        ->and($exportedB)->not->toHaveKey('renders_ui');
 });
 
 it('produces byte-identical output across two consecutive exports', function () {

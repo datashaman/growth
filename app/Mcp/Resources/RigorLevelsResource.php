@@ -29,7 +29,7 @@ Project rigor (stored as `integrity_level`, exposed on some tools as `rigor_leve
 |-------|-------------------------------|
 | 1     | Project Management Plan must exist with `scope_summary` and `approach`. |
 | 2     | ≥ 1 milestone defined. <br> ≥ 1 work item defined. |
-| 3     | Every work item has a responsible role (RACI). <br> Project defines ≥ 1 role. <br> Plan baseline exists. <br> Reviews / audits are recorded. <br> Acceptance criteria required for **all** requirements (not just high-priority). |
+| 3     | Every work item has a responsible role (RACI). <br> Project defines ≥ 1 role. <br> Plan baseline exists. <br> Reviews / audits are recorded. <br> Acceptance criteria required for **all** requirements (not just high-priority). <br> A `renders_ui` requirement with a passing verification run that carries no visual evidence raises a readiness warning. |
 | 4     | Ceiling. No rules unique to L4 today — reserved for future safety-critical extensions. |
 
 ## Sources of truth
@@ -38,6 +38,7 @@ Project rigor (stored as `integrity_level`, exposed on some tools as `rigor_leve
 - `App\Growth\Lint\BaselineLinter` — plan baseline rule.
 - `App\Growth\Lint\ReviewLinter` — review/audit recording rule.
 - `App\Growth\Lint\RequirementLinter` — acceptance criteria escalation.
+- `App\Growth\Lint\TestLinter` — UI-bearing requirement visual-evidence rule.
 
 ## Defaults
 

@@ -3,6 +3,7 @@
 namespace App\Growth\Lint;
 
 use App\Models\Project;
+use App\Models\TestRun;
 
 /**
  * verification evidence-2008 test documentation completeness checks.
@@ -99,6 +100,55 @@ class TestLinter
                 'Project has no master verification plan',
                 'project', $project->id,
             );
+        }
+
+        array_push($findings, ...$this->checkVisualEvidence($project));
+
+        return $findings;
+    }
+
+    /**
+     * Rigor-3+ rule (#245): a requirement that renders UI is not fully
+     * verified until a passing run carries visual evidence. One warning per
+     * UI-bearing requirement that has at least one passing run but no passing
+     * run with a screenshot. A requirement with no passing run is silent here
+     * — that gap is the concern of the case/run rules above.
+     *
+     * @return list<array{rule:string,severity:string,message:string,subject_type:string,subject_id:string}>
+     */
+    private function checkVisualEvidence(Project $project): array
+    {
+        if ($project->rigor_level < 3) {
+            return [];
+        }
+
+        $findings = [];
+
+        $uiRequirements = $project->requirements()
+            ->where('renders_ui', true)
+            ->with('testCases.runs.evidenceAssets')
+            ->get();
+
+        foreach ($uiRequirements as $requirement) {
+            $passingRuns = $requirement->testCases
+                ->flatMap->runs
+                ->where('status', 'pass');
+
+            if ($passingRuns->isEmpty()) {
+                continue;
+            }
+
+            $hasEvidence = $passingRuns->contains(
+                fn (TestRun $run): bool => $run->evidenceAssets->isNotEmpty(),
+            );
+
+            if (! $hasEvidence) {
+                $findings[] = $this->finding(
+                    'ui-requirement-no-visual-evidence', 'warning',
+                    'UI-bearing requirement has a passing verification run with no visual evidence',
+                    'requirement', $requirement->id,
+                );
+            }
         }
 
         return $findings;

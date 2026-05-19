@@ -390,7 +390,7 @@ class ManifestApplier
     private function applyRequirement(array $input, string $projectId, string $mode, array &$counts, array &$drift): Requirement
     {
         $fields = array_intersect_key($input, array_flip([
-            'slug', 'doc', 'type', 'text', 'rationale', 'acceptance_criteria', 'source', 'priority', 'tags',
+            'slug', 'doc', 'type', 'text', 'rationale', 'acceptance_criteria', 'source', 'priority', 'tags', 'renders_ui',
         ]));
         $fields += ['doc' => 'srs', 'type' => 'functional'];
 

@@ -7,6 +7,7 @@ use App\Models\Concerns\ScopedByOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TestRun extends Model
@@ -39,5 +40,15 @@ class TestRun extends Model
     public function anomalies(): HasMany
     {
         return $this->hasMany(Anomaly::class);
+    }
+
+    /**
+     * Screenshots this run carries as visual evidence (#245). The same asset
+     * (uploaded by growth-sync against a work item) can back several runs.
+     */
+    public function evidenceAssets(): BelongsToMany
+    {
+        return $this->belongsToMany(EvidenceAsset::class, 'evidence_asset_test_run')
+            ->withTimestamps();
     }
 }
