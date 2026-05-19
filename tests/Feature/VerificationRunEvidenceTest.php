@@ -93,6 +93,23 @@ it('rejects a foreign evidence asset when logging a run', function () {
     ])->assertHasErrors();
 });
 
+it('rejects an evidence asset from a sibling project when logging a run', function () {
+    $siblingProject = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Sibling',
+        'rigor_level' => 3,
+    ]);
+    $siblingAsset = evidenceAssetIn($siblingProject);
+
+    VerificationServer::tool(LogVerificationRun::class, [
+        'test_case_id' => $this->case->id,
+        'status' => 'pass',
+        'evidence_asset_ids' => [$siblingAsset->id],
+    ])->assertHasErrors();
+
+    expect(TestRun::count())->toBe(0);
+});
+
 it('attaches evidence to an existing run and is idempotent', function () {
     $run = TestRun::create([
         'test_case_id' => $this->case->id,
@@ -136,4 +153,25 @@ it('rejects a foreign evidence asset when attaching to an existing run', functio
         'test_run_id' => $run->id,
         'evidence_asset_ids' => [$foreignAsset->id],
     ])->assertHasErrors();
+});
+
+it('rejects an evidence asset from a sibling project when attaching to an existing run', function () {
+    $run = TestRun::create([
+        'test_case_id' => $this->case->id,
+        'status' => 'pass',
+        'run_at' => now(),
+    ]);
+    $siblingProject = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Sibling',
+        'rigor_level' => 3,
+    ]);
+    $siblingAsset = evidenceAssetIn($siblingProject);
+
+    VerificationServer::tool(LinkVerificationRunEvidence::class, [
+        'test_run_id' => $run->id,
+        'evidence_asset_ids' => [$siblingAsset->id],
+    ])->assertHasErrors();
+
+    expect($run->evidenceAssets()->count())->toBe(0);
 });

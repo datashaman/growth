@@ -29,7 +29,7 @@ Project rigor (stored as `integrity_level`, exposed on some tools as `rigor_leve
 |-------|-------------------------------|
 | 1     | Project Management Plan must exist with `scope_summary` and `approach`. |
 | 2     | ≥ 1 milestone defined. <br> ≥ 1 work item defined. |
-| 3     | Every work item has a responsible role (RACI). <br> Project defines ≥ 1 role. <br> Plan baseline exists. <br> Reviews / audits are recorded. <br> Acceptance criteria required for **all** requirements (not just high-priority). <br> A `renders_ui` requirement with a passing verification run must carry visual evidence. |
+| 3     | Every work item has a responsible role (RACI). <br> Project defines ≥ 1 role. <br> Plan baseline exists. <br> Reviews / audits are recorded. <br> Acceptance criteria required for **all** requirements (not just high-priority). <br> A `renders_ui` requirement with a passing verification run that carries no visual evidence raises a readiness warning. |
 | 4     | Ceiling. No rules unique to L4 today — reserved for future safety-critical extensions. |
 
 ## Sources of truth

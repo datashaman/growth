@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Verification;
 
+use App\Mcp\Tools\Verification\Concerns\GuardsEvidenceAssetProject;
 use App\Models\TestRun;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -13,6 +14,8 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Cite one or more evidence assets (screenshots already uploaded to Growth) as visual evidence on an existing verification run. Idempotent — pre-existing citations are kept, new ones are added. Use this when a run was logged before its screenshots existed; otherwise pass evidence_asset_ids to log-verification-run directly.')]
 class LinkVerificationRunEvidence extends Tool
 {
+    use GuardsEvidenceAssetProject;
+
     public function handle(Request $request): ResponseFactory
     {
         $data = $request->validate([
@@ -21,7 +24,9 @@ class LinkVerificationRunEvidence extends Tool
             'evidence_asset_ids.*' => 'required|string|owned_evidence_asset',
         ]);
 
-        $run = TestRun::findOrFail($data['test_run_id']);
+        $run = TestRun::with('case.plan')->findOrFail($data['test_run_id']);
+        $this->assertEvidenceAssetsBelongToProject($run->case?->plan?->project_id, $data['evidence_asset_ids']);
+
         $result = $run->evidenceAssets()->syncWithoutDetaching($data['evidence_asset_ids']);
 
         return Response::structured([

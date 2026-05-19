@@ -2,6 +2,8 @@
 
 namespace App\Mcp\Tools\Verification;
 
+use App\Mcp\Tools\Verification\Concerns\GuardsEvidenceAssetProject;
+use App\Models\TestCase;
 use App\Models\TestRun;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -13,6 +15,8 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Record a verification run for a verification case. Optionally attach visual evidence: pass evidence_asset_ids to cite screenshots (already uploaded to Growth) on the run — required for a UI-bearing requirement to pass the rigor-3+ visual-evidence readiness check.')]
 class LogVerificationRun extends Tool
 {
+    use GuardsEvidenceAssetProject;
+
     public function handle(Request $request): ResponseFactory
     {
         $data = $request->validate([
@@ -28,6 +32,11 @@ class LogVerificationRun extends Tool
         $data['run_at'] ??= now();
         $evidenceAssetIds = $data['evidence_asset_ids'] ?? [];
         unset($data['evidence_asset_ids']);
+
+        $this->assertEvidenceAssetsBelongToProject(
+            TestCase::with('plan')->find($data['test_case_id'])?->plan?->project_id,
+            $evidenceAssetIds,
+        );
 
         $run = TestRun::create($data);
 
