@@ -140,6 +140,19 @@ class PmpLinter
             );
         }
 
+        $uiMissingMockup = $project->requirements()
+            ->where('renders_ui', true)
+            ->whereHas('workItems')
+            ->whereDoesntHave('workItems', fn ($q) => $q->where('needs_mockups', true))
+            ->get(['id']);
+        foreach ($uiMissingMockup as $r) {
+            $findings[] = $this->finding(
+                'pmp.requirement.ui_no_mockup', 'informational',
+                'UI-bearing requirement is covered, but none of its work items needs a mockup',
+                'requirement', $r->id,
+            );
+        }
+
         $highUnmitigatedRisks = $project->risks()
             ->where('probability', 'high')
             ->where('impact', 'high')
