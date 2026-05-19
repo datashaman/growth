@@ -139,7 +139,7 @@ it('excludes invocations older than the 90-day prune window', function () {
             ->etc());
 });
 
-it('never includes another workspace events in an agent metrics', function () {
+it("never includes another workspace's events in an agent's metrics", function () {
     $other = User::factory()->create();
     $otherProject = Project::create([
         'workspace_id' => $other->active_workspace_id,

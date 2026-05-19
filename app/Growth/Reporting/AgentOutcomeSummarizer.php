@@ -131,7 +131,7 @@ class AgentOutcomeSummarizer
             ->groupBy('agent_id')
             ->selectRaw('agent_id')
             ->selectRaw('count(*) as total')
-            ->selectRaw('sum(success) as successes')
+            ->selectRaw('sum(case when success then 1 else 0 end) as successes')
             ->selectRaw('avg(duration_ms) as avg_duration')
             ->selectRaw('max(duration_ms) as max_duration')
             ->selectRaw("sum(case when tool_name in ($placeholders) then 1 else 0 end) as corrective", self::CORRECTIVE_TOOLS)
