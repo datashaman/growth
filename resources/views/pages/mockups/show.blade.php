@@ -11,6 +11,13 @@ new class extends Component {
     /** ULID of the revision currently shown in the iframe. */
     public string $revisionId = '';
 
+    /**
+     * Whether the iframe tracks the latest revision. True until the viewer
+     * picks a revision by hand; a live update only advances the iframe while
+     * it holds.
+     */
+    public bool $followLatest = true;
+
     public function mount(SpecMockup $mockup): void
     {
         $this->mockup = $mockup->load('owner.mockups', 'revisions');
@@ -18,12 +25,54 @@ new class extends Component {
     }
 
     /**
-     * Switch the iframe to a past revision — only if it belongs to this mockup.
+     * Live refresh: a new revision (or sibling mockup) created via the MCP
+     * tools broadcasts a WorkspaceDataChanged event on the workspace channel.
+     * Subscribe so the page reflects it without a manual reload.
+     *
+     * @return array<string,string>
+     */
+    public function getListeners(): array
+    {
+        $workspaceId = auth()->user()?->active_workspace_id;
+
+        if ($workspaceId === null) {
+            return [];
+        }
+
+        return [
+            'echo-private:workspaces.'.$workspaceId.',WorkspaceDataChanged' => 'onWorkspaceDataChanged',
+        ];
+    }
+
+    /**
+     * Reload the mockup so a newly arrived revision shows in the nav. The
+     * iframe advances to the new revision only while the viewer is still
+     * following the latest; a deliberately selected past revision stays put.
+     */
+    public function onWorkspaceDataChanged(): void
+    {
+        $fresh = $this->mockup->fresh(['owner.mockups', 'revisions']);
+
+        if ($fresh === null) {
+            return;
+        }
+
+        $this->mockup = $fresh;
+
+        if ($this->followLatest) {
+            $this->revisionId = (string) ($this->mockup->revisions->last()?->id ?? '');
+        }
+    }
+
+    /**
+     * Switch the iframe to a past revision — only if it belongs to this
+     * mockup. A hand-picked revision takes the iframe off the latest.
      */
     public function selectRevision(string $revisionId): void
     {
         if ($this->mockup->revisions->contains('id', $revisionId)) {
             $this->revisionId = $revisionId;
+            $this->followLatest = $revisionId === (string) ($this->mockup->revisions->last()?->id ?? '');
         }
     }
 
