@@ -2,18 +2,22 @@
 
 namespace App\Mcp\Prompts;
 
+use App\Mcp\Prompts\Concerns\CompletesProjectId;
 use App\Models\Project;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Contracts\Completable;
 use Laravel\Mcp\Server\Prompt;
 use Laravel\Mcp\Server\Prompts\Argument;
 
 #[Name('capture-intent')]
 #[Description('Review current project intent and ask for the next missing stakeholders, concerns, sources, or requirements.')]
-class CaptureIntent extends Prompt
+class CaptureIntent extends Prompt implements Completable
 {
+    use CompletesProjectId;
+
     public function arguments(): array
     {
         return [
