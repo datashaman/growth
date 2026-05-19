@@ -62,3 +62,19 @@ it('classifies every MCP tool as exactly one of read-only or destructive', funct
 it('discovers the full tool surface', function () {
     expect(count(mcpToolClasses()))->toBeGreaterThanOrEqual(200);
 });
+
+it('marks every Delete* tool as destructive', function () {
+    $deleteTools = array_filter(
+        mcpToolClasses(),
+        fn (string $class) => str_starts_with(class_basename($class), 'Delete'),
+    );
+
+    expect($deleteTools)->not->toBeEmpty();
+
+    foreach ($deleteTools as $toolClass) {
+        $isDestructive = (new ReflectionClass($toolClass))->getAttributes(IsDestructive::class) !== [];
+        expect($isDestructive)->toBeTrue(
+            "{$toolClass} deletes data but is not marked #[IsDestructive].",
+        );
+    }
+});
