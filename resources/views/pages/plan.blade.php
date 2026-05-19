@@ -51,7 +51,7 @@ new #[Title('Plan')] class extends Component {
     #[Computed]
     public function roles()
     {
-        return $this->selectedProject?->roles()->orderBy('name')->get() ?? collect();
+        return $this->selectedProject?->roles()->with('users')->orderBy('name')->get() ?? collect();
     }
 
     #[Computed]
@@ -154,12 +154,14 @@ new #[Title('Plan')] class extends Component {
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Role') }}</flux:table.column>
+                    <flux:table.column>{{ __('Users') }}</flux:table.column>
                     <flux:table.column>{{ __('Responsibilities') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->roles as $role)
                         <flux:table.row>
                             <flux:table.cell class="font-medium">{{ $role->name }}</flux:table.cell>
+                            <flux:table.cell>{{ $role->users->pluck('name')->join(', ') ?: '—' }}</flux:table.cell>
                             <flux:table.cell>{{ $role->responsibilities ?? '—' }}</flux:table.cell>
                         </flux:table.row>
                     @endforeach

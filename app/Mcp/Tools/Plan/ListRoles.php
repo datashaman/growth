@@ -10,7 +10,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('List roles for a project. Returns name, responsibilities, and the count of work items each role owns.')]
+#[Description('List roles for a project. Returns name, responsibilities, the count of work items each role owns, and the users and agents assigned to each role.')]
 class ListRoles extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -34,6 +34,7 @@ class ListRoles extends Tool
 
         $rows = $query
             ->withCount('workItems')
+            ->with(['users', 'agents'])
             ->orderBy('name')
             ->limit($limit)
             ->offset($offset)
@@ -45,11 +46,19 @@ class ListRoles extends Tool
             'total' => $total,
             'limit' => $limit,
             'offset' => $offset,
-            'results' => $rows->map(fn ($r) => [
+            'results' => $rows->map(fn (Role $r) => [
                 'id' => $r->id,
                 'name' => $r->name,
                 'responsibilities' => $r->responsibilities,
                 'work_items_count' => $r->work_items_count,
+                'users' => $r->users->map(fn ($user) => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                ])->all(),
+                'agents' => $r->agents->map(fn ($agent) => [
+                    'id' => $agent->id,
+                    'name' => $agent->name,
+                ])->all(),
             ])->all(),
         ]);
     }
