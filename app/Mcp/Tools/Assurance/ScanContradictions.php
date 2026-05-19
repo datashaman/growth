@@ -3,12 +3,14 @@
 namespace App\Mcp\Tools\Assurance;
 
 use App\Growth\Assurance\ContradictionScanner;
+use App\Mcp\McpProgressReporter;
 use App\Models\Project;
+use Generator;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
-use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Notifications\ProgressNotification;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
@@ -18,13 +20,15 @@ class ScanContradictions extends Tool
 {
     public function __construct(private readonly ContradictionScanner $scanner) {}
 
-    public function handle(Request $request): ResponseFactory
+    public function handle(Request $request, ProgressNotification $progress): Generator
     {
         $data = $request->validate([
             'project_id' => 'required|string|owned_project',
         ]);
 
-        return Response::structured($this->scanner->scan(Project::findOrFail($data['project_id'])));
+        $reporter = McpProgressReporter::forRequest($request, $progress);
+
+        yield Response::structured($this->scanner->scan(Project::findOrFail($data['project_id']), $reporter));
     }
 
     public function schema(JsonSchema $schema): array

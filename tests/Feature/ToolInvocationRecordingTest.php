@@ -1,10 +1,13 @@
 <?php
 
 use App\Mcp\Servers\AllServer;
+use App\Mcp\Servers\ManagementServer;
 use App\Mcp\Servers\ReadonlyServer;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Feedback\ListToolInvocations;
+use App\Mcp\Tools\Manifest\ExportManifest;
 use App\Mcp\Tools\Projects\UpsertProject;
+use App\Models\Project;
 use App\Models\ToolInvocation;
 use App\Models\User;
 use App\Models\Workspace;
@@ -39,6 +42,37 @@ it('records a row when a tool returns an error', function () {
         ->and($row->success)->toBeFalse()
         ->and($row->error_class)->toBe('tool_error')
         ->and($row->error_message)->not->toBeNull();
+});
+
+it('records a streamed (generator) tool with its captured result', function () {
+    $project = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Recorded Export',
+        'rigor_level' => 2,
+        'status' => 'active',
+    ]);
+
+    ManagementServer::tool(ExportManifest::class, ['project_id' => $project->id])->assertOk();
+
+    $row = ToolInvocation::sole();
+
+    // A generator tool runs its body lazily as the transport drains the
+    // stream; the recorder must wait for that drain before capturing — so a
+    // populated `return_shape` proves the real result was seen, not null.
+    expect($row->tool_name)->toBe('export-manifest')
+        ->and($row->success)->toBeTrue()
+        ->and($row->return_shape)->toBeArray()
+        ->and($row->return_shape)->not->toBeEmpty();
+});
+
+it('records a streamed tool that errors as a failed invocation', function () {
+    ManagementServer::tool(ExportManifest::class, [])->assertHasErrors();
+
+    $row = ToolInvocation::sole();
+
+    expect($row->tool_name)->toBe('export-manifest')
+        ->and($row->success)->toBeFalse()
+        ->and($row->error_class)->toBe('tool_error');
 });
 
 it('captures full payloads when the workspace opts in', function () {

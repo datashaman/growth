@@ -2,6 +2,8 @@
 
 namespace App\Growth\Manifest;
 
+use App\Growth\Progress\NullProgressReporter;
+use App\Growth\Progress\ProgressReporter;
 use App\Models\Concern;
 use App\Models\CustomViewpoint;
 use App\Models\DesignElement;
@@ -45,12 +47,12 @@ class ManifestApplier
      * @param  'fail'|'merge'|'replace'  $mode
      * @return array<string,mixed>
      */
-    public function apply(array $manifest, string $mode = 'fail', bool $dryRun = false, ?string $confirm = null, ?int $userId = null): array
+    public function apply(array $manifest, string $mode = 'fail', bool $dryRun = false, ?string $confirm = null, ?int $userId = null, ProgressReporter $progress = new NullProgressReporter): array
     {
         $userId ??= (int) auth()->id();
 
-        return DB::transaction(function () use ($manifest, $mode, $dryRun, $confirm, $userId): array {
-            $report = $this->run($manifest, $mode, $confirm, $userId);
+        return DB::transaction(function () use ($manifest, $mode, $dryRun, $confirm, $userId, $progress): array {
+            $report = $this->run($manifest, $mode, $confirm, $userId, $progress);
 
             if ($dryRun) {
                 $report['dry_run'] = true;
@@ -67,7 +69,7 @@ class ManifestApplier
      * @param  array<string,mixed>  $manifest
      * @return array<string,mixed>
      */
-    private function run(array $manifest, string $mode, ?string $confirm, int $userId): array
+    private function run(array $manifest, string $mode, ?string $confirm, int $userId, ProgressReporter $progress): array
     {
         $projectInput = $manifest['project'] ?? [];
         $existingProject = isset($projectInput['id']) ? Project::find($projectInput['id']) : null;
@@ -152,12 +154,16 @@ class ManifestApplier
             Stakeholder::where('project_id', $project->id)->delete();
         }
 
+        $progress->report(1, 7, 'Applied project');
+
         foreach (($manifest['stakeholders'] ?? []) as $row) {
             $stakeholder = $this->applyStakeholder($row, $project->id, $effectiveMode, $counts, $drift);
             if (! empty($row['slug'])) {
                 $slugs['stakeholders'][$row['slug']] = $stakeholder->id;
             }
         }
+
+        $progress->report(2, 7, 'Applied stakeholders');
 
         foreach (($manifest['concerns'] ?? []) as $row) {
             $concern = $this->applyConcern($row, $project->id, $effectiveMode, $slugs, $counts, $drift);
@@ -166,10 +172,14 @@ class ManifestApplier
             }
         }
 
+        $progress->report(3, 7, 'Applied concerns');
+
         foreach (($manifest['requirements'] ?? []) as $row) {
             $requirement = $this->applyRequirement($row, $project->id, $effectiveMode, $counts, $drift);
             $slugs['requirements'][$requirement->slug] = $requirement->id;
         }
+
+        $progress->report(4, 7, 'Applied requirements');
 
         $architecture = $manifest['architecture'] ?? [];
 
@@ -193,6 +203,8 @@ class ManifestApplier
                 }
             }
         }
+
+        $progress->report(5, 7, 'Applied architecture');
 
         $plan = $manifest['plan'] ?? null;
         if (is_array($plan)) {
@@ -229,6 +241,8 @@ class ManifestApplier
             }
         }
 
+        $progress->report(6, 7, 'Applied plan');
+
         $verification = $manifest['verification'] ?? [];
 
         foreach (($verification['plans'] ?? []) as $row) {
@@ -244,6 +258,8 @@ class ManifestApplier
                 }
             }
         }
+
+        $progress->report(7, 7, 'Applied verification');
 
         return [
             'project_id' => $project->id,

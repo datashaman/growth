@@ -4,12 +4,14 @@ namespace App\Mcp\Tools\Assurance;
 
 use App\Growth\Alignment\AlignmentText;
 use App\Growth\Assurance\ReadinessGateEvaluator;
+use App\Mcp\McpProgressReporter;
 use App\Models\Project;
+use Generator;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
-use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Notifications\ProgressNotification;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
@@ -19,11 +21,13 @@ class BuildEvidenceBundle extends Tool
 {
     public function __construct(private readonly ReadinessGateEvaluator $readiness) {}
 
-    public function handle(Request $request): ResponseFactory
+    public function handle(Request $request, ProgressNotification $progress): Generator
     {
         $data = $request->validate([
             'project_id' => 'required|string|owned_project',
         ]);
+
+        $reporter = McpProgressReporter::forRequest($request, $progress);
 
         $project = Project::withCount([
             'stakeholders',
@@ -38,9 +42,9 @@ class BuildEvidenceBundle extends Tool
             'deployments',
         ])->findOrFail($data['project_id']);
 
-        $readiness = AlignmentText::sanitizeArray($this->readiness->evaluate($project));
+        $readiness = AlignmentText::sanitizeArray($this->readiness->evaluate($project, $reporter));
 
-        return Response::structured([
+        yield Response::structured([
             'project_id' => $project->id,
             'project' => $project->name,
             'rigor_level' => $project->rigor_level,
