@@ -46,6 +46,7 @@ use App\Mcp\Tools\Dashboard\ShowGateStatus;
 use App\Mcp\Tools\Dashboard\ShowProjectDashboard;
 use App\Mcp\Tools\Dashboard\ShowRequirementExplorer;
 use App\Mcp\Tools\Dashboard\ShowTraceGraph;
+use App\Mcp\Tools\Dashboard\SummarizeAgentOutcomes;
 use App\Mcp\Tools\Dashboard\SummarizeMyQueue;
 use App\Mcp\Tools\Decisions\AnswerDecisionRequest;
 use App\Mcp\Tools\Decisions\CancelDecisionRequest;
@@ -142,6 +143,7 @@ class ReadonlyServer extends Server
         ListChangeRequests::class,
         ListChangeApprovalEvents::class,
         ListToolInvocations::class,
+        SummarizeAgentOutcomes::class,
         SummarizeImplementationStatus::class,
         BuildEvidenceBundle::class,
         EvaluateReadinessGates::class,

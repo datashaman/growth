@@ -18,6 +18,7 @@ class ListToolInvocations extends Tool
     {
         $data = $request->validate([
             'tool_name' => 'nullable|string|max:120',
+            'agent_id' => 'nullable|string|owned_agent',
             'success' => 'nullable|boolean',
             'since' => 'nullable|date',
             'limit' => 'nullable|integer|min:1|max:500',
@@ -31,6 +32,9 @@ class ListToolInvocations extends Tool
         $query = ToolInvocation::query()->where('workspace_id', $workspaceId);
         if (isset($data['tool_name'])) {
             $query->where('tool_name', $data['tool_name']);
+        }
+        if (isset($data['agent_id'])) {
+            $query->where('agent_id', $data['agent_id']);
         }
         if (array_key_exists('success', $data)) {
             $query->where('success', $data['success']);
@@ -73,6 +77,7 @@ class ListToolInvocations extends Tool
     {
         return [
             'tool_name' => $schema->string()->description('Filter to a single tool name, e.g. upsert-requirements.'),
+            'agent_id' => $schema->string()->description('Filter to invocations attributed to a single agent (ULID). Reproduces the activity counts reported by summarize-agent-outcomes.'),
             'success' => $schema->boolean()->description('Filter to successful (true) or failed (false) invocations.'),
             'since' => $schema->string()->description('ISO 8601 timestamp; only return invocations on or after this time.'),
             'limit' => $schema->integer()->description('Page size, max 500. Default 50.'),
