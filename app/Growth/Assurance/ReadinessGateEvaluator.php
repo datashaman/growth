@@ -11,6 +11,9 @@ use App\Growth\Lint\PmpLinter;
 use App\Growth\Lint\RequirementLinter;
 use App\Growth\Lint\ReviewLinter;
 use App\Growth\Lint\TestLinter;
+use App\Growth\Logging\LogLevel;
+use App\Growth\Logging\LogReporter;
+use App\Growth\Logging\NullLogReporter;
 use App\Growth\Progress\NullProgressReporter;
 use App\Growth\Progress\ProgressReporter;
 use App\Models\Project;
@@ -32,7 +35,7 @@ class ReadinessGateEvaluator
     /**
      * @return array<string,mixed>
      */
-    public function evaluate(Project $project, ProgressReporter $progress = new NullProgressReporter): array
+    public function evaluate(Project $project, ProgressReporter $progress = new NullProgressReporter, LogReporter $log = new NullLogReporter): array
     {
         $requirementFindings = [];
         foreach ($project->requirements as $requirement) {
@@ -90,27 +93,34 @@ class ReadinessGateEvaluator
 
         $gates[] = $this->gate('requirements', 'Requirements are clear, verifiable, and accepted enough to plan.', $requirementFindings);
         $progress->report(1, 7, 'Evaluated requirements gate');
+        $this->logGate($log, $gates[0], 'Evaluated requirements gate');
 
         $gates[] = $this->gate('architecture', 'Design evidence is coherent for the stated concerns.', $this->designLinter->check($project));
         $progress->report(2, 7, 'Evaluated architecture gate');
+        $this->logGate($log, $gates[1], 'Evaluated architecture gate');
 
         $gates[] = $this->gate('verification', 'Test plans, cases, runs, and anomaly posture support verification.', $this->testLinter->check($project));
         $progress->report(3, 7, 'Evaluated verification gate');
+        $this->logGate($log, $gates[2], 'Evaluated verification gate');
 
         $gates[] = $this->gate('planning', 'PMP, WBS, schedule, risks, and responsibilities are ready.', $this->pmpLinter->check($project));
         $progress->report(4, 7, 'Evaluated planning gate');
+        $this->logGate($log, $gates[3], 'Evaluated planning gate');
 
         $gates[] = $this->gate('review', 'Review and audit evidence is sufficient for the project rigor level.', $this->reviewLinter->check($project));
         $progress->report(5, 7, 'Evaluated review gate');
+        $this->logGate($log, $gates[4], 'Evaluated review gate');
 
         $gates[] = $this->gate('change_control', 'Baselines and change requests are controlled.', array_merge(
             $this->baselineLinter->check($project),
             $this->changeLinter->check($project),
         ));
         $progress->report(6, 7, 'Evaluated change control gate');
+        $this->logGate($log, $gates[5], 'Evaluated change control gate');
 
         $gates[] = $this->gate('implementation', 'Delivery evidence, checks, and deployment state support release readiness.', $implementationFindings);
         $progress->report(7, 7, 'Evaluated implementation gate');
+        $this->logGate($log, $gates[6], 'Evaluated implementation gate');
 
         return [
             'project_id' => $project->id,
@@ -118,6 +128,30 @@ class ReadinessGateEvaluator
             'gates' => $gates,
             'implementation_summary' => $implementation['summary'],
         ];
+    }
+
+    /**
+     * Emit a structured log record for a freshly evaluated gate, escalating the
+     * level so a `fail` reads as an error and a `warn` as a warning.
+     *
+     * @param  array<string,mixed>  $gate
+     */
+    private function logGate(LogReporter $log, array $gate, string $message): void
+    {
+        $log->log(
+            match ($gate['status']) {
+                'fail' => LogLevel::Error,
+                'warn' => LogLevel::Warning,
+                default => LogLevel::Info,
+            },
+            $message,
+            [
+                'gate' => $gate['id'],
+                'status' => $gate['status'],
+                'errors' => $gate['errors'],
+                'warnings' => $gate['warnings'],
+            ],
+        );
     }
 
     /**

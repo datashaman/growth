@@ -9,6 +9,7 @@ use App\Mcp\Tools\Manifest\ExportManifest;
 use App\Models\Project;
 use App\Models\User;
 use Laravel\Mcp\Request;
+use Laravel\Mcp\Server\Logging\Logging;
 use Laravel\Mcp\Server\Notifications\ProgressNotification;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Transport\FakeTransporter;
@@ -41,7 +42,8 @@ function drainProgressTool(Tool $tool, array $args, ?string $token): array
     $transport = new FakeTransporter;
     $request = new Request($args, null, $token === null ? null : ['progressToken' => $token]);
 
-    iterator_to_array($tool->handle($request, new ProgressNotification($transport)));
+    // Logging is left disabled so the stream carries only progress notifications.
+    iterator_to_array($tool->handle($request, new ProgressNotification($transport), new Logging($transport)));
 
     return array_map(
         fn (string $json): array => json_decode($json, true),

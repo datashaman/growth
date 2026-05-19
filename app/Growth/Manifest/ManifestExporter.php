@@ -2,6 +2,9 @@
 
 namespace App\Growth\Manifest;
 
+use App\Growth\Logging\LogLevel;
+use App\Growth\Logging\LogReporter;
+use App\Growth\Logging\NullLogReporter;
 use App\Growth\Progress\NullProgressReporter;
 use App\Growth\Progress\ProgressReporter;
 use App\Models\Project;
@@ -24,7 +27,7 @@ class ManifestExporter
     /**
      * @return array<string,mixed>
      */
-    public function export(string $projectId, ProgressReporter $progress = new NullProgressReporter): array
+    public function export(string $projectId, ProgressReporter $progress = new NullProgressReporter, LogReporter $log = new NullLogReporter): array
     {
         $project = Project::query()
             ->with([
@@ -84,6 +87,7 @@ class ManifestExporter
             'project' => $this->emitProject($project),
         ];
         $progress->report(1, 7, 'Exported project');
+        $log->log(LogLevel::Info, 'Exported project', ['project' => $project->name]);
 
         $stakeholders = $project->stakeholders
             ->sortBy(fn ($s) => $stakeholderSlugs[$s->id])
@@ -94,6 +98,7 @@ class ManifestExporter
             $manifest['stakeholders'] = $stakeholders;
         }
         $progress->report(2, 7, 'Exported stakeholders');
+        $log->log(LogLevel::Info, 'Exported stakeholders', ['count' => count($stakeholders)]);
 
         $concerns = $project->concerns
             ->sortBy(fn ($c) => $concernSlugs[$c->id])
@@ -104,6 +109,7 @@ class ManifestExporter
             $manifest['concerns'] = $concerns;
         }
         $progress->report(3, 7, 'Exported concerns');
+        $log->log(LogLevel::Info, 'Exported concerns', ['count' => count($concerns)]);
 
         $requirements = $project->requirements
             ->sortBy('slug')
@@ -114,6 +120,7 @@ class ManifestExporter
             $manifest['requirements'] = $requirements;
         }
         $progress->report(4, 7, 'Exported requirements');
+        $log->log(LogLevel::Info, 'Exported requirements', ['count' => count($requirements)]);
 
         $architecture = [];
         $viewpoints = $project->customViewpoints
@@ -136,6 +143,10 @@ class ManifestExporter
             $manifest['architecture'] = $architecture;
         }
         $progress->report(5, 7, 'Exported architecture');
+        $log->log(LogLevel::Info, 'Exported architecture', [
+            'viewpoints' => count($viewpoints),
+            'views' => count($views),
+        ]);
 
         if ($project->projectPlan) {
             $manifest['plan'] = $this->emitPlan(
@@ -147,6 +158,7 @@ class ManifestExporter
             );
         }
         $progress->report(6, 7, 'Exported plan');
+        $log->log(LogLevel::Info, 'Exported plan', ['present' => $project->projectPlan !== null]);
 
         $verification = [];
         $plans = $project->testPlans
@@ -159,6 +171,7 @@ class ManifestExporter
             $manifest['verification'] = $verification;
         }
         $progress->report(7, 7, 'Exported verification');
+        $log->log(LogLevel::Info, 'Exported verification', ['plans' => count($plans)]);
 
         return $manifest;
     }
