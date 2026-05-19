@@ -22,6 +22,16 @@ class WorkItemDeliveryLink extends Model
         'work_item_id', 'type', 'ref', 'url', 'description',
     ];
 
+    protected static function booted(): void
+    {
+        // Evidence assets carry S3 objects the database cannot cascade. An FK
+        // cascade would drop the rows without firing model events, orphaning
+        // the objects — so delete the assets through the model layer here.
+        static::deleting(function (WorkItemDeliveryLink $deliveryLink): void {
+            $deliveryLink->evidenceAssets->each->delete();
+        });
+    }
+
     public function workItem(): BelongsTo
     {
         return $this->belongsTo(WorkItem::class);
@@ -30,6 +40,11 @@ class WorkItemDeliveryLink extends Model
     public function checkRuns(): HasMany
     {
         return $this->hasMany(CheckRunEvidence::class);
+    }
+
+    public function evidenceAssets(): HasMany
+    {
+        return $this->hasMany(EvidenceAsset::class);
     }
 
     public function deployments(): BelongsToMany
