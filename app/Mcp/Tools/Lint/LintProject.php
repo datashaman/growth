@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools\Lint;
 
 use App\Growth\Alignment\AlignmentText;
+use App\Growth\Lint\AdoptionLinter;
 use App\Growth\Lint\BaselineLinter;
 use App\Growth\Lint\ChangeLinter;
 use App\Growth\Lint\DesignLinter;
@@ -18,7 +19,7 @@ use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Run Growth quality checks for a project. Returns findings grouped into sections (requirements, architecture, verification, planning, reviews, baselines, changes). Pass `sections` to compute only the listed sections; omit it to run them all. `errors` and `warnings` counts cover the returned sections only.')]
+#[Description('Run Growth quality checks for a project. Returns findings grouped into sections (requirements, architecture, verification, planning, reviews, baselines, changes, adoption). Pass `sections` to compute only the listed sections; omit it to run them all. `errors` and `warnings` counts cover the returned sections only; `informational` counts adoption findings separately.')]
 class LintProject extends Tool
 {
     private const SECTIONS = [
@@ -29,6 +30,7 @@ class LintProject extends Tool
         'verification',
         'planning',
         'reviews',
+        'adoption',
     ];
 
     public function __construct(
@@ -39,6 +41,7 @@ class LintProject extends Tool
         private readonly TestLinter $testLinter,
         private readonly PmpLinter $planLinter,
         private readonly ReviewLinter $reviewLinter,
+        private readonly AdoptionLinter $adoptionLinter,
     ) {}
 
     public function handle(Request $request): ResponseFactory
@@ -62,6 +65,7 @@ class LintProject extends Tool
             'verification' => fn () => $this->testLinter->check($project),
             'planning' => fn () => $this->planLinter->check($project),
             'reviews' => fn () => $this->reviewLinter->check($project),
+            'adoption' => fn () => $this->adoptionLinter->check($project),
         ];
 
         $sections = [];
@@ -72,9 +76,14 @@ class LintProject extends Tool
 
         $errors = 0;
         $warnings = 0;
+        $informational = 0;
         foreach ($sections as $findings) {
             foreach ($findings as $finding) {
-                $finding['severity'] === 'error' ? $errors++ : $warnings++;
+                match ($finding['severity']) {
+                    'error' => $errors++,
+                    'informational' => $informational++,
+                    default => $warnings++,
+                };
             }
         }
 
@@ -82,6 +91,7 @@ class LintProject extends Tool
             'project_id' => $project->id,
             'errors' => $errors,
             'warnings' => $warnings,
+            'informational' => $informational,
             'sections' => $sections,
         ]);
     }
@@ -111,6 +121,17 @@ class LintProject extends Tool
             'sections' => $schema->array()
                 ->description('Subset of sections to compute. Defaults to all: '.implode(', ', self::SECTIONS).'.')
                 ->items($schema->string()->enum(self::SECTIONS)),
+        ];
+    }
+
+    public function outputSchema(JsonSchema $schema): array
+    {
+        return [
+            'project_id' => $schema->string()->required(),
+            'errors' => $schema->integer()->description('Count of error-severity findings across the returned sections.')->required(),
+            'warnings' => $schema->integer()->description('Count of warning-severity findings across the returned sections.')->required(),
+            'informational' => $schema->integer()->description('Count of informational findings (adoption coverage gaps) across the returned sections.')->required(),
+            'sections' => $schema->object()->description('Findings grouped by section name.')->required(),
         ];
     }
 }
