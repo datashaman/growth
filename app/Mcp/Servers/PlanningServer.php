@@ -3,6 +3,7 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Prompts\PlanSlice;
+use App\Mcp\Resources\MockupResource;
 use App\Mcp\Resources\PlanResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
@@ -220,6 +221,7 @@ class PlanningServer extends Server
         ProjectIndexResource::class,
         RequirementsResource::class,
         PlanResource::class,
+        MockupResource::class,
     ];
 
     protected array $prompts = [
