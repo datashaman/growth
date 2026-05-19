@@ -1,5 +1,6 @@
 <?php
 
+use App\Growth\Assurance\ReadinessGateEvaluator;
 use App\Growth\Lint\TestLinter;
 use App\Models\EvidenceAsset;
 use App\Models\Project;
@@ -244,4 +245,15 @@ it('does not flag a UI-bearing requirement with no verification runs', function 
     uiRequirement($project);
 
     expect(visualEvidenceFinding($this->linter, $project))->toBeNull();
+});
+
+it('drops the verification gate to warn when visual evidence is missing', function () {
+    $project = rigorProject(3);
+    $requirement = uiRequirement($project);
+    runFor($project, $requirement, 'pass');
+
+    $gate = collect(app(ReadinessGateEvaluator::class)->evaluate($project->fresh())['gates'])
+        ->firstWhere('id', 'verification');
+
+    expect($gate['status'])->toBe('warn');
 });
