@@ -34,6 +34,16 @@ Prefer the manifest workflow over per-entity upserts when starting from scratch:
 
 For existing projects, `export-manifest` round-trips structure to YAML/JSON for version-controlled edits; re-applying an unchanged manifest is a no-op (`merge` mode).
 
+## Adopting and backfilling an existing repository
+
+When a project is adopted rather than greenfield — `adopt-project` has bound the repo, stamped `adopted_at`, and set an `adoption`-kind plan baseline — the project definition must be reconstructed *from the code*. The backfill keeps a clear seam between **recovered fact** (derivable from the code without judgement) and **assumed intent** (what the project is *for*, which the code cannot tell you). Citation to the adoption `Source` marks that seam: a cited artifact is recovered fact; an uncited one is assumed intent.
+
+1. **Reconstruct the extensional layer.** Walk the repository and build a Growth manifest capturing what the code *is*: modules and models as architecture `entity` elements, module-dependency edges as `relationship` elements, and routes — organised into architecture viewpoints and views. This is recovered fact; the repo walk is an agent task, not deterministic code.
+2. **Apply via `apply-manifest` in `merge` mode**, passing `dry_run: true` first so the human previews the reconstruction before anything is written. Re-run without `dry_run` to commit.
+3. **Record provenance.** Create one adoption `Source` with `upsert-source` using `kind: source`, `uri` set to the repository, and `external_ref` set to the adoption baseline commit. Cite each reconstructed architecture **view** to that Source with `cite-artifact` using the `design_view` citable type. The presence of a repo citation marks an artifact as recovered fact; its absence marks assumed intent.
+4. **Supply intent — human-led.** Requirements, concerns, and stakeholders are assumed intent: the agent must not invent them. Gather them from the human, apply them as a further `apply-manifest` `merge`, and do **not** cite them to the adoption Source — leaving them uncited is what records them as assumed intent.
+5. **Route through a review.** Open a `technical_review` with `upsert-review` whose `objective` names the project, repository, and adoption baseline commit, and whose `entry_criteria` reference the adoption `Source` and baseline. Run it: `start-review`, then `upsert-review-finding`, then `close-review`. Findings against repo-cited artifacts mean recovered fact is inaccurate; findings against uncited requirements/concerns mean assumed intent is wrong. The review `decision` is the recorded sign-off.
+
 ## Loop
 
 1. Capture intent and sources.
