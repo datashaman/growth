@@ -65,6 +65,25 @@ test('tool-invocations page renders recent invocations and refreshes on broadcas
         ->assertSee('Boom');
 });
 
+test('tool-invocations page shows the acting surface and adopted role', function () {
+    ToolInvocation::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'user_id' => $this->user->id,
+        'acting_surface' => 'planning',
+        'acting_role_name' => 'Engineering Lead',
+        'tool_name' => 'upsert-plan',
+        'transport' => 'http',
+        'success' => true,
+        'duration_ms' => 7,
+        'started_at' => now(),
+        'completed_at' => now(),
+    ]);
+
+    Livewire::test('pages::tool-invocations')
+        ->assertSee('planning')
+        ->assertSee('Engineering Lead');
+});
+
 test('listener is empty when user has no active workspace', function () {
     $orphan = User::factory()->create();
     $orphan->forceFill(['active_workspace_id' => null])->save();

@@ -60,6 +60,7 @@ new #[Title('Tool invocations')] class extends Component {
                 <flux:table.column>{{ __('Time') }}</flux:table.column>
                 <flux:table.column>{{ __('Tool') }}</flux:table.column>
                 <flux:table.column>{{ __('Caller') }}</flux:table.column>
+                <flux:table.column>{{ __('Surface') }}</flux:table.column>
                 <flux:table.column>{{ __('Role') }}</flux:table.column>
                 <flux:table.column>{{ __('Transport') }}</flux:table.column>
                 <flux:table.column>{{ __('Result') }}</flux:table.column>
@@ -78,6 +79,13 @@ new #[Title('Tool invocations')] class extends Component {
                                 <flux:badge color="zinc" size="sm">{{ $invocation->acting_surface }}</flux:badge>
                             @else
                                 <span class="text-zinc-400 dark:text-zinc-500">{{ __('unbound') }}</span>
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            @if ($invocation->acting_role_name)
+                                {{ $invocation->acting_role_name }}
+                            @else
+                                <span class="text-zinc-400 dark:text-zinc-500">—</span>
                             @endif
                         </flux:table.cell>
                         <flux:table.cell>

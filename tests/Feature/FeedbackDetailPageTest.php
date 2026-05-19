@@ -80,3 +80,31 @@ it('renders the comment thread', function () {
         ->assertSee('Comments')
         ->assertSee('A follow-up question on this feedback');
 });
+
+it('shows the adopted role on a comment', function () {
+    $feedback = ($this->makeFeedback)();
+    $feedback->comments()->create([
+        'user_id' => $this->user->id,
+        'acting_role_name' => 'Engineering Lead',
+        'body' => 'A triage note',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get(route('feedback.show', $feedback))
+        ->assertSee('Engineering Lead');
+});
+
+it('shows the adopted role on a status transition', function () {
+    $feedback = ($this->makeFeedback)();
+    $feedback->statusTransitions()->create([
+        'transitioned_by' => $this->user->id,
+        'acting_role_name' => 'Engineering Lead',
+        'from_status' => 'new',
+        'to_status' => 'triaged',
+        'transitioned_at' => now(),
+    ]);
+
+    $this->actingAs($this->user)
+        ->get(route('feedback.show', $feedback))
+        ->assertSee('Engineering Lead');
+});
