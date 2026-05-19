@@ -62,6 +62,7 @@ class EnumLabel
             'pmp.work_item.no_role' => 'Work item without responsible role',
             'pmp.roles.empty' => 'No roles defined',
             'pmp.requirement.uncovered' => 'Uncovered requirement',
+            'pmp.requirement.ui_no_mockup' => 'UI requirement without mockup work item',
             'pmp.risk.high_unmitigated' => 'Unmitigated high-exposure risk',
             'pmp.dependency.open' => 'Open dependency',
             'baseline.none' => 'No plan baseline',

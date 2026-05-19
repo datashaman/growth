@@ -181,10 +181,13 @@ it('counts a ui_no_mockup planning finding under informational, not warnings', f
             $json->etc();
         });
 
-    $finding = collect($captured['sections']['planning'])
-        ->firstWhere('rule', 'pmp.requirement.ui_no_mockup');
+    $planning = collect($captured['sections']['planning']);
+    $finding = $planning->firstWhere('rule', 'pmp.requirement.ui_no_mockup');
 
     expect($finding)->not->toBeNull()
         ->and($finding['severity'])->toBe('informational')
-        ->and($captured['informational'])->toBeGreaterThanOrEqual(1);
+        ->and($captured['informational'])->toBeGreaterThanOrEqual(1)
+        // The informational finding must not leak into the error/warning tallies.
+        ->and($captured['warnings'])->toBe($planning->where('severity', 'warning')->count())
+        ->and($captured['errors'])->toBe($planning->where('severity', 'error')->count());
 });

@@ -148,7 +148,7 @@ class PmpLinter
         foreach ($uiMissingMockup as $r) {
             $findings[] = $this->finding(
                 'pmp.requirement.ui_no_mockup', 'informational',
-                'UI-bearing requirement is covered, but none of its work items needs a mockup',
+                'UI-bearing requirement is covered, but no work item needs a mockup',
                 'requirement', $r->id,
             );
         }
