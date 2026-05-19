@@ -26,11 +26,12 @@ class WorkItem extends Model
 
     protected $fillable = [
         'project_id', 'parent_id', 'responsible_role_id', 'kind',
-        'name', 'description', 'status',
+        'name', 'description', 'status', 'needs_mockups',
     ];
 
     protected $casts = [
         'number' => 'integer',
+        'needs_mockups' => 'boolean',
     ];
 
     protected static function booted(): void
