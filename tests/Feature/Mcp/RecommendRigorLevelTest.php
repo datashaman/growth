@@ -4,6 +4,7 @@ use App\Mcp\Servers\ReadonlyServer;
 use App\Mcp\Tools\Assurance\RecommendRigorLevel;
 use App\Models\Milestone;
 use App\Models\Project;
+use App\Models\Requirement;
 use App\Models\User;
 use App\Models\WorkItem;
 use Laravel\Passport\Passport;
@@ -98,6 +99,25 @@ it('returns a not-applicable verdict for a non-adopted project', function () {
     expect($verdict['adopted'])->toBeFalse()
         ->and($verdict['qualifies_for_next'])->toBeFalse()
         ->and($verdict['next_level'])->toBeNull();
+});
+
+it('surfaces the warning posture at the next level without letting warnings block', function () {
+    $project = adoptedProject($this->user, 1);
+    Milestone::create(['project_id' => $project->id, 'name' => 'M1', 'status' => 'pending']);
+    WorkItem::create(['project_id' => $project->id, 'kind' => 'task', 'name' => 'Build it']);
+    Requirement::create([
+        'project_id' => $project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'priority' => 'high',
+        'text' => 'The system shall do the thing',
+    ]);
+
+    $verdict = recommendRigor($project);
+
+    expect($verdict['qualifies_for_next'])->toBeTrue();
+    expect(collect($verdict['warnings'])->pluck('rule'))->toContain('pmp.requirement.uncovered');
+    expect(collect($verdict['warnings'])->pluck('severity')->unique()->all())->toBe(['warning']);
 });
 
 it('never persists a rigor_level change, even on a qualifying verdict', function () {
