@@ -182,3 +182,23 @@ it('drops lint errors attributed to a role the caller does not hold', function (
 
     expect(collect($digest['lint_findings'])->pluck('rule'))->not->toContain('change.impacts.empty');
 });
+
+it('lists a finding on a role-attributable subject with a null role column as unowned', function () {
+    // An approved change request can carry a role, but this one has none — the
+    // finding is owned by nobody, so it belongs in the unowned bucket rather
+    // than vanishing from both.
+    ChangeRequest::create([
+        'project_id' => $this->project->id,
+        'title' => 'Add a second stage',
+        'category' => 'scope',
+        'priority' => 'medium',
+        'status' => 'approved',
+        'decision' => 'approved',
+        'requester_role_id' => null,
+    ]);
+
+    $digest = app(WhatNeedsMeDigest::class)->for($this->project, $this->actor);
+
+    expect(collect($digest['lint_findings'])->pluck('rule'))->not->toContain('change.impacts.empty')
+        ->and(collect($digest['unowned_lint_findings'])->pluck('rule'))->toContain('change.impacts.empty');
+});

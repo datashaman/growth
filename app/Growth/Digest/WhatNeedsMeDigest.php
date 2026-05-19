@@ -25,8 +25,9 @@ use Illuminate\Database\Eloquent\Model;
  *
  * Every kind is routed through the caller's role bindings within the project;
  * nothing routed to a role the caller does not hold is included. Lint findings
- * carry no owner, so ownership is derived from the finding's subject type — the
- * remainder (findings on subjects with no role column) lands in `unowned`.
+ * carry no owner, so ownership is derived from the finding's subject — findings
+ * whose subject has no owning role (no role column, or a null one) land in
+ * `unowned`.
  *
  * The single source of truth shared by the what-needs-me MCP tool and the
  * dashboard "My Queue" panel.
@@ -224,9 +225,11 @@ class WhatNeedsMeDigest
     }
 
     /**
-     * Lint errors split into those routed to the caller's roles and those on
-     * subjects that carry no role column ("unowned"). Findings attributable to
-     * a role the caller does not hold are dropped entirely.
+     * Lint errors split into those routed to the caller's roles and those that
+     * land on nobody ("unowned"). A finding is unowned when its subject type
+     * carries no role column, or when it does but the subject's role column is
+     * null. Findings attributable to a role the caller does not hold are
+     * dropped entirely.
      *
      * @param  list<string>  $roleIds
      * @return array{0: list<array<string, mixed>>, 1: list<array<string, mixed>>}
@@ -246,15 +249,17 @@ class WhatNeedsMeDigest
         foreach ($errors as $finding) {
             $type = $finding['subject_type'];
 
-            if (! isset(self::SUBJECT_ROLE_COLUMN[$type])) {
+            $ownerRoleId = isset(self::SUBJECT_ROLE_COLUMN[$type])
+                ? ($owners[$type][$finding['subject_id']] ?? null)
+                : null;
+
+            if ($ownerRoleId === null) {
                 $unowned[] = $finding;
 
                 continue;
             }
 
-            $ownerRoleId = $owners[$type][$finding['subject_id']] ?? null;
-
-            if ($ownerRoleId !== null && in_array($ownerRoleId, $roleIds, true)) {
+            if (in_array($ownerRoleId, $roleIds, true)) {
                 $mine[] = $finding;
             }
         }
