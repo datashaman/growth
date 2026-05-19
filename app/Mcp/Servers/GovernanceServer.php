@@ -13,6 +13,7 @@ use App\Mcp\Servers\Concerns\RoleServerDefaults;
 use App\Mcp\Tools\Assurance\AssessReleaseReadiness;
 use App\Mcp\Tools\Assurance\BuildEvidenceBundle;
 use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
+use App\Mcp\Tools\Assurance\RecommendRigorLevel;
 use App\Mcp\Tools\Assurance\ReportEvidenceGaps;
 use App\Mcp\Tools\Assurance\ScanContradictions;
 use App\Mcp\Tools\Changes\AnalyzeChangeImpact;
@@ -149,6 +150,7 @@ class GovernanceServer extends Server
         ReportEvidenceGaps::class,
         ScanContradictions::class,
         EvaluateReadinessGates::class,
+        RecommendRigorLevel::class,
         BuildEvidenceBundle::class,
         LintProject::class,
         TraceQuery::class,

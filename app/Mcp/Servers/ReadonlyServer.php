@@ -30,6 +30,7 @@ use App\Mcp\Tools\Architecture\ListArchitectureViewpoints;
 use App\Mcp\Tools\Architecture\ListArchitectureViews;
 use App\Mcp\Tools\Assurance\BuildEvidenceBundle;
 use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
+use App\Mcp\Tools\Assurance\RecommendRigorLevel;
 use App\Mcp\Tools\Changes\ListArtifactRelations;
 use App\Mcp\Tools\Changes\ListChangeApprovalEvents;
 use App\Mcp\Tools\Changes\ListChangeRequests;
@@ -144,6 +145,7 @@ class ReadonlyServer extends Server
         SummarizeImplementationStatus::class,
         BuildEvidenceBundle::class,
         EvaluateReadinessGates::class,
+        RecommendRigorLevel::class,
         LintProject::class,
         LookupTerm::class,
         TraceQuery::class,
