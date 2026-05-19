@@ -39,7 +39,7 @@ it('appends a comment attributed to its author', function () {
         ->and($comment->user_id)->toBe($this->actor->id);
 });
 
-it('records the acting role on the comment', function () {
+it('records the acting surface on the comment', function () {
     $feedback = ($this->makeFeedback)();
     app(SurfaceContext::class)->set(CapabilitySurface::Governance);
 
