@@ -6,6 +6,7 @@ use App\Models\Concern;
 use App\Models\CustomViewpoint;
 use App\Models\DesignElement;
 use App\Models\DesignView;
+use App\Models\EvidenceAsset;
 use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\ProjectPlan;
@@ -112,6 +113,17 @@ class ManifestApplier
         $project = $this->applyProject($projectInput, $existingProject, $effectiveMode, $userId, $counts, $drift);
 
         if ($effectiveMode === 'replace') {
+            // Evidence assets FK-cascade away when their work items are
+            // dropped below, but a mass delete fires no model events — so
+            // their S3 objects would be orphaned. Delete them through the
+            // model layer first, streamed so cleanup stays memory-bounded.
+            $assets = EvidenceAsset::whereHas('deliveryLink.workItem', function ($query) use ($project): void {
+                $query->where('project_id', $project->id);
+            });
+            foreach ($assets->cursor() as $asset) {
+                $asset->delete();
+            }
+
             $planIds = TestPlan::where('project_id', $project->id)->pluck('id');
             $counts['verification_cases_deleted'] = TestCase::whereIn('test_plan_id', $planIds)->count();
             TestCase::whereIn('test_plan_id', $planIds)->delete();

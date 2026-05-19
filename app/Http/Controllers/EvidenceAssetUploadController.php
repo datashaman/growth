@@ -7,6 +7,8 @@ use App\Models\WorkItemDeliveryLink;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class EvidenceAssetUploadController extends Controller
 {
@@ -47,26 +49,43 @@ class EvidenceAssetUploadController extends Controller
             'Each image must have a matching caption.',
         );
 
-        $assets = DB::transaction(function () use ($deliveryLink, $data): array {
-            // Supersession: the upload is the complete gallery, so clear the
-            // existing set first. Deleting through the model layer fires each
-            // asset's `deleting` event, removing its S3 object too.
-            $deliveryLink->evidenceAssets->each->delete();
+        // The upload is the complete gallery, so it supersedes whatever the
+        // delivery link already holds. S3 writes are not transactional, so
+        // the new set is stored and committed *first* — only then is the
+        // prior set retired. A failure mid-upload rolls the new rows back and
+        // leaves the original gallery and its objects intact.
+        $superseded = $deliveryLink->evidenceAssets;
+        $storedPaths = [];
 
-            $stored = [];
+        try {
+            $assets = DB::transaction(function () use ($deliveryLink, $data, &$storedPaths): array {
+                $stored = [];
 
-            foreach ($data['images'] as $index => $image) {
-                $path = $image->store('evidence-assets', EvidenceAsset::DISK);
+                foreach ($data['images'] as $index => $image) {
+                    $path = $image->store('evidence-assets', EvidenceAsset::DISK);
+                    $storedPaths[] = $path;
 
-                $stored[] = $deliveryLink->evidenceAssets()->create([
-                    'path' => $path,
-                    'caption' => $data['captions'][$index],
-                    'content_type' => 'image/png',
-                ]);
-            }
+                    $stored[] = $deliveryLink->evidenceAssets()->create([
+                        'path' => $path,
+                        'caption' => $data['captions'][$index],
+                        'content_type' => 'image/png',
+                    ]);
+                }
 
-            return $stored;
-        });
+                return $stored;
+            });
+        } catch (Throwable $e) {
+            // The transaction rolled the new rows back, but the S3 objects it
+            // wrote are not transactional — drop them so they are not orphaned.
+            Storage::disk(EvidenceAsset::DISK)->delete($storedPaths);
+
+            throw $e;
+        }
+
+        // The new gallery is committed; retire the prior set. Deleting through
+        // the model layer fires each asset's `deleting` event, removing its S3
+        // object too.
+        $superseded->each->delete();
 
         return response()->json([
             'delivery_link_id' => $deliveryLink->id,

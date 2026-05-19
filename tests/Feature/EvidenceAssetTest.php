@@ -95,7 +95,11 @@ test('the upload endpoint rejects a non-png file', function () {
 test('a stored evidence image is served publicly with the png content type', function () {
     $asset = storedEvidenceAsset($this->deliveryLink, 'evidence-assets/shot.png', 'home');
 
-    // No authentication — the route is public so GitHub's camo proxy can fetch it.
+    // Drop the session user the beforeEach set up: the route is public so
+    // GitHub's camo proxy can fetch it with no credentials, and the test
+    // must exercise that unauthenticated path.
+    auth()->logout();
+
     $response = $this->get(route('evidence-assets.show', $asset));
 
     $response->assertOk();

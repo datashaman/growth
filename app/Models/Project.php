@@ -74,11 +74,16 @@ class Project extends Model
         // Evidence assets sit three FK hops below a project (project → work
         // item → delivery link → asset). The cascade drops their rows without
         // firing model events, so their S3 objects would be orphaned. Delete
-        // the assets through the model layer here so cleanup runs.
+        // the assets through the model layer here, streamed so the cleanup
+        // stays memory-bounded however many screenshots have accumulated.
         static::deleting(function (Project $project): void {
-            EvidenceAsset::whereHas('deliveryLink.workItem', function (Builder $query) use ($project): void {
+            $assets = EvidenceAsset::whereHas('deliveryLink.workItem', function (Builder $query) use ($project): void {
                 $query->where('project_id', $project->getKey());
-            })->get()->each->delete();
+            });
+
+            foreach ($assets->cursor() as $asset) {
+                $asset->delete();
+            }
         });
     }
 
