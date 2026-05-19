@@ -4,6 +4,7 @@ namespace App\Mcp;
 
 use App\Models\ToolInvocation;
 use App\Models\Workspace;
+use App\Support\AgentContext;
 use App\Support\RoleContext;
 use App\Support\WorkspaceContext;
 use Generator;
@@ -56,6 +57,7 @@ class RecordingCallTool extends CallTool
         try {
             $workspaceId = app(WorkspaceContext::class)->id();
             $userId = auth()->id();
+            $agentId = app(AgentContext::class)->id();
             $actingRole = app(RoleContext::class)->role()?->value;
             $captureFull = $workspaceId !== null && (bool) Workspace::query()->whereKey($workspaceId)->value('mcp_capture_payloads');
             $durationMs = (int) max(0, round((hrtime(true) - $startNs) / 1_000_000));
@@ -63,7 +65,7 @@ class RecordingCallTool extends CallTool
             ToolInvocation::create([
                 'workspace_id' => $workspaceId,
                 'user_id' => $userId,
-                'agent_id' => null,
+                'agent_id' => $agentId,
                 'acting_role' => $actingRole,
                 'tool_name' => $toolName ?? 'unknown',
                 'transport' => $this->detectTransport(),
