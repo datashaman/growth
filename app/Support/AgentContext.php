@@ -9,8 +9,8 @@ use Throwable;
 
 /**
  * Single source of truth for "which agent is acting in this session?" (#295).
- * Modelled on {@see RoleContext} / {@see WorkspaceContext} — the binding rides
- * the session the same way the workspace and operating role do.
+ * Modelled on {@see SurfaceContext} / {@see WorkspaceContext} — the binding
+ * rides the session the same way the workspace and capability surface do.
  *
  * Resolution order, first non-null wins:
  *   1. Token-bound agent (HTTP MCP: Passport access token's `agent_id` column).

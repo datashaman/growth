@@ -1,13 +1,13 @@
 <?php
 
 use App\Models\User;
-use App\Support\OperatingRole;
-use App\Support\RoleContext;
+use App\Support\CapabilitySurface;
+use App\Support\SurfaceContext;
 use App\Support\ViewLens;
 use Livewire\Livewire;
 
 afterEach(function () {
-    app(RoleContext::class)->forget();
+    app(SurfaceContext::class)->forget();
 });
 
 it('defaults to the All lens when the user has none set', function () {
@@ -39,22 +39,22 @@ it('ignores an unknown lens value', function () {
     expect($user->fresh()->lens())->toBe(ViewLens::Reviewer);
 });
 
-it('projects the bound role onto the lens, ignoring the user preference', function () {
+it('projects the bound surface onto the lens, ignoring the user preference', function () {
     $user = User::factory()->create();
     $user->switchLens(ViewLens::SpecWriter);
 
-    app(RoleContext::class)->set(OperatingRole::Governance);
+    app(SurfaceContext::class)->set(CapabilitySurface::Governance);
 
     expect($user->lens())->toBe(ViewLens::Reviewer)
         ->and($user->view_lens)->toBe(ViewLens::SpecWriter);
 });
 
-it('does not switch the lens for a role-bound session', function () {
+it('does not switch the lens for a surface-bound session', function () {
     $user = User::factory()->create();
     $user->switchLens(ViewLens::Reviewer);
     $this->actingAs($user);
 
-    app(RoleContext::class)->set(OperatingRole::Intake);
+    app(SurfaceContext::class)->set(CapabilitySurface::Intake);
 
     Livewire::test('lens-switcher')
         ->assertSee(__(ViewLens::SpecWriter->label()))

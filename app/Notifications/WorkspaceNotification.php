@@ -30,8 +30,8 @@ abstract class WorkspaceNotification extends Notification
     /** Display name of that user. */
     protected ?string $senderName = null;
 
-    /** Operating role the sender was acting in, or null when unbound. */
-    protected ?string $actingRole = null;
+    /** Capability surface the sender was acting on, or null when unbound. */
+    protected ?string $actingSurface = null;
 
     /** Thread the event belongs to — a reply reuses its parent's thread. */
     protected ?string $threadId = null;
@@ -44,12 +44,12 @@ abstract class WorkspaceNotification extends Notification
      * A notification with no thread set yet starts its own — the catalogue
      * event is the root of a one-message thread until someone replies.
      */
-    public function withContext(?string $workspaceId, ?User $sender, ?string $actingRole): static
+    public function withContext(?string $workspaceId, ?User $sender, ?string $actingSurface): static
     {
         $this->workspaceId = $workspaceId;
         $this->senderId = $sender === null ? null : (string) $sender->getKey();
         $this->senderName = $sender === null ? null : ($sender->name ?: $sender->email);
-        $this->actingRole = $actingRole;
+        $this->actingSurface = $actingSurface;
         $this->threadId ??= (string) Str::uuid();
 
         return $this;
@@ -124,7 +124,7 @@ abstract class WorkspaceNotification extends Notification
                 'id' => $this->senderId,
                 'name' => $this->senderName,
             ],
-            'acting_role' => $this->actingRole,
+            'acting_surface' => $this->actingSurface,
         ];
     }
 

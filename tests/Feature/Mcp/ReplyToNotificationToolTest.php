@@ -33,7 +33,7 @@ beforeEach(function () {
             'workspace_id' => $this->workspaceId,
             'thread_id' => (string) Str::uuid(),
             'sender' => ['id' => (string) $this->originalSender->id, 'name' => 'The Sender'],
-            'acting_role' => null,
+            'acting_surface' => null,
         ], $data),
     ]);
 });

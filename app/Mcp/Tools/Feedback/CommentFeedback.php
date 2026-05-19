@@ -7,7 +7,7 @@ use App\Models\ToolFeedback;
 use App\Models\User;
 use App\Notifications\FeedbackCommented;
 use App\Notifications\WorkspaceNotifier;
-use App\Support\RoleContext;
+use App\Support\SurfaceContext;
 use App\Support\WorkspaceContext;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -40,7 +40,7 @@ class CommentFeedback extends Tool
 
         $comment = $feedback->comments()->create([
             'user_id' => $author?->getKey(),
-            'acting_role' => app(RoleContext::class)->role()?->value,
+            'acting_surface' => app(SurfaceContext::class)->surface()?->value,
             'body' => $data['body'],
         ]);
 

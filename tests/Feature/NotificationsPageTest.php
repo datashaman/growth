@@ -22,7 +22,7 @@ beforeEach(function () {
             'subject_id' => '2',
             'workspace_id' => $this->workspaceId,
             'sender' => ['id' => '2', 'name' => 'Alice'],
-            'acting_role' => 'governance',
+            'acting_surface' => 'governance',
         ], $data),
     ]);
 });

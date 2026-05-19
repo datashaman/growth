@@ -51,7 +51,7 @@ class GetFeedback extends Tool
                     'id' => $comment->id,
                     'body' => $comment->body,
                     'author' => $comment->author?->name,
-                    'acting_role' => $comment->acting_role,
+                    'acting_surface' => $comment->acting_surface,
                     'created_at' => $comment->created_at?->toIso8601String(),
                 ])->all(),
         ]);

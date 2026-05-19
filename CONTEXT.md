@@ -24,8 +24,8 @@ _Avoid_: "personality", "mode"
 
 **Capability Surface**:
 A structural and semantic grouping of MCP tools, one per role-scoped MCP server.
-A session connects to one. It is *not* a role. Currently named `OperatingRole`
-in code — a misnomer (see Flagged ambiguities).
+A session connects to one. It is *not* a role. Named `CapabilitySurface` in
+code; a session's binding is resolved by `SurfaceContext`.
 _Avoid_: "operating role", "role" (for this concept)
 
 **Role**:
@@ -62,10 +62,11 @@ The tenant boundary. Every Project, and every recorded event, belongs to one.
 
 ## Flagged ambiguities
 
-- **"Role"** named two concepts: the project RACI **Role** and the code's
-  `OperatingRole` enum. The enum is really a **Capability Surface** (a
-  tool-grouping with a 1:1 MCP server), not a role. Resolved: the enum is to be
-  renamed; **Role** is reserved for the project entity.
+- **"Role"** named two concepts: the project RACI **Role** and a code enum
+  that is really a **Capability Surface** (a tool-grouping with a 1:1 MCP
+  server), not a role. Resolved (#318): the enum and its satellites were
+  renamed — `CapabilitySurface`, `SurfaceContext`, `acting_surface` — and
+  **Role** is reserved for the project entity.
 - **"Agent"** named two concepts: **Agent**-as-principal (an attribution
   annotation — real, server-side) and agent-as-autonomous-actor (the **Client
   Agent** — client-side). Resolved: Growth hosts neither an agent nor its

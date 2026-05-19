@@ -16,7 +16,7 @@ class FeedbackComment extends Model
     use HasUlids;
 
     protected $fillable = [
-        'tool_feedback_id', 'user_id', 'acting_role', 'body',
+        'tool_feedback_id', 'user_id', 'acting_surface', 'body',
     ];
 
     public function feedback(): BelongsTo

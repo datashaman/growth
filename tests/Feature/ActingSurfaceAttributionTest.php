@@ -9,8 +9,8 @@ use App\Models\Project;
 use App\Models\StatusTransition;
 use App\Models\ToolInvocation;
 use App\Models\User;
-use App\Support\OperatingRole;
-use App\Support\RoleContext;
+use App\Support\CapabilitySurface;
+use App\Support\SurfaceContext;
 use Laravel\Passport\Passport;
 use Livewire\Livewire;
 
@@ -19,21 +19,21 @@ beforeEach(function () {
     Passport::actingAs($this->user, ['mcp:use']);
 });
 
-it('records the bound operating role on a tool invocation', function () {
-    app(RoleContext::class)->set(OperatingRole::Readonly);
+it('records the bound capability surface on a tool invocation', function () {
+    app(SurfaceContext::class)->set(CapabilitySurface::Readonly);
 
     ReadonlyServer::tool(WhoAmI::class)->assertOk();
 
-    expect(ToolInvocation::sole()->acting_role)->toBe('readonly');
+    expect(ToolInvocation::sole()->acting_surface)->toBe('readonly');
 });
 
-it('records a null acting role for an unbound session', function () {
+it('records a null acting surface for an unbound session', function () {
     ReadonlyServer::tool(WhoAmI::class)->assertOk();
 
-    expect(ToolInvocation::sole()->acting_role)->toBeNull();
+    expect(ToolInvocation::sole()->acting_surface)->toBeNull();
 });
 
-it('records the bound operating role on a status transition audit row', function () {
+it('records the bound capability surface on a status transition audit row', function () {
     $project = Project::create([
         'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Acting role',
@@ -47,15 +47,15 @@ it('records the bound operating role on a status transition audit row', function
         'description' => 'The cart total is wrong.',
     ]);
 
-    app(RoleContext::class)->set(OperatingRole::Verification);
+    app(SurfaceContext::class)->set(CapabilitySurface::Verification);
 
     $transition = (new StartAnomalyInvestigation)->apply($anomaly, $this->user, 'Triaging');
 
-    expect($transition->acting_role)->toBe('verification')
-        ->and(StatusTransition::sole()->acting_role)->toBe('verification');
+    expect($transition->acting_surface)->toBe('verification')
+        ->and(StatusTransition::sole()->acting_surface)->toBe('verification');
 });
 
-it('leaves the transition acting role null when the session is unbound', function () {
+it('leaves the transition acting surface null when the session is unbound', function () {
     $project = Project::create([
         'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Acting role',
@@ -71,14 +71,14 @@ it('leaves the transition acting role null when the session is unbound', functio
 
     $transition = (new StartAnomalyInvestigation)->apply($anomaly, $this->user, 'Triaging');
 
-    expect($transition->acting_role)->toBeNull();
+    expect($transition->acting_surface)->toBeNull();
 });
 
-it('returns the acting role through the list-tool-invocations MCP tool', function () {
+it('returns the acting surface through the list-tool-invocations MCP tool', function () {
     ToolInvocation::create([
         'workspace_id' => $this->user->active_workspace_id,
         'user_id' => $this->user->id,
-        'acting_role' => 'governance',
+        'acting_surface' => 'governance',
         'tool_name' => 'bound-call',
         'transport' => 'http',
         'success' => true,
@@ -90,17 +90,17 @@ it('returns the acting role through the list-tool-invocations MCP tool', functio
     ReadonlyServer::tool(ListToolInvocations::class, ['tool_name' => 'bound-call'])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
-            $json->where('results.0.acting_role', 'governance')->etc();
+            $json->where('results.0.acting_surface', 'governance')->etc();
         });
 });
 
-it('surfaces the acting role on the tool-invocations feed', function () {
+it('surfaces the acting surface on the tool-invocations feed', function () {
     $this->actingAs($this->user);
 
     ToolInvocation::create([
         'workspace_id' => $this->user->active_workspace_id,
         'user_id' => $this->user->id,
-        'acting_role' => 'verification',
+        'acting_surface' => 'verification',
         'tool_name' => 'bound-call',
         'transport' => 'http',
         'success' => true,
@@ -111,7 +111,7 @@ it('surfaces the acting role on the tool-invocations feed', function () {
     ToolInvocation::create([
         'workspace_id' => $this->user->active_workspace_id,
         'user_id' => $this->user->id,
-        'acting_role' => null,
+        'acting_surface' => null,
         'tool_name' => 'unbound-call',
         'transport' => 'stdio',
         'success' => true,

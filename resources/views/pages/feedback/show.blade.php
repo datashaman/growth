@@ -87,8 +87,8 @@ new #[Title('Feedback')] class extends Component {
                     <li class="flex flex-col gap-1">
                         <div class="text-xs text-zinc-500 dark:text-zinc-400">
                             <span class="font-medium text-zinc-700 dark:text-zinc-200">{{ $comment->author?->name ?? __('System') }}</span>
-                            @if ($comment->acting_role)
-                                <span class="text-zinc-400 dark:text-zinc-500">· {{ $comment->acting_role }}</span>
+                            @if ($comment->acting_surface)
+                                <span class="text-zinc-400 dark:text-zinc-500">· {{ $comment->acting_surface }}</span>
                             @endif
                             <span class="text-zinc-400 dark:text-zinc-500" title="{{ $comment->created_at?->toIso8601String() }}">
                                 · {{ $comment->created_at?->diffForHumans() }}
@@ -116,8 +116,8 @@ new #[Title('Feedback')] class extends Component {
                         </div>
                         <div class="text-xs text-zinc-500 dark:text-zinc-400">
                             {{ $transition->transitionedBy?->name ?? __('System') }}
-                            @if ($transition->acting_role)
-                                <span class="text-zinc-400 dark:text-zinc-500">· {{ $transition->acting_role }}</span>
+                            @if ($transition->acting_surface)
+                                <span class="text-zinc-400 dark:text-zinc-500">· {{ $transition->acting_surface }}</span>
                             @endif
                             <span class="text-zinc-400 dark:text-zinc-500" title="{{ $transition->transitioned_at?->toIso8601String() }}">
                                 · {{ $transition->transitioned_at?->diffForHumans() }}

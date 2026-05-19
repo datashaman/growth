@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\User;
-use App\Support\RoleContext;
+use App\Support\SurfaceContext;
 use App\Support\ViewLens;
 use Livewire\Component;
 use Livewire\Livewire;
@@ -22,9 +22,9 @@ new class extends Component {
         /** @var User $user */
         $user = auth()->user();
 
-        // A role-bound session has no lens choice: the lens is projected from
-        // the operating role. Ignore any attempt to change it.
-        if (app(RoleContext::class)->role() !== null) {
+        // A surface-bound session has no lens choice: the lens is projected
+        // from the capability surface. Ignore any attempt to change it.
+        if (app(SurfaceContext::class)->surface() !== null) {
             $this->selectedLens = $user->lens()->value;
 
             return;
@@ -48,15 +48,15 @@ new class extends Component {
     }
 }; ?>
 
-@php($role = app(RoleContext::class)->role())
+@php($surface = app(SurfaceContext::class)->surface())
 
 <div class="relative w-full">
-    @if ($role !== null)
+    @if ($surface !== null)
         <flux:icon.funnel class="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500 dark:text-zinc-400" />
         <div
             class="flex h-8 w-full items-center ps-8 pe-2 text-sm text-zinc-500 dark:text-zinc-400"
-            title="{{ __('Lens is fixed by the :role role', ['role' => $role->label()]) }}">
-            {{ __($role->lens()->label()) }}
+            title="{{ __('Lens is fixed by the :surface surface', ['surface' => $surface->label()]) }}">
+            {{ __($surface->lens()->label()) }}
         </div>
     @else
         <flux:icon.funnel class="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500 dark:text-zinc-400" />
