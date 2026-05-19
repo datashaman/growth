@@ -64,7 +64,7 @@ it('leaves a deliberately selected past revision in place on refresh', function 
     $component = Livewire::test('pages::mockups.show', ['mockup' => $this->mockup]);
     $this->mockup->appendRevision('<!doctype html><html><body><h1>v2</h1></body></html>');
 
-    // The viewer steps back to revision 1, then a third revision arrives.
+    // The viewer steps back to revision 1, then a refresh fires.
     $component->call('selectRevision', $revisionOne->id)
         ->call('onWorkspaceDataChanged')
         ->assertSet('revisionId', $revisionOne->id);
