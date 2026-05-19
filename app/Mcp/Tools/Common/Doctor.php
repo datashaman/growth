@@ -2,8 +2,10 @@
 
 namespace App\Mcp\Tools\Common;
 
+use App\Models\Agent;
 use App\Models\Project;
 use App\Models\User;
+use App\Support\AgentContext;
 use App\Support\WorkspaceContext;
 use Closure;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -35,6 +37,7 @@ class Doctor extends Tool
             $this->expiryCheck($transport, $token),
             $this->localSessionCheck($transport, $user),
             $this->projectsCheck(),
+            $this->agentCheck(),
         ];
 
         return Response::structured([
@@ -184,6 +187,33 @@ class Doctor extends Tool
         }
 
         return $this->result('workspace_projects', 'pass', "The active workspace has {$count} project(s).");
+    }
+
+    /**
+     * Report the agent this session is acting as (#295). An unbound agent is
+     * a normal state — a user acting directly — so it passes; a bound id that
+     * does not resolve is a stale binding and warns.
+     *
+     * @return array{check:string,status:string,detail:string}
+     */
+    private function agentCheck(): array
+    {
+        $context = app(AgentContext::class);
+        $agent = $this->safe(fn () => $context->agent());
+        $source = $this->safe(fn () => $context->source());
+
+        if ($agent instanceof Agent) {
+            return $this->result('acting_agent', 'pass',
+                "Acting as agent \"{$agent->name}\" ({$agent->id}), resolved via {$source}.");
+        }
+
+        if (is_string($source) && $source !== '') {
+            return $this->result('acting_agent', 'warn',
+                'An agent is bound to this session but did not resolve — the id is unknown, in another workspace, or deleted. Re-bind to a valid agent or clear it.');
+        }
+
+        return $this->result('acting_agent', 'pass',
+            'No agent is bound — acting as the user directly.');
     }
 
     /**

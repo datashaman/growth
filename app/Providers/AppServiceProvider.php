@@ -40,6 +40,7 @@ use App\Models\ToolFeedback;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
+use App\Support\AgentContext;
 use App\Support\OAuthWorkspaceBinding;
 use App\Support\Passport\AccessTokenRepository;
 use App\Support\Passport\AuthCodeRepository;
@@ -136,6 +137,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(WorkspaceContext::class);
         $this->app->singleton(RoleContext::class);
+        $this->app->singleton(AgentContext::class);
         // Scoped, not singleton: the holder carries mutable per-request state
         // and must reset between requests on long-lived workers (#197, #214).
         $this->app->scoped(OAuthWorkspaceBinding::class);
