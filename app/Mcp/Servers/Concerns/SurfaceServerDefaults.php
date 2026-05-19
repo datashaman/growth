@@ -21,6 +21,10 @@ trait SurfaceServerDefaults
         // the verbosity via `logging/setLevel`.
         $this->addCapability(Server::CAPABILITY_LOGGING);
 
+        // Advertise the MCP completions capability so clients may autocomplete
+        // prompt argument values via `completion/complete`.
+        $this->addCapability(Server::CAPABILITY_COMPLETIONS);
+
         $this->bootTrustedLocalSession();
 
         app(SurfaceContext::class)->assertServerMatches(static::class);

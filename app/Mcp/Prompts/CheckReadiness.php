@@ -4,18 +4,22 @@ namespace App\Mcp\Prompts;
 
 use App\Growth\Alignment\AlignmentText;
 use App\Growth\Assurance\ReadinessGateEvaluator;
+use App\Mcp\Prompts\Concerns\CompletesProjectId;
 use App\Models\Project;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
+use Laravel\Mcp\Server\Contracts\Completable;
 use Laravel\Mcp\Server\Prompt;
 use Laravel\Mcp\Server\Prompts\Argument;
 
 #[Name('check-readiness')]
 #[Description('Summarize Growth readiness gates and recommend the next corrective action.')]
-class CheckReadiness extends Prompt
+class CheckReadiness extends Prompt implements Completable
 {
+    use CompletesProjectId;
+
     public function __construct(private readonly ReadinessGateEvaluator $readiness) {}
 
     public function arguments(): array
