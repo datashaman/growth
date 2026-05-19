@@ -7,6 +7,7 @@ use App\Growth\Transitions\IllegalTransitionException;
 use App\Models\ProjectPlan;
 use App\Models\ProjectPlanBaseline;
 use App\Models\User;
+use App\Support\AgentContext;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -41,6 +42,7 @@ class PlanBaseliner
                 'snapshot' => $plan->baselineSnapshot(),
                 'baselined_at' => now(),
                 'baselined_by_user_id' => $actor?->getKey(),
+                'baselined_by_agent_id' => app(AgentContext::class)->idForProject($plan->project_id),
                 'note' => $note,
             ]);
 

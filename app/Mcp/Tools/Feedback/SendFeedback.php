@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools\Feedback;
 
 use App\Models\ToolFeedback;
+use App\Support\AgentContext;
 use App\Support\WorkspaceContext;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -30,7 +31,7 @@ class SendFeedback extends Tool
         $feedback = ToolFeedback::create([
             'workspace_id' => app(WorkspaceContext::class)->requireId(),
             'user_id' => auth()->user()?->getKey(),
-            'agent_id' => null,
+            'agent_id' => app(AgentContext::class)->id(),
             'project_id' => $data['project_id'] ?? null,
             'category' => $data['category'],
             'status' => 'new',
