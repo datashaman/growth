@@ -2,24 +2,27 @@
 
 namespace App\Mcp\Tools\Projects;
 
+use App\Growth\Confirmation\ConfirmationGateway;
+use App\Mcp\McpConfirmationGateway;
 use App\Models\Project;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Elicitation\Elicitation;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive]
-#[Description('Delete a project AND every artifact below it — stakeholders, concerns, requirements, design views/elements, custom viewpoints, test plans/cases/runs, anomalies. Destructive and irreversible. Requires a confirmation argument matching the project name to prevent accidents.')]
+#[Description('Delete a project AND every artifact below it — stakeholders, concerns, requirements, design views/elements, custom viewpoints, test plans/cases/runs, anomalies. Destructive and irreversible. Pass a `confirm_name` matching the project name to delete it; when `confirm_name` is omitted and the client supports MCP elicitation, the caller is prompted to confirm interactively.')]
 class DeleteProject extends Tool
 {
-    public function handle(Request $request): ResponseFactory
+    public function handle(Request $request, Elicitation $elicitation): ResponseFactory
     {
         $data = $request->validate([
             'id' => 'required|string|owned_project',
-            'confirm_name' => 'required|string',
+            'confirm_name' => 'nullable|string',
         ]);
 
         $project = Project::withCount([
@@ -32,12 +35,6 @@ class DeleteProject extends Tool
             'anomalies',
         ])->findOrFail($data['id']);
 
-        if ($data['confirm_name'] !== $project->name) {
-            return new ResponseFactory(Response::error(
-                "Confirmation mismatch — pass the project's exact name in `confirm_name` to delete it. Project is named [{$project->name}]."
-            ));
-        }
-
         $counts = [
             'stakeholders_deleted' => $project->stakeholders_count,
             'concerns_deleted' => $project->concerns_count,
@@ -48,9 +45,45 @@ class DeleteProject extends Tool
             'anomalies_deleted' => $project->anomalies_count,
         ];
 
+        $confirmName = $data['confirm_name'] ?? null;
+
+        if ($confirmName !== null && trim($confirmName) !== '') {
+            if ($confirmName !== $project->name) {
+                return new ResponseFactory(Response::error(
+                    "Confirmation mismatch — pass the project's exact name in `confirm_name` to delete it. Project is named [{$project->name}]."
+                ));
+            }
+        } else {
+            $confirmed = $this->confirmDeletion($project, new McpConfirmationGateway($elicitation));
+
+            if ($confirmed === null) {
+                return new ResponseFactory(Response::error(
+                    "This client cannot prompt for confirmation. Pass the project's exact name in `confirm_name` to delete it. Project is named [{$project->name}]."
+                ));
+            }
+
+            if ($confirmed === false) {
+                return new ResponseFactory(Response::error('Deletion cancelled — the project was not deleted.'));
+            }
+        }
+
         $project->delete();
 
         return Response::structured(['id' => $data['id'], 'deleted' => true] + $counts);
+    }
+
+    /**
+     * Ask the MCP client to confirm the cascade before anything is deleted.
+     * Returns `null` when the client cannot elicit, so the caller falls back to
+     * the `confirm_name` guard instead.
+     */
+    private function confirmDeletion(Project $project, ConfirmationGateway $confirmation): ?bool
+    {
+        $message = "Permanently delete project [{$project->name}] and every artifact "
+            .'beneath it — stakeholders, concerns, requirements, architecture, plans, '
+            .'work items, verification records, and more? This cannot be undone.';
+
+        return $confirmation->confirm($message);
     }
 
     public function schema(JsonSchema $schema): array
@@ -60,8 +93,7 @@ class DeleteProject extends Tool
                 ->description('Project ULID to delete')
                 ->required(),
             'confirm_name' => $schema->string()
-                ->description('Must match the project\'s name exactly — guards against accidental deletion.')
-                ->required(),
+                ->description('The project\'s exact name. Guards against accidental deletion. When omitted, the caller is prompted to confirm via MCP elicitation if the client supports it.'),
         ];
     }
 
