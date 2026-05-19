@@ -82,6 +82,10 @@ new class extends Component {
                     @endif
                 </dd>
             </div>
+            <div>
+                <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Needs mockups') }}</dt>
+                <dd class="mt-0.5">{{ $workItem->needs_mockups ? __('Yes') : __('No') }}</dd>
+            </div>
         </dl>
     </section>
 

@@ -90,6 +90,7 @@ class UpsertWorkItems extends Tool
             'kind' => 'required|in:'.implode(',', WorkItem::KINDS),
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'needs_mockups' => 'sometimes|boolean',
             'status' => 'prohibited',
         ];
     }
@@ -116,6 +117,7 @@ class UpsertWorkItems extends Tool
                     'kind' => $s->string()->description('Work item kind')->enum(WorkItem::KINDS)->required(),
                     'name' => $s->string()->description('Short label')->required(),
                     'description' => $s->string()->description('Optional details or acceptance notes'),
+                    'needs_mockups' => $s->boolean()->description('Whether this work item requires one or more spec mockups before it is ready. Defaults to false.'),
                 ]))
                 ->min(1)
                 ->max(100)
