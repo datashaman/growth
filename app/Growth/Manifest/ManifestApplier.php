@@ -282,7 +282,7 @@ class ManifestApplier
         $log->log(LogLevel::Info, 'Applied verification', ['plans' => count($verification['plans'] ?? [])]);
 
         if ($drift !== []) {
-            $log->log(LogLevel::Warning, count($drift).' record(s) changed since export', ['drift' => count($drift)]);
+            $log->log(LogLevel::Warning, count($drift).' record(s) changed since export', ['drift_count' => count($drift)]);
         }
 
         return [

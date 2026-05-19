@@ -54,7 +54,7 @@ class DeleteProject extends Tool
                 ));
             }
         } else {
-            $confirmed = $this->confirmDeletion($project, $counts, new McpConfirmationGateway($elicitation));
+            $confirmed = $this->confirmDeletion($project, new McpConfirmationGateway($elicitation));
 
             if ($confirmed === null) {
                 return new ResponseFactory(Response::error(
@@ -76,17 +76,12 @@ class DeleteProject extends Tool
      * Ask the MCP client to confirm the cascade before anything is deleted.
      * Returns `null` when the client cannot elicit, so the caller falls back to
      * the `confirm_name` guard instead.
-     *
-     * @param  array<string, int>  $counts
      */
-    private function confirmDeletion(Project $project, array $counts, ConfirmationGateway $confirmation): ?bool
+    private function confirmDeletion(Project $project, ConfirmationGateway $confirmation): ?bool
     {
-        $artifacts = array_sum($counts);
-
-        $message = "Permanently delete project [{$project->name}] and its {$artifacts} dependent "
-            .($artifacts === 1 ? 'artifact' : 'artifacts')
-            .' (stakeholders, concerns, requirements, design views/elements, custom viewpoints, '
-            .'test plans/cases/runs, anomalies)? This cannot be undone.';
+        $message = "Permanently delete project [{$project->name}] and every artifact "
+            .'beneath it — stakeholders, concerns, requirements, architecture, plans, '
+            .'work items, verification records, and more? This cannot be undone.';
 
         return $confirmation->confirm($message);
     }
