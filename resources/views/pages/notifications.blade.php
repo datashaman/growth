@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -19,16 +20,24 @@ new #[Title('Notifications')] class extends Component {
 
     public function onNotificationReceived(): void
     {
-        unset($this->items);
+        unset($this->items, $this->threads);
     }
 
     /**
-     * Mark a single notification read, then a refresh.
+     * Mark every unread message in a thread read, then a refresh. The key is
+     * a thread id for a real thread, or a lone notification's own id when it
+     * has no thread.
      */
-    public function markRead(string $id): void
+    public function markThreadRead(string $key): void
     {
-        $this->scopedQuery()->whereKey($id)->whereNull('read_at')->update(['read_at' => now()]);
-        unset($this->items);
+        $this->scopedQuery()
+            ->whereNull('read_at')
+            ->where(function ($query) use ($key): void {
+                $query->where('data->thread_id', $key)->orWhere('id', $key);
+            })
+            ->update(['read_at' => now()]);
+
+        unset($this->items, $this->threads);
     }
 
     /**
@@ -37,7 +46,7 @@ new #[Title('Notifications')] class extends Component {
     public function markAllRead(): void
     {
         $this->scopedQuery()->whereNull('read_at')->update(['read_at' => now()]);
-        unset($this->items);
+        unset($this->items, $this->threads);
     }
 
     /**
@@ -63,52 +72,85 @@ new #[Title('Notifications')] class extends Component {
             ->limit(100)
             ->get();
     }
+
+    /**
+     * Notifications grouped into threads — each thread is its messages in
+     * arrival order, and threads are ordered by their most recent message.
+     * A notification with no thread id stands as a thread of one.
+     *
+     * @return Collection<int,Collection<int,object>>
+     */
+    #[Computed]
+    public function threads(): Collection
+    {
+        return $this->items
+            ->groupBy(fn (object $note): string => $note->data['thread_id'] ?? $note->id)
+            ->map(fn (Collection $messages): Collection => $messages->sortBy('created_at')->values())
+            ->sortByDesc(fn (Collection $messages): mixed => $messages->last()->created_at)
+            ->values();
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-project-page-header
         :title="__('Notifications')"
-        :description="__('Notifications addressed to you in this workspace, newest first.')">
+        :description="__('Notifications addressed to you in this workspace, grouped by thread.')">
         <x-slot:actions>
             <flux:button wire:click="markAllRead" size="sm" variant="subtle">{{ __('Mark all read') }}</flux:button>
         </x-slot:actions>
     </x-project-page-header>
 
     <x-data-table
-        :count="$this->items->count()"
-        :count-label="__('recent')"
-        :empty="$this->items->isEmpty()"
+        :count="$this->threads->count()"
+        :count-label="__('threads')"
+        :empty="$this->threads->isEmpty()"
         :empty-message="__('No notifications yet.')">
         <flux:table class="[&_td]:align-top">
             <flux:table.columns>
                 <flux:table.column>{{ __('When') }}</flux:table.column>
-                <flux:table.column>{{ __('Notification') }}</flux:table.column>
+                <flux:table.column>{{ __('Thread') }}</flux:table.column>
                 <flux:table.column>{{ __('From') }}</flux:table.column>
                 <flux:table.column></flux:table.column>
             </flux:table.columns>
             <flux:table.rows>
-                @foreach ($this->items as $item)
-                    <flux:table.row :class="$item->read_at === null ? 'font-medium' : 'text-zinc-500 dark:text-zinc-400'">
+                @foreach ($this->threads as $thread)
+                    @php
+                        $latest = $thread->last();
+                        $unread = $thread->whereNull('read_at');
+                        $threadKey = $thread->first()->data['thread_id'] ?? $thread->first()->id;
+                    @endphp
+                    <flux:table.row :class="$unread->isNotEmpty() ? 'font-medium' : 'text-zinc-500 dark:text-zinc-400'">
                         <flux:table.cell class="whitespace-nowrap">
-                            <span title="{{ $item->created_at?->toIso8601String() }}">{{ $item->created_at?->diffForHumans() ?? '—' }}</span>
+                            <span title="{{ $latest->created_at?->toIso8601String() }}">{{ $latest->created_at?->diffForHumans() ?? '—' }}</span>
                         </flux:table.cell>
                         <flux:table.cell>
-                            @if ($item->data['url'] ?? null)
-                                <a href="{{ $item->data['url'] }}" wire:navigate class="hover:underline">{{ $item->data['title'] ?? __('Notification') }}</a>
-                            @else
-                                {{ $item->data['title'] ?? __('Notification') }}
+                            @if ($thread->count() > 1)
+                                <div class="mb-1 text-xs uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                                    {{ trans_choice('1 message|:count messages', $thread->count()) }}
+                                </div>
                             @endif
-                            <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{{ $item->data['body'] ?? '' }}</div>
+                            <div class="flex flex-col gap-2">
+                                @foreach ($thread as $message)
+                                    <div @class(['border-s-2 ps-2', 'border-green-500' => $message->read_at === null, 'border-transparent' => $message->read_at !== null])>
+                                        @if ($message->data['url'] ?? null)
+                                            <a href="{{ $message->data['url'] }}" wire:navigate class="hover:underline">{{ $message->data['title'] ?? __('Notification') }}</a>
+                                        @else
+                                            {{ $message->data['title'] ?? __('Notification') }}
+                                        @endif
+                                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{{ $message->data['body'] ?? '' }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
                         </flux:table.cell>
                         <flux:table.cell class="whitespace-nowrap text-sm">
-                            {{ $item->data['sender']['name'] ?? __('System') }}
-                            @if ($item->data['acting_role'] ?? null)
-                                <span class="text-zinc-400 dark:text-zinc-500">· {{ $item->data['acting_role'] }}</span>
+                            {{ $latest->data['sender']['name'] ?? __('System') }}
+                            @if ($latest->data['acting_role'] ?? null)
+                                <span class="text-zinc-400 dark:text-zinc-500">· {{ $latest->data['acting_role'] }}</span>
                             @endif
                         </flux:table.cell>
                         <flux:table.cell class="whitespace-nowrap text-right">
-                            @if ($item->read_at === null)
-                                <flux:button wire:click="markRead('{{ $item->id }}')" size="xs" variant="subtle">{{ __('Mark read') }}</flux:button>
+                            @if ($unread->isNotEmpty())
+                                <flux:button wire:click="markThreadRead('{{ $threadKey }}')" size="xs" variant="subtle">{{ __('Mark read') }}</flux:button>
                             @else
                                 <flux:badge color="zinc" size="sm">{{ __('read') }}</flux:badge>
                             @endif

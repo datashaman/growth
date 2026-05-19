@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\User;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Str;
 
 /**
  * Base for every entry in the workspace notification catalogue.
@@ -32,10 +33,16 @@ abstract class WorkspaceNotification extends Notification
     /** Operating role the sender was acting in, or null when unbound. */
     protected ?string $actingRole = null;
 
+    /** Thread the event belongs to — a reply reuses its parent's thread. */
+    protected ?string $threadId = null;
+
     /**
      * Stamp the originating context onto the notification. Called by
      * {@see WorkspaceNotifier} once, before fan-out, so the stored payload
      * records which workspace the event belongs to and who caused it.
+     *
+     * A notification with no thread set yet starts its own — the catalogue
+     * event is the root of a one-message thread until someone replies.
      */
     public function withContext(?string $workspaceId, ?User $sender, ?string $actingRole): static
     {
@@ -43,6 +50,19 @@ abstract class WorkspaceNotification extends Notification
         $this->senderId = $sender === null ? null : (string) $sender->getKey();
         $this->senderName = $sender === null ? null : ($sender->name ?: $sender->email);
         $this->actingRole = $actingRole;
+        $this->threadId ??= (string) Str::uuid();
+
+        return $this;
+    }
+
+    /**
+     * Place this notification in an existing thread — used by a reply to
+     * join the thread of the notification it answers. Must be called before
+     * fan-out, ahead of {@see withContext()}.
+     */
+    public function inThread(string $threadId): static
+    {
+        $this->threadId = $threadId;
 
         return $this;
     }
@@ -99,6 +119,7 @@ abstract class WorkspaceNotification extends Notification
             'subject_type' => $subjectType,
             'subject_id' => $subjectId,
             'workspace_id' => $this->workspaceId,
+            'thread_id' => $this->threadId,
             'sender' => $this->senderId === null ? null : [
                 'id' => $this->senderId,
                 'name' => $this->senderName,

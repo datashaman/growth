@@ -15,6 +15,7 @@ use App\Mcp\Tools\Common\Doctor;
 use App\Mcp\Tools\Common\ListNotifications;
 use App\Mcp\Tools\Common\ListUsers;
 use App\Mcp\Tools\Common\MarkNotificationRead;
+use App\Mcp\Tools\Common\ReplyToNotification;
 use App\Mcp\Tools\Common\SendNotification;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Concerns\DeleteConcern;
@@ -73,6 +74,7 @@ class IntakeServer extends Server
         ListNotifications::class,
         ListUsers::class,
         MarkNotificationRead::class,
+        ReplyToNotification::class,
         SendNotification::class,
         Search::class,
         Doctor::class,
