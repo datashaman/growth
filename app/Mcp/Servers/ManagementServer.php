@@ -10,6 +10,7 @@ use App\Mcp\Resources\StarterTemplate2Resource;
 use App\Mcp\Resources\StarterTemplate3Resource;
 use App\Mcp\Resources\StarterTemplate4Resource;
 use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
+use App\Mcp\Tools\Common\AdoptRole;
 use App\Mcp\Tools\Common\Doctor;
 use App\Mcp\Tools\Common\ListNotifications;
 use App\Mcp\Tools\Common\ListUsers;
@@ -56,6 +57,7 @@ class ManagementServer extends Server
     use SurfaceServerDefaults;
 
     protected array $tools = [
+        AdoptRole::class,
         WhoAmI::class,
         CreateDecisionRequest::class,
         ListDecisionQueue::class,

@@ -5,6 +5,7 @@ namespace App\Growth\Transitions;
 use App\Models\User;
 use App\Notifications\WorkspaceNotification;
 use App\Notifications\WorkspaceNotifier;
+use App\Support\RoleContext;
 use App\Support\SurfaceContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -162,12 +163,16 @@ abstract class Transition
      */
     protected function record(Model $subject, string $from, ?User $actor, ?string $reason): Model
     {
+        $actingRole = app(RoleContext::class)->role();
+
         return $subject->statusTransitions()->create([
             'from_status' => $from,
             'to_status' => $this->targetStatus(),
             'reason' => $reason,
             'transitioned_by_user_id' => $actor?->getKey(),
             'acting_surface' => app(SurfaceContext::class)->surface()?->value,
+            'acting_role_id' => $actingRole?->getKey(),
+            'acting_role_name' => $actingRole?->name,
             'transitioned_at' => now(),
         ]);
     }

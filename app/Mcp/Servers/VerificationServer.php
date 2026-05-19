@@ -15,6 +15,7 @@ use App\Mcp\Tools\Assurance\BuildEvidenceBundle;
 use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
 use App\Mcp\Tools\Assurance\RecommendRigorLevel;
 use App\Mcp\Tools\Assurance\ReportEvidenceGaps;
+use App\Mcp\Tools\Common\AdoptRole;
 use App\Mcp\Tools\Common\Doctor;
 use App\Mcp\Tools\Common\ListNotifications;
 use App\Mcp\Tools\Common\ListUsers;
@@ -69,6 +70,7 @@ class VerificationServer extends Server
     use SurfaceServerDefaults;
 
     protected array $tools = [
+        AdoptRole::class,
         WhoAmI::class,
         CreateDecisionRequest::class,
         ListDecisionQueue::class,

@@ -2,7 +2,6 @@
 
 namespace App\Mcp\Servers\Concerns;
 
-use App\Support\CapabilitySurface;
 use App\Support\SurfaceContext;
 
 trait SurfaceServerDefaults
@@ -19,10 +18,5 @@ trait SurfaceServerDefaults
         $this->bootTrustedLocalSession();
 
         app(SurfaceContext::class)->assertServerMatches(static::class);
-
-        $surface = CapabilitySurface::forServer(static::class);
-        if ($surface !== null) {
-            $this->instructions = $surface->personaInstructions();
-        }
     }
 }

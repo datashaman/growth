@@ -7,6 +7,7 @@ use App\Models\ToolFeedback;
 use App\Models\User;
 use App\Notifications\FeedbackCommented;
 use App\Notifications\WorkspaceNotifier;
+use App\Support\RoleContext;
 use App\Support\SurfaceContext;
 use App\Support\WorkspaceContext;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -37,10 +38,13 @@ class CommentFeedback extends Tool
         }
 
         $author = auth()->user();
+        $actingRole = app(RoleContext::class)->role();
 
         $comment = $feedback->comments()->create([
             'user_id' => $author?->getKey(),
             'acting_surface' => app(SurfaceContext::class)->surface()?->value,
+            'acting_role_id' => $actingRole?->getKey(),
+            'acting_role_name' => $actingRole?->name,
             'body' => $data['body'],
         ]);
 

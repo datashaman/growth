@@ -52,7 +52,8 @@ class ListToolInvocations extends Tool
             ->limit($limit)
             ->offset($offset)
             ->get([
-                'id', 'tool_name', 'acting_surface', 'transport', 'success', 'error_class', 'error_message',
+                'id', 'tool_name', 'acting_surface', 'acting_role_id', 'acting_role_name',
+                'transport', 'success', 'error_class', 'error_message',
                 'duration_ms', 'args_shape', 'started_at',
             ]);
 
@@ -64,6 +65,8 @@ class ListToolInvocations extends Tool
                 'id' => $row->id,
                 'tool_name' => $row->tool_name,
                 'acting_surface' => $row->acting_surface,
+                'acting_role_id' => $row->acting_role_id,
+                'acting_role_name' => $row->acting_role_name,
                 'transport' => $row->transport,
                 'success' => $row->success,
                 'error_class' => $row->error_class,

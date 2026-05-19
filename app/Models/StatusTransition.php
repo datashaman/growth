@@ -13,7 +13,8 @@ class StatusTransition extends Model
 
     protected $fillable = [
         'from_status', 'to_status', 'reason',
-        'transitioned_by_user_id', 'acting_surface', 'transitioned_at',
+        'transitioned_by_user_id', 'acting_surface',
+        'acting_role_id', 'acting_role_name', 'transitioned_at',
     ];
 
     protected $casts = [
@@ -28,5 +29,10 @@ class StatusTransition extends Model
     public function transitionedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'transitioned_by_user_id');
+    }
+
+    public function actingRole(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'acting_role_id');
     }
 }

@@ -16,7 +16,8 @@ class FeedbackComment extends Model
     use HasUlids;
 
     protected $fillable = [
-        'tool_feedback_id', 'user_id', 'acting_surface', 'body',
+        'tool_feedback_id', 'user_id', 'acting_surface',
+        'acting_role_id', 'acting_role_name', 'body',
     ];
 
     public function feedback(): BelongsTo
@@ -27,5 +28,10 @@ class FeedbackComment extends Model
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function actingRole(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'acting_role_id');
     }
 }

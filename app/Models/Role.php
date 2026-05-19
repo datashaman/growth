@@ -21,7 +21,7 @@ class Role extends Model
     use ScopedByOwner;
 
     protected $fillable = [
-        'project_id', 'name', 'responsibilities',
+        'project_id', 'name', 'responsibilities', 'persona',
     ];
 
     public function project(): BelongsTo

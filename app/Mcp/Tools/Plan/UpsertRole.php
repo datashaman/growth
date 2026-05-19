@@ -28,6 +28,7 @@ class UpsertRole extends Tool
                     ->ignore($request->get('id')),
             ],
             'responsibilities' => 'nullable|string',
+            'persona' => 'nullable|string',
         ]);
 
         $id = $data['id'] ?? null;
@@ -49,6 +50,7 @@ class UpsertRole extends Tool
             'project_id' => $schema->string()->description('Project ULID')->required(),
             'name' => $schema->string()->description('Role label, unique per project')->required(),
             'responsibilities' => $schema->string()->description('Responsibilities owned by this role'),
+            'persona' => $schema->string()->description('Instruction text served to a session that adopts this role — its accountability, judgement, and what needs user confirmation. Omit to leave the role without a persona.'),
         ];
     }
 }
