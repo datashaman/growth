@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('List roles for a project. Returns name, responsibilities, the count of work items each role owns, and the users and agents assigned to each role.')]
 class ListRoles extends Tool
 {

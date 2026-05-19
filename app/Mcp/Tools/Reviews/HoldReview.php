@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Hold a review: move it from in_progress to held. Rejects any other source status with a clear message. Records a review decision event with the acting user and timestamp.')]
 class HoldReview extends Tool
 {

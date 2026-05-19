@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Cancel a review: move it from planned or in_progress to cancelled. Rejects any other source status with a clear message. Records a review decision event with the acting user and timestamp.')]
 class CancelReview extends Tool
 {

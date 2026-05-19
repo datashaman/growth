@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive]
 #[Description('Delete a stakeholder. Concerns raised by this stakeholder have their raised_by_stakeholder_id set to null; no concerns are deleted.')]
 class DeleteStakeholder extends Tool
 {

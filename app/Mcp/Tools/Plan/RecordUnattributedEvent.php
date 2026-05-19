@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Record a GitHub event that could not be attributed to a work item, so the gap is visible on the Evidence page instead of evaporating silently.')]
 class RecordUnattributedEvent extends Tool
 {

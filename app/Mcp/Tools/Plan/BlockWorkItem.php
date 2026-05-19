@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Block a work item: move it from todo or in_progress to blocked. A blocker reason is required. Rejects any other source status with a clear message. Records a status transition with the acting user and timestamp.')]
 class BlockWorkItem extends Tool
 {

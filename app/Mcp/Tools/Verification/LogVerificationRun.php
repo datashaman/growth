@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Record a verification run for a verification case. Optionally attach visual evidence: pass evidence_asset_ids to cite screenshots (already uploaded to Growth) on the run — required for a UI-bearing requirement to pass the rigor-3+ visual-evidence readiness check.')]
 class LogVerificationRun extends Tool
 {

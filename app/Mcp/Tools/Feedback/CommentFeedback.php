@@ -15,7 +15,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Post a comment on a feedback entry, continuing its thread — ask the filer a follow-up question, or add detail after the original submission. The filer and everyone who has previously commented are notified; the author is not.')]
 class CommentFeedback extends Tool
 {

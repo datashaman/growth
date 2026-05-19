@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Submit qualitative feedback about using the Growth MCP tools — a difficulty, a bug, a suggestion, or a missing capability. This is the qualitative counterpart to the auto-recorded tool-invocation log. Call `search-feedback` first: if an equivalent entry already exists, do not submit a duplicate. Feedback starts as `new`; it is then triaged and resolved via the feedback transition tools (triage-feedback, resolve-feedback, reopen-feedback) or the webapp.')]
 class SendFeedback extends Tool
 {

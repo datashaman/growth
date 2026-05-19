@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive]
 #[Description('Delete a reusable review plan. Existing review records keep their copied criteria but lose the review_plan_id link.')]
 class DeleteReviewPlan extends Tool
 {

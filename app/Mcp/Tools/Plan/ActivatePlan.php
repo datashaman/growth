@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Activate a project plan: move it from baselined to active. Rejects a plan that is not baselined with a clear message. Records a status transition with the acting user and timestamp.')]
 class ActivatePlan extends Tool
 {

@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Create or update a milestone — a scope bundle with exit criteria. Work items can be linked to milestones via link-work-item-to-milestone. Status is not set here: new milestones start as pending and move only through the milestone transition tools (achieve).')]
 class UpsertMilestone extends Tool
 {

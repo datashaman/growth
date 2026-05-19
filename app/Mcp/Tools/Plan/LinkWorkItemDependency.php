@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Declare that work_item depends on depends_on (predecessor must finish before this one starts). Self-dependencies are rejected. Idempotent on (work_item_id, depends_on_id).')]
 class LinkWorkItemDependency extends Tool
 {

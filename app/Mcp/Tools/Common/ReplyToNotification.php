@@ -12,7 +12,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Reply to a notification in your inbox. The reply is delivered to whoever sent the original notification and joins its thread, so both sides see the exchange grouped together. Use list-notifications to find the notification_id.')]
 class ReplyToNotification extends Tool
 {

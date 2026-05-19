@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Create or update a Source: an input artifact the project definition is derived from (brief, RFP, interview transcript, contract, design prototype URL, etc.). Sources are then cited by project artifacts via cite-artifact.')]
 class UpsertSource extends Tool
 {

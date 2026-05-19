@@ -10,7 +10,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Subscribe the calling user to a change request. While subscribed, the user is notified whenever the change request transitions status. Subscribing again is idempotent — it never creates a duplicate.')]
 class SubscribeChangeRequest extends Tool
 {

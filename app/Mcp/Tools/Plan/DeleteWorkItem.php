@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive]
 #[Description('Delete a work item. Children promote to root (parent_id nulled). Requirement and milestone links cascade-drop. Citations cascade-drop.')]
 class DeleteWorkItem extends Tool
 {

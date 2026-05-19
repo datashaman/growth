@@ -10,7 +10,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Create or update a specialized Agent that can fill one or more Roles in this project. An Agent represents an automated worker (LLM, bot, integration) addressable as a role-filler. Agent names are unique per project.')]
 class UpsertAgent extends Tool
 {

@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive]
 #[Description('Delete an architecture view. Cascades: every element of the view is deleted; concern links are removed. Requires confirm_name to match the view name exactly.')]
 class DeleteArchitectureView extends Tool
 {

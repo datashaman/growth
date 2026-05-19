@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Archive a project: move it from active to archived. An archived project is read-only until restored. Rejects a project that is not active with a clear message. Records a status transition with the acting user and timestamp.')]
 class ArchiveProject extends Tool
 {

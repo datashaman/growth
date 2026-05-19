@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Roll back a finished deployment: move it from succeeded or failed to rolled_back. Rejects any other source status with a clear message. Records a status transition with the acting user and timestamp.')]
 class RollBackDeployment extends Tool
 {

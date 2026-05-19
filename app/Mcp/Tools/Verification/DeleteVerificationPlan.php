@@ -10,7 +10,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive]
 #[Description('Delete a verification plan. Cascades: cases delete, each case takes its runs; anomalies whose test_run_id pointed at a deleted run have that field nulled. Requires confirm_name to match the plan name exactly.')]
 class DeleteVerificationPlan extends Tool
 {

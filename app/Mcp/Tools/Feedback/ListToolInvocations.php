@@ -10,7 +10,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('List MCP tool invocations recorded for the active workspace. Filter by tool name or success state; useful for spotting frequently-failing or slow tools.')]
 class ListToolInvocations extends Tool
 {

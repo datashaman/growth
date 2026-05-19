@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Attach a role to a work item under a RACI label (r/a/c/i). A single role can carry multiple labels on the same work item. Idempotent.')]
 class AssignWorkItemRaci extends Tool
 {

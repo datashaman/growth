@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('Resolve a GitHub branch to the work item bound to it via a branch delivery link, so events on commits without a Growth-Work-Item trailer can still be attributed.')]
 class ResolveWorkItemByBranch extends Tool
 {

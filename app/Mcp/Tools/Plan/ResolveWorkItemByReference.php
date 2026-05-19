@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('Resolve a per-project work item reference (e.g. "WI-42") within a GitHub repository to its work item, so events carrying a reference in the branch name can be attributed without a Growth-Work-Item trailer.')]
 class ResolveWorkItemByReference extends Tool
 {

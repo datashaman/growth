@@ -13,7 +13,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Create or update a finding from a review. Findings may point at the reviewed artifact they concern. New findings start as `open`; status is not set here — it moves only through the disposition-finding, resolve-finding, accept-finding, close-finding, and reopen-finding transitions.')]
 class UpsertReviewFinding extends Tool
 {

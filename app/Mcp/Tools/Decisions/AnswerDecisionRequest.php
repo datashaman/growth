@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Answer an open decision request by choosing one of its options and giving a rationale. Only a user assigned to the target role may answer. Answering notifies the requester and closes the request.')]
 class AnswerDecisionRequest extends Tool
 {

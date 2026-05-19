@@ -14,9 +14,11 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 use Laravel\Passport\AccessToken;
 use Throwable;
 
+#[IsReadOnly]
 #[Description('Diagnose this MCP session: report authentication, the active workspace and how it resolved, token scope/expiry/workspace binding, and local-session env vars. Each check is `pass`, `warn`, `fail`, or `not_applicable`, with a remedy. This tool never errors — call it when other tools fail unexpectedly.')]
 class Doctor extends Tool
 {

@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('List Project Management Plans for a project, newest first. Use this to discover the project_plan_id values that baseline-plan and list-plan-baselines require.')]
 class ListProjectPlans extends Tool
 {

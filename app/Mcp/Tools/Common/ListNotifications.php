@@ -10,7 +10,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description('List the notifications addressed to you in the active workspace, newest first. Each entry records who sent it and the role they were acting in. Use mark-notification-read to clear them.')]
 class ListNotifications extends Tool
 {

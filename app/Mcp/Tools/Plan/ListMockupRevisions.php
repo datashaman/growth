@@ -10,7 +10,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
+#[IsReadOnly]
 #[Description("List a spec mockup's revisions — the ordered rounds of its HTML. The HTML itself is omitted; the highest number is the mockup's current state.")]
 class ListMockupRevisions extends Tool
 {

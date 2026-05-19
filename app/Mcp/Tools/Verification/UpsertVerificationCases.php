@@ -12,8 +12,10 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Throwable;
 
+#[IsDestructive(false)]
 #[Description('Create or update up to 100 verification cases in one call, syncing the requirements each case verifies. Each item is committed in its own transaction — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
 class UpsertVerificationCases extends Tool
 {

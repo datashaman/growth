@@ -9,7 +9,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Add or refine a named spec mockup on a work item or a requirement — a self-contained HTML page expressing a UI idea. A new name creates the mockup; an existing name appends a revision, keeping the earlier rounds.')]
 class UpsertMockup extends Tool
 {

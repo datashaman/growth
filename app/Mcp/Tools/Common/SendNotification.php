@@ -12,7 +12,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description("Send a notification to another member of the active workspace — a free-text message that lands in their bell inbox. Call list-users to find the recipient's user_id.")]
 class SendNotification extends Tool
 {

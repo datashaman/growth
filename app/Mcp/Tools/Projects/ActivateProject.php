@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Activate a project: move it from draft to active. Rejects a project that is not in draft with a clear message. Records a status transition with the acting user and timestamp.')]
 class ActivateProject extends Tool
 {

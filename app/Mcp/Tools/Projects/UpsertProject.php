@@ -11,7 +11,9 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
+#[IsDestructive(false)]
 #[Description('Create or update a Growth project. Omit id to create; provide id to update. A project in `archived` or `closed` status is read-only — to edit name/description/rigor_level, first move it back to `active` with the restore-project tool. Status is not set here: it moves only through the activate-project, archive-project, close-project, and restore-project transitions.')]
 class UpsertProject extends Tool
 {
