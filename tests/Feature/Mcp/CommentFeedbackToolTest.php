@@ -7,8 +7,8 @@ use App\Models\FeedbackComment;
 use App\Models\ToolFeedback;
 use App\Models\User;
 use App\Notifications\FeedbackCommented;
-use App\Support\OperatingRole;
-use App\Support\RoleContext;
+use App\Support\CapabilitySurface;
+use App\Support\SurfaceContext;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Passport\Passport;
 
@@ -39,14 +39,14 @@ it('appends a comment attributed to its author', function () {
         ->and($comment->user_id)->toBe($this->actor->id);
 });
 
-it('records the acting role on the comment', function () {
+it('records the acting surface on the comment', function () {
     $feedback = ($this->makeFeedback)();
-    app(RoleContext::class)->set(OperatingRole::Governance);
+    app(SurfaceContext::class)->set(CapabilitySurface::Governance);
 
     GovernanceServer::tool(CommentFeedback::class, ['feedback_id' => $feedback->id, 'body' => 'Triage note'])
         ->assertOk();
 
-    expect($feedback->comments()->sole()->acting_role)->toBe('governance');
+    expect($feedback->comments()->sole()->acting_surface)->toBe('governance');
 });
 
 it('rejects an unknown feedback id', function () {

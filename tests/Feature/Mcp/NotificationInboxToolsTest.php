@@ -29,7 +29,7 @@ beforeEach(function () {
             'subject_id' => '2',
             'workspace_id' => $this->workspaceId,
             'sender' => ['id' => '2', 'name' => 'Alice'],
-            'acting_role' => 'governance',
+            'acting_surface' => 'governance',
         ], $data),
     ]);
 });
@@ -44,7 +44,7 @@ it('lists the caller notifications newest first with sender provenance', functio
             $json->where('total', 2)
                 ->where('results.0.title', 'Newer')
                 ->where('results.0.sender.name', 'Alice')
-                ->where('results.0.acting_role', 'governance')
+                ->where('results.0.acting_surface', 'governance')
                 ->where('results.0.read', false)
                 ->etc();
         });

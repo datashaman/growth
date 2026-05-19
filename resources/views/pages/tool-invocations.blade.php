@@ -74,8 +74,8 @@ new #[Title('Tool invocations')] class extends Component {
                         <flux:table.cell class="font-medium">{{ $invocation->tool_name }}</flux:table.cell>
                         <flux:table.cell>{{ $invocation->agent?->name ?? $invocation->user?->name ?? '—' }}</flux:table.cell>
                         <flux:table.cell>
-                            @if ($invocation->acting_role)
-                                <flux:badge color="zinc" size="sm">{{ $invocation->acting_role }}</flux:badge>
+                            @if ($invocation->acting_surface)
+                                <flux:badge color="zinc" size="sm">{{ $invocation->acting_surface }}</flux:badge>
                             @else
                                 <span class="text-zinc-400 dark:text-zinc-500">{{ __('unbound') }}</span>
                             @endif

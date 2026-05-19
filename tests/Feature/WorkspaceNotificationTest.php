@@ -131,7 +131,7 @@ test('a workspace notification is stamped with workspace, sender, and acting rol
     expect($data['workspace_id'])->toBe($this->workspaceId)
         ->and($data['sender']['id'])->toBe((string) $this->actor->id)
         ->and($data['sender']['name'])->toBe($this->actor->name)
-        ->and($data)->toHaveKey('acting_role');
+        ->and($data)->toHaveKey('acting_surface');
 });
 
 test('a workspace notification fans across the database and broadcast channels', function () {

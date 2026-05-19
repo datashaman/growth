@@ -24,7 +24,7 @@ use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Resources\TraceGraphApp;
 use App\Mcp\Resources\VerificationResource;
-use App\Mcp\Servers\Concerns\RoleServerDefaults;
+use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
 use App\Mcp\Tools\Architecture\ListArchitectureElements;
 use App\Mcp\Tools\Architecture\ListArchitectureViewpoints;
 use App\Mcp\Tools\Architecture\ListArchitectureViews;
@@ -93,7 +93,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 #[Version('0.1.0')]
 class ReadonlyServer extends Server
 {
-    use RoleServerDefaults;
+    use SurfaceServerDefaults;
 
     protected array $tools = [
         WhoAmI::class,

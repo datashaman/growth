@@ -10,7 +10,7 @@ use App\Mcp\Resources\ReadinessResource;
 use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Resources\VerificationResource;
-use App\Mcp\Servers\Concerns\RoleServerDefaults;
+use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
 use App\Mcp\Tools\Assurance\BuildEvidenceBundle;
 use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
 use App\Mcp\Tools\Assurance\RecommendRigorLevel;
@@ -66,7 +66,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 #[Version('0.1.0')]
 class VerificationServer extends Server
 {
-    use RoleServerDefaults;
+    use SurfaceServerDefaults;
 
     protected array $tools = [
         WhoAmI::class,

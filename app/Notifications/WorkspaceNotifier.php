@@ -5,7 +5,7 @@ namespace App\Notifications;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\Workspace;
-use App\Support\RoleContext;
+use App\Support\SurfaceContext;
 use App\Support\WorkspaceContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -38,7 +38,7 @@ class WorkspaceNotifier
             ->values();
 
         if ($recipients->isNotEmpty()) {
-            $notification->withContext($workspace->id, $actor, $this->actingRole());
+            $notification->withContext($workspace->id, $actor, $this->actingSurface());
             Notification::send($recipients, $notification);
         }
     }
@@ -52,7 +52,7 @@ class WorkspaceNotifier
         $notification->withContext(
             app(WorkspaceContext::class)->id(),
             auth()->user(),
-            $this->actingRole(),
+            $this->actingSurface(),
         );
 
         $user->notify($notification);
@@ -75,18 +75,18 @@ class WorkspaceNotifier
         $notification->withContext(
             app(WorkspaceContext::class)->id(),
             auth()->user(),
-            $this->actingRole(),
+            $this->actingSurface(),
         );
 
         Notification::send($users, $notification);
     }
 
     /**
-     * The operating role bound to the current session, as its stored value.
+     * The capability surface bound to the current session, as its stored value.
      */
-    private function actingRole(): ?string
+    private function actingSurface(): ?string
     {
-        return app(RoleContext::class)->role()?->value;
+        return app(SurfaceContext::class)->surface()?->value;
     }
 
     /**

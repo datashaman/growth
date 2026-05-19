@@ -9,7 +9,7 @@ use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
-use App\Mcp\Servers\Concerns\RoleServerDefaults;
+use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
 use App\Mcp\Tools\Common\BulkLink;
 use App\Mcp\Tools\Common\Doctor;
 use App\Mcp\Tools\Common\ListNotifications;
@@ -114,7 +114,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 #[Version('0.1.0')]
 class PlanningServer extends Server
 {
-    use RoleServerDefaults;
+    use SurfaceServerDefaults;
 
     protected array $tools = [
         WhoAmI::class,

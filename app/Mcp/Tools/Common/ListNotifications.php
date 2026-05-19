@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('List the notifications addressed to you in the active workspace, newest first. Each entry records who sent it and the role they were acting in. Use mark-notification-read to clear them.')]
+#[Description('List the notifications addressed to you in the active workspace, newest first. Each entry records who sent it and the surface they were acting on. Use mark-notification-read to clear them.')]
 class ListNotifications extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -55,7 +55,7 @@ class ListNotifications extends Tool
                 'body' => $row->data['body'] ?? null,
                 'url' => $row->data['url'] ?? null,
                 'sender' => $row->data['sender'] ?? null,
-                'acting_role' => $row->data['acting_role'] ?? null,
+                'acting_surface' => $row->data['acting_surface'] ?? null,
                 'read' => $row->read_at !== null,
                 'created_at' => $row->created_at?->toIso8601String(),
             ])->all(),

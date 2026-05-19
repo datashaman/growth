@@ -12,20 +12,20 @@ use App\Mcp\Servers\VerificationServer;
 use Illuminate\Support\Facades\File;
 
 /**
- * The operating role a session is bound to (#183) — the overt context an agent
- * runs in. One case per role-scoped MCP server: the role *is* the canonical
- * taxonomy, and the server (its tool subset) and the webapp view lens are both
- * projections of it.
+ * The capability surface a session is bound to (#183) — a structural grouping
+ * of MCP tools, the overt context an agent runs in. One case per role-scoped
+ * MCP server: the surface *is* the canonical taxonomy, and the server (its tool
+ * subset) and the webapp view lens are both projections of it.
  *
- * A session with no `OperatingRole` is unbound — it gets `AllServer`, the full
- * surface, and a self-selected `ViewLens`. `AllServer` has no `OperatingRole`
- * by design: it is the unbound fallback, not a role.
+ * A session with no `CapabilitySurface` is unbound — it gets `AllServer`, the
+ * full surface, and a self-selected `ViewLens`. `AllServer` has no
+ * `CapabilitySurface` by design: it is the unbound fallback, not a surface.
  *
  * Case values match the MCP server path names (`/mcp/verification`,
- * `Mcp::local('verification')`) so a `GROWTH_ROLE` env var or a token's `role`
- * column reads naturally.
+ * `Mcp::local('verification')`) so a `GROWTH_SURFACE` env var or a token's
+ * `surface` column reads naturally.
  */
-enum OperatingRole: string
+enum CapabilitySurface: string
 {
     case Intake = 'intake';
     case Architecture = 'architecture';
@@ -36,7 +36,7 @@ enum OperatingRole: string
     case Readonly = 'readonly';
 
     /**
-     * The role-scoped MCP server whose tool subset this role inherits.
+     * The role-scoped MCP server whose tool subset this surface inherits.
      *
      * @return class-string
      */
@@ -54,8 +54,9 @@ enum OperatingRole: string
     }
 
     /**
-     * The webapp view lens this role projects onto the read side. Several roles
-     * may share a lens; the lens is a coarser persona grouping than the role.
+     * The webapp view lens this surface projects onto the read side. Several
+     * surfaces may share a lens; the lens is a coarser persona grouping than
+     * the surface.
      */
     public function lens(): ViewLens
     {
@@ -68,7 +69,7 @@ enum OperatingRole: string
     }
 
     /**
-     * Human-readable label for the role.
+     * Human-readable label for the surface.
      */
     public function label(): string
     {
@@ -84,12 +85,12 @@ enum OperatingRole: string
     }
 
     /**
-     * The persona delivered to a role-bound agent as the MCP server's
-     * `instructions` (#189) — what the role is accountable for, the judgement
-     * it brings, what it must not do, and which sibling role owns the adjacent
-     * work. Authored as Markdown under `resources/prompts/roles/` (one file per
-     * case value) so the persona is versioned in the repo, edits as plain
-     * Markdown, and arrives over the wire with no client-side install.
+     * The persona delivered to a surface-bound agent as the MCP server's
+     * `instructions` (#189) — what the surface is accountable for, the
+     * judgement it brings, what it must not do, and which sibling surface owns
+     * the adjacent work. Authored as Markdown under `resources/prompts/roles/`
+     * (one file per case value) so the persona is versioned in the repo, edits
+     * as plain Markdown, and arrives over the wire with no client-side install.
      */
     public function personaInstructions(): string
     {
@@ -97,16 +98,16 @@ enum OperatingRole: string
     }
 
     /**
-     * The operating role a given MCP server stands for, or null when the server
-     * is not role-scoped (`AllServer` — the unbound fallback).
+     * The capability surface a given MCP server stands for, or null when the
+     * server is not role-scoped (`AllServer` — the unbound fallback).
      *
      * @param  class-string  $serverClass
      */
     public static function forServer(string $serverClass): ?self
     {
-        foreach (self::cases() as $role) {
-            if ($role->server() === $serverClass) {
-                return $role;
+        foreach (self::cases() as $surface) {
+            if ($surface->server() === $serverClass) {
+                return $surface;
             }
         }
 

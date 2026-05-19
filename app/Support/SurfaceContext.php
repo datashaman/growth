@@ -8,31 +8,32 @@ use RuntimeException;
 use Throwable;
 
 /**
- * Single source of truth for "which operating role is this session bound to?"
- * (#183). Modelled on {@see WorkspaceContext} — the binding rides the session
- * the same way the workspace does.
+ * Single source of truth for "which capability surface is this session bound
+ * to?" (#183). Modelled on {@see WorkspaceContext} — the binding rides the
+ * session the same way the workspace does.
  *
  * Resolution order, first non-null wins:
- *   1. Token-bound role (HTTP MCP: Passport access token's `role` column).
- *   2. Environment override (local stdio MCP: GROWTH_ROLE). Like
+ *   1. Token-bound surface (HTTP MCP: Passport access token's `surface`
+ *      column).
+ *   2. Environment override (local stdio MCP: GROWTH_SURFACE). Like
  *      WorkspaceContext, this step applies only once a user is bound to the
  *      session — for stdio that means after the local binding from
  *      GROWTH_USER_EMAIL/GROWTH_USER_ID has run.
- *   3. Unbound — null. The session is not operating as a role; it gets the
+ *   3. Unbound — null. The session is not operating on a surface; it gets the
  *      full surface (AllServer) and a self-selected ViewLens.
  *
- * Unlike the workspace there is no authenticated-user fallback: a role is a
+ * Unlike the workspace there is no authenticated-user fallback: a surface is a
  * context a session declares, not a stored user preference.
  *
  * Override via `set()` for tests or scope-temporary work.
  */
-class RoleContext
+class SurfaceContext
 {
-    private ?OperatingRole $override = null;
+    private ?CapabilitySurface $override = null;
 
     private bool $overridden = false;
 
-    public function role(): ?OperatingRole
+    public function surface(): ?CapabilitySurface
     {
         if ($this->overridden) {
             return $this->override;
@@ -41,19 +42,19 @@ class RoleContext
         return $this->fromToken() ?? $this->fromEnv();
     }
 
-    public function requireRole(): OperatingRole
+    public function requireSurface(): CapabilitySurface
     {
-        $role = $this->role();
+        $surface = $this->surface();
 
-        if ($role === null) {
-            throw new RuntimeException('No operating role is bound to this session.');
+        if ($surface === null) {
+            throw new RuntimeException('No capability surface is bound to this session.');
         }
 
-        return $role;
+        return $surface;
     }
 
     /**
-     * Which resolution path produced the bound role, or null when none did.
+     * Which resolution path produced the bound surface, or null when none did.
      *
      * @return 'override'|'token'|'env'|null
      */
@@ -75,25 +76,25 @@ class RoleContext
     }
 
     /**
-     * Fail loudly when a role is bound to the session but the MCP server now
-     * booting stands for a different role — a configuration error (a token
-     * scoped to one role used against another role's URL, say). A server with
-     * no role (`AllServer`) accepts any session; an unbound session is fine
-     * against any server.
+     * Fail loudly when a surface is bound to the session but the MCP server now
+     * booting stands for a different surface — a configuration error (a token
+     * scoped to one surface used against another surface's URL, say). A server
+     * with no surface (`AllServer`) accepts any session; an unbound session is
+     * fine against any server.
      *
      * @param  class-string  $serverClass
      */
     public function assertServerMatches(string $serverClass): void
     {
-        $bound = $this->role();
-        $server = OperatingRole::forServer($serverClass);
+        $bound = $this->surface();
+        $server = CapabilitySurface::forServer($serverClass);
 
         if ($bound === null || $server === null || $bound === $server) {
             return;
         }
 
         throw new RuntimeException(sprintf(
-            'Session is bound to the %s role (%s) but reached the %s server. Bind the session to the matching role or use the %s server.',
+            'Session is bound to the %s surface (%s) but reached the %s server. Bind the session to the matching surface or use the %s server.',
             $bound->value,
             $this->source() ?? 'unknown',
             $server->value,
@@ -101,9 +102,9 @@ class RoleContext
         ));
     }
 
-    public function set(?OperatingRole $role): void
+    public function set(?CapabilitySurface $surface): void
     {
-        $this->override = $role;
+        $this->override = $surface;
         $this->overridden = true;
     }
 
@@ -113,7 +114,7 @@ class RoleContext
         $this->overridden = false;
     }
 
-    private function fromToken(): ?OperatingRole
+    private function fromToken(): ?CapabilitySurface
     {
         $user = auth()->user();
 
@@ -128,22 +129,22 @@ class RoleContext
         try {
             $token = $user->token();
 
-            $role = $token instanceof AccessToken ? $token->role : null;
+            $surface = $token instanceof AccessToken ? $token->surface : null;
         } catch (Throwable) {
             return null;
         }
 
-        return is_string($role) && $role !== '' ? OperatingRole::tryFrom($role) : null;
+        return is_string($surface) && $surface !== '' ? CapabilitySurface::tryFrom($surface) : null;
     }
 
-    private function fromEnv(): ?OperatingRole
+    private function fromEnv(): ?CapabilitySurface
     {
         if (! auth()->check()) {
             return null;
         }
 
-        $value = env('GROWTH_ROLE');
+        $value = env('GROWTH_SURFACE');
 
-        return is_string($value) && $value !== '' ? OperatingRole::tryFrom($value) : null;
+        return is_string($value) && $value !== '' ? CapabilitySurface::tryFrom($value) : null;
     }
 }

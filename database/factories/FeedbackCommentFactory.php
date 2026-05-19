@@ -21,7 +21,7 @@ class FeedbackCommentFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'acting_role' => null,
+            'acting_surface' => null,
             'body' => fake()->sentence(),
         ];
     }

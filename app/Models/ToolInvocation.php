@@ -24,7 +24,7 @@ class ToolInvocation extends Model
         'workspace_id',
         'user_id',
         'agent_id',
-        'acting_role',
+        'acting_surface',
         'tool_name',
         'transport',
         'success',

@@ -144,8 +144,8 @@ new #[Title('Notifications')] class extends Component {
                         </flux:table.cell>
                         <flux:table.cell class="whitespace-nowrap text-sm">
                             {{ $latest->data['sender']['name'] ?? __('System') }}
-                            @if ($latest->data['acting_role'] ?? null)
-                                <span class="text-zinc-400 dark:text-zinc-500">· {{ $latest->data['acting_role'] }}</span>
+                            @if ($latest->data['acting_surface'] ?? null)
+                                <span class="text-zinc-400 dark:text-zinc-500">· {{ $latest->data['acting_surface'] }}</span>
                             @endif
                         </flux:table.cell>
                         <flux:table.cell class="whitespace-nowrap text-right">

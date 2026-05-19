@@ -46,7 +46,7 @@ use App\Support\OAuthWorkspaceBinding;
 use App\Support\Passport\AccessTokenRepository;
 use App\Support\Passport\AuthCodeRepository;
 use App\Support\Passport\RefreshTokenRepository;
-use App\Support\RoleContext;
+use App\Support\SurfaceContext;
 use App\Support\WorkspaceContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -138,7 +138,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(WorkspaceContext::class);
-        $this->app->singleton(RoleContext::class);
+        $this->app->singleton(SurfaceContext::class);
         $this->app->singleton(AgentContext::class);
         // Scoped, not singleton: the holder carries mutable per-request state
         // and must reset between requests on long-lived workers (#197, #214).

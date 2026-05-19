@@ -7,7 +7,7 @@ use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
-use App\Mcp\Servers\Concerns\RoleServerDefaults;
+use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
 use App\Mcp\Tools\Architecture\DeleteArchitectureElement;
 use App\Mcp\Tools\Architecture\DeleteArchitectureView;
 use App\Mcp\Tools\Architecture\DeleteArchitectureViewpoint;
@@ -50,7 +50,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 #[Version('0.1.0')]
 class ArchitectureServer extends Server
 {
-    use RoleServerDefaults;
+    use SurfaceServerDefaults;
 
     protected array $tools = [
         WhoAmI::class,

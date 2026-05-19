@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Servers;
 
-use App\Mcp\Servers\Concerns\RoleServerDefaults;
+use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
@@ -14,8 +14,8 @@ use ReflectionClass;
 #[Instructions('Expose the complete MCP surface for power users and integration checks.')]
 class AllServer extends Server
 {
-    use RoleServerDefaults {
-        boot as bootRoleServerDefaults;
+    use SurfaceServerDefaults {
+        boot as bootSurfaceServerDefaults;
     }
 
     private const ROLE_SERVERS = [
@@ -34,7 +34,7 @@ class AllServer extends Server
         $this->resources = $this->unionFromRoleServers('resources');
         $this->prompts = $this->unionFromRoleServers('prompts');
 
-        $this->bootRoleServerDefaults();
+        $this->bootSurfaceServerDefaults();
     }
 
     /**

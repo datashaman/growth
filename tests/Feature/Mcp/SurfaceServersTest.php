@@ -18,7 +18,7 @@ use App\Models\Requirement;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
-use App\Support\OperatingRole;
+use App\Support\CapabilitySurface;
 use Laravel\Passport\Passport;
 
 it('exposes role-specific MCP metadata surfaces', function () {
@@ -82,8 +82,8 @@ it('delivers the role persona as the server instructions', function () {
 
 it('authors a distinct, non-empty persona for every role', function () {
     $personas = array_map(
-        fn (OperatingRole $role): string => $role->personaInstructions(),
-        OperatingRole::cases(),
+        fn (CapabilitySurface $surface): string => $surface->personaInstructions(),
+        CapabilitySurface::cases(),
     );
 
     foreach ($personas as $persona) {

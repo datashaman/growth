@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Support\RoleContext;
+use App\Support\SurfaceContext;
 use App\Support\ViewLens;
 use App\Support\WorkspaceContext;
 use Database\Factories\UserFactory;
@@ -116,13 +116,14 @@ class User extends Authenticatable implements OAuthenticatable
     /**
      * The user's active view lens.
      *
-     * For a role-bound session the lens is a projection of the operating role
-     * and the user's `view_lens` preference is ignored. For an unbound session
-     * it is the self-selected `view_lens`, defaulting to All when none is set.
+     * For a surface-bound session the lens is a projection of the capability
+     * surface and the user's `view_lens` preference is ignored. For an unbound
+     * session it is the self-selected `view_lens`, defaulting to All when none
+     * is set.
      */
     public function lens(): ViewLens
     {
-        return app(RoleContext::class)->role()?->lens()
+        return app(SurfaceContext::class)->surface()?->lens()
             ?? $this->view_lens
             ?? ViewLens::All;
     }

@@ -10,7 +10,7 @@ use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\RequirementExplorerApp;
 use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
-use App\Mcp\Servers\Concerns\RoleServerDefaults;
+use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
 use App\Mcp\Tools\Common\Doctor;
 use App\Mcp\Tools\Common\ListNotifications;
 use App\Mcp\Tools\Common\ListUsers;
@@ -62,7 +62,7 @@ use Laravel\Mcp\Server\Attributes\Version;
 #[Version('0.1.0')]
 class IntakeServer extends Server
 {
-    use RoleServerDefaults;
+    use SurfaceServerDefaults;
 
     protected array $tools = [
         WhoAmI::class,
