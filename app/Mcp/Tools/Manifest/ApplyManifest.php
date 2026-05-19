@@ -3,11 +3,13 @@
 namespace App\Mcp\Tools\Manifest;
 
 use App\Growth\Manifest\ManifestApplier;
+use App\Mcp\McpProgressReporter;
+use Generator;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
-use Laravel\Mcp\ResponseFactory;
 use Laravel\Mcp\Server\Attributes\Description;
+use Laravel\Mcp\Server\Notifications\ProgressNotification;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use RuntimeException;
@@ -18,7 +20,7 @@ class ApplyManifest extends Tool
 {
     public function __construct(private readonly ManifestApplier $applier) {}
 
-    public function handle(Request $request): ResponseFactory
+    public function handle(Request $request, ProgressNotification $progress): Generator
     {
         $request->validate([
             'manifest' => 'required|array',
@@ -73,13 +75,17 @@ class ApplyManifest extends Tool
         $dryRun = (bool) ($raw['dry_run'] ?? false);
         $confirm = $raw['confirm'] ?? null;
 
+        $reporter = McpProgressReporter::forRequest($request, $progress);
+
         try {
-            $report = $this->applier->apply($manifest, $mode, $dryRun, $confirm);
+            $report = $this->applier->apply($manifest, $mode, $dryRun, $confirm, progress: $reporter);
         } catch (RuntimeException $e) {
-            return new ResponseFactory(Response::error($e->getMessage()));
+            yield Response::error($e->getMessage());
+
+            return;
         }
 
-        return Response::structured($report);
+        yield Response::structured($report);
     }
 
     public function schema(JsonSchema $schema): array

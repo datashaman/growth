@@ -2,6 +2,8 @@
 
 namespace App\Growth\Manifest;
 
+use App\Growth\Progress\NullProgressReporter;
+use App\Growth\Progress\ProgressReporter;
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -22,7 +24,7 @@ class ManifestExporter
     /**
      * @return array<string,mixed>
      */
-    public function export(string $projectId): array
+    public function export(string $projectId, ProgressReporter $progress = new NullProgressReporter): array
     {
         $project = Project::query()
             ->with([
@@ -81,6 +83,7 @@ class ManifestExporter
         $manifest = [
             'project' => $this->emitProject($project),
         ];
+        $progress->report(1, 7, 'Exported project');
 
         $stakeholders = $project->stakeholders
             ->sortBy(fn ($s) => $stakeholderSlugs[$s->id])
@@ -90,6 +93,7 @@ class ManifestExporter
         if ($stakeholders) {
             $manifest['stakeholders'] = $stakeholders;
         }
+        $progress->report(2, 7, 'Exported stakeholders');
 
         $concerns = $project->concerns
             ->sortBy(fn ($c) => $concernSlugs[$c->id])
@@ -99,6 +103,7 @@ class ManifestExporter
         if ($concerns) {
             $manifest['concerns'] = $concerns;
         }
+        $progress->report(3, 7, 'Exported concerns');
 
         $requirements = $project->requirements
             ->sortBy('slug')
@@ -108,6 +113,7 @@ class ManifestExporter
         if ($requirements) {
             $manifest['requirements'] = $requirements;
         }
+        $progress->report(4, 7, 'Exported requirements');
 
         $architecture = [];
         $viewpoints = $project->customViewpoints
@@ -129,6 +135,7 @@ class ManifestExporter
         if ($architecture) {
             $manifest['architecture'] = $architecture;
         }
+        $progress->report(5, 7, 'Exported architecture');
 
         if ($project->projectPlan) {
             $manifest['plan'] = $this->emitPlan(
@@ -139,6 +146,7 @@ class ManifestExporter
                 $requirementSlugs,
             );
         }
+        $progress->report(6, 7, 'Exported plan');
 
         $verification = [];
         $plans = $project->testPlans
@@ -150,6 +158,7 @@ class ManifestExporter
             $verification['plans'] = $plans;
             $manifest['verification'] = $verification;
         }
+        $progress->report(7, 7, 'Exported verification');
 
         return $manifest;
     }

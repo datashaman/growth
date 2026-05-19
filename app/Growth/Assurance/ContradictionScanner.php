@@ -2,6 +2,8 @@
 
 namespace App\Growth\Assurance;
 
+use App\Growth\Progress\NullProgressReporter;
+use App\Growth\Progress\ProgressReporter;
 use App\Models\Project;
 use App\Models\WorkItemDeliveryLink;
 
@@ -10,13 +12,16 @@ class ContradictionScanner
     /**
      * @return array<string,mixed>
      */
-    public function scan(Project $project): array
+    public function scan(Project $project, ProgressReporter $progress = new NullProgressReporter): array
     {
-        $findings = array_merge(
-            $this->doneWorkAgainstOpenAnomalies($project),
-            $this->deployedFailedDeliveryLinks($project),
-            $this->implementedRejectedChanges($project),
-        );
+        $findings = $this->doneWorkAgainstOpenAnomalies($project);
+        $progress->report(1, 3, 'Checked done work against open anomalies');
+
+        $findings = array_merge($findings, $this->deployedFailedDeliveryLinks($project));
+        $progress->report(2, 3, 'Checked delivery links deployed despite failed checks');
+
+        $findings = array_merge($findings, $this->implementedRejectedChanges($project));
+        $progress->report(3, 3, 'Checked change requests implemented despite rejection');
 
         return [
             'project_id' => $project->id,
