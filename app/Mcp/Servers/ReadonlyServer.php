@@ -6,6 +6,7 @@ use App\Mcp\Resources\ArchitectureResource;
 use App\Mcp\Resources\EvidenceResource;
 use App\Mcp\Resources\GateStatusApp;
 use App\Mcp\Resources\IntentResource;
+use App\Mcp\Resources\MockupResource;
 use App\Mcp\Resources\PlanResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\Project\ProjectChangesResource;
@@ -175,5 +176,6 @@ class ReadonlyServer extends Server
         ProjectSourcesResource::class,
         ProjectChangesResource::class,
         ProjectReviewsResource::class,
+        MockupResource::class,
     ];
 }
