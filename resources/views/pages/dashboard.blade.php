@@ -1,6 +1,7 @@
 <?php
 
 use App\Growth\Assurance\ReadinessGateEvaluator;
+use App\Growth\Digest\WhatNeedsMeDigest;
 use App\Growth\Execution\ImplementationStatusSummarizer;
 use App\Models\Anomaly;
 use App\Models\ChangeRequest;
@@ -65,6 +66,7 @@ new #[Title('Dashboard')] class extends Component {
             $this->reviews,
             $this->countTiles,
             $this->findingSubjects,
+            $this->myQueue,
         );
     }
 
@@ -222,6 +224,19 @@ new #[Title('Dashboard')] class extends Component {
         return $result;
     }
 
+    /**
+     * The caller's "what needs me" digest for the selected project.
+     *
+     * @return array<string,mixed>|null
+     */
+    #[Computed]
+    public function myQueue(): ?array
+    {
+        return $this->project
+            ? app(WhatNeedsMeDigest::class)->for($this->project, auth()->user())
+            : null;
+    }
+
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -270,6 +285,93 @@ new #[Title('Dashboard')] class extends Component {
                 </div>
             </section>
             @endif
+
+            @php
+                $queue = $this->myQueue;
+                $queueEmpty = $queue['total'] === 0 && count($queue['unowned_lint_findings']) === 0;
+            @endphp
+            <x-data-table
+                :title="__('My Queue')"
+                :count="$queue['total']"
+                :count-label="__('waiting on you')"
+                :empty="$queueEmpty"
+                :empty-message="__('Nothing is open and waiting on you.')">
+                <flux:table class="[&_td]:align-top">
+                    <flux:table.columns>
+                        <flux:table.column class="w-40">{{ __('Kind') }}</flux:table.column>
+                        <flux:table.column>{{ __('Item') }}</flux:table.column>
+                        <flux:table.column class="w-48">{{ __('Detail') }}</flux:table.column>
+                    </flux:table.columns>
+                    <flux:table.rows>
+                        @foreach ($queue['change_requests'] as $item)
+                            <flux:table.row>
+                                <flux:table.cell><flux:badge color="amber" size="sm">{{ __('change request') }}</flux:badge></flux:table.cell>
+                                <flux:table.cell>
+                                    <a href="{{ route('change-requests.show', $item['id']) }}" wire:navigate class="font-medium hover:underline">{{ $item['reference'] }} — {{ $item['title'] }}</a>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge :color="BadgeVariant::changeRequestPriority($item['priority'])" size="sm">{{ EnumLabel::lower($item['priority']) }}</flux:badge>
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                        @foreach ($queue['reviews'] as $item)
+                            <flux:table.row>
+                                <flux:table.cell><flux:badge color="sky" size="sm">{{ __('review') }}</flux:badge></flux:table.cell>
+                                <flux:table.cell>
+                                    <a href="{{ route('reviews.show', $item['id']) }}" wire:navigate class="font-medium hover:underline">{{ $item['title'] }}</a>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('as :role', ['role' => str_replace('_', ' ', (string) $item['responsibility'])]) }}</div>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge :color="BadgeVariant::reviewStatus($item['status'])" size="sm">{{ str_replace('_', ' ', (string) $item['status']) }}</flux:badge>
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                        @foreach ($queue['blocked_work_items'] as $item)
+                            <flux:table.row>
+                                <flux:table.cell><flux:badge color="zinc" size="sm">{{ __('work item') }}</flux:badge></flux:table.cell>
+                                <flux:table.cell>
+                                    <a href="{{ route('work-items.show', $item['id']) }}" wire:navigate class="font-medium hover:underline">{{ $item['reference'] }} — {{ $item['name'] }}</a>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <flux:badge :color="BadgeVariant::workItemStatus('blocked')" size="sm">{{ __('blocked') }}</flux:badge>
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                        @foreach ($queue['decision_requests'] as $item)
+                            <flux:table.row>
+                                <flux:table.cell><flux:badge color="purple" size="sm">{{ __('decision') }}</flux:badge></flux:table.cell>
+                                <flux:table.cell>
+                                    <div class="font-medium">{{ \Illuminate\Support\Str::limit($item['question'], 100) }}</div>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('routed to :role', ['role' => $item['target_role'] ?? '—']) }}</div>
+                                </flux:table.cell>
+                                <flux:table.cell class="text-xs text-zinc-500 dark:text-zinc-400">
+                                    {{ $item['deadline'] ? __('by :date', ['date' => \Illuminate\Support\Carbon::parse($item['deadline'])->format('Y-m-d')]) : '—' }}
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                        @foreach ($queue['lint_findings'] as $item)
+                            <flux:table.row>
+                                <flux:table.cell><flux:badge :color="BadgeVariant::finding('error')" size="sm">{{ __('lint error') }}</flux:badge></flux:table.cell>
+                                <flux:table.cell>
+                                    <div class="font-medium">{{ $item['message'] }}</div>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ str_replace('_', ' ', (string) $item['subject_type']) }}</div>
+                                </flux:table.cell>
+                                <flux:table.cell class="text-xs text-zinc-500 dark:text-zinc-400">{{ $item['rule'] }}</flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                        @foreach ($queue['unowned_lint_findings'] as $item)
+                            <flux:table.row>
+                                <flux:table.cell><flux:badge color="zinc" size="sm">{{ __('lint error (unowned)') }}</flux:badge></flux:table.cell>
+                                <flux:table.cell>
+                                    <div class="font-medium">{{ $item['message'] }}</div>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ str_replace('_', ' ', (string) $item['subject_type']) }}</div>
+                                </flux:table.cell>
+                                <flux:table.cell class="text-xs text-zinc-500 dark:text-zinc-400">{{ $item['rule'] }}</flux:table.cell>
+                            </flux:table.row>
+                        @endforeach
+                    </flux:table.rows>
+                </flux:table>
+            </x-data-table>
 
             @if ($lens->revealsPanel('readiness'))
             <section class="grid grid-cols-1 gap-6 lg:grid-cols-2">

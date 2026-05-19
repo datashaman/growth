@@ -16,6 +16,7 @@ use App\Mcp\Tools\Common\ListUsers;
 use App\Mcp\Tools\Common\MarkNotificationRead;
 use App\Mcp\Tools\Common\SendNotification;
 use App\Mcp\Tools\Common\WhoAmI;
+use App\Mcp\Tools\Dashboard\SummarizeMyQueue;
 use App\Mcp\Tools\Decisions\AnswerDecisionRequest;
 use App\Mcp\Tools\Decisions\CancelDecisionRequest;
 use App\Mcp\Tools\Decisions\CreateDecisionRequest;
@@ -117,6 +118,7 @@ class PlanningServer extends Server
         WhoAmI::class,
         CreateDecisionRequest::class,
         ListDecisionQueue::class,
+        SummarizeMyQueue::class,
         AnswerDecisionRequest::class,
         CancelDecisionRequest::class,
         ListNotifications::class,

@@ -43,6 +43,7 @@ use App\Mcp\Tools\Dashboard\ShowGateStatus;
 use App\Mcp\Tools\Dashboard\ShowProjectDashboard;
 use App\Mcp\Tools\Dashboard\ShowRequirementExplorer;
 use App\Mcp\Tools\Dashboard\ShowTraceGraph;
+use App\Mcp\Tools\Dashboard\SummarizeMyQueue;
 use App\Mcp\Tools\Decisions\AnswerDecisionRequest;
 use App\Mcp\Tools\Decisions\CancelDecisionRequest;
 use App\Mcp\Tools\Decisions\CreateDecisionRequest;
@@ -94,6 +95,7 @@ class ReadonlyServer extends Server
         WhoAmI::class,
         CreateDecisionRequest::class,
         ListDecisionQueue::class,
+        SummarizeMyQueue::class,
         AnswerDecisionRequest::class,
         CancelDecisionRequest::class,
         ListNotifications::class,
