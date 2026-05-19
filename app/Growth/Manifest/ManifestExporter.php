@@ -244,6 +244,9 @@ class ManifestExporter
             'source' => $requirement->source,
             'priority' => $requirement->priority,
             'tags' => $requirement->tags,
+            // Emit only when set — `compact()` keeps `false`, so a plain
+            // boolean would noise every non-UI requirement with `false`.
+            'renders_ui' => $requirement->renders_ui ?: null,
             '_exported_at' => $requirement->updated_at?->toIso8601String(),
         ]);
     }

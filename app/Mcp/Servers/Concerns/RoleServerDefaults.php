@@ -11,8 +11,10 @@ trait RoleServerDefaults
 
     protected function boot(): void
     {
-        $this->maxPaginationLength = 200;
-        $this->defaultPaginationLength = 200;
+        // High enough that one page holds a role server's whole tool surface
+        // — the AllServer union is the largest and must fit in a single list.
+        $this->maxPaginationLength = 300;
+        $this->defaultPaginationLength = 300;
 
         $this->bootTrustedLocalSession();
 

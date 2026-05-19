@@ -22,11 +22,13 @@ class Requirement extends Model
     protected $fillable = [
         'project_id', 'parent_id', 'slug', 'doc', 'type', 'text',
         'rationale', 'acceptance_criteria', 'source', 'priority', 'tags',
+        'renders_ui',
     ];
 
     protected $casts = [
         'acceptance_criteria' => 'array',
         'tags' => 'array',
+        'renders_ui' => 'boolean',
     ];
 
     protected static function booted(): void

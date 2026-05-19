@@ -52,3 +52,61 @@ it('upserts multiple requirements in one batch and reports per-item failures wit
 
     expect(Requirement::where('project_id', $project->id)->count())->toBe(2);
 });
+
+it('creates a requirement flagged as UI-bearing and defaults the flag to false', function () {
+    $user = User::factory()->create();
+    Passport::actingAs($user, ['mcp:use']);
+    $project = Project::create(['workspace_id' => $user->active_workspace_id, 'name' => 'UI', 'rigor_level' => 2]);
+
+    IntakeServer::tool(UpsertRequirements::class, [
+        'items' => [
+            [
+                'project_id' => $project->id,
+                'layer' => 'software',
+                'type' => 'functional',
+                'text' => 'The app shall render a dashboard chart.',
+                'renders_ui' => true,
+            ],
+            [
+                'project_id' => $project->id,
+                'layer' => 'software',
+                'type' => 'functional',
+                'text' => 'The app shall compute totals nightly.',
+            ],
+        ],
+    ])->assertOk();
+
+    $ui = Requirement::where('text', 'The app shall render a dashboard chart.')->sole();
+    $headless = Requirement::where('text', 'The app shall compute totals nightly.')->sole();
+
+    expect($ui->renders_ui)->toBeTrue()
+        ->and($headless->renders_ui)->toBeFalse();
+});
+
+it('leaves renders_ui untouched when an update omits the flag', function () {
+    $user = User::factory()->create();
+    Passport::actingAs($user, ['mcp:use']);
+    $project = Project::create(['workspace_id' => $user->active_workspace_id, 'name' => 'UI', 'rigor_level' => 2]);
+
+    $requirement = Requirement::create([
+        'project_id' => $project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The app shall render a dashboard chart.',
+        'renders_ui' => true,
+    ]);
+
+    IntakeServer::tool(UpsertRequirements::class, [
+        'items' => [
+            [
+                'id' => $requirement->id,
+                'project_id' => $project->id,
+                'layer' => 'software',
+                'type' => 'functional',
+                'text' => 'The app shall render a dashboard chart with a legend.',
+            ],
+        ],
+    ])->assertOk();
+
+    expect($requirement->fresh()->renders_ui)->toBeTrue();
+});

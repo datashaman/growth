@@ -100,7 +100,7 @@ it('exposes the doctor tool on every role server', function (string $endpoint) {
         'jsonrpc' => '2.0',
         'id' => 1,
         'method' => 'tools/list',
-        'params' => ['per_page' => 200],
+        'params' => ['per_page' => 300],
     ])->assertOk()->json('result.tools');
 
     expect(collect($tools)->pluck('name')->all())->toContain('doctor');
@@ -123,7 +123,7 @@ it('exposes the complete MCP surface through the all server', function () {
         'id' => 1,
         'method' => 'tools/list',
         'params' => [
-            'per_page' => 200,
+            'per_page' => 300,
         ],
     ])->assertOk()->json('result.tools');
 
@@ -132,7 +132,7 @@ it('exposes the complete MCP surface through the all server', function () {
         'id' => 2,
         'method' => 'resources/templates/list',
         'params' => [
-            'per_page' => 200,
+            'per_page' => 300,
         ],
     ])->assertOk()->json('result.resourceTemplates');
 
@@ -206,7 +206,7 @@ it('exposes the project dashboard app through readonly and all servers', functio
         'id' => 4,
         'method' => 'tools/list',
         'params' => [
-            'per_page' => 200,
+            'per_page' => 300,
         ],
     ])->assertOk()->json('result.tools');
 

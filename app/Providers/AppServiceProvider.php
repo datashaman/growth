@@ -17,6 +17,7 @@ use App\Models\DecisionRequest;
 use App\Models\Deployment;
 use App\Models\DesignElement;
 use App\Models\DesignView;
+use App\Models\EvidenceAsset;
 use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\ProjectPlan;
@@ -124,6 +125,7 @@ class AppServiceProvider extends ServiceProvider
         'owned_role' => [Role::class,            'roles.id'],
         'owned_work_item' => [WorkItem::class,        'work_items.id'],
         'owned_work_item_delivery_link' => [WorkItemDeliveryLink::class, 'work_item_delivery_links.id'],
+        'owned_evidence_asset' => [EvidenceAsset::class, 'evidence_assets.id'],
         'owned_risk' => [Risk::class,            'risks.id'],
         'owned_review_plan' => [ReviewPlan::class,      'review_plans.id'],
         'owned_review' => [Review::class,          'reviews.id'],

@@ -1,10 +1,15 @@
 <?php
 
 use App\Growth\Lint\TestLinter;
+use App\Models\EvidenceAsset;
 use App\Models\Project;
+use App\Models\Requirement;
 use App\Models\TestCase;
 use App\Models\TestPlan;
+use App\Models\TestRun;
 use App\Models\User;
+use App\Models\WorkItem;
+use App\Models\WorkItemDeliveryLink;
 
 beforeEach(function () {
     $this->linter = app(TestLinter::class);
@@ -110,4 +115,133 @@ it('uses "verification plan" terminology in plan-level rule messages', function 
 
     expect($messages)->toContain('Project has no master verification plan');
     expect($messages->filter(fn ($m) => str_contains($m, 'test plan'))->values()->all())->toBe([]);
+});
+
+function rigorProject(int $rigor): Project
+{
+    return Project::create([
+        'workspace_id' => User::factory()->create()->active_workspace_id,
+        'name' => 'Visual rigor '.$rigor,
+        'rigor_level' => $rigor,
+    ]);
+}
+
+function uiRequirement(Project $project, bool $rendersUi = true): Requirement
+{
+    return Requirement::create([
+        'project_id' => $project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The dashboard renders a chart for the user',
+        'renders_ui' => $rendersUi,
+    ]);
+}
+
+function runFor(Project $project, Requirement $requirement, string $status): TestRun
+{
+    $plan = makePlan($project, 'unit');
+    $case = TestCase::create([
+        'test_plan_id' => $plan->id,
+        'name' => 'Chart renders '.uniqid(),
+        'objective' => 'see the chart',
+        'expected_results' => 'the chart is visible',
+    ]);
+    $case->requirements()->attach($requirement);
+
+    return TestRun::create([
+        'test_case_id' => $case->id,
+        'status' => $status,
+        'run_at' => now(),
+    ]);
+}
+
+function attachEvidence(Project $project, TestRun $run): EvidenceAsset
+{
+    $workItem = WorkItem::create([
+        'project_id' => $project->id,
+        'kind' => 'task',
+        'name' => 'Build the chart',
+    ]);
+    $link = WorkItemDeliveryLink::create([
+        'work_item_id' => $workItem->id,
+        'type' => 'evidence',
+        'ref' => '#1',
+    ]);
+    $asset = EvidenceAsset::create([
+        'work_item_delivery_link_id' => $link->id,
+        'path' => 'docs/evidence/chart.png',
+        'caption' => 'chart.png',
+    ]);
+    $run->evidenceAssets()->attach($asset);
+
+    return $asset;
+}
+
+function visualEvidenceFinding(TestLinter $linter, Project $project): ?array
+{
+    return collect($linter->check($project->fresh()))
+        ->firstWhere('rule', 'ui-requirement-no-visual-evidence');
+}
+
+it('flags a UI-bearing requirement whose passing run carries no visual evidence', function () {
+    $project = rigorProject(3);
+    $requirement = uiRequirement($project);
+    runFor($project, $requirement, 'pass');
+
+    $finding = visualEvidenceFinding($this->linter, $project);
+
+    expect($finding)->not->toBeNull()
+        ->and($finding['severity'])->toBe('warning')
+        ->and($finding['subject_type'])->toBe('requirement')
+        ->and($finding['subject_id'])->toBe($requirement->id);
+});
+
+it('does not flag the visual-evidence rule below rigor level 3', function () {
+    $project = rigorProject(2);
+    $requirement = uiRequirement($project);
+    runFor($project, $requirement, 'pass');
+
+    expect(visualEvidenceFinding($this->linter, $project))->toBeNull();
+});
+
+it('does not flag when a passing run carries visual evidence', function () {
+    $project = rigorProject(3);
+    $requirement = uiRequirement($project);
+    $run = runFor($project, $requirement, 'pass');
+    attachEvidence($project, $run);
+
+    expect(visualEvidenceFinding($this->linter, $project))->toBeNull();
+});
+
+it('does not flag when evidence is on one of several passing runs', function () {
+    $project = rigorProject(3);
+    $requirement = uiRequirement($project);
+    runFor($project, $requirement, 'pass');
+    $withEvidence = runFor($project, $requirement, 'pass');
+    attachEvidence($project, $withEvidence);
+
+    expect(visualEvidenceFinding($this->linter, $project))->toBeNull();
+});
+
+it('does not flag a requirement that does not render UI', function () {
+    $project = rigorProject(3);
+    $requirement = uiRequirement($project, rendersUi: false);
+    runFor($project, $requirement, 'pass');
+
+    expect(visualEvidenceFinding($this->linter, $project))->toBeNull();
+});
+
+it('does not flag when the requirement has only failing runs', function () {
+    $project = rigorProject(3);
+    $requirement = uiRequirement($project);
+    runFor($project, $requirement, 'fail');
+
+    expect(visualEvidenceFinding($this->linter, $project))->toBeNull();
+});
+
+it('does not flag a UI-bearing requirement with no verification runs', function () {
+    $project = rigorProject(3);
+    uiRequirement($project);
+
+    expect(visualEvidenceFinding($this->linter, $project))->toBeNull();
 });

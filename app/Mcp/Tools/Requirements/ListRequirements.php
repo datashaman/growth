@@ -54,6 +54,7 @@ class ListRequirements extends Tool
                 'layer' => AlignmentText::docToLayer($requirement->doc),
                 'type' => $requirement->type,
                 'priority' => $requirement->priority,
+                'renders_ui' => $requirement->renders_ui,
                 'text' => $requirement->text,
                 'acceptance_checks' => $requirement->acceptance_criteria ?? [],
                 'source' => $requirement->source,
