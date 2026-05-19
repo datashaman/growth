@@ -1,11 +1,18 @@
 <?php
 
+use App\Http\Controllers\EvidenceAssetController;
 use App\Http\Controllers\SpecMockupController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', 'dashboard')->name('home');
 
 Route::livewire('invitations/{token}', 'pages::invitations.show')->name('invitations.show');
+
+// Public, unauthenticated image-serving route — the stable URL embedded in
+// per-PR evidence galleries. Outside the auth group on purpose: GitHub's camo
+// proxy fetches it without credentials, and a plain PNG cannot script.
+Route::get('evidence-assets/{evidenceAsset}', [EvidenceAssetController::class, 'show'])
+    ->name('evidence-assets.show');
 
 Route::middleware('auth')->group(function () {
     Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');

@@ -6,6 +6,7 @@ use App\Models\Concern;
 use App\Models\CustomViewpoint;
 use App\Models\DesignElement;
 use App\Models\DesignView;
+use App\Models\EvidenceAsset;
 use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\ProjectPlan;
@@ -16,6 +17,8 @@ use App\Models\TestCase;
 use App\Models\TestPlan;
 use App\Models\User;
 use App\Models\WorkItem;
+use App\Models\WorkItemDeliveryLink;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Passport\Passport;
 
 beforeEach(function () {
@@ -186,6 +189,39 @@ it('replace mode wipes existing child entities and recreates from manifest', fun
     expect(Requirement::where('slug', 'old-cap')->exists())->toBeFalse();
     expect(Requirement::where('slug', 'new-cap')->exists())->toBeTrue();
     expect(Stakeholder::where('project_id', $project->id)->where('name', 'Old Person')->exists())->toBeFalse();
+});
+
+it('replace mode deletes evidence asset s3 objects through the model layer', function () {
+    Storage::fake('s3');
+
+    $project = Project::create(['workspace_id' => $this->user->active_workspace_id, 'name' => 'Wipe', 'rigor_level' => 2]);
+    $workItem = WorkItem::create([
+        'project_id' => $project->id,
+        'kind' => 'task',
+        'name' => 'Ship it',
+    ]);
+    $deliveryLink = WorkItemDeliveryLink::create([
+        'work_item_id' => $workItem->id,
+        'type' => 'evidence',
+        'ref' => 'PR-1',
+    ]);
+    Storage::disk(EvidenceAsset::DISK)->put('evidence-assets/shot.png', 'fake-png-bytes');
+    $asset = $deliveryLink->evidenceAssets()->create([
+        'path' => 'evidence-assets/shot.png',
+        'caption' => 'home',
+        'content_type' => 'image/png',
+    ]);
+
+    ManagementServer::tool(ApplyManifest::class, [
+        'manifest' => [
+            'project' => ['id' => $project->id, 'name' => 'Wipe'],
+        ],
+        'mode' => 'replace',
+        'confirm' => 'Wipe',
+    ])->assertOk();
+
+    expect(EvidenceAsset::query()->find($asset->id))->toBeNull();
+    Storage::disk(EvidenceAsset::DISK)->assertMissing('evidence-assets/shot.png');
 });
 
 it('replace mode falls back to fail when project does not exist', function () {

@@ -50,6 +50,21 @@ class WorkItem extends Model
                 throw new RuntimeException('A work item cannot be moved to another project.');
             }
         });
+
+        // Delivery links FK-cascade when the work item is deleted, but a DB
+        // cascade fires no model events — so the evidence assets hanging off
+        // those links would lose their S3 objects. Delete the assets through
+        // the model layer here so their `deleting` cleanup runs, streamed so
+        // the cleanup stays memory-bounded.
+        static::deleting(function (WorkItem $workItem): void {
+            $assets = EvidenceAsset::whereHas('deliveryLink', function ($query) use ($workItem): void {
+                $query->where('work_item_id', $workItem->getKey());
+            });
+
+            foreach ($assets->cursor() as $asset) {
+                $asset->delete();
+            }
+        });
     }
 
     /**

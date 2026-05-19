@@ -70,6 +70,21 @@ class Project extends Model
                 $query->where('projects.workspace_id', $workspaceId);
             }
         });
+
+        // Evidence assets sit three FK hops below a project (project → work
+        // item → delivery link → asset). The cascade drops their rows without
+        // firing model events, so their S3 objects would be orphaned. Delete
+        // the assets through the model layer here, streamed so the cleanup
+        // stays memory-bounded however many screenshots have accumulated.
+        static::deleting(function (Project $project): void {
+            $assets = EvidenceAsset::whereHas('deliveryLink.workItem', function (Builder $query) use ($project): void {
+                $query->where('project_id', $project->getKey());
+            });
+
+            foreach ($assets->cursor() as $asset) {
+                $asset->delete();
+            }
+        });
     }
 
     public function workspace(): BelongsTo
