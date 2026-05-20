@@ -29,5 +29,7 @@ it('renders the trace-graph blade with the expected MCP wiring', function () {
         ->assertSee('trace-query')
         ->assertSee('Trace Graph')
         ->assertSee('window.GrowthApp')
-        ->assertSee('vis-network');
+        ->assertSee('vis-network')
+        ->assertSee('state.projects = payload?.results ?? []', false)
+        ->assertDontSee('state.projects = payload?.projects', false);
 });
