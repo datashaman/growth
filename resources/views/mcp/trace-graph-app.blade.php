@@ -393,7 +393,7 @@
                 }
 
                 const payload = window.GrowthApp.parseToolPayload(result);
-                state.projects = payload?.projects ?? [];
+                state.projects = payload?.results ?? [];
                 state.loadingProjects = false;
 
                 if (!state.selectedProjectId && state.projects.length > 0) {
