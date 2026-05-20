@@ -4,6 +4,7 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Prompts\PlanSlice;
 use App\Mcp\Resources\MockupResource;
+use App\Mcp\Resources\OwnerMockupResource;
 use App\Mcp\Resources\PlanResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
@@ -56,6 +57,7 @@ use App\Mcp\Tools\Plan\DeleteRelease;
 use App\Mcp\Tools\Plan\DeleteRisk;
 use App\Mcp\Tools\Plan\DeleteRole;
 use App\Mcp\Tools\Plan\DeleteWorkItem;
+use App\Mcp\Tools\Plan\GetMockup;
 use App\Mcp\Tools\Plan\LinkWorkItemDependency;
 use App\Mcp\Tools\Plan\LinkWorkItemToMilestone;
 use App\Mcp\Tools\Plan\LinkWorkItemToRequirements;
@@ -185,6 +187,7 @@ class PlanningServer extends Server
         UpsertDeliveryLink::class,
         ListDeliveryLinks::class,
         UpsertMockup::class,
+        GetMockup::class,
         ListMockups::class,
         ListMockupRevisions::class,
         RevertMockup::class,
@@ -224,6 +227,7 @@ class PlanningServer extends Server
         RequirementsResource::class,
         PlanResource::class,
         MockupResource::class,
+        OwnerMockupResource::class,
     ];
 
     protected array $prompts = [

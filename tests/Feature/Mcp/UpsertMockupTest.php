@@ -141,6 +141,86 @@ it('adds a second mockup under a new name', function () {
         ->toBe(['Compact layout', 'Roomy layout']);
 });
 
+it('updates the default mockup in place when no name is supplied', function () {
+    $args = [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'html' => '<!doctype html><html><body>v1</body></html>',
+    ];
+
+    PlanningServer::tool(UpsertMockup::class, $args)
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('name', 'default')
+                ->where('revision', 1)
+                ->where('created', true)
+                ->etc();
+        });
+
+    $firstId = SpecMockup::sole()->id;
+
+    PlanningServer::tool(UpsertMockup::class, [
+        ...$args,
+        'html' => '<!doctype html><html><body>v2</body></html>',
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use ($firstId) {
+            $json->where('id', $firstId)
+                ->where('name', 'default')
+                ->where('revision', 2)
+                ->where('created', false)
+                ->etc();
+        });
+
+    $mockups = $this->workItem->mockups()->get();
+    expect($mockups)->toHaveCount(1)
+        ->and($mockups->first()->revisions)->toHaveCount(2)
+        ->and($mockups->first()->currentRevision->html)->toContain('v2');
+});
+
+it('treats an explicit name=default the same as omitting name', function () {
+    $args = [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'html' => '<!doctype html><html><body>v1</body></html>',
+    ];
+
+    PlanningServer::tool(UpsertMockup::class, $args)->assertOk();
+    $implicitId = SpecMockup::sole()->id;
+
+    PlanningServer::tool(UpsertMockup::class, [
+        ...$args,
+        'name' => 'default',
+        'html' => '<!doctype html><html><body>v2</body></html>',
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use ($implicitId) {
+            $json->where('id', $implicitId)
+                ->where('created', false)
+                ->etc();
+        });
+
+    expect($this->workItem->mockups()->count())->toBe(1);
+});
+
+it('keeps the default mockup and a named alternative as separate rows', function () {
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'html' => '<!doctype html><html><body>default</body></html>',
+    ])->assertOk();
+
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'name' => 'Compact layout',
+        'html' => '<!doctype html><html><body>compact</body></html>',
+    ])->assertOk();
+
+    expect($this->workItem->mockups()->pluck('name')->sort()->values()->all())
+        ->toBe(['Compact layout', 'default']);
+});
+
 it('appends a revision when upserted under an existing name', function () {
     $args = [
         'owner_type' => 'work_item',

@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive(false)]
-#[Description('Add or refine a named spec mockup on a work item or a requirement — a self-contained HTML page expressing a UI idea. A new name creates the mockup; an existing name appends a revision, keeping the earlier rounds.')]
+#[Description('Add or refine a spec mockup on a work item or a requirement — a self-contained HTML page expressing a UI idea. Without `name` the owner\'s default mockup is updated in place; pass `name` to hold a named layout alternative alongside the default.')]
 class UpsertMockup extends Tool
 {
     use ResolvesMockupOwner;
@@ -22,14 +22,14 @@ class UpsertMockup extends Tool
         $data = $request->validate([
             'owner_type' => 'required|string|in:work_item,requirement',
             'owner_id' => ['required', 'string', $this->ownerExistsRule($request->get('owner_type'))],
-            'name' => 'required|string|max:255',
+            'name' => 'sometimes|string|max:255',
             'html' => 'required|string',
         ]);
 
         $mockup = SpecMockup::firstOrCreate([
             'owner_type' => $data['owner_type'],
             'owner_id' => $data['owner_id'],
-            'name' => $data['name'],
+            'name' => $data['name'] ?? SpecMockup::DEFAULT_NAME,
         ]);
         $created = $mockup->wasRecentlyCreated;
 
@@ -50,7 +50,7 @@ class UpsertMockup extends Tool
         return [
             'owner_type' => $schema->string()->enum(['work_item', 'requirement'])->description('The spec entity the mockup belongs to')->required(),
             'owner_id' => $schema->string()->description('ULID of the work item or requirement that owns the mockup')->required(),
-            'name' => $schema->string()->description('Short label for the mockup')->required(),
+            'name' => $schema->string()->description('Optional label for the mockup. Omit to update the owner\'s single default mockup in place; pass a value to hold a named alternative alongside the default.'),
             'html' => $schema->string()->description('A self-contained HTML document — the mockup. Inline the styles and scripts (CDN links are fine); it renders sandboxed, isolated from the Growth app.')->required(),
         ];
     }
