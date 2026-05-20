@@ -10,8 +10,11 @@ beforeEach(function () {
 });
 ```
 
-The `mcp:use` scope is what `auth:api` on `/mcp/*` checks. Tests against the
-HTTP transport fail with `assertUnauthorized()` without it.
+`auth:api` on `/mcp/*` (see `routes/ai.php`) only authenticates the token;
+it doesn't enforce scopes by itself. `mcp:use` is what MCP clients are
+expected to hold (the OAuth discovery routes advertise it; `Common/Doctor`
+calls `$token->can('mcp:use')` to surface a clear error). Tests grant it
+in `beforeEach` to match what a real client carries.
 
 ## HTTP transport
 

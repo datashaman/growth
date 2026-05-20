@@ -7,10 +7,12 @@ servers in `app/Mcp/Servers/*.php`. Tools are grouped by domain
 ## Contract
 
 - Extend `Laravel\Mcp\Server\Tool`.
-- Implement:
-  - `handle(Request $request, …): ResponseFactory`
-  - `schema(JsonSchema $schema): array`
-  - `outputSchema(JsonSchema $schema): array`
+- Implement `handle(Request $request, …): ResponseFactory` and
+  `schema(JsonSchema $schema): array`.
+- Implement `outputSchema(JsonSchema $schema): array` when the tool returns
+  `Response::structured([...])` — output validation rejects drift against the
+  declared shape. List/query tools that yield only `Response::text(...)` (e.g.
+  `Projects/ListProjects.php`, `Requirements/ListRequirements.php`) can omit it.
 
 ## Attributes
 
@@ -23,8 +25,11 @@ servers in `app/Mcp/Servers/*.php`. Tools are grouped by domain
 
 ## Responses
 
-- `Response::structured([...])` is the default. The shape **must match**
-  `outputSchema()` — output validation rejects drift.
+- `Response::structured([...])` is the default for tools that declare an
+  `outputSchema()` — the shape **must match** the schema or output validation
+  rejects it.
+- `Response::text(...)` is fine for tools that just stream a list/projection
+  and have no structured shape worth validating.
 - `Response::error('user-facing message')` for foreseeable failures (not found,
   illegal transition). Don't throw for these.
 - Validate input with `$request->validate([...])` using Laravel rules.

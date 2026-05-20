@@ -9,9 +9,13 @@ A read-only projection of domain data addressed by a URI template.
 - `extends Laravel\Mcp\Server\Resource implements HasUriTemplate`
 - `use App\Mcp\Resources\Concerns\ReturnsStructuredJson`
 - Attributes: `#[Name('…')]`, `#[Description('…')]`,
-  `#[MimeType('application/json')]`, `#[Uri('growth://…/{id}/…')]`
-- `handle(Request $request): Response` returns
-  `Response::structured($this->structured(...))`.
+  `#[MimeType('application/json')]` (no `#[Uri]` — the URI template is a
+  method, not an attribute).
+- `public function uriTemplate(): UriTemplate` returns
+  `new UriTemplate('growth://…/{id}/…')`.
+- `handle(Request $request): Response` returns `$this->json([...])` — the
+  trait wraps the array as `Response::text(json_encode(...))` with the JSON
+  MIME type set by the attribute.
 
 See `ReadinessResource.php`, `RequirementsResource.php`, `IntentResource.php`.
 
