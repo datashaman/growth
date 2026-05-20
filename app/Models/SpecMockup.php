@@ -16,6 +16,13 @@ class SpecMockup extends Model
 
     public const OWNER_SCOPE_RELATION = 'owner';
 
+    /**
+     * Implicit mockup name used when a caller upserts or fetches a mockup
+     * without passing one — the "one mockup per owner" default. Callers can
+     * still hold additional named alternatives by passing `name` explicitly.
+     */
+    public const DEFAULT_NAME = 'default';
+
     protected $fillable = [
         'owner_type', 'owner_id', 'name',
     ];

@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('List the spec mockups on a work item or a requirement — the named layout alternatives held against it. The HTML is omitted; fetch a single mockup to see it.')]
+#[Description('List the spec mockups on a work item or a requirement — the default mockup and any named alternatives held against it. The HTML is omitted; fetch a single mockup to see it.')]
 class ListMockups extends Tool
 {
     use ResolvesMockupOwner;
