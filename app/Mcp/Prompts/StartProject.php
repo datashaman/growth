@@ -6,27 +6,13 @@ use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
-use Laravel\Mcp\Server\Completions\CompletionResponse;
-use Laravel\Mcp\Server\Contracts\Completable;
 use Laravel\Mcp\Server\Prompt;
 use Laravel\Mcp\Server\Prompts\Argument;
 
 #[Name('start-project')]
 #[Description('Start a Growth project by creating the project, capturing intent, and turning it into initial requirements.')]
-class StartProject extends Prompt implements Completable
+class StartProject extends Prompt
 {
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function complete(string $argument, string $value, array $context): CompletionResponse
-    {
-        if ($argument === 'rigor_level') {
-            return CompletionResponse::match(['1', '2', '3', '4']);
-        }
-
-        return CompletionResponse::empty();
-    }
-
     public function arguments(): array
     {
         return [
