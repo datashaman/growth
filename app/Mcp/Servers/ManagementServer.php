@@ -2,6 +2,8 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Resources\ManifestResource;
+use App\Mcp\Resources\ManifestSectionResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\RigorLevelsResource;
@@ -99,6 +101,8 @@ class ManagementServer extends Server
         PlaybookResource::class,
         RigorLevelsResource::class,
         ProjectIndexResource::class,
+        ManifestResource::class,
+        ManifestSectionResource::class,
         StarterTemplate1Resource::class,
         StarterTemplate2Resource::class,
         StarterTemplate3Resource::class,

@@ -92,10 +92,18 @@ it('emits a structured record per readiness gate for build-evidence-bundle', fun
 it('emits a structured record per manifest section for export-manifest', function () {
     $project = logTestProject();
     $tool = app(ExportManifest::class);
+    $args = ['project_id' => $project->id, 'sections' => ['*']];
 
-    assertWellFormedLog(drainLogTool($tool, ['project_id' => $project->id], enabled: true), 7);
+    assertWellFormedLog(drainLogTool($tool, $args, enabled: true), 7);
 
-    expect(drainLogTool($tool, ['project_id' => $project->id], enabled: false))->toBeEmpty();
+    expect(drainLogTool($tool, $args, enabled: false))->toBeEmpty();
+});
+
+it('emits no log records for the TOC default of export-manifest', function () {
+    $project = logTestProject();
+    $tool = app(ExportManifest::class);
+
+    expect(drainLogTool($tool, ['project_id' => $project->id], enabled: true))->toBeEmpty();
 });
 
 it('emits a structured record per manifest section for apply-manifest', function () {

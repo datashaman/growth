@@ -100,14 +100,22 @@ it('streams a progress notification per readiness gate for build-evidence-bundle
 it('streams a progress notification per manifest section for export-manifest', function () {
     $project = progressTestProject();
     $tool = app(ExportManifest::class);
+    $args = ['project_id' => $project->id, 'sections' => ['*']];
 
     assertOrderedProgress(
-        drainProgressTool($tool, ['project_id' => $project->id], 'export-token'),
+        drainProgressTool($tool, $args, 'export-token'),
         7,
         'export-token',
     );
 
-    expect(drainProgressTool($tool, ['project_id' => $project->id], null))->toBeEmpty();
+    expect(drainProgressTool($tool, $args, null))->toBeEmpty();
+});
+
+it('emits no progress notifications for the TOC default of export-manifest', function () {
+    $project = progressTestProject();
+    $tool = app(ExportManifest::class);
+
+    expect(drainProgressTool($tool, ['project_id' => $project->id], 'toc-token'))->toBeEmpty();
 });
 
 it('streams a progress notification per manifest section for apply-manifest', function () {
