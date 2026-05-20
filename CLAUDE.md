@@ -1,177 +1,98 @@
-<laravel-boost-guidelines>
-=== foundation rules ===
+# Growth
 
-# Laravel Boost Guidelines
+Growth is a project-governance application with two top-level surfaces sharing
+one Eloquent layer:
 
-The Laravel Boost guidelines are specifically curated by Laravel maintainers for this application. These guidelines should be followed closely to ensure the best experience when building Laravel applications.
+- **Webapp** — Livewire/Flux MVC views (`routes/web.php`, `app/Livewire`,
+  `resources/views/pages/**`). The read-only sweep landed in #185, so most
+  pages query Eloquent directly; do not route them through MCP.
+- **MCP server** — `routes/ai.php` registers stdio + HTTP transports for
+  several surface servers (`AllServer`, `IntakeServer`, `ReadonlyServer`, …)
+  backed by the tool/resource/prompt classes under `app/Mcp/`.
 
-## Foundational Context
+Read `CONTEXT.md` and `docs/adr/` before touching unfamiliar areas — they own
+the domain vocabulary and the architectural decisions (`docs/agents/domain.md`).
 
-This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
+## Stack
 
-- php - 8.5
-- laravel/framework (LARAVEL) - v13
-- laravel/mcp (MCP) - v0
-- laravel/prompts (PROMPTS) - v0
-- laravel/sanctum (SANCTUM) - v4
-- laravel/boost (BOOST) - v2
-- laravel/pail (PAIL) - v1
-- laravel/pint (PINT) - v1
-- pestphp/pest (PEST) - v4
-- phpunit/phpunit (PHPUNIT) - v12
+- PHP 8.5, Laravel 13
+- laravel/mcp v0, laravel/sanctum v4, laravel/passport (OAuth on the MCP HTTP transport)
+- Pest 4 (browser plugin), PHPUnit 12, Pint v1
+- DB: **Postgres in CI, SQLite locally** — raw SQL must work on both
 
-## Skills Activation
+## Code conventions
 
-This project has domain-specific skills available in `**/skills/**`. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
-
-## Conventions
-
-- You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
-- Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
-- Check for existing components to reuse before writing a new one.
-
-## Verification Scripts
-
-- Do not create verification scripts or tinker when tests cover that functionality and prove they work. Unit and feature tests are more important.
-
-## Application Structure & Architecture
-
-- Stick to existing directory structure; don't create new base folders without approval.
-- Do not change the application's dependencies without approval.
-
-## Frontend Bundling
-
-- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
-
-## Documentation Files
-
-- You must only create documentation files if explicitly requested by the user.
-
-## Replies
-
-- Be concise in your explanations - focus on what's important rather than explaining obvious details.
-
-=== boost rules ===
-
-# Laravel Boost
-
-## Tools
-
-- Laravel Boost is an MCP server with tools designed specifically for this application. Prefer Boost tools over manual alternatives like shell commands or file reads.
-- Use `database-query` to run read-only queries against the database instead of writing raw SQL in tinker.
-- Use `database-schema` to inspect table structure before writing migrations or models.
-- Use `get-absolute-url` to resolve the correct scheme, domain, and port for project URLs. Always use this before sharing a URL with the user.
-- Use `browser-logs` to read browser logs, errors, and exceptions. Only recent logs are useful, ignore old entries.
-
-## Searching Documentation (IMPORTANT)
-
-- Always use `search-docs` before making code changes. Do not skip this step. It returns version-specific docs based on installed packages automatically.
-- Pass a `packages` array to scope results when you know which packages are relevant.
-- Use multiple broad, topic-based queries: `['rate limiting', 'routing rate limiting', 'routing']`. Expect the most relevant results first.
-- Do not add package names to queries because package info is already shared. Use `test resource table`, not `filament 4 test resource table`.
-
-### Search Syntax
-
-1. Use words for auto-stemmed AND logic: `rate limit` matches both "rate" AND "limit".
-2. Use `"quoted phrases"` for exact position matching: `"infinite scroll"` requires adjacent words in order.
-3. Combine words and phrases for mixed queries: `middleware "rate limit"`.
-4. Use multiple queries for OR logic: `queries=["authentication", "middleware"]`.
-
-## Artisan
-
-- Run Artisan commands directly via the command line (e.g., `php artisan route:list`). Use `php artisan list` to discover available commands and `php artisan [command] --help` to check parameters.
-- Inspect routes with `php artisan route:list`. Filter with: `--method=GET`, `--name=users`, `--path=api`, `--except-vendor`, `--only-vendor`.
-- Read configuration values using dot notation: `php artisan config:show app.name`, `php artisan config:show database.default`. Or read config files directly from the `config/` directory.
-- To check environment variables, read the `.env` file directly.
-
-## Tinker
-
-- Execute PHP in app context for debugging and testing code. Do not create models without user approval, prefer tests with factories instead. Prefer existing Artisan commands over custom tinker code.
-- Always use single quotes to prevent shell expansion: `php artisan tinker --execute 'Your::code();'`
-  - Double quotes for PHP strings inside: `php artisan tinker --execute 'User::where("active", true)->count();'`
-
-=== php rules ===
-
-# PHP
-
-- Always use curly braces for control structures, even for single-line bodies.
-- Use PHP 8 constructor property promotion: `public function __construct(public GitHub $github) { }`. Do not leave empty zero-parameter `__construct()` methods unless the constructor is private.
-- Use explicit return type declarations and type hints for all method parameters: `function isAccessible(User $user, ?string $path = null): bool`
-- Use TitleCase for Enum keys: `FavoritePerson`, `BestLake`, `Monthly`.
-- Prefer PHPDoc blocks over inline comments. Only add inline comments for exceptionally complex logic.
-- Use array shape type definitions in PHPDoc blocks.
-
-=== deployments rules ===
-
-# Deployment
-
-- Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
-
-=== tests rules ===
-
-# Test Enforcement
-
-- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
-- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
-
-=== laravel/core rules ===
-
-# Do Things the Laravel Way
-
-- Use `php artisan make:` commands to create new files (i.e. migrations, controllers, models, etc.). You can list available Artisan commands using `php artisan list` and check their parameters with `php artisan [command] --help`.
-- If you're creating a generic PHP class, use `php artisan make:class`.
-- Pass `--no-interaction` to all Artisan commands to ensure they work without user input. You should also pass the correct `--options` to ensure correct behavior.
-
-### Model Creation
-
-- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `php artisan make:model --help` to check the available options.
-
-## APIs & Eloquent Resources
-
-- For APIs, default to using Eloquent API Resources and API versioning unless existing API routes do not, then you should follow existing application convention.
-
-## URL Generation
-
-- When generating links to other pages, prefer named routes and the `route()` function.
+- Typed signatures and return types everywhere; PHP 8 constructor property
+  promotion.
+- Curly braces on every control structure, even one-liners.
+- Prefer PHPDoc blocks over inline comments; reserve inline for non-obvious
+  logic.
+- Use array-shape PHPDoc for structured arrays.
+- Enum keys: TitleCase (`FavoritePerson`, `Monthly`).
+- Descriptive identifiers (`isRegisteredForDiscounts`, not `discount()`).
+- Reuse existing components and helpers — check siblings before introducing
+  a new one. No new top-level directories without asking.
 
 ## Testing
 
-- When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
-- Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
-- When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
+- Every change ships with a test. Pest feature tests are the default; unit
+  tests only for pure logic.
+- Run with `php artisan test --compact`, filtered to the affected file or
+  `--filter=name`. Don't run the whole suite to check one thing.
+- Use factories (and their states) for model setup; don't hand-roll fixtures.
+- Don't write tests that assert deleted code is absent. Just delete the code.
+- No verification scripts or one-off tinker recipes when a test would do.
 
-## Vite Error
+## Code style
 
-- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
+- After editing any PHP file, run `vendor/bin/pint --dirty --format agent`.
+  Pint in `--format agent` mode emits JSON. Never run `pint --test`; just let
+  it fix.
 
-=== pint/core rules ===
+## Frontend
 
-# Laravel Pint Code Formatter
+- Asset changes require `npm run build` (or `npm run dev` / `composer run dev`).
+  If a UI change doesn't appear, ask the user which they're running.
 
-- If you have modified any PHP files, you must run `vendor/bin/pint --dirty --format agent` before finalizing changes to ensure your code matches the project's expected style.
-- Do not run `vendor/bin/pint --test --format agent`, simply run `vendor/bin/pint --format agent` to fix any formatting issues.
+## Deployment
 
-=== pest/core rules ===
+- Deploys to Laravel Forge and Vapor in parallel. Reverb on Forge, Pusher on
+  Vapor (same protocol; `BROADCAST_CONNECTION` is the only switch).
 
-## Pest
+## Artisan
 
-- This project uses Pest for testing. Create tests: `php artisan make:test --pest {name}`.
-- The `{name}` argument should not include the test suite directory. Use `php artisan make:test --pest SomeFeatureTest` instead of `php artisan make:test --pest Feature/SomeFeatureTest`.
-- Run tests: `php artisan test --compact` or filter: `php artisan test --compact --filter=testName`.
-- Do NOT delete tests without approval.
+- Generate files with `php artisan make:*` and pass `--no-interaction`. Generic
+  PHP classes go through `make:class`.
+- When creating a model, generate its factory and seeder in the same go.
+- Inspect routes: `php artisan route:list --path=mcp` (etc.).
+- Inspect config: `php artisan config:show <dot.path>` or read `config/`
+  directly.
+- Tinker for ad-hoc checks: `php artisan tinker --execute 'Model::query()...;'`
+  — always single-quote the outer string, double-quote PHP strings inside.
 
-</laravel-boost-guidelines>
+## Per-area guidance
 
-## Agent skills
+Each surface has its own `CLAUDE.md` next to the code, auto-loaded when you
+work in that directory:
 
-### Issue tracker
+- `app/Mcp/Tools/CLAUDE.md` — MCP tool contract, attributes, response shapes,
+  workspace scoping, sampling.
+- `app/Mcp/Resources/CLAUDE.md` — data resources vs MCP UI app resources.
+- `resources/views/mcp/CLAUDE.md` — MCP UI app blade conventions, JS
+  scaffolding, payload-key contract.
+- `tests/Feature/Mcp/CLAUDE.md` — Passport actor setup, JSON-RPC POST shape,
+  `readResource` helper, `FakeTransporter` for sampling.
 
-Issues live in the `datashaman/growth` GitHub Issues, managed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+## Agent skills (cross-cutting)
 
-### Triage labels
-
-Five canonical triage roles, each mapped to a same-named label (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+- **Issue tracker** — GitHub Issues in `datashaman/growth`, driven by `gh`.
+  See `docs/agents/issue-tracker.md`.
+- **Triage labels** — five canonical labels (`needs-triage`, `needs-info`,
+  `ready-for-agent`, `ready-for-human`, `wontfix`).
+  See `docs/agents/triage-labels.md`.
+- **Domain docs** — `CONTEXT.md` + `docs/adr/` at the repo root.
+  See `docs/agents/domain.md`.
+- **Project skills** — domain-specific instructions under `.claude/skills/`
+  (mirrored to `.agents/skills/` and `.github/skills/`):
+  `laravel-best-practices`, `mcp-development`, `pest-testing`. Activate the
+  matching skill when working in that domain.
