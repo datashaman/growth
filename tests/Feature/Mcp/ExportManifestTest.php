@@ -126,7 +126,7 @@ function applyAndGetProjectId(array $manifest): string
     return $captured['project_id'];
 }
 
-it('exports an empty project shape via the MCP tool', function () {
+it('returns a bounded TOC by default', function () {
     $project = Project::create([
         'workspace_id' => $this->user->active_workspace_id,
         'name' => 'Empty',
@@ -138,13 +138,97 @@ it('exports an empty project shape via the MCP tool', function () {
     $response = ManagementServer::tool(ExportManifest::class, ['project_id' => $project->id]);
 
     $response->assertOk()->assertStructuredContent(function ($json) use ($project) {
-        $json->where('manifest.project.id', $project->id)
+        $json->where('mode', 'toc')
+            ->where('toc.project.id', $project->id)
+            ->where('toc.project.name', 'Empty')
+            ->where('toc.sections.stakeholders.count', 0)
+            ->where('toc.sections.concerns.count', 0)
+            ->where('toc.sections.requirements.count', 0)
+            ->where('toc.sections.plan.present', false)
+            ->where('toc.resource_uris.toc', "growth://projects/{$project->id}/manifest")
+            ->where('toc.resource_uris.sections.requirements', "growth://projects/{$project->id}/manifest/requirements")
+            ->etc();
+    });
+});
+
+it('exports the full manifest when sections is ["*"]', function () {
+    $project = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Empty',
+        'description' => 'Nothing yet.',
+        'rigor_level' => 2,
+        'status' => 'active',
+    ]);
+
+    $response = ManagementServer::tool(ExportManifest::class, [
+        'project_id' => $project->id,
+        'sections' => ['*'],
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) use ($project) {
+        $json->where('mode', 'manifest')
+            ->where('manifest.project.id', $project->id)
             ->where('manifest.project.name', 'Empty')
             ->where('manifest.project.rigor_level', 2)
             ->where('manifest.project.status', 'active')
             ->has('manifest.project._exported_at')
             ->etc();
     });
+});
+
+it('exports only the requested sections', function () {
+    $projectId = applyAndGetProjectId(fullManifest());
+
+    $response = ManagementServer::tool(ExportManifest::class, [
+        'project_id' => $projectId,
+        'sections' => ['stakeholders', 'requirements'],
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('mode', 'manifest')
+            ->has('manifest.project')
+            ->has('manifest.stakeholders')
+            ->has('manifest.requirements')
+            ->missing('manifest.concerns')
+            ->missing('manifest.architecture')
+            ->missing('manifest.plan')
+            ->missing('manifest.verification')
+            ->etc();
+    });
+});
+
+it('keeps the TOC response materially smaller than the full manifest', function () {
+    // This is the overflow case from #337: the full manifest blows the MCP
+    // token budget on populated projects, so the TOC must be a bounded
+    // fraction. The small fixture here is enough to prove the contrast — the
+    // TOC's size is a function of section count (constant), while the full
+    // shape scales with row count.
+    $projectId = applyAndGetProjectId(fullManifest());
+
+    $full = app(ManifestExporter::class)->export($projectId);
+    $toc = app(ManifestExporter::class)->tableOfContents($projectId);
+
+    $fullSize = strlen(json_encode($full));
+    $tocSize = strlen(json_encode($toc));
+
+    expect($tocSize)->toBeLessThan($fullSize / 2)
+        ->and($fullSize)->toBeGreaterThan(2000);
+});
+
+it('rejects unknown section names', function () {
+    $project = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Empty',
+        'rigor_level' => 2,
+        'status' => 'active',
+    ]);
+
+    $response = ManagementServer::tool(ExportManifest::class, [
+        'project_id' => $project->id,
+        'sections' => ['bogus'],
+    ]);
+
+    $response->assertHasErrors();
 });
 
 it('rejects a foreign project_id', function () {

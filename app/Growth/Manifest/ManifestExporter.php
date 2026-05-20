@@ -11,6 +11,7 @@ use App\Models\Project;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 /**
  * Produces a manifest array describing a Growth project's full structure
@@ -24,156 +25,327 @@ use Illuminate\Support\Str;
  */
 class ManifestExporter
 {
+    public const SECTIONS = [
+        'stakeholders',
+        'concerns',
+        'requirements',
+        'architecture',
+        'plan',
+        'verification',
+    ];
+
     /**
+     * Export a project manifest, optionally restricted to a subset of sections.
+     *
+     * - `$sections === null` or `['*']` exports the full manifest (round-trip
+     *   shape, suitable for re-apply).
+     * - An array of section names emits only `project` plus the requested
+     *   sections. Unknown section names throw {@see InvalidArgumentException}.
+     *
+     * The `project` section is always present.
+     *
+     * @param  list<string>|null  $sections
      * @return array<string,mixed>
      */
-    public function export(string $projectId, ProgressReporter $progress = new NullProgressReporter, LogReporter $log = new NullLogReporter): array
+    public function export(string $projectId, ?array $sections = null, ProgressReporter $progress = new NullProgressReporter, LogReporter $log = new NullLogReporter): array
     {
+        $wanted = $this->resolveSections($sections);
+
         $project = Project::query()
-            ->with([
-                'stakeholders',
-                'concerns',
-                'requirements',
-                'customViewpoints',
-                'designViews.elements',
-                'designViews.concerns',
-                'projectPlan',
-                'roles',
-                'milestones',
-                'workItems.responsibleRole',
-                'workItems.parent',
-                'workItems.requirements',
-                'workItems.milestones',
-                'workItems.dependencies',
-                'testPlans.cases.requirements',
-            ])
+            ->with($this->eagerLoadsFor($wanted))
             ->findOrFail($projectId);
 
-        $stakeholderSlugs = $this->assignSlugs(
-            $project->stakeholders->sortBy(fn ($s) => Str::slug($s->name))->values(),
-            fn ($s) => $s->name,
-        );
-        $concernSlugs = $this->assignSlugs(
-            $project->concerns->sortBy(fn ($c) => Str::slug($c->text))->values(),
-            fn ($c) => $c->text,
-        );
-        $requirementSlugs = $project->requirements->pluck('slug', 'id')->all();
-        $viewpointSlugs = $this->assignSlugs(
-            $project->customViewpoints->sortBy(fn ($v) => Str::slug($v->name))->values(),
-            fn ($v) => $v->name,
-        );
-        $viewSlugs = $this->assignSlugs(
-            $project->designViews->sortBy(fn ($v) => Str::slug($v->name))->values(),
-            fn ($v) => $v->name,
-        );
-        $roleSlugs = $this->assignSlugs(
-            $project->roles->sortBy(fn ($r) => Str::slug($r->name))->values(),
-            fn ($r) => $r->name,
-        );
-        $milestoneSlugs = $this->assignSlugs(
-            $project->milestones->sortBy(fn ($m) => Str::slug($m->name))->values(),
-            fn ($m) => $m->name,
-        );
-        $workItemSlugs = $this->assignSlugs(
-            $project->workItems->sortBy(fn ($w) => Str::slug($w->name))->values(),
-            fn ($w) => $w->name,
-        );
-        $testPlanSlugs = $this->assignSlugs(
-            $project->testPlans->sortBy(fn ($p) => Str::slug($p->name))->values(),
-            fn ($p) => $p->name,
-        );
+        $total = count($wanted) + 1;
+        $step = 0;
+
+        $stakeholderSlugs = isset($wanted['stakeholders']) || isset($wanted['concerns'])
+            ? $this->assignSlugs(
+                $project->stakeholders->sortBy(fn ($s) => Str::slug($s->name))->values(),
+                fn ($s) => $s->name,
+            )
+            : [];
+        $concernSlugs = isset($wanted['concerns']) || isset($wanted['architecture'])
+            ? $this->assignSlugs(
+                $project->concerns->sortBy(fn ($c) => Str::slug($c->text))->values(),
+                fn ($c) => $c->text,
+            )
+            : [];
+        $requirementSlugs = isset($wanted['requirements']) || isset($wanted['plan']) || isset($wanted['verification'])
+            ? $project->requirements->pluck('slug', 'id')->all()
+            : [];
+        $viewpointSlugs = isset($wanted['architecture'])
+            ? $this->assignSlugs(
+                $project->customViewpoints->sortBy(fn ($v) => Str::slug($v->name))->values(),
+                fn ($v) => $v->name,
+            )
+            : [];
+        $viewSlugs = isset($wanted['architecture'])
+            ? $this->assignSlugs(
+                $project->designViews->sortBy(fn ($v) => Str::slug($v->name))->values(),
+                fn ($v) => $v->name,
+            )
+            : [];
+        $roleSlugs = isset($wanted['plan'])
+            ? $this->assignSlugs(
+                $project->roles->sortBy(fn ($r) => Str::slug($r->name))->values(),
+                fn ($r) => $r->name,
+            )
+            : [];
+        $milestoneSlugs = isset($wanted['plan'])
+            ? $this->assignSlugs(
+                $project->milestones->sortBy(fn ($m) => Str::slug($m->name))->values(),
+                fn ($m) => $m->name,
+            )
+            : [];
+        $workItemSlugs = isset($wanted['plan'])
+            ? $this->assignSlugs(
+                $project->workItems->sortBy(fn ($w) => Str::slug($w->name))->values(),
+                fn ($w) => $w->name,
+            )
+            : [];
+        $testPlanSlugs = isset($wanted['verification'])
+            ? $this->assignSlugs(
+                $project->testPlans->sortBy(fn ($p) => Str::slug($p->name))->values(),
+                fn ($p) => $p->name,
+            )
+            : [];
 
         $manifest = [
             'project' => $this->emitProject($project),
         ];
-        $progress->report(1, 7, 'Exported project');
+        $progress->report(++$step, $total, 'Exported project');
         $log->log(LogLevel::Info, 'Exported project', ['project' => $project->name]);
 
-        $stakeholders = $project->stakeholders
-            ->sortBy(fn ($s) => $stakeholderSlugs[$s->id])
-            ->map(fn ($s) => $this->emitStakeholder($s, $stakeholderSlugs))
-            ->values()
-            ->all();
-        if ($stakeholders) {
-            $manifest['stakeholders'] = $stakeholders;
+        if (isset($wanted['stakeholders'])) {
+            $stakeholders = $project->stakeholders
+                ->sortBy(fn ($s) => $stakeholderSlugs[$s->id])
+                ->map(fn ($s) => $this->emitStakeholder($s, $stakeholderSlugs))
+                ->values()
+                ->all();
+            if ($stakeholders) {
+                $manifest['stakeholders'] = $stakeholders;
+            }
+            $progress->report(++$step, $total, 'Exported stakeholders');
+            $log->log(LogLevel::Info, 'Exported stakeholders', ['count' => count($stakeholders)]);
         }
-        $progress->report(2, 7, 'Exported stakeholders');
-        $log->log(LogLevel::Info, 'Exported stakeholders', ['count' => count($stakeholders)]);
 
-        $concerns = $project->concerns
-            ->sortBy(fn ($c) => $concernSlugs[$c->id])
-            ->map(fn ($c) => $this->emitConcern($c, $concernSlugs, $stakeholderSlugs))
-            ->values()
-            ->all();
-        if ($concerns) {
-            $manifest['concerns'] = $concerns;
+        if (isset($wanted['concerns'])) {
+            $concerns = $project->concerns
+                ->sortBy(fn ($c) => $concernSlugs[$c->id])
+                ->map(fn ($c) => $this->emitConcern($c, $concernSlugs, $stakeholderSlugs))
+                ->values()
+                ->all();
+            if ($concerns) {
+                $manifest['concerns'] = $concerns;
+            }
+            $progress->report(++$step, $total, 'Exported concerns');
+            $log->log(LogLevel::Info, 'Exported concerns', ['count' => count($concerns)]);
         }
-        $progress->report(3, 7, 'Exported concerns');
-        $log->log(LogLevel::Info, 'Exported concerns', ['count' => count($concerns)]);
 
-        $requirements = $project->requirements
-            ->sortBy('slug')
-            ->map(fn ($r) => $this->emitRequirement($r))
-            ->values()
-            ->all();
-        if ($requirements) {
-            $manifest['requirements'] = $requirements;
+        if (isset($wanted['requirements'])) {
+            $requirements = $project->requirements
+                ->sortBy('slug')
+                ->map(fn ($r) => $this->emitRequirement($r))
+                ->values()
+                ->all();
+            if ($requirements) {
+                $manifest['requirements'] = $requirements;
+            }
+            $progress->report(++$step, $total, 'Exported requirements');
+            $log->log(LogLevel::Info, 'Exported requirements', ['count' => count($requirements)]);
         }
-        $progress->report(4, 7, 'Exported requirements');
-        $log->log(LogLevel::Info, 'Exported requirements', ['count' => count($requirements)]);
 
-        $architecture = [];
-        $viewpoints = $project->customViewpoints
-            ->sortBy(fn ($v) => $viewpointSlugs[$v->id])
-            ->map(fn ($v) => $this->emitViewpoint($v, $viewpointSlugs))
-            ->values()
-            ->all();
-        if ($viewpoints) {
-            $architecture['viewpoints'] = $viewpoints;
+        if (isset($wanted['architecture'])) {
+            $architecture = [];
+            $viewpoints = $project->customViewpoints
+                ->sortBy(fn ($v) => $viewpointSlugs[$v->id])
+                ->map(fn ($v) => $this->emitViewpoint($v, $viewpointSlugs))
+                ->values()
+                ->all();
+            if ($viewpoints) {
+                $architecture['viewpoints'] = $viewpoints;
+            }
+            $views = $project->designViews
+                ->sortBy(fn ($v) => $viewSlugs[$v->id])
+                ->map(fn ($v) => $this->emitView($v, $viewSlugs, $concernSlugs))
+                ->values()
+                ->all();
+            if ($views) {
+                $architecture['views'] = $views;
+            }
+            if ($architecture) {
+                $manifest['architecture'] = $architecture;
+            }
+            $progress->report(++$step, $total, 'Exported architecture');
+            $log->log(LogLevel::Info, 'Exported architecture', [
+                'viewpoints' => count($viewpoints),
+                'views' => count($views),
+            ]);
         }
-        $views = $project->designViews
-            ->sortBy(fn ($v) => $viewSlugs[$v->id])
-            ->map(fn ($v) => $this->emitView($v, $viewSlugs, $concernSlugs))
-            ->values()
-            ->all();
-        if ($views) {
-            $architecture['views'] = $views;
-        }
-        if ($architecture) {
-            $manifest['architecture'] = $architecture;
-        }
-        $progress->report(5, 7, 'Exported architecture');
-        $log->log(LogLevel::Info, 'Exported architecture', [
-            'viewpoints' => count($viewpoints),
-            'views' => count($views),
-        ]);
 
-        if ($project->projectPlan) {
-            $manifest['plan'] = $this->emitPlan(
-                $project,
-                $roleSlugs,
-                $milestoneSlugs,
-                $workItemSlugs,
-                $requirementSlugs,
-            );
+        if (isset($wanted['plan'])) {
+            if ($project->projectPlan) {
+                $manifest['plan'] = $this->emitPlan(
+                    $project,
+                    $roleSlugs,
+                    $milestoneSlugs,
+                    $workItemSlugs,
+                    $requirementSlugs,
+                );
+            }
+            $progress->report(++$step, $total, 'Exported plan');
+            $log->log(LogLevel::Info, 'Exported plan', ['present' => $project->projectPlan !== null]);
         }
-        $progress->report(6, 7, 'Exported plan');
-        $log->log(LogLevel::Info, 'Exported plan', ['present' => $project->projectPlan !== null]);
 
-        $verification = [];
-        $plans = $project->testPlans
-            ->sortBy(fn ($p) => $testPlanSlugs[$p->id])
-            ->map(fn ($p) => $this->emitVerificationPlan($p, $testPlanSlugs, $requirementSlugs))
-            ->values()
-            ->all();
-        if ($plans) {
-            $verification['plans'] = $plans;
-            $manifest['verification'] = $verification;
+        if (isset($wanted['verification'])) {
+            $verification = [];
+            $plans = $project->testPlans
+                ->sortBy(fn ($p) => $testPlanSlugs[$p->id])
+                ->map(fn ($p) => $this->emitVerificationPlan($p, $testPlanSlugs, $requirementSlugs))
+                ->values()
+                ->all();
+            if ($plans) {
+                $verification['plans'] = $plans;
+                $manifest['verification'] = $verification;
+            }
+            $progress->report(++$step, $total, 'Exported verification');
+            $log->log(LogLevel::Info, 'Exported verification', ['plans' => count($plans)]);
         }
-        $progress->report(7, 7, 'Exported verification');
-        $log->log(LogLevel::Info, 'Exported verification', ['plans' => count($plans)]);
 
         return $manifest;
+    }
+
+    /**
+     * Cheap snapshot of what a project contains: section names with row counts.
+     * Used by the manifest TOC resource and the tool's bounded default response
+     * so callers can decide which slices to fetch in full.
+     *
+     * @return array<string,mixed>
+     */
+    public function tableOfContents(string $projectId): array
+    {
+        $project = Project::query()
+            ->withCount([
+                'stakeholders',
+                'concerns',
+                'requirements',
+                'customViewpoints',
+                'designViews',
+                'roles',
+                'milestones',
+                'workItems',
+                'testPlans',
+            ])
+            ->with(['projectPlan:id,project_id'])
+            ->findOrFail($projectId);
+
+        $verificationCases = $project->testPlans()
+            ->withCount('cases')
+            ->get(['id'])
+            ->sum('cases_count');
+
+        return [
+            'project' => [
+                'id' => $project->id,
+                'name' => $project->name,
+                'description' => $project->description,
+                'rigor_level' => $project->rigor_level,
+                'status' => $project->status,
+                '_exported_at' => $project->updated_at?->toIso8601String(),
+            ],
+            'sections' => [
+                'stakeholders' => ['count' => (int) $project->stakeholders_count],
+                'concerns' => ['count' => (int) $project->concerns_count],
+                'requirements' => ['count' => (int) $project->requirements_count],
+                'architecture' => [
+                    'viewpoint_count' => (int) $project->custom_viewpoints_count,
+                    'view_count' => (int) $project->design_views_count,
+                ],
+                'plan' => [
+                    'present' => $project->projectPlan !== null,
+                    'role_count' => (int) $project->roles_count,
+                    'milestone_count' => (int) $project->milestones_count,
+                    'work_item_count' => (int) $project->work_items_count,
+                ],
+                'verification' => [
+                    'plan_count' => (int) $project->test_plans_count,
+                    'case_count' => (int) $verificationCases,
+                ],
+            ],
+            'sections_available' => self::SECTIONS,
+            'resource_uris' => [
+                'toc' => "growth://projects/{$project->id}/manifest",
+                'sections' => array_combine(
+                    self::SECTIONS,
+                    array_map(fn (string $s) => "growth://projects/{$project->id}/manifest/{$s}", self::SECTIONS),
+                ),
+            ],
+        ];
+    }
+
+    /**
+     * Normalise the caller's section selection into a lookup map keyed by
+     * section name. `null` or `['*']` means every section; an empty array
+     * means no sections (project header only).
+     *
+     * @param  list<string>|null  $sections
+     * @return array<string,true>
+     */
+    private function resolveSections(?array $sections): array
+    {
+        if ($sections === null || $sections === ['*']) {
+            return array_fill_keys(self::SECTIONS, true);
+        }
+
+        $unknown = array_values(array_diff($sections, self::SECTIONS));
+        if ($unknown !== []) {
+            throw new InvalidArgumentException(
+                'Unknown manifest section(s): '.implode(', ', $unknown).'. Available: '.implode(', ', self::SECTIONS).'.'
+            );
+        }
+
+        return array_fill_keys($sections, true);
+    }
+
+    /**
+     * @param  array<string,true>  $wanted
+     * @return list<string>
+     */
+    private function eagerLoadsFor(array $wanted): array
+    {
+        $loads = [];
+        if (isset($wanted['stakeholders']) || isset($wanted['concerns'])) {
+            $loads[] = 'stakeholders';
+        }
+        if (isset($wanted['concerns']) || isset($wanted['architecture'])) {
+            // Architecture views serialise `addresses_concerns` by concern slug,
+            // so concern rows must be loaded even when the caller didn't ask
+            // for the `concerns` section directly.
+            $loads[] = 'concerns';
+        }
+        if (isset($wanted['requirements']) || isset($wanted['plan']) || isset($wanted['verification'])) {
+            $loads[] = 'requirements';
+        }
+        if (isset($wanted['architecture'])) {
+            $loads[] = 'customViewpoints';
+            $loads[] = 'designViews.elements';
+            $loads[] = 'designViews.concerns';
+        }
+        if (isset($wanted['plan'])) {
+            $loads[] = 'projectPlan';
+            $loads[] = 'roles';
+            $loads[] = 'milestones';
+            $loads[] = 'workItems.responsibleRole';
+            $loads[] = 'workItems.parent';
+            $loads[] = 'workItems.requirements';
+            $loads[] = 'workItems.milestones';
+            $loads[] = 'workItems.dependencies';
+        }
+        if (isset($wanted['verification'])) {
+            $loads[] = 'testPlans.cases.requirements';
+        }
+
+        return $loads;
     }
 
     /**

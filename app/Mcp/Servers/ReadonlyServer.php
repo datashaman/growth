@@ -6,6 +6,8 @@ use App\Mcp\Resources\ArchitectureResource;
 use App\Mcp\Resources\EvidenceResource;
 use App\Mcp\Resources\GateStatusApp;
 use App\Mcp\Resources\IntentResource;
+use App\Mcp\Resources\ManifestResource;
+use App\Mcp\Resources\ManifestSectionResource;
 use App\Mcp\Resources\MockupResource;
 use App\Mcp\Resources\PlanResource;
 use App\Mcp\Resources\PlaybookResource;
@@ -183,5 +185,7 @@ class ReadonlyServer extends Server
         ProjectChangesResource::class,
         ProjectReviewsResource::class,
         MockupResource::class,
+        ManifestResource::class,
+        ManifestSectionResource::class,
     ];
 }
