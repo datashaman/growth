@@ -17,7 +17,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Export a Growth project as a manifest. Without `sections`, returns a bounded table of contents (project metadata + per-section counts + resource URIs for streaming each slice). Pass `sections: ["*"]` for the full round-trip manifest, or a subset like `["requirements","plan"]` to fetch only those slices. The full manifest is also available as the `growth://projects/{id}/manifest` resource (TOC) and `growth://projects/{id}/manifest/{section}` resources (per slice). Output uses deterministic ordering and stable slugs so two exports of the same project produce byte-identical JSON; each entity carries an `_exported_at` timestamp that lets `apply-manifest` detect post-export drift on re-apply.')]
+#[Description('Export a Growth project as a manifest. Without `sections`, returns a bounded table of contents (project metadata + per-section counts + resource URIs for streaming each slice). Pass `sections: ["*"]` for the full round-trip manifest, or a subset like `["requirements","plan"]` to fetch only those slices. The same data is also reachable as MCP resources: `growth://projects/{id}/manifest` serves the TOC, and `growth://projects/{id}/manifest/{section}` serves an individual slice. Output uses deterministic ordering and stable slugs so two exports of the same project produce byte-identical JSON; each entity carries an `_exported_at` timestamp that lets `apply-manifest` detect post-export drift on re-apply.')]
 class ExportManifest extends Tool
 {
     public function __construct(private readonly ManifestExporter $exporter) {}

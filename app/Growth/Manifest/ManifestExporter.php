@@ -317,7 +317,10 @@ class ManifestExporter
         if (isset($wanted['stakeholders']) || isset($wanted['concerns'])) {
             $loads[] = 'stakeholders';
         }
-        if (isset($wanted['concerns'])) {
+        if (isset($wanted['concerns']) || isset($wanted['architecture'])) {
+            // Architecture views serialise `addresses_concerns` by concern slug,
+            // so concern rows must be loaded even when the caller didn't ask
+            // for the `concerns` section directly.
             $loads[] = 'concerns';
         }
         if (isset($wanted['requirements']) || isset($wanted['plan']) || isset($wanted['verification'])) {

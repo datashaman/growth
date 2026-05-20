@@ -4,7 +4,7 @@ namespace App\Mcp\Resources;
 
 use App\Growth\Manifest\ManifestExporter;
 use App\Mcp\Resources\Concerns\ReturnsStructuredJson;
-use App\Models\Project;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -32,10 +32,10 @@ class ManifestResource extends Resource implements HasUriTemplate
     {
         $projectId = $request->get('project');
 
-        if (! Project::query()->whereKey($projectId)->exists()) {
+        try {
+            return $this->json($this->exporter->tableOfContents($projectId));
+        } catch (ModelNotFoundException) {
             return Response::error("Project [{$projectId}] not found.");
         }
-
-        return $this->json($this->exporter->tableOfContents($projectId));
     }
 }

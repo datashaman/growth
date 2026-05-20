@@ -197,9 +197,12 @@ it('exports only the requested sections', function () {
     });
 });
 
-it('keeps the TOC response an order of magnitude smaller than the full manifest', function () {
-    // This is the overflow case from #337: on a populated project the full
-    // manifest can blow the MCP token budget; the TOC must be a bounded fraction.
+it('keeps the TOC response materially smaller than the full manifest', function () {
+    // This is the overflow case from #337: the full manifest blows the MCP
+    // token budget on populated projects, so the TOC must be a bounded
+    // fraction. The small fixture here is enough to prove the contrast — the
+    // TOC's size is a function of section count (constant), while the full
+    // shape scales with row count.
     $projectId = applyAndGetProjectId(fullManifest());
 
     $full = app(ManifestExporter::class)->export($projectId);
