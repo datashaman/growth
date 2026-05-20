@@ -80,3 +80,31 @@ it('rejects a request with a bogus token', function () {
         'method' => 'tools/list',
     ])->assertUnauthorized();
 });
+
+it('returns CORS headers on OAuth discovery requests so browser MCP clients can read them', function () {
+    $response = $this->withHeaders([
+        'Origin' => 'http://localhost:6274',
+    ])->getJson('/.well-known/oauth-protected-resource/mcp/intake');
+
+    $response->assertOk();
+    expect($response->headers->get('Access-Control-Allow-Origin'))->not->toBeNull();
+});
+
+it('answers CORS preflight on the MCP transport route', function () {
+    $response = $this->call(
+        'OPTIONS',
+        '/mcp/intake',
+        [],
+        [],
+        [],
+        [
+            'HTTP_ORIGIN' => 'http://localhost:6274',
+            'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'POST',
+            'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'authorization,content-type',
+        ],
+    );
+
+    $response->assertNoContent();
+    expect($response->headers->get('Access-Control-Allow-Origin'))->not->toBeNull();
+    expect($response->headers->get('Access-Control-Allow-Methods'))->not->toBeNull();
+});
