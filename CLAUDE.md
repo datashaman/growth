@@ -15,7 +15,7 @@ the domain vocabulary and the architectural decisions (`docs/agents/domain.md`).
 
 ## Stack
 
-- PHP 8.5, Laravel 13
+- PHP 8.4+ (Forge runs 8.4, dev on 8.5), Laravel 13
 - laravel/mcp v0, laravel/sanctum v4, laravel/passport (OAuth on the MCP HTTP transport)
 - Pest 4 (browser plugin), PHPUnit 12, Pint v1
 - DB: **Postgres in CI, SQLite locally** — raw SQL must work on both
