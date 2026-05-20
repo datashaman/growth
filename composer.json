@@ -13,7 +13,7 @@
         "laravel/fortify": "^1.34",
         "laravel/framework": "^13.7",
         "laravel/horizon": "^5.46",
-        "laravel/mcp": "dev-mcp_consolidated as 0.7.1",
+        "laravel/mcp": "^0.7.1",
         "laravel/passport": "^13.0",
         "laravel/reverb": "^1.0",
         "laravel/sanctum": "^4.3",
@@ -98,9 +98,5 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true,
-    "repositories": [{
-        "type": "vcs",
-        "url": "https://github.com/datashaman/mcp.git"
-    }]
+    "prefer-stable": true
 }
