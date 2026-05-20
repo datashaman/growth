@@ -1,7 +1,8 @@
 # Capabilities are typed Role accountabilities; Lens and served Persona derive from them
 
-A `Role` (project-defined RACI accountability — `Engineering Lead`, `Senior
-Spec Writer`) carries a typed set of **Capabilities**. A Capability is a
+A `Role` (project-defined RACI accountability — `Engineering Lead`,
+`Product Lead`, `Developer`) carries a typed set of **Capabilities**. A
+Capability is a
 curated, intent-named bundle of MCP tools — `manage_intent`,
 `manage_requirements`, `manage_changes` — closed-set, defined in code. The
 existing `Capability Surface` is reframed as a *grouping of Capabilities*
@@ -27,18 +28,19 @@ sees" (webapp side) under one Role-owned source of truth.
 
 The cutover lands in one PR — no transition shims. `User::$view_lens` is
 dropped; the `lens-switcher` Livewire component is deleted; `CapabilitySurface`
-servers derive their tool list from the Capabilities they expose; a
-`role_capabilities` pivot persists the per-Role assignment.
+servers derive their tool list from the Capabilities they expose; the per-Role
+Capability set is persisted authoritatively, not denormalised onto the User.
 
 ## Consequences
 
-- A Role with **no Capabilities** sees an **empty webapp Lens** — no sections,
-  only top-level nav. The deliberate default for unassigned users is to fall
-  back to *all* Capabilities (visible everywhere), so observers and admins
-  poking around a project they have no Role on are not blocked. The Lens is
-  advisory: deep links to a hidden section still work.
-- Adding a new MCP tool requires assigning it to **exactly one** Capability.
-  An arch test enforces this; an orphan tool fails CI.
+- A user with **no Role** on the active project sees the union of all
+  Capabilities — observers and admins poking around a project they have no
+  Role on are not blocked. This is a deliberate fallback, not the empty case.
+- A user assigned to a Role with **no Capabilities** sees an empty Lens —
+  no sections in the Project sidebar, no panels on the dashboard. The Lens
+  is advisory: deep links to a hidden section still work.
+- Every MCP tool is assigned to **exactly one** Capability — no orphans, no
+  duplicates. The constraint is global; how it is enforced is implementation.
 - A Capability declares both `tools(): array` (class strings) and
   `sections(): array` (sidebar section keys). Both are closed sets in code.
   Renaming a section is a code change, not a data migration.

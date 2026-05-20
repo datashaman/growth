@@ -22,8 +22,8 @@ the judgement it brings, what it must not do, and which operations are routine
 for it versus warrant user confirmation. Rendered two ways depending on the
 audience: **served as text** to a Client Agent when a session adopts the Role,
 and **projected as a Lens** in the webapp when a User assigned to the Role
-opens a project. Both renderings are advisory and a UI-only filter; neither
-gates access. Source of truth for the Lens projection lives on the Role.
+opens a project. Both renderings are advisory; neither gates access. Source of
+truth for both projections lives on the Role.
 _Avoid_: "personality", "mode"; a Capability Surface has no Persona
 
 **Lens**:
@@ -31,16 +31,16 @@ The webapp face of a Persona — a coarse nav-and-panel filter that hides
 sections of the dashboard and Project sidebar irrelevant to the Role currently
 in focus. Named `ViewLens` in code. Not a security boundary: deep links to a
 hidden section still work.
-_Avoid_: "view mode", "perspective"; a Lens belongs to a Persona, not to a
-Capability Surface or a free-floating User preference
+_Avoid_: "view mode", "perspective"; a Lens belongs to a Role's Capability set,
+not to a Capability Surface or a free-floating User preference
 
 **Capability**:
-A named, curated bundle of MCP tools expressing a single intent — `manage
-requirements`, `triage feedback`, `approve changes`. Closed set, defined in
-code; one Capability expands to N tools. A Role's accountabilities are stored
-as a set of Capabilities, and both the served Persona text and the webapp Lens
-are derived from that set. Capabilities are intent-named ("manage
-requirements"), not implementation-named ("upsert-requirements").
+A named, curated bundle of MCP tools expressing a single intent —
+`manage_intent`, `manage_requirements`, `manage_architecture`. Closed set,
+defined in code; one Capability expands to N tools. A Role's accountabilities
+are stored as a set of Capabilities, and both the served Persona text and the
+webapp Lens are derived from that set. Capabilities are intent-named
+("`manage_requirements`"), not implementation-named ("`upsert-requirements`").
 _Avoid_: confusing with a single MCP tool or with a Capability Surface
 
 **Capability Surface**:
@@ -79,7 +79,8 @@ The tenant boundary. Every Project, and every recorded event, belongs to one.
 ## Relationships
 
 - A **Workspace** contains **Projects**; a **Project** defines its own **Roles**.
-- A **Role** is held by zero or more **Users** and/or **Agents** and carries a set of **Capabilities** plus a **Persona**; the **Lens** (webapp) and the served Persona text (MCP) both derive from the Capability set.
+- A **Role** is held by zero or more **Users** and/or **Agents** and carries a set of **Capabilities** plus a **Persona**.
+- The **Lens** (webapp) and the served **Persona** text (MCP) both derive from the **Role**'s Capability set.
 - A **Capability Surface** exposes a grouping of **Capabilities** as one MCP server; a **Session** connects to one.
 - A **Session** adopts at most one **Role**; the **Role**, not the **Surface**, carries the **Persona**.
 - Growth **serves** Personas, tools, and tool annotations, and **records**
