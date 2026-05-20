@@ -41,6 +41,8 @@ it('renders the gate-status app blade with the expected MCP wiring', function ()
         ->assertSee('list-projects')
         ->assertSee('Gate Status')
         ->assertSee('window.GrowthApp')
+        ->assertSee('gate-finding-group', false)
+        ->assertSee('const grouped = new Map();', false)
         ->assertSee('state.projects = payload?.results ?? []', false)
         ->assertDontSee('state.projects = payload?.projects', false);
 });
