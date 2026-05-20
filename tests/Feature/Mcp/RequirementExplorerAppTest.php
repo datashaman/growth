@@ -42,7 +42,9 @@ it('renders the requirement-explorer blade with the expected MCP wiring', functi
         ->assertSee('trace-query')
         ->assertSee('lint-project')
         ->assertSee('Requirements')
-        ->assertSee('window.GrowthApp');
+        ->assertSee('window.GrowthApp')
+        ->assertSee('state.projects = payload?.results ?? []', false)
+        ->assertDontSee('state.projects = payload?.projects', false);
 });
 
 it('also serves the requirement-explorer app on the intake server', function () {

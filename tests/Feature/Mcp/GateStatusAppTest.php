@@ -42,7 +42,9 @@ it('renders the gate-status app blade with the expected MCP wiring', function ()
         ->assertSee('Gate Status')
         ->assertSee('window.GrowthApp')
         ->assertSee('gate-finding-group', false)
-        ->assertSee('const grouped = new Map();', false);
+        ->assertSee('const grouped = new Map();', false)
+        ->assertSee('state.projects = payload?.results ?? []', false)
+        ->assertDontSee('state.projects = payload?.projects', false);
 });
 
 it('also serves the gate-status app on the governance server', function () {
