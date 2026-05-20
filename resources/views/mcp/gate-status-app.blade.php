@@ -172,25 +172,64 @@
 
             .gate-findings {
                 border-top: 1px solid var(--line-soft);
+                display: grid;
+                gap: 8px;
                 margin-top: 8px;
                 padding-top: 10px;
             }
 
-            .gate-findings .row {
+            .gate-finding-group {
                 align-items: flex-start;
-                flex-direction: column;
-                gap: 4px;
+                background: var(--panel-soft);
+                border: 1px solid var(--line-soft);
+                border-radius: 6px;
+                display: flex;
+                gap: 10px;
+                padding: 10px 12px;
             }
 
-            .gate-findings .row .finding-rule {
+            .gate-finding-group .severity {
+                flex: 0 0 70px;
+            }
+
+            .gate-finding-group .body {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .gate-finding-group .finding-message {
+                color: var(--text);
+                font-size: 13px;
+                line-height: 1.4;
+                word-break: break-word;
+            }
+
+            .gate-finding-group .finding-rule {
                 color: var(--muted-2);
                 font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
                 font-size: 11px;
                 letter-spacing: .03em;
+                margin-top: 2px;
             }
 
-            .gate-findings .row .finding-pill {
-                align-self: flex-start;
+            .gate-finding-subjects {
+                color: var(--muted);
+                display: grid;
+                font-size: 11px;
+                gap: 2px;
+                margin: 6px 0 0;
+                padding: 0;
+            }
+
+            .gate-finding-subjects li {
+                font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+                list-style: none;
+                word-break: break-all;
+            }
+
+            .gate-finding-subjects .subject-type {
+                color: var(--muted-2);
+                margin-right: 6px;
             }
 
             @media (max-width: 860px) {
@@ -456,18 +495,60 @@
 
             function findingsList(findings) {
                 if (findings.length === 0) {
-                    return '<div class="gate-findings"><div class="rows"><div class="row"><span>No findings.</span></div></div></div>';
+                    return '<div class="gate-findings"><div class="gate-finding-group"><div class="body"><span>No findings.</span></div></div></div>';
                 }
 
-                const rows = findings.map((finding) => `
-                    <div class="row">
-                        <span class="finding-rule">${escapeHtml(finding.rule ?? 'unknown.rule')}</span>
-                        <span>${escapeHtml(finding.message ?? '')}</span>
-                        <span class="pill ${indicatorClass(finding.severity ?? 'pending')} finding-pill">${escapeHtml(finding.severity ?? '')}</span>
-                    </div>
-                `).join('');
+                const grouped = new Map();
+                for (const finding of findings) {
+                    const key = `${finding.rule ?? ''}|${finding.message ?? ''}`;
+                    if (!grouped.has(key)) {
+                        grouped.set(key, []);
+                    }
+                    grouped.get(key).push(finding);
+                }
 
-                return `<div class="gate-findings"><div class="rows">${rows}</div></div>`;
+                const groups = [...grouped.values()].map((group) => {
+                    const head = group[0];
+                    const subjects = [];
+                    const seen = new Set();
+                    for (const finding of group) {
+                        if (!finding.subject_id) {
+                            continue;
+                        }
+                        const key = `${finding.subject_type ?? ''}:${finding.subject_id}`;
+                        if (seen.has(key)) {
+                            continue;
+                        }
+                        seen.add(key);
+                        subjects.push(finding);
+                    }
+
+                    const subjectList = subjects.length === 0 ? '' : `
+                        <ul class="gate-finding-subjects">
+                            ${subjects.map((finding) => `
+                                <li>
+                                    ${finding.subject_type ? `<span class="subject-type">${escapeHtml(finding.subject_type)}</span>` : ''}
+                                    <span>${escapeHtml(finding.subject_id)}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `;
+
+                    return `
+                        <div class="gate-finding-group">
+                            <div class="severity">
+                                <span class="pill ${indicatorClass(head.severity ?? 'pending')} finding-pill">${escapeHtml(head.severity ?? '')}</span>
+                            </div>
+                            <div class="body">
+                                <div class="finding-message">${escapeHtml(head.message ?? '')}</div>
+                                <div class="finding-rule">${escapeHtml(head.rule ?? 'unknown.rule')}</div>
+                                ${subjectList}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                return `<div class="gate-findings">${groups}</div>`;
             }
 
             function loadingPanel() {
