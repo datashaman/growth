@@ -245,9 +245,6 @@ class ManifestApplier
             }
         }
 
-        if ($drift !== []) {
-        }
-
         return [
             'project_id' => $project->id,
             'mode' => $mode,
