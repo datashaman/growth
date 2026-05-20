@@ -2,11 +2,6 @@
 
 namespace App\Growth\Assurance;
 
-use App\Growth\Logging\LogLevel;
-use App\Growth\Logging\LogReporter;
-use App\Growth\Logging\NullLogReporter;
-use App\Growth\Progress\NullProgressReporter;
-use App\Growth\Progress\ProgressReporter;
 use App\Models\Project;
 use App\Models\WorkItemDeliveryLink;
 
@@ -15,27 +10,11 @@ class ContradictionScanner
     /**
      * @return array<string,mixed>
      */
-    public function scan(Project $project, ProgressReporter $progress = new NullProgressReporter, LogReporter $log = new NullLogReporter): array
+    public function scan(Project $project): array
     {
         $findings = $this->doneWorkAgainstOpenAnomalies($project);
-        $progress->report(1, 3, 'Checked done work against open anomalies');
-        $log->log(LogLevel::Info, 'Checked done work against open anomalies', ['findings' => count($findings)]);
-
-        $deployed = $this->deployedFailedDeliveryLinks($project);
-        $findings = array_merge($findings, $deployed);
-        $progress->report(2, 3, 'Checked delivery links deployed despite failed checks');
-        $log->log(LogLevel::Info, 'Checked delivery links deployed despite failed checks', ['findings' => count($deployed)]);
-
-        $rejected = $this->implementedRejectedChanges($project);
-        $findings = array_merge($findings, $rejected);
-        $progress->report(3, 3, 'Checked change requests implemented despite rejection');
-        $log->log(LogLevel::Info, 'Checked change requests implemented despite rejection', ['findings' => count($rejected)]);
-
-        $log->log(
-            $findings === [] ? LogLevel::Info : LogLevel::Warning,
-            $findings === [] ? 'No contradictions found' : count($findings).' contradiction(s) found',
-            ['contradictions' => count($findings)],
-        );
+        $findings = array_merge($findings, $this->deployedFailedDeliveryLinks($project));
+        $findings = array_merge($findings, $this->implementedRejectedChanges($project));
 
         return [
             'project_id' => $project->id,

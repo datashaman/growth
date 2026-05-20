@@ -2,11 +2,6 @@
 
 namespace App\Growth\Manifest;
 
-use App\Growth\Logging\LogLevel;
-use App\Growth\Logging\LogReporter;
-use App\Growth\Logging\NullLogReporter;
-use App\Growth\Progress\NullProgressReporter;
-use App\Growth\Progress\ProgressReporter;
 use App\Models\Project;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -47,16 +42,13 @@ class ManifestExporter
      * @param  list<string>|null  $sections
      * @return array<string,mixed>
      */
-    public function export(string $projectId, ?array $sections = null, ProgressReporter $progress = new NullProgressReporter, LogReporter $log = new NullLogReporter): array
+    public function export(string $projectId, ?array $sections = null): array
     {
         $wanted = $this->resolveSections($sections);
 
         $project = Project::query()
             ->with($this->eagerLoadsFor($wanted))
             ->findOrFail($projectId);
-
-        $total = count($wanted) + 1;
-        $step = 0;
 
         $stakeholderSlugs = isset($wanted['stakeholders']) || isset($wanted['concerns'])
             ? $this->assignSlugs(
@@ -113,8 +105,6 @@ class ManifestExporter
         $manifest = [
             'project' => $this->emitProject($project),
         ];
-        $progress->report(++$step, $total, 'Exported project');
-        $log->log(LogLevel::Info, 'Exported project', ['project' => $project->name]);
 
         if (isset($wanted['stakeholders'])) {
             $stakeholders = $project->stakeholders
@@ -125,8 +115,6 @@ class ManifestExporter
             if ($stakeholders) {
                 $manifest['stakeholders'] = $stakeholders;
             }
-            $progress->report(++$step, $total, 'Exported stakeholders');
-            $log->log(LogLevel::Info, 'Exported stakeholders', ['count' => count($stakeholders)]);
         }
 
         if (isset($wanted['concerns'])) {
@@ -138,8 +126,6 @@ class ManifestExporter
             if ($concerns) {
                 $manifest['concerns'] = $concerns;
             }
-            $progress->report(++$step, $total, 'Exported concerns');
-            $log->log(LogLevel::Info, 'Exported concerns', ['count' => count($concerns)]);
         }
 
         if (isset($wanted['requirements'])) {
@@ -151,8 +137,6 @@ class ManifestExporter
             if ($requirements) {
                 $manifest['requirements'] = $requirements;
             }
-            $progress->report(++$step, $total, 'Exported requirements');
-            $log->log(LogLevel::Info, 'Exported requirements', ['count' => count($requirements)]);
         }
 
         if (isset($wanted['architecture'])) {
@@ -176,11 +160,6 @@ class ManifestExporter
             if ($architecture) {
                 $manifest['architecture'] = $architecture;
             }
-            $progress->report(++$step, $total, 'Exported architecture');
-            $log->log(LogLevel::Info, 'Exported architecture', [
-                'viewpoints' => count($viewpoints),
-                'views' => count($views),
-            ]);
         }
 
         if (isset($wanted['plan'])) {
@@ -193,8 +172,6 @@ class ManifestExporter
                     $requirementSlugs,
                 );
             }
-            $progress->report(++$step, $total, 'Exported plan');
-            $log->log(LogLevel::Info, 'Exported plan', ['present' => $project->projectPlan !== null]);
         }
 
         if (isset($wanted['verification'])) {
@@ -208,8 +185,6 @@ class ManifestExporter
                 $verification['plans'] = $plans;
                 $manifest['verification'] = $verification;
             }
-            $progress->report(++$step, $total, 'Exported verification');
-            $log->log(LogLevel::Info, 'Exported verification', ['plans' => count($plans)]);
         }
 
         return $manifest;
