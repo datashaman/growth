@@ -40,7 +40,9 @@ it('renders the gate-status app blade with the expected MCP wiring', function ()
         ->assertSee('evaluate-readiness-gates')
         ->assertSee('list-projects')
         ->assertSee('Gate Status')
-        ->assertSee('window.GrowthApp');
+        ->assertSee('window.GrowthApp')
+        ->assertSee('state.projects = payload?.results ?? []', false)
+        ->assertDontSee('state.projects = payload?.projects', false);
 });
 
 it('also serves the gate-status app on the governance server', function () {

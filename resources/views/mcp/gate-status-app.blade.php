@@ -299,7 +299,7 @@
                 }
 
                 const payload = parseToolPayload(result);
-                state.projects = payload?.projects ?? [];
+                state.projects = payload?.results ?? [];
 
                 if (!state.selectedProjectId && state.projects.length > 0) {
                     state.selectedProjectId = state.projects[0].id;
