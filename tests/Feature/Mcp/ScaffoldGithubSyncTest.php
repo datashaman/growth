@@ -32,10 +32,14 @@ it('scaffolds a current workflow for a repo-bound project', function () {
                 // The template is the single source of truth: the scaffolded
                 // YAML must carry the checks:write permission block.
                 ->where('workflow_yaml', fn (string $yaml) => str_contains($yaml, 'checks: write')
-                    && str_contains($yaml, 'datashaman/growth/actions/growth-sync@main'))
-                ->has('setup_steps', 4)
-                ->where('setup_steps.3.id', 'repo_binding')
-                ->where('setup_steps.3.done', true);
+                    && str_contains($yaml, 'datashaman/growth/actions/growth-sync@main')
+                    // The template warns that the action's source repo must be
+                    // reachable from the adopter repo.
+                    && str_contains($yaml, 'Actions can only resolve it'))
+                ->has('setup_steps', 5)
+                ->where('setup_steps.1.id', 'action_access')
+                ->where('setup_steps.4.id', 'repo_binding')
+                ->where('setup_steps.4.done', true);
         });
 });
 
@@ -53,8 +57,8 @@ it('reports the repo binding as incomplete when the project is unbound', functio
         ->assertStructuredContent(function ($json) {
             $json->where('github_repo', null)
                 ->where('github_repo_bound', false)
-                ->where('setup_steps.3.id', 'repo_binding')
-                ->where('setup_steps.3.done', false)
+                ->where('setup_steps.4.id', 'repo_binding')
+                ->where('setup_steps.4.done', false)
                 ->etc();
         });
 });

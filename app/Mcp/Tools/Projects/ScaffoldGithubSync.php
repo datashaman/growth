@@ -129,6 +129,12 @@ class ScaffoldGithubSync extends Tool
                 'done' => false,
             ],
             [
+                'id' => 'action_access',
+                'label' => 'Make the growth-sync action reachable',
+                'description' => 'The workflow uses the datashaman/growth/actions/growth-sync action. GitHub Actions can only resolve it if the datashaman/growth repository is accessible from the adopter repo: it must be public, or shared with the repo via the organization Actions access settings. A public repository cannot consume an action from a private one — the run fails with "Unable to resolve action datashaman/growth, not found".',
+                'done' => false,
+            ],
+            [
                 'id' => 'mcp_token',
                 'label' => 'Add the GROWTH_MCP_TOKEN secret',
                 'description' => 'Mint a Passport personal access token with the mcp:use scope and add it as the GROWTH_MCP_TOKEN repository secret.',
