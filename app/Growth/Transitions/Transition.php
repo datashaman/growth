@@ -90,7 +90,7 @@ abstract class Transition
             $this->assertPreconditions($locked);
 
             $locked->setAttribute('status', $this->targetStatus());
-            $this->decorateSubject($locked);
+            $this->decorateSubject($locked, $reason);
             $locked->save();
 
             // Keep the caller's instance in sync with the persisted row.
@@ -150,9 +150,11 @@ abstract class Transition
      * Apply any non-status attribute changes that are part of this transition,
      * within the same locked transaction. Overridden by transitions that set
      * decision fields, timestamps, or other attributes alongside the status.
-     * No-op by default.
+     * The transition's `$reason` is passed through so an override can persist
+     * it onto the subject (e.g. a decision rationale) and not just the audit
+     * row. No-op by default.
      */
-    protected function decorateSubject(Model $subject): void {}
+    protected function decorateSubject(Model $subject, ?string $reason): void {}
 
     /**
      * Record the audit row for this transition.
