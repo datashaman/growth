@@ -67,6 +67,10 @@ session records thereafter. A session that adopts no Role still works — it jus
 operates without a Persona.
 _Avoid_: "the agent" (a Session is a connection, not a reasoning loop)
 
+**Workflow Mode**:
+The current kind of work a Session is trying to perform within a Project.
+_Avoid_: "phase" when implying a single project-wide stage
+
 **Agent**:
 A named principal a Client Agent session may authenticate as, so recorded
 events can be attributed to it. An attribution annotation, never a security
@@ -76,6 +80,10 @@ _Avoid_: "autonomous agent", conflating with Client Agent
 **Workspace**:
 The tenant boundary. Every Project, and every recorded event, belongs to one.
 
+**Project Adapter**:
+The local repo configuration that helps a Client Agent operate against a Growth Project without becoming the workflow store.
+_Avoid_: "installed workflow", "local workflow store"
+
 ## Relationships
 
 - A **Workspace** contains **Projects**; a **Project** defines its own **Roles**.
@@ -83,8 +91,10 @@ The tenant boundary. Every Project, and every recorded event, belongs to one.
 - The **Lens** (webapp) and the served **Persona** text (MCP) both derive from the **Role**'s Capability set.
 - A **Capability Surface** exposes a grouping of **Capabilities** as one MCP server; a **Session** connects to one.
 - A **Session** adopts at most one **Role**; the **Role**, not the **Surface**, carries the **Persona**.
+- A **Session** may enter one **Workflow Mode**; the **Role** names the accountability, while the **Workflow Mode** names the kind of work underway.
 - Growth **serves** Personas, tools, and tool annotations, and **records**
   attribution. The **Client Agent** decides and acts. Growth never supervises it.
+- A **Project Adapter** belongs outside Growth and points a repo's Client Agent workflow back to one **Project**.
 
 ## Example dialogue
 
