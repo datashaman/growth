@@ -24,7 +24,7 @@ enum Capability: string
             self::ManageArchitecture => ['architecture'],
             self::ManagePlan => ['plan'],
             self::ManageVerification => ['verification'],
-            self::ManageChanges => ['changes'],
+            self::ManageChanges => ['changes', 'reviews'],
             self::ViewEvidence => ['evidence'],
             self::ViewDashboard => ['dashboard'],
         };

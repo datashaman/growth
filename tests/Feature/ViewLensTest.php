@@ -44,6 +44,7 @@ it('shows every section to a workspace owner with no project role', function () 
         'plan',
         'verification',
         'changes',
+        'reviews',
         'evidence',
     ]);
 });
