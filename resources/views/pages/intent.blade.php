@@ -19,7 +19,10 @@ new #[Title('Intent')] class extends Component {
     #[Computed]
     public function concerns()
     {
-        return $this->selectedProject?->concerns()->with('raisedBy')->orderBy('created_at', 'desc')->get() ?? collect();
+        return $this->selectedProject?->concerns()
+            ->with(['raisedBy', 'designViews'])
+            ->orderBy('created_at', 'desc')
+            ->get() ?? collect();
     }
 }; ?>
 
@@ -72,6 +75,7 @@ new #[Title('Intent')] class extends Component {
                 <flux:table.columns>
                     <flux:table.column>{{ __('Concern') }}</flux:table.column>
                     <flux:table.column class="w-40">{{ __('Raised by') }}</flux:table.column>
+                    <flux:table.column class="w-48">{{ __('Addressed by') }}</flux:table.column>
                     <flux:table.column class="w-48">{{ __('Viewpoint hints') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
@@ -79,6 +83,19 @@ new #[Title('Intent')] class extends Component {
                         <flux:table.row>
                             <flux:table.cell class="whitespace-normal">{{ $concern->text }}</flux:table.cell>
                             <flux:table.cell class="whitespace-normal">{{ $concern->raisedBy?->name ?? '—' }}</flux:table.cell>
+                            <flux:table.cell class="whitespace-normal">
+                                @if ($concern->designViews->isNotEmpty())
+                                    <ul class="flex flex-col gap-0.5">
+                                        @foreach ($concern->designViews as $view)
+                                            <li>
+                                                <a href="{{ route('architecture', ['project' => $this->selectedProject->id]) }}" wire:navigate class="text-sm hover:underline">{{ $view->name }}</a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    <span class="text-zinc-500 dark:text-zinc-400">{{ __('Not yet addressed') }}</span>
+                                @endif
+                            </flux:table.cell>
                             <flux:table.cell class="whitespace-normal">
                                 @if ($concern->viewpoint_hints)
                                     {{ is_array($concern->viewpoint_hints) ? implode(', ', $concern->viewpoint_hints) : $concern->viewpoint_hints }}
