@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Search feedback already submitted about the Growth MCP tools. Call this before `send-feedback` to avoid filing a duplicate: if an equivalent entry already exists, do not submit again. Filter by free-text query, category, tool name, or triage status.')]
+#[Description('Search feedback already submitted about the Growth MCP tools. Resolved feedback is excluded by default so the active queue stays focused; pass status=resolved to read it, or include_resolved=true to search across every status. When calling this before `send-feedback` to avoid filing a duplicate, set include_resolved=true so an already-resolved equivalent is still caught. Filter by free-text query, category, tool name, or triage status.')]
 class SearchFeedback extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -24,6 +24,7 @@ class SearchFeedback extends Tool
             'category' => 'nullable|string|in:'.implode(',', ToolFeedback::CATEGORIES),
             'tool_name' => 'nullable|string|max:120',
             'status' => 'nullable|string|in:'.implode(',', ToolFeedback::STATUSES),
+            'include_resolved' => 'nullable|boolean',
             'limit' => 'nullable|integer|min:1|max:100',
             'offset' => 'nullable|integer|min:0',
         ]);
@@ -49,6 +50,10 @@ class SearchFeedback extends Tool
         }
         if (isset($data['status'])) {
             $query->where('status', $data['status']);
+        } elseif (! ($data['include_resolved'] ?? false)) {
+            // Resolved feedback is hidden by default so the active queue stays
+            // focused; an explicit status filter or include_resolved reveals it.
+            $query->where('status', '!=', 'resolved');
         }
 
         $total = (clone $query)->count();
@@ -80,7 +85,8 @@ class SearchFeedback extends Tool
             'query' => $schema->string()->description('Free-text term matched against feedback summary and body.'),
             'category' => $schema->string()->description('Filter to a single category.')->enum(ToolFeedback::CATEGORIES),
             'tool_name' => $schema->string()->description('Filter to feedback about one MCP tool, e.g. upsert-requirements.'),
-            'status' => $schema->string()->description('Filter to a single triage status.')->enum(ToolFeedback::STATUSES),
+            'status' => $schema->string()->description('Filter to a single triage status. Overrides include_resolved.')->enum(ToolFeedback::STATUSES),
+            'include_resolved' => $schema->boolean()->description('Include resolved feedback in the results. Defaults to false (resolved is hidden). Ignored when an explicit status filter is given. Set true when checking for duplicates before send-feedback.'),
             'limit' => $schema->integer()->description('Page size, max 100. Default 25.'),
             'offset' => $schema->integer()->description('Pagination offset. Default 0.'),
         ];

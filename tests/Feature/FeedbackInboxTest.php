@@ -61,6 +61,21 @@ test('the inbox only shows the active workspace feedback', function () {
         ->assertDontSee('Foreign feedback');
 });
 
+test('the inbox hides resolved feedback by default and reveals it via the status filter', function () {
+    ($this->makeFeedback)(['status' => 'new', 'summary' => 'Open item']);
+    ($this->makeFeedback)(['status' => 'resolved', 'summary' => 'Resolved item']);
+
+    Livewire::test('pages::feedback')
+        ->assertSee('Open item')
+        ->assertDontSee('Resolved item')
+        ->set('statusFilter', 'resolved')
+        ->assertSee('Resolved item')
+        ->assertDontSee('Open item')
+        ->set('statusFilter', 'all')
+        ->assertSee('Open item')
+        ->assertSee('Resolved item');
+});
+
 test('the listener is empty when the user has no active workspace', function () {
     $orphan = User::factory()->create();
     $orphan->forceFill(['active_workspace_id' => null])->save();

@@ -63,6 +63,34 @@ it('reports pagination metadata', function () {
         });
 });
 
+it('hides resolved feedback by default', function () {
+    ($this->makeFeedback)(['status' => 'new']);
+    ($this->makeFeedback)(['status' => 'triaged']);
+    ($this->makeFeedback)(['status' => 'resolved']);
+
+    ReadonlyServer::tool(SearchFeedback::class, [])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->where('total', 2)->etc());
+});
+
+it('includes resolved feedback when include_resolved is true', function () {
+    ($this->makeFeedback)(['status' => 'new']);
+    ($this->makeFeedback)(['status' => 'resolved']);
+
+    ReadonlyServer::tool(SearchFeedback::class, ['include_resolved' => true])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->where('total', 2)->etc());
+});
+
+it('returns only resolved feedback when status=resolved is given explicitly', function () {
+    ($this->makeFeedback)(['status' => 'new']);
+    ($this->makeFeedback)(['status' => 'resolved']);
+
+    ReadonlyServer::tool(SearchFeedback::class, ['status' => 'resolved'])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->where('total', 1)->etc());
+});
+
 it('only returns feedback from the active workspace', function () {
     ($this->makeFeedback)(['summary' => 'Local feedback']);
 
