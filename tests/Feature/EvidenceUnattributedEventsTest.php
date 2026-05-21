@@ -33,6 +33,28 @@ test('it surfaces an unattributed GitHub event for the selected project repo', f
         ->assertSee('has no Growth-Work-Item trailer');
 });
 
+test('it states the unmatched-event reason once and lists every event under it', function () {
+    foreach (['aaa1234567890', 'bbb1234567890', 'ccc1234567890'] as $sha) {
+        UnattributedGithubEvent::create([
+            'github_repo' => 'datashaman/growth',
+            'event_type' => 'check_run',
+            'branch' => 'feature/lander',
+            'commit_sha' => $sha,
+            'reason' => 'missing_link',
+            'received_at' => now(),
+        ]);
+    }
+
+    $html = Livewire::test('pages::evidence')->html();
+
+    // The shared explanation appears once, not once per event.
+    expect(substr_count($html, 'has no Growth-Work-Item trailer'))->toBe(1)
+        // …while every event is still listed as a subject.
+        ->and($html)->toContain('aaa123456789')
+        ->and($html)->toContain('bbb123456789')
+        ->and($html)->toContain('ccc123456789');
+});
+
 test('it explains an ambiguous branch differently', function () {
     UnattributedGithubEvent::create([
         'github_repo' => 'datashaman/growth',
