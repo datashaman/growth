@@ -32,6 +32,49 @@ test('owner can view a change request show page', function () {
         ->assertSee('under review');
 });
 
+test('impacts render named, linked artifacts instead of type:ULID', function () {
+    $cr = $this->project->changeRequests()->create([
+        'title' => 'Rework vendor onboarding', 'category' => 'scope',
+        'status' => 'under_review', 'priority' => 'high',
+    ]);
+    $workItem = $this->project->workItems()->create([
+        'kind' => 'task', 'name' => 'Vendor dashboard shell', 'status' => 'todo',
+    ]);
+    $cr->impacts()->create([
+        'impactable_type' => 'work_item',
+        'impactable_id' => $workItem->id,
+        'impact_kind' => 'modifies',
+        'description' => 'Touches the shell layout.',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get('/change-requests/'.$cr->id)
+        ->assertOk()
+        ->assertSee($workItem->reference().' — Vendor dashboard shell', false)
+        ->assertSee(route('work-items.show', $workItem), false)
+        ->assertDontSee('work_item:'.$workItem->id);
+});
+
+test('an impact on a type without a detail page shows a name but no link', function () {
+    $cr = $this->project->changeRequests()->create([
+        'title' => 'Shift the launch gate', 'category' => 'scope',
+        'status' => 'under_review', 'priority' => 'medium',
+    ]);
+    $milestone = $this->project->milestones()->create(['name' => 'Launch readiness']);
+    $cr->impacts()->create([
+        'impactable_type' => 'milestone',
+        'impactable_id' => $milestone->id,
+        'impact_kind' => 'modifies',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get('/change-requests/'.$cr->id)
+        ->assertOk()
+        ->assertSee('Launch readiness')
+        ->assertSee('milestone')
+        ->assertDontSee('milestone:'.$milestone->id);
+});
+
 test('changes index links each title to the show page', function () {
     $cr = $this->project->changeRequests()->create([
         'title' => 'Initial', 'category' => 'scope',
