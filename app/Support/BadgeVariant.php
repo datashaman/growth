@@ -122,6 +122,19 @@ class BadgeVariant
         };
     }
 
+    /**
+     * Verification coverage derived for a requirement: verified (a linked case
+     * passed), covered (linked cases but none passing), or uncovered (no cases).
+     */
+    public static function requirementVerification(string $state): string
+    {
+        return match ($state) {
+            'verified' => 'emerald',
+            'covered' => 'amber',
+            default => 'zinc',
+        };
+    }
+
     public static function stakeholderKind(string $kind): string
     {
         return match ($kind) {
