@@ -41,6 +41,12 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      # The growth-sync action lives in the datashaman/growth repo. GitHub
+      # Actions can only resolve it if that repo is reachable from this one:
+      # it must be public, or shared with this repo via the organization's
+      # Actions access settings. A public repo cannot consume an action from a
+      # private one — the run fails with "Unable to resolve action
+      # datashaman/growth, not found".
       - uses: datashaman/growth/actions/growth-sync@main
         with:
           growth-url: https://growth.example.com
