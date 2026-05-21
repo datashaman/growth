@@ -310,7 +310,7 @@ new #[Title('Dashboard')] class extends Component {
                                     <a href="{{ route('change-requests.show', $item['id']) }}" wire:navigate class="font-medium hover:underline">{{ $item['reference'] }} — {{ $item['title'] }}</a>
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    <flux:badge :color="BadgeVariant::changeRequestPriority($item['priority'])" size="sm">{{ EnumLabel::lower($item['priority']) }}</flux:badge>
+                                    <flux:badge :color="BadgeVariant::priority($item['priority'])" size="sm">{{ EnumLabel::lower($item['priority']) }}</flux:badge>
                                 </flux:table.cell>
                             </flux:table.row>
                         @endforeach
