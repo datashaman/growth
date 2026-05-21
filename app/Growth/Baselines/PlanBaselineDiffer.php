@@ -31,10 +31,15 @@ class PlanBaselineDiffer
             $plan->id,
         );
 
+        // `status` advancing (todo → done) is normal delivery lifecycle, not a
+        // scope change against the baseline, so it is not drift — mirroring how
+        // the plan diff already ignores `status`. Drift is reserved for the
+        // scope-bearing fields (name, parent, responsible role, kind).
         $workItemDeltas = $this->diffCollection(
             'work_item',
             (array) data_get($snapshot, 'work_items', []),
             $plan->project->workItems->map(fn (WorkItem $workItem) => $this->workItemState($workItem))->all(),
+            ignored: ['status'],
         );
 
         $covered = $this->coveredImpactKeys($plan->project_id);
@@ -83,9 +88,10 @@ class PlanBaselineDiffer
     /**
      * @param  list<array<string,mixed>>  $beforeRows
      * @param  list<array<string,mixed>>  $afterRows
+     * @param  list<string>  $ignored  Fields whose change is not scope drift
      * @return list<array<string,mixed>>
      */
-    private function diffCollection(string $type, array $beforeRows, array $afterRows): array
+    private function diffCollection(string $type, array $beforeRows, array $afterRows, array $ignored = []): array
     {
         $before = collect($beforeRows)->keyBy('id');
         $after = collect($afterRows)->keyBy('id');
@@ -93,7 +99,7 @@ class PlanBaselineDiffer
 
         foreach ($after as $id => $row) {
             if (! $before->has($id)) {
-                $fieldChanges = $this->fieldChanges([], (array) $row);
+                $fieldChanges = $this->fieldChanges([], (array) $row, $ignored);
                 $deltas[] = [
                     'artifact_type' => $type,
                     'artifact_id' => $id,
@@ -105,7 +111,7 @@ class PlanBaselineDiffer
                 continue;
             }
 
-            $fieldChanges = $this->fieldChanges((array) $before->get($id), (array) $row);
+            $fieldChanges = $this->fieldChanges((array) $before->get($id), (array) $row, $ignored);
             if ($fieldChanges !== []) {
                 $deltas[] = [
                     'artifact_type' => $type,
@@ -119,7 +125,7 @@ class PlanBaselineDiffer
 
         foreach ($before as $id => $row) {
             if (! $after->has($id)) {
-                $fieldChanges = $this->fieldChanges((array) $row, []);
+                $fieldChanges = $this->fieldChanges((array) $row, [], $ignored);
                 $deltas[] = [
                     'artifact_type' => $type,
                     'artifact_id' => $id,
