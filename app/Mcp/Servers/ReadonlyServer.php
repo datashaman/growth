@@ -9,6 +9,7 @@ use App\Mcp\Resources\IntentResource;
 use App\Mcp\Resources\ManifestResource;
 use App\Mcp\Resources\ManifestSectionResource;
 use App\Mcp\Resources\MockupResource;
+use App\Mcp\Resources\OwnerMockupResource;
 use App\Mcp\Resources\PlanResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\Project\ProjectChangesResource;
@@ -185,6 +186,7 @@ class ReadonlyServer extends Server
         ProjectChangesResource::class,
         ProjectReviewsResource::class,
         MockupResource::class,
+        OwnerMockupResource::class,
         ManifestResource::class,
         ManifestSectionResource::class,
     ];
