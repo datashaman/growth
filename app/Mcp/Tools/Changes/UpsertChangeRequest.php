@@ -34,7 +34,7 @@ class UpsertChangeRequest extends Tool
             'status' => 'missing',
             'priority' => 'nullable|in:'.implode(',', ChangeRequest::PRIORITIES),
             'decision' => 'missing',
-            'decision_rationale' => 'missing',
+            'decision_rationale' => 'nullable|string',
             'decided_at' => 'missing',
             'impacts' => 'nullable|array',
             'impacts.*.type' => 'required_with:impacts|string|in:'.implode(',', array_keys(ArtifactRegistry::types())),
@@ -44,7 +44,6 @@ class UpsertChangeRequest extends Tool
         ], [
             'status.missing' => 'Change request status is not set here. Use the submit-change-request, approve-change-request, reject-change-request, defer-change-request, mark-change-request-implemented, and cancel-change-request tools to move status through validated transitions.',
             'decision.missing' => 'Change request decisions are recorded by the approve-change-request, reject-change-request, and defer-change-request tools, not set directly.',
-            'decision_rationale.missing' => 'Pass decision rationale as the reason argument to the approve-change-request, reject-change-request, or defer-change-request tool.',
             'decided_at.missing' => 'The decision timestamp is set automatically by the approve-change-request, reject-change-request, and defer-change-request tools.',
         ]);
 
@@ -105,6 +104,7 @@ class UpsertChangeRequest extends Tool
             'title' => $schema->string()->description('Change request title. Do not embed a "CR-NNN" prefix — a per-project reference is assigned automatically.')->required(),
             'description' => $schema->string()->description('Change description'),
             'rationale' => $schema->string()->description('Reason for the change'),
+            'decision_rationale' => $schema->string()->description('Decision rationale. Normally set via the reason argument to approve/reject/defer-change-request; settable here only to backfill a decision recorded without one.'),
             'category' => $schema->string()->description('Change category')->enum(ChangeRequest::CATEGORIES)->required(),
             'priority' => $schema->string()->description('Change priority')->enum(ChangeRequest::PRIORITIES),
             'impacts' => $schema->array()

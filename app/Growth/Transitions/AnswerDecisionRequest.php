@@ -45,7 +45,7 @@ class AnswerDecisionRequest extends DecisionRequestTransition
         return true;
     }
 
-    protected function decorateSubject(Model $subject): void
+    protected function decorateSubject(Model $subject, ?string $reason): void
     {
         $subject->setAttribute('chosen_option_id', $this->option->getKey());
         $subject->setAttribute('answer_rationale', $this->rationale);

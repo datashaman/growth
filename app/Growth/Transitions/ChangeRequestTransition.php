@@ -46,7 +46,7 @@ abstract class ChangeRequestTransition extends Transition
         return null;
     }
 
-    protected function decorateSubject(Model $subject): void
+    protected function decorateSubject(Model $subject, ?string $reason): void
     {
         $this->fromDecision = $subject->getAttribute('decision');
 
@@ -55,6 +55,14 @@ abstract class ChangeRequestTransition extends Transition
         if ($decision !== null) {
             $subject->setAttribute('decision', $decision);
             $subject->setAttribute('decided_at', now());
+
+            // The reason supplied to a decision transition is the decision
+            // rationale: stamp it onto the change request itself (not just the
+            // approval event) so the `change.decision_rationale.empty` gate is
+            // satisfied. A blank reason leaves any existing rationale intact.
+            if ($reason !== null && trim($reason) !== '') {
+                $subject->setAttribute('decision_rationale', $reason);
+            }
         }
     }
 
