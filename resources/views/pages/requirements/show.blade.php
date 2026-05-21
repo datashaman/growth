@@ -3,6 +3,8 @@
 use App\Models\Requirement;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
 use Livewire\Component;
 
 new class extends Component {
@@ -19,6 +21,11 @@ new class extends Component {
             'anomalies',
             'mockups',
         ]);
+    }
+
+    public function rendering(View $view): void
+    {
+        $view->title(Str::limit($this->requirement->text, 80));
     }
 }; ?>
 

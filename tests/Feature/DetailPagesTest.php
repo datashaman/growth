@@ -138,6 +138,73 @@ test('review detail 404s for non-owner', function () {
         ->assertNotFound();
 });
 
+test('work item detail sets an entity-specific document title', function () {
+    $workItem = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Wire the descent engine',
+        'status' => 'todo',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get('/work-items/'.$workItem->id)
+        ->assertOk()
+        ->assertSee($workItem->reference().' — Wire the descent engine - '.config('app.name'), false);
+});
+
+test('requirement detail sets an entity-specific document title', function () {
+    $requirement = $this->project->requirements()->create([
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'System shall ignite descent engine at T-10s.',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get('/requirements/'.$requirement->id)
+        ->assertOk()
+        ->assertSee('System shall ignite descent engine at T-10s. - '.config('app.name'), false);
+});
+
+test('anomaly detail sets an entity-specific document title', function () {
+    $anomaly = $this->project->anomalies()->create([
+        'severity' => 'high',
+        'status' => 'open',
+        'summary' => 'Telemetry sync drift',
+        'description' => 'Subseconds desync between burst windows.',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get('/anomalies/'.$anomaly->id)
+        ->assertOk()
+        ->assertSee('Telemetry sync drift - '.config('app.name'), false);
+});
+
+test('review detail sets an entity-specific document title', function () {
+    $review = $this->project->reviews()->create([
+        'type' => 'technical_review',
+        'title' => 'Heat shield design review',
+        'status' => 'held',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get('/reviews/'.$review->id)
+        ->assertOk()
+        ->assertSee('Heat shield design review - '.config('app.name'), false);
+});
+
+test('mockup detail sets an entity-specific document title', function () {
+    $workItem = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Vendor dashboard shell',
+        'status' => 'todo',
+    ]);
+    $mockup = createMockup($workItem, 'Compact layout', '<!doctype html><html><body>v1</body></html>');
+
+    $this->actingAs($this->user)
+        ->get('/mockups/'.$mockup->id)
+        ->assertOk()
+        ->assertSee('Compact layout - '.config('app.name'), false);
+});
+
 test('detail pages redirect guests to login', function () {
     $workItem = $this->project->workItems()->create([
         'kind' => 'task',

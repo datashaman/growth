@@ -3,6 +3,7 @@
 use App\Models\WorkItem;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
+use Illuminate\View\View;
 use Livewire\Component;
 
 new class extends Component {
@@ -11,6 +12,11 @@ new class extends Component {
     public function mount(WorkItem $workItem): void
     {
         $this->workItem = $workItem->load($this->relations());
+    }
+
+    public function rendering(View $view): void
+    {
+        $view->title($this->workItem->reference().' — '.$this->workItem->name);
     }
 
     /**
