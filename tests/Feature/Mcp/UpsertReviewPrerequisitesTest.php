@@ -1,5 +1,6 @@
 <?php
 
+use App\Growth\Artifacts\ArtifactRegistry;
 use App\Mcp\Servers\GovernanceServer;
 use App\Mcp\Tools\Reviews\UpsertReview;
 use App\Models\Project;
@@ -102,6 +103,44 @@ it('flags missing inspection roles when type is inspection', function () {
                 && str_contains($joined, 'recorder');
         })->etc();
     });
+});
+
+it('rejects a change_request target with a message naming the valid types and the review_id linkage', function () {
+    $response = GovernanceServer::tool(UpsertReview::class, [
+        'project_id' => $this->project->id,
+        'type' => 'technical_review',
+        'title' => 'Wrong target',
+        'targets' => [['type' => 'change_request', 'id' => '01jzzzzzzzzzzzzzzzzzzzzzzz']],
+    ]);
+
+    $response->assertHasErrors(['Each review target type must be one of: requirement, concern, design_view, design_element, test_plan, test_case, anomaly, project_plan, milestone, work_item, risk, review_plan. A change request is not a review target — link the review to it via the change request\'s review_id (upsert-change-request) instead.']);
+});
+
+it('accepts a valid reviewable target type', function () {
+    $response = GovernanceServer::tool(UpsertReview::class, [
+        'project_id' => $this->project->id,
+        'type' => 'technical_review',
+        'title' => 'Right target',
+        'targets' => [['type' => 'requirement', 'id' => $this->requirement->id]],
+    ]);
+
+    $response->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('targets', 1)->etc();
+    });
+});
+
+it('exposes the review target type enum in the upsert-review tool schema', function () {
+    $tools = $this->postJson('/mcp/governance', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+    ])->assertOk()->json('result.tools');
+
+    $reviewTool = collect($tools)->firstWhere('name', 'upsert-review');
+    $typeSchema = $reviewTool['inputSchema']['properties']['targets']['items']['properties']['type'] ?? null;
+
+    expect($typeSchema)->not->toBeNull()
+        ->and($typeSchema['enum'] ?? null)->toBe(array_keys(ArtifactRegistry::types()));
 });
 
 it('flags expected responsibilities declared by the review plan when participants do not cover them', function () {

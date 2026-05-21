@@ -49,6 +49,7 @@ class UpsertReview extends Tool
             'targets.*.context' => 'nullable|string|max:255',
         ], [
             'status.missing' => 'Review status is not set here. Use the start-review, hold-review, close-review, and cancel-review tools to move status through validated transitions.',
+            'targets.*.type.in' => 'Each review target type must be one of: '.implode(', ', array_keys($this->reviewableTypes())).'. A change request is not a review target — link the review to it via the change request\'s review_id (upsert-change-request) instead.',
         ]);
 
         $targets = $data['targets'] ?? null;
@@ -167,7 +168,19 @@ class UpsertReview extends Tool
             'decision' => $schema->string()->description('Review decision')->enum(Review::DECISIONS),
             'decision_rationale' => $schema->string()->description('Reason/evidence for a decision change; recorded in the decision audit trail'),
             'summary' => $schema->string()->description('Review summary/record'),
-            'targets' => $schema->array()->description('Artifacts under review: {type,id,context}'),
+            'targets' => $schema->array()
+                ->description('Artifacts under review. Each entry: {type, id, context?}. A change request is not a valid target — it links to a review via its own review_id.')
+                ->items($schema->object(fn (JsonSchema $s) => [
+                    'type' => $s->string()
+                        ->description('Artifact type under review.')
+                        ->enum(array_keys($this->reviewableTypes()))
+                        ->required(),
+                    'id' => $s->string()
+                        ->description('Artifact ULID.')
+                        ->required(),
+                    'context' => $s->string()
+                        ->description('Optional note on what aspect is under review.'),
+                ])),
         ];
     }
 
