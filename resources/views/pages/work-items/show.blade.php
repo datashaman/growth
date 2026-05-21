@@ -3,6 +3,8 @@
 use App\Models\WorkItem;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
+use Illuminate\Support\Collection;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 new class extends Component {
@@ -11,6 +13,37 @@ new class extends Component {
     public function mount(WorkItem $workItem): void
     {
         $this->workItem = $workItem->load($this->relations());
+    }
+
+    /**
+     * The reason recorded on the most recent transition into the blocked
+     * state, or null when the item is not blocked / no reason was captured.
+     */
+    #[Computed]
+    public function blockReason(): ?string
+    {
+        if ($this->workItem->status !== 'blocked') {
+            return null;
+        }
+
+        return $this->workItem->statusTransitions()
+            ->where('to_status', 'blocked')
+            ->latest('transitioned_at')
+            ->value('reason');
+    }
+
+    /**
+     * Upstream dependencies that are not yet finished — the work most likely
+     * holding this item back.
+     *
+     * @return Collection<int,WorkItem>
+     */
+    #[Computed]
+    public function blockingDependencies(): Collection
+    {
+        return $this->workItem->dependencies
+            ->whereNotIn('status', ['done', 'cancelled'])
+            ->values();
     }
 
     /**
@@ -64,6 +97,27 @@ new class extends Component {
         </x-slot:description>
 
     </x-detail-page-header>
+
+    @if ($workItem->status === 'blocked')
+        <flux:callout variant="danger" icon="no-symbol">
+            <flux:callout.heading>{{ __('Blocked') }}</flux:callout.heading>
+            <flux:callout.text>
+                @if ($this->blockReason)
+                    {{ $this->blockReason }}
+                @else
+                    {{ __('This work item is blocked, but no reason was recorded with the block.') }}
+                @endif
+            </flux:callout.text>
+            @if ($this->blockingDependencies->isNotEmpty())
+                <flux:callout.text class="mt-2">
+                    {{ __('Waiting on unfinished upstream work:') }}
+                    @foreach ($this->blockingDependencies as $dep)
+                        <a href="{{ route('work-items.show', $dep) }}" wire:navigate class="font-medium underline">{{ $dep->reference() }} — {{ $dep->name }}</a>@if (! $loop->last), @endif
+                    @endforeach
+                </flux:callout.text>
+            @endif
+        </flux:callout>
+    @endif
 
     <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:heading size="lg" class="mb-3">{{ __('Properties') }}</flux:heading>
