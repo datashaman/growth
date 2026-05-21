@@ -7,11 +7,26 @@ use Livewire\Component;
 
 new #[Title('Tool invocations')] class extends Component {
     /**
+     * Result filter: 'all', 'ok' (succeeded), or 'error' (failed).
+     */
+    public string $resultFilter = 'all';
+
+    /**
+     * Transport filter; 'all' shows every transport.
+     */
+    public string $transportFilter = 'all';
+
+    /**
+     * Tool-name filter; 'all' shows every tool.
+     */
+    public string $toolFilter = 'all';
+
+    /**
      * @return array<string,string>
      */
     public function getListeners(): array
     {
-        $workspaceId = auth()->user()?->active_workspace_id;
+        $workspaceId = $this->workspaceId();
 
         if ($workspaceId === null) {
             return [];
@@ -24,13 +39,33 @@ new #[Title('Tool invocations')] class extends Component {
 
     public function onWorkspaceDataChanged(): void
     {
+        unset($this->invocations, $this->transports, $this->tools);
+    }
+
+    public function updatedResultFilter(): void
+    {
         unset($this->invocations);
+    }
+
+    public function updatedTransportFilter(): void
+    {
+        unset($this->invocations);
+    }
+
+    public function updatedToolFilter(): void
+    {
+        unset($this->invocations);
+    }
+
+    private function workspaceId(): ?string
+    {
+        return auth()->user()?->active_workspace_id;
     }
 
     #[Computed]
     public function invocations()
     {
-        $workspaceId = auth()->user()?->active_workspace_id;
+        $workspaceId = $this->workspaceId();
 
         if ($workspaceId === null) {
             return collect();
@@ -38,10 +73,66 @@ new #[Title('Tool invocations')] class extends Component {
 
         return ToolInvocation::query()
             ->where('workspace_id', $workspaceId)
+            ->when($this->resultFilter === 'ok', fn ($query) => $query->where('success', true))
+            ->when($this->resultFilter === 'error', fn ($query) => $query->where('success', false))
+            ->when($this->transportFilter !== 'all', fn ($query) => $query->where('transport', $this->transportFilter))
+            ->when($this->toolFilter !== 'all', fn ($query) => $query->where('tool_name', $this->toolFilter))
             ->with(['user', 'agent'])
             ->orderByDesc('started_at')
             ->limit(100)
             ->get();
+    }
+
+    /**
+     * Distinct transports present in this workspace, for the transport filter.
+     *
+     * @return list<string>
+     */
+    #[Computed]
+    public function transports(): array
+    {
+        $workspaceId = $this->workspaceId();
+
+        if ($workspaceId === null) {
+            return [];
+        }
+
+        return ToolInvocation::query()
+            ->where('workspace_id', $workspaceId)
+            ->whereNotNull('transport')
+            ->distinct()
+            ->orderBy('transport')
+            ->pluck('transport')
+            ->all();
+    }
+
+    /**
+     * Distinct tool names present in this workspace, for the tool filter.
+     *
+     * @return list<string>
+     */
+    #[Computed]
+    public function tools(): array
+    {
+        $workspaceId = $this->workspaceId();
+
+        if ($workspaceId === null) {
+            return [];
+        }
+
+        return ToolInvocation::query()
+            ->where('workspace_id', $workspaceId)
+            ->distinct()
+            ->orderBy('tool_name')
+            ->pluck('tool_name')
+            ->all();
+    }
+
+    public function isFiltered(): bool
+    {
+        return $this->resultFilter !== 'all'
+            || $this->transportFilter !== 'all'
+            || $this->toolFilter !== 'all';
     }
 }; ?>
 
@@ -50,11 +141,31 @@ new #[Title('Tool invocations')] class extends Component {
         :title="__('Tool invocations')"
         :description="__('Recent MCP tool calls in this workspace, newest first.')" />
 
+    <div class="flex flex-wrap justify-end gap-2">
+        <flux:select wire:model.live="resultFilter" size="sm" class="max-w-3xs" data-test="tool-invocations-result-filter">
+            <flux:select.option value="all">{{ __('All results') }}</flux:select.option>
+            <flux:select.option value="ok">{{ __('Succeeded') }}</flux:select.option>
+            <flux:select.option value="error">{{ __('Errors only') }}</flux:select.option>
+        </flux:select>
+        <flux:select wire:model.live="transportFilter" size="sm" class="max-w-3xs" data-test="tool-invocations-transport-filter">
+            <flux:select.option value="all">{{ __('All transports') }}</flux:select.option>
+            @foreach ($this->transports as $transport)
+                <flux:select.option value="{{ $transport }}">{{ $transport }}</flux:select.option>
+            @endforeach
+        </flux:select>
+        <flux:select wire:model.live="toolFilter" size="sm" class="max-w-3xs" data-test="tool-invocations-tool-filter">
+            <flux:select.option value="all">{{ __('All tools') }}</flux:select.option>
+            @foreach ($this->tools as $tool)
+                <flux:select.option value="{{ $tool }}">{{ $tool }}</flux:select.option>
+            @endforeach
+        </flux:select>
+    </div>
+
     <x-data-table
         :count="$this->invocations->count()"
         :count-label="__('recent')"
         :empty="$this->invocations->isEmpty()"
-        :empty-message="__('No tool invocations yet.')">
+        :empty-message="$this->isFiltered() ? __('No tool invocations match the current filter.') : __('No tool invocations yet.')">
         <flux:table class="[&_td]:align-top">
             <flux:table.columns>
                 <flux:table.column>{{ __('Time') }}</flux:table.column>
