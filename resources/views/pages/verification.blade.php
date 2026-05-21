@@ -3,6 +3,7 @@
 use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
+use App\Support\TableColumn;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -88,27 +89,37 @@ new #[Title('Verification')] class extends Component {
                     </div>
                 </x-slot:header>
 
+                @php($showEnvironment = TableColumn::hasValues($plan->cases, fn ($case) => $case->environment))
+                @php($showLatestRun = TableColumn::hasValues($plan->cases, fn ($case) => $case->latestRun))
                 <flux:table class="[&_td]:align-top">
                     <flux:table.columns>
                         <flux:table.column>{{ __('Case') }}</flux:table.column>
                         <flux:table.column>{{ __('Objective') }}</flux:table.column>
-                        <flux:table.column>{{ __('Environment') }}</flux:table.column>
-                        <flux:table.column>{{ __('Latest run') }}</flux:table.column>
+                        @if ($showEnvironment)
+                            <flux:table.column>{{ __('Environment') }}</flux:table.column>
+                        @endif
+                        @if ($showLatestRun)
+                            <flux:table.column>{{ __('Latest run') }}</flux:table.column>
+                        @endif
                     </flux:table.columns>
                     <flux:table.rows>
                         @foreach ($plan->cases as $case)
                             <flux:table.row>
                                 <flux:table.cell class="font-medium">{{ $case->name }}</flux:table.cell>
                                 <flux:table.cell>{{ $case->objective ?? '—' }}</flux:table.cell>
-                                <flux:table.cell>{{ $case->environment ?? '—' }}</flux:table.cell>
-                                <flux:table.cell>
-                                    @if ($case->latestRun)
-                                        <flux:badge :color="BadgeVariant::testRunStatus($case->latestRun->status)" size="sm">{{ EnumLabel::lower($case->latestRun->status) }}</flux:badge>
-                                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{{ $case->latestRun->run_at?->diffForHumans() ?? '—' }}</div>
-                                    @else
-                                        <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('no runs') }}</flux:text>
-                                    @endif
-                                </flux:table.cell>
+                                @if ($showEnvironment)
+                                    <flux:table.cell>{{ $case->environment ?? '—' }}</flux:table.cell>
+                                @endif
+                                @if ($showLatestRun)
+                                    <flux:table.cell>
+                                        @if ($case->latestRun)
+                                            <flux:badge :color="BadgeVariant::testRunStatus($case->latestRun->status)" size="sm">{{ EnumLabel::lower($case->latestRun->status) }}</flux:badge>
+                                            <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">{{ $case->latestRun->run_at?->diffForHumans() ?? '—' }}</div>
+                                        @else
+                                            <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('no runs') }}</flux:text>
+                                        @endif
+                                    </flux:table.cell>
+                                @endif
                             </flux:table.row>
                         @endforeach
                     </flux:table.rows>
