@@ -120,7 +120,7 @@ new #[Title('Plan')] class extends Component {
                 <flux:table.columns>
                     <flux:table.column>{{ __('Work item') }}</flux:table.column>
                     <flux:table.column>{{ __('Kind') }}</flux:table.column>
-                    <flux:table.column>{{ __('Status') }}</flux:table.column>
+                    <flux:table.column :title="__('Workflow status set by the team. The Dashboard Implementation table shows the evidence-derived delivery State alongside it.')">{{ __('Status') }}</flux:table.column>
                     <flux:table.column>{{ __('Role') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>

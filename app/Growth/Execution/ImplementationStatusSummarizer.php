@@ -14,7 +14,7 @@ class ImplementationStatusSummarizer
     public function summarize(Project $project): array
     {
         $items = $project->workItems()
-            ->with(['deliveryLinks.checkRuns', 'deliveryLinks.deployments'])
+            ->with(['deliveryLinks.checkRuns', 'deliveryLinks.deployments', 'responsibleRole'])
             ->orderBy('kind')
             ->orderBy('name')
             ->get();
@@ -52,9 +52,11 @@ class ImplementationStatusSummarizer
 
         return [
             'id' => $item->id,
+            'reference' => $item->reference(),
             'kind' => $item->kind,
             'name' => $item->name,
             'status' => $item->status,
+            'responsible_role_name' => $item->responsibleRole?->name,
             'delivery_links' => $item->deliveryLinks->count(),
             'checks' => $checks->count(),
             'successful_checks' => $checks->where('conclusion', 'success')->count(),

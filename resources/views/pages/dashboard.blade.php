@@ -505,8 +505,9 @@ new #[Title('Dashboard')] class extends Component {
                     <flux:table.columns>
                         <flux:table.column>{{ __('Work item') }}</flux:table.column>
                         <flux:table.column>{{ __('Kind') }}</flux:table.column>
-                        <flux:table.column>{{ __('Status') }}</flux:table.column>
-                        <flux:table.column>{{ __('State') }}</flux:table.column>
+                        <flux:table.column :title="__('Workflow status set by the team (e.g. in progress, done).')">{{ __('Status') }}</flux:table.column>
+                        <flux:table.column :title="__('Delivery state derived from evidence — links, checks, and deployments — independent of the team-set status.')">{{ __('State') }}</flux:table.column>
+                        <flux:table.column>{{ __('Role') }}</flux:table.column>
                         <flux:table.column align="end">{{ __('Evidence') }}</flux:table.column>
                         <flux:table.column align="end">{{ __('Checks') }}</flux:table.column>
                         <flux:table.column align="end">{{ __('Deploys') }}</flux:table.column>
@@ -515,7 +516,10 @@ new #[Title('Dashboard')] class extends Component {
                         @foreach ($this->implementation['results'] as $row)
                             <flux:table.row>
                                 <flux:table.cell>
-                                    <a href="{{ route('work-items.show', $row['id']) }}" wire:navigate class="font-medium hover:underline">{{ $row['name'] }}</a>
+                                    <a href="{{ route('work-items.show', $row['id']) }}" wire:navigate class="font-medium hover:underline">
+                                        <span class="font-mono text-zinc-500 dark:text-zinc-400">{{ $row['reference'] }}</span>
+                                        {{ $row['name'] }}
+                                    </a>
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <flux:badge :color="BadgeVariant::workItemKind($row['kind'])" size="sm">
@@ -532,6 +536,7 @@ new #[Title('Dashboard')] class extends Component {
                                         {{ str_replace('_', ' ', $row['implementation_state']) }}
                                     </flux:badge>
                                 </flux:table.cell>
+                                <flux:table.cell>{{ $row['responsible_role_name'] ?? '—' }}</flux:table.cell>
                                 <flux:table.cell align="end" class="tabular-nums">{{ $row['delivery_links'] }}</flux:table.cell>
                                 <flux:table.cell align="end" class="tabular-nums">
                                     @if ($row['failed_checks'] > 0)
