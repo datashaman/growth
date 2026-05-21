@@ -69,17 +69,21 @@ new #[Title('Architecture')] class extends Component {
                     </div>
                 </x-slot:header>
 
+                {{-- Shared column widths keep every element table on the page aligned,
+                     even when one view leaves Type/Purpose empty (see #376). --}}
                 <flux:table class="[&_td]:align-top">
                     <flux:table.columns>
-                        <flux:table.column>{{ __('Element') }}</flux:table.column>
-                        <flux:table.column>{{ __('Kind') }}</flux:table.column>
-                        <flux:table.column>{{ __('Type') }}</flux:table.column>
+                        <flux:table.column class="w-1/4">{{ __('Element') }}</flux:table.column>
+                        <flux:table.column class="w-1/6">{{ __('Kind') }}</flux:table.column>
+                        <flux:table.column class="w-1/6">{{ __('Type') }}</flux:table.column>
                         <flux:table.column>{{ __('Purpose') }}</flux:table.column>
                     </flux:table.columns>
                     <flux:table.rows>
                         @foreach ($view->elements as $element)
                             <flux:table.row>
-                                <flux:table.cell class="font-medium">{{ $element->name }}</flux:table.cell>
+                                <flux:table.cell class="font-medium">
+                                    <a href="{{ route('architecture-elements.show', $element) }}" wire:navigate class="hover:underline">{{ $element->name }}</a>
+                                </flux:table.cell>
                                 <flux:table.cell>
                                     <flux:badge :color="BadgeVariant::designElementKind($element->kind)" size="sm">{{ EnumLabel::lower($element->kind) }}</flux:badge>
                                 </flux:table.cell>
