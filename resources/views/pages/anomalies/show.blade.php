@@ -3,6 +3,7 @@
 use App\Models\Anomaly;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
+use Illuminate\View\View;
 use Livewire\Component;
 
 new class extends Component {
@@ -11,6 +12,11 @@ new class extends Component {
     public function mount(Anomaly $anomaly): void
     {
         $this->anomaly = $anomaly->load($this->relations());
+    }
+
+    public function rendering(View $view): void
+    {
+        $view->title($this->anomaly->summary);
     }
 
     /**

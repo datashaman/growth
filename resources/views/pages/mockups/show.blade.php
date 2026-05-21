@@ -3,6 +3,7 @@
 use App\Models\Requirement;
 use App\Models\SpecMockup;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 use Livewire\Component;
 
 new class extends Component {
@@ -22,6 +23,11 @@ new class extends Component {
     {
         $this->mockup = $mockup->load('owner.mockups', 'revisions');
         $this->revisionId = (string) ($this->mockup->revisions->last()?->id ?? '');
+    }
+
+    public function rendering(View $view): void
+    {
+        $view->title($this->mockup->name === SpecMockup::DEFAULT_NAME ? __('Default') : $this->mockup->name);
     }
 
     /**

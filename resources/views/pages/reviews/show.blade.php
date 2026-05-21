@@ -2,6 +2,7 @@
 
 use App\Models\Review;
 use App\Support\BadgeVariant;
+use Illuminate\View\View;
 use Livewire\Component;
 
 new class extends Component {
@@ -10,6 +11,11 @@ new class extends Component {
     public function mount(Review $review): void
     {
         $this->review = $review->load($this->relations());
+    }
+
+    public function rendering(View $view): void
+    {
+        $view->title($this->review->title);
     }
 
     /**
