@@ -20,7 +20,7 @@ use Throwable;
  *      session — for stdio that means after the local binding from
  *      GROWTH_USER_EMAIL/GROWTH_USER_ID has run.
  *   3. Unbound — null. The session is not operating on a surface; it gets the
- *      full surface (AllServer) and a self-selected ViewLens.
+ *      full surface (AllServer).
  *
  * Unlike the workspace there is no authenticated-user fallback: a surface is a
  * context a session declares, not a stored user preference.

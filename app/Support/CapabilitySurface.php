@@ -13,12 +13,11 @@ use App\Mcp\Servers\VerificationServer;
 /**
  * The capability surface a session is bound to (#183) — a structural grouping
  * of MCP tools, the overt context an agent runs in. One case per role-scoped
- * MCP server: the surface *is* the canonical taxonomy, and the server (its tool
- * subset) and the webapp view lens are both projections of it.
+ * MCP server.
  *
  * A session with no `CapabilitySurface` is unbound — it gets `AllServer`, the
- * full surface, and a self-selected `ViewLens`. `AllServer` has no
- * `CapabilitySurface` by design: it is the unbound fallback, not a surface.
+ * full surface. `AllServer` has no `CapabilitySurface` by design: it is the
+ * unbound fallback, not a surface.
  *
  * Case values match the MCP server path names (`/mcp/verification`,
  * `Mcp::local('verification')`) so a `GROWTH_SURFACE` env var or a token's
@@ -49,21 +48,6 @@ enum CapabilitySurface: string
             self::Governance => GovernanceServer::class,
             self::Management => ManagementServer::class,
             self::Readonly => ReadonlyServer::class,
-        };
-    }
-
-    /**
-     * The webapp view lens this surface projects onto the read side. Several
-     * surfaces may share a lens; the lens is a coarser persona grouping than
-     * the surface.
-     */
-    public function lens(): ViewLens
-    {
-        return match ($this) {
-            self::Intake, self::Architecture => ViewLens::SpecWriter,
-            self::Planning, self::Verification => ViewLens::SpecImplementer,
-            self::Governance => ViewLens::Reviewer,
-            self::Management, self::Readonly => ViewLens::All,
         };
     }
 

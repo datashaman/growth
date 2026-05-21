@@ -36,12 +36,12 @@ class ListRoles extends Tool
 
         $rows = $query
             ->withCount('workItems')
-            ->with(['users', 'agents'])
+            ->with(['users', 'agents', 'capabilityAssignments'])
             ->orderBy('name')
             ->limit($limit)
             ->offset($offset)
             ->get([
-                'id', 'name', 'responsibilities',
+                'id', 'name', 'responsibilities', 'persona',
             ]);
 
         return Response::structured([
@@ -52,6 +52,8 @@ class ListRoles extends Tool
                 'id' => $r->id,
                 'name' => $r->name,
                 'responsibilities' => $r->responsibilities,
+                'persona' => $r->persona,
+                'capabilities' => $r->capabilities()->map->value->all(),
                 'work_items_count' => $r->work_items_count,
                 'users' => $r->users->map(fn ($user) => [
                     'id' => $user->id,

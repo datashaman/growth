@@ -6,6 +6,7 @@ use App\Models\Agent;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\Capability;
 use Laravel\Passport\Passport;
 
 beforeEach(function () {
@@ -27,6 +28,7 @@ it('returns the users and agents assigned to each role', function () {
         'kind' => 'assistant',
     ]);
     $role = Role::create(['project_id' => $this->project->id, 'name' => 'Product Lead']);
+    $role->syncCapabilities([Capability::ManageIntent, Capability::ViewDashboard]);
     $role->users()->attach($jennifer);
     $role->agents()->attach($agent);
 
@@ -34,6 +36,7 @@ it('returns the users and agents assigned to each role', function () {
         ->assertOk()
         ->assertStructuredContent(fn ($json) => $json
             ->where('results.0.name', 'Product Lead')
+            ->where('results.0.capabilities', ['manage_intent', 'view_dashboard'])
             ->where('results.0.users.0.id', $jennifer->id)
             ->where('results.0.users.0.name', 'Jennifer Walker')
             ->where('results.0.agents.0.id', $agent->id)

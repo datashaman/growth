@@ -1,77 +1,116 @@
 <?php
 
+use App\Models\Project;
+use App\Models\Role;
 use App\Models\User;
-use App\Support\CapabilitySurface;
-use App\Support\SurfaceContext;
-use App\Support\ViewLens;
-use Livewire\Livewire;
+use App\Models\WorkspaceMembership;
+use App\Support\Capability;
 
-afterEach(function () {
-    app(SurfaceContext::class)->forget();
+function projectForLens(User $user): Project
+{
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+
+    session(['selected_project_id' => $project->id]);
+
+    return $project;
+}
+
+function assignRoleWithCapabilities(User $user, Project $project, array $capabilities): Role
+{
+    $role = Role::create([
+        'project_id' => $project->id,
+        'name' => fake()->unique()->jobTitle(),
+    ]);
+
+    $role->syncCapabilities($capabilities);
+    $role->users()->attach($user);
+
+    return $role;
+}
+
+it('shows every section to a workspace owner with no project role', function () {
+    $user = User::factory()->create();
+    projectForLens($user);
+
+    expect($user->lens()->sections())->toEqualCanonicalizing([
+        'dashboard',
+        'intent',
+        'requirements',
+        'architecture',
+        'plan',
+        'verification',
+        'changes',
+        'evidence',
+    ]);
 });
 
-it('defaults to the All lens when the user has none set', function () {
-    $user = User::factory()->create();
+it('shows no project sections to a non-admin participant with no project role', function () {
+    $owner = User::factory()->create();
+    $project = projectForLens($owner);
 
-    expect($user->view_lens)->toBeNull()
-        ->and($user->lens())->toBe(ViewLens::All);
+    $viewer = User::factory()->create();
+    WorkspaceMembership::create([
+        'workspace_id' => $owner->active_workspace_id,
+        'user_id' => $viewer->id,
+        'role' => WorkspaceMembership::ROLE_VIEWER,
+    ]);
+    $viewer->switchWorkspace($owner->activeWorkspace);
+    session(['selected_project_id' => $project->id]);
+
+    expect($viewer->lens()->sections())->toBe([]);
 });
 
-it('persists the chosen lens on the user', function () {
+it('derives sections from the assigned role capabilities', function () {
     $user = User::factory()->create();
-    $this->actingAs($user);
+    $project = projectForLens($user);
 
-    Livewire::test('lens-switcher')
-        ->set('selectedLens', ViewLens::SpecWriter->value)
-        ->assertRedirect();
+    assignRoleWithCapabilities($user, $project, [
+        Capability::ManageIntent,
+        Capability::ManageRequirements,
+        Capability::ManageArchitecture,
+        Capability::ViewDashboard,
+    ]);
 
-    expect($user->fresh()->lens())->toBe(ViewLens::SpecWriter);
+    expect($user->lens()->sections())->toEqualCanonicalizing([
+        'dashboard',
+        'intent',
+        'requirements',
+        'architecture',
+    ]);
 });
 
-it('ignores an unknown lens value', function () {
+it('unions sections across multiple assigned roles', function () {
     $user = User::factory()->create();
-    $user->switchLens(ViewLens::Reviewer);
-    $this->actingAs($user);
+    $project = projectForLens($user);
 
-    Livewire::test('lens-switcher')
-        ->set('selectedLens', 'not-a-lens');
+    assignRoleWithCapabilities($user, $project, [Capability::ManagePlan]);
+    assignRoleWithCapabilities($user, $project, [Capability::ManageVerification, Capability::ViewEvidence]);
 
-    expect($user->fresh()->lens())->toBe(ViewLens::Reviewer);
+    expect($user->lens()->sections())->toEqualCanonicalizing([
+        'plan',
+        'verification',
+        'evidence',
+    ]);
 });
 
-it('projects the bound surface onto the lens, ignoring the user preference', function () {
+it('shows only assigned capability sections in the sidebar', function () {
     $user = User::factory()->create();
-    $user->switchLens(ViewLens::SpecWriter);
-
-    app(SurfaceContext::class)->set(CapabilitySurface::Governance);
-
-    expect($user->lens())->toBe(ViewLens::Reviewer)
-        ->and($user->view_lens)->toBe(ViewLens::SpecWriter);
-});
-
-it('does not switch the lens for a surface-bound session', function () {
-    $user = User::factory()->create();
-    $user->switchLens(ViewLens::Reviewer);
-    $this->actingAs($user);
-
-    app(SurfaceContext::class)->set(CapabilitySurface::Intake);
-
-    Livewire::test('lens-switcher')
-        ->assertSee(__(ViewLens::SpecWriter->label()))
-        ->assertDontSeeHtml('wire:model.live="selectedLens"')
-        ->set('selectedLens', ViewLens::All->value)
-        ->assertNoRedirect();
-
-    expect($user->fresh()->view_lens)->toBe(ViewLens::Reviewer);
-});
-
-it('shows only the spec-writer sections in the sidebar', function () {
-    $user = User::factory()->create();
-    $user->switchLens(ViewLens::SpecWriter);
+    $project = projectForLens($user);
+    assignRoleWithCapabilities($user, $project, [
+        Capability::ManageIntent,
+        Capability::ManageRequirements,
+        Capability::ManageArchitecture,
+        Capability::ViewDashboard,
+    ]);
 
     $this->actingAs($user)
-        ->get('/dashboard')
+        ->get('/dashboard?project='.$project->id)
         ->assertOk()
+        ->assertSee(route('dashboard'))
         ->assertSee(route('intent'))
         ->assertSee(route('requirements'))
         ->assertSee(route('architecture'))
@@ -81,25 +120,13 @@ it('shows only the spec-writer sections in the sidebar', function () {
         ->assertDontSee(route('changes'));
 });
 
-it('shows every section in the sidebar under the All lens', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->get('/dashboard')
-        ->assertOk()
-        ->assertSee(route('intent'))
-        ->assertSee(route('plan'))
-        ->assertSee(route('verification'))
-        ->assertSee(route('evidence'))
-        ->assertSee(route('changes'));
-});
-
 it('always shows the Workspace group regardless of lens', function () {
     $user = User::factory()->create();
-    $user->switchLens(ViewLens::SpecWriter);
+    $project = projectForLens($user);
+    assignRoleWithCapabilities($user, $project, [Capability::ViewDashboard]);
 
     $this->actingAs($user)
-        ->get('/dashboard')
+        ->get('/dashboard?project='.$project->id)
         ->assertOk()
         ->assertSee(route('tool-invocations'))
         ->assertSee(route('feedback'));
@@ -107,9 +134,10 @@ it('always shows the Workspace group regardless of lens', function () {
 
 it('still serves a section the active lens hides', function () {
     $user = User::factory()->create();
-    $user->switchLens(ViewLens::SpecWriter);
+    $project = projectForLens($user);
+    assignRoleWithCapabilities($user, $project, [Capability::ViewDashboard]);
 
     $this->actingAs($user)
-        ->get('/plan')
+        ->get('/plan?project='.$project->id)
         ->assertOk();
 });

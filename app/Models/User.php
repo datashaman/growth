@@ -2,8 +2,7 @@
 
 namespace App\Models;
 
-use App\Support\SurfaceContext;
-use App\Support\ViewLens;
+use App\Support\Lens;
 use App\Support\WorkspaceContext;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -39,7 +38,6 @@ class User extends Authenticatable implements OAuthenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'view_lens' => ViewLens::class,
         ];
     }
 
@@ -114,23 +112,27 @@ class User extends Authenticatable implements OAuthenticatable
     }
 
     /**
-     * The user's active view lens.
-     *
-     * For a surface-bound session the lens is a projection of the capability
-     * surface and the user's `view_lens` preference is ignored. For an unbound
-     * session it is the self-selected `view_lens`, defaulting to All when none
-     * is set.
+     * The user's active Lens, derived from Role Capabilities on the selected
+     * project. Workspace owners/admins with no project Role see every section.
      */
-    public function lens(): ViewLens
+    public function lens(): Lens
     {
-        return app(SurfaceContext::class)->surface()?->lens()
-            ?? $this->view_lens
-            ?? ViewLens::All;
-    }
+        $project = $this->selectedProject();
 
-    public function switchLens(ViewLens $lens): void
-    {
-        $this->forceFill(['view_lens' => $lens])->save();
+        if ($project === null) {
+            return Lens::all();
+        }
+
+        $roles = $this->roles()
+            ->where('project_id', $project->id)
+            ->with('capabilityAssignments')
+            ->get();
+
+        if ($roles->isEmpty()) {
+            return $this->isWorkspaceMutator($project->workspace_id) ? Lens::all() : Lens::empty();
+        }
+
+        return Lens::fromCapabilities($roles->flatMap(fn (Role $role) => $role->capabilities()));
     }
 
     public function ownedWorkspaces(): HasMany
@@ -158,5 +160,28 @@ class User extends Authenticatable implements OAuthenticatable
     public function roles(): MorphToMany
     {
         return $this->morphToMany(Role::class, 'assignable');
+    }
+
+    private function selectedProject(): ?Project
+    {
+        $projectId = (string) request()->query('project', '') ?: (string) session('selected_project_id', '');
+
+        if ($projectId !== '') {
+            return Project::query()->find($projectId);
+        }
+
+        return Project::query()
+            ->where('workspace_id', $this->active_workspace_id)
+            ->oldest()
+            ->first();
+    }
+
+    private function isWorkspaceMutator(string $workspaceId): bool
+    {
+        return WorkspaceMembership::query()
+            ->where('workspace_id', $workspaceId)
+            ->where('user_id', $this->id)
+            ->whereIn('role', [WorkspaceMembership::ROLE_OWNER, WorkspaceMembership::ROLE_ADMIN])
+            ->exists();
     }
 }

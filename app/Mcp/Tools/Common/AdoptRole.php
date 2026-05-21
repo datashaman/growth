@@ -30,10 +30,13 @@ class AdoptRole extends Tool
 
         app(RoleContext::class)->adopt($role);
 
+        $role->load('capabilityAssignments');
+
         return Response::structured([
             'role_id' => $role->id,
             'name' => $role->name,
             'persona' => $role->persona,
+            'capabilities' => $role->capabilities()->map->value->all(),
         ]);
     }
 
@@ -76,6 +79,10 @@ class AdoptRole extends Tool
             'name' => $schema->string()->required(),
             'persona' => $schema->string()
                 ->description('The role persona, or null when the role carries none.'),
+            'capabilities' => $schema->array()
+                ->description('Capability slugs carried by the adopted role.')
+                ->items($schema->string())
+                ->required(),
         ];
     }
 }
