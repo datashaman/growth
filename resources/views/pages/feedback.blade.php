@@ -10,6 +10,29 @@ use Livewire\Component;
 
 new #[Title('Feedback')] class extends Component {
     /**
+     * Status filter: one of the STATUS_FILTERS keys. Defaults to `open`
+     * (new + triaged) so the resolved backlog does not grow the page forever.
+     */
+    public string $statusFilter = 'open';
+
+    /**
+     * @var array<string,list<string>> Filter key => the statuses it matches.
+     *                                  An empty list means "all statuses".
+     */
+    private const STATUS_FILTERS = [
+        'open' => ['new', 'triaged'],
+        'new' => ['new'],
+        'triaged' => ['triaged'],
+        'resolved' => ['resolved'],
+        'all' => [],
+    ];
+
+    public function updatedStatusFilter(): void
+    {
+        unset($this->items);
+    }
+
+    /**
      * @return array<string,string>
      */
     public function getListeners(): array
@@ -39,8 +62,11 @@ new #[Title('Feedback')] class extends Component {
             return collect();
         }
 
+        $statuses = self::STATUS_FILTERS[$this->statusFilter] ?? self::STATUS_FILTERS['open'];
+
         return ToolFeedback::query()
             ->where('workspace_id', $workspaceId)
+            ->when($statuses !== [], fn ($query) => $query->whereIn('status', $statuses))
             ->with(['user', 'agent', 'project'])
             ->orderByDesc('created_at')
             ->limit(100)
@@ -52,6 +78,16 @@ new #[Title('Feedback')] class extends Component {
     <x-project-page-header
         :title="__('Feedback')"
         :description="__('Feedback agents submitted about the MCP tools, newest first. Triage and resolve it with the feedback MCP tools.')" />
+
+    <div class="flex justify-end">
+        <flux:select wire:model.live="statusFilter" size="sm" class="max-w-3xs" data-test="feedback-status-filter">
+            <flux:select.option value="open">{{ __('Open') }}</flux:select.option>
+            <flux:select.option value="new">{{ __('New') }}</flux:select.option>
+            <flux:select.option value="triaged">{{ __('Triaged') }}</flux:select.option>
+            <flux:select.option value="resolved">{{ __('Resolved') }}</flux:select.option>
+            <flux:select.option value="all">{{ __('All') }}</flux:select.option>
+        </flux:select>
+    </div>
 
     <x-data-table
         :count="$this->items->count()"
