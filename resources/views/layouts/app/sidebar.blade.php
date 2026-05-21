@@ -13,7 +13,6 @@
             @auth
                 <livewire:workspace-switcher />
                 <livewire:project-switcher />
-                <livewire:lens-switcher />
 
                 {{-- On desktop these live in the top bar; the sidebar keeps them for mobile. --}}
                 <div class="grid gap-2 lg:hidden">
@@ -22,7 +21,7 @@
                 </div>
             @endauth
 
-            @php($lens = auth()->check() ? auth()->user()->lens() : \App\Support\ViewLens::All)
+            @php($lens = auth()->check() ? auth()->user()->lens() : \App\Support\Lens::all())
 
             <flux:sidebar.nav>
                 <flux:sidebar.group :heading="__('Project')" class="grid">

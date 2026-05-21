@@ -5,6 +5,7 @@ use App\Mcp\Tools\Plan\UpsertRole;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\Capability;
 use Laravel\Passport\Passport;
 
 beforeEach(function () {
@@ -43,4 +44,51 @@ it('updates the persona on an existing role', function () {
     ])->assertOk();
 
     expect($role->fresh()->persona)->toBe('Revised persona.');
+});
+
+it('syncs role capabilities', function () {
+    PlanningServer::tool(UpsertRole::class, [
+        'project_id' => $this->project->id,
+        'name' => 'Product Lead',
+        'capabilities' => [
+            Capability::ManageIntent->value,
+            Capability::ManageRequirements->value,
+            Capability::ViewDashboard->value,
+        ],
+    ])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('capabilities', [
+                'manage_intent',
+                'manage_requirements',
+                'view_dashboard',
+            ])
+            ->etc());
+
+    $role = Role::sole();
+
+    expect($role->load('capabilityAssignments')->capabilities()->map->value->all())
+        ->toEqualCanonicalizing([
+            'manage_intent',
+            'manage_requirements',
+            'view_dashboard',
+        ]);
+});
+
+it('leaves capabilities unchanged when omitted on update', function () {
+    $role = Role::create([
+        'project_id' => $this->project->id,
+        'name' => 'Product Lead',
+    ]);
+    $role->syncCapabilities([Capability::ManageIntent]);
+
+    PlanningServer::tool(UpsertRole::class, [
+        'id' => $role->id,
+        'project_id' => $this->project->id,
+        'name' => 'Product Lead',
+        'persona' => 'Revised.',
+    ])->assertOk();
+
+    expect($role->fresh()->load('capabilityAssignments')->capabilities()->map->value->all())
+        ->toEqualCanonicalizing(['manage_intent']);
 });

@@ -3,7 +3,7 @@
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
-use App\Support\ViewLens;
+use App\Support\Capability;
 
 /**
  * Create a project whose dashboard exercises every panel: counts, readiness,
@@ -45,6 +45,19 @@ function dashboardProjectWithEveryPanel(User $user): Project
     ]);
 
     return $project;
+}
+
+function dashboardRole(User $user, Project $project, array $capabilities): Role
+{
+    $role = Role::create([
+        'project_id' => $project->id,
+        'name' => fake()->unique()->jobTitle(),
+    ]);
+
+    $role->syncCapabilities($capabilities);
+    $role->users()->attach($user);
+
+    return $role;
 }
 
 test('dashboard redirects guests to login', function () {
@@ -178,7 +191,6 @@ test('dashboard surfaces risks, anomalies, and reviews', function () {
 
 test('the All lens renders every dashboard panel', function () {
     $user = User::factory()->create();
-    $user->switchLens(ViewLens::All);
     $project = dashboardProjectWithEveryPanel($user);
 
     $this->actingAs($user)
@@ -192,10 +204,15 @@ test('the All lens renders every dashboard panel', function () {
         ->assertSee('Decision');
 });
 
-test('the spec-writer lens renders only counts and readiness', function () {
+test('a requirements role renders only counts and readiness', function () {
     $user = User::factory()->create();
-    $user->switchLens(ViewLens::SpecWriter);
     $project = dashboardProjectWithEveryPanel($user);
+    dashboardRole($user, $project, [
+        Capability::ManageIntent,
+        Capability::ManageRequirements,
+        Capability::ManageArchitecture,
+        Capability::ViewDashboard,
+    ]);
 
     $this->actingAs($user)
         ->get('/dashboard?project='.$project->id)
@@ -208,10 +225,13 @@ test('the spec-writer lens renders only counts and readiness', function () {
         ->assertDontSee('Decision');
 });
 
-test('the spec-implementer lens renders implementation, risks, and anomalies', function () {
+test('an implementation role renders implementation, risks, and anomalies', function () {
     $user = User::factory()->create();
-    $user->switchLens(ViewLens::SpecImplementer);
     $project = dashboardProjectWithEveryPanel($user);
+    dashboardRole($user, $project, [
+        Capability::ManagePlan,
+        Capability::ManageVerification,
+    ]);
 
     $this->actingAs($user)
         ->get('/dashboard?project='.$project->id)
@@ -224,10 +244,13 @@ test('the spec-implementer lens renders implementation, risks, and anomalies', f
         ->assertDontSee('Decision');
 });
 
-test('the reviewer lens renders only readiness and reviews', function () {
+test('a reviewer role renders only readiness and reviews', function () {
     $user = User::factory()->create();
-    $user->switchLens(ViewLens::Reviewer);
     $project = dashboardProjectWithEveryPanel($user);
+    dashboardRole($user, $project, [
+        Capability::ManageRequirements,
+        Capability::ManageChanges,
+    ]);
 
     $this->actingAs($user)
         ->get('/dashboard?project='.$project->id)

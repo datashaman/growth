@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\AgentContext;
+use App\Support\Capability;
 use Laravel\Passport\Passport;
 
 beforeEach(function () {
@@ -25,6 +26,7 @@ beforeEach(function () {
         'name' => 'Engineering Lead',
         'persona' => 'Own the architecture. Confirm with your user before deleting anything.',
     ]);
+    $this->role->syncCapabilities([Capability::ManageArchitecture, Capability::ViewDashboard]);
 
     $this->callAdoptRole = fn (string $roleId, string $sessionId) => $this->postJson('/mcp/all', [
         'jsonrpc' => '2.0',
@@ -47,7 +49,9 @@ it('adopts a role the user is assigned to and returns its persona', function () 
     expect($response->json('result.structuredContent.role_id'))->toBe($this->role->id)
         ->and($response->json('result.structuredContent.name'))->toBe('Engineering Lead')
         ->and($response->json('result.structuredContent.persona'))
-        ->toBe('Own the architecture. Confirm with your user before deleting anything.');
+        ->toBe('Own the architecture. Confirm with your user before deleting anything.')
+        ->and($response->json('result.structuredContent.capabilities'))
+        ->toEqualCanonicalizing(['manage_architecture', 'view_dashboard']);
 
     $this->assertDatabaseHas('mcp_sessions', [
         'mcp_session_id' => 'sess-adopt-ok',

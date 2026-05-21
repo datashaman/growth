@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Database\Eloquent\Relations\PgCompatibleMorphToMany;
 use App\Models\Concerns\BroadcastsProjectChanges;
 use App\Models\Concerns\ScopedByOwner;
+use App\Support\Capability;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Collection;
 
 class Role extends Model
 {
@@ -37,6 +39,50 @@ class Role extends Model
     public function workItems(): HasMany
     {
         return $this->hasMany(WorkItem::class, 'responsible_role_id');
+    }
+
+    public function capabilityAssignments(): HasMany
+    {
+        return $this->hasMany(RoleCapability::class);
+    }
+
+    /**
+     * @return Collection<int, Capability>
+     */
+    public function capabilities(): Collection
+    {
+        return $this->capabilityAssignments
+            ->map(fn (RoleCapability $assignment): ?Capability => Capability::tryFrom($assignment->capability))
+            ->filter()
+            ->values();
+    }
+
+    /**
+     * @param  iterable<Capability|string>  $capabilities
+     */
+    public function syncCapabilities(iterable $capabilities): void
+    {
+        $values = collect($capabilities)
+            ->map(fn (Capability|string $capability): string => $capability instanceof Capability ? $capability->value : $capability)
+            ->unique()
+            ->values();
+
+        if ($values->isEmpty()) {
+            $this->capabilityAssignments()->delete();
+            $this->unsetRelation('capabilityAssignments');
+
+            return;
+        }
+
+        $this->capabilityAssignments()
+            ->whereNotIn('capability', $values->all())
+            ->delete();
+
+        foreach ($values as $value) {
+            $this->capabilityAssignments()->firstOrCreate(['capability' => $value]);
+        }
+
+        $this->unsetRelation('capabilityAssignments');
     }
 
     public function users(): MorphToMany
