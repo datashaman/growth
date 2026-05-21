@@ -21,7 +21,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Run Growth quality checks for a project. Returns findings grouped into sections (requirements, architecture, verification, planning, reviews, baselines, changes, adoption). Pass `sections` to compute only the listed sections; omit it to run them all. `errors` and `warnings` counts cover the returned sections only; `informational` counts adoption findings separately.')]
+#[Description('Run Growth quality checks for a project. Returns findings grouped into sections (requirements, architecture, verification, planning, reviews, baselines, changes, adoption). Pass `sections` to compute only the listed sections; omit it to run them all. `errors` and `warnings` counts cover the returned sections only; `informational` counts adoption findings separately. These sections share their linters with evaluate-readiness-gates, which groups them differently — the change_control gate combines the `baselines` and `changes` sections — so the two tools agree on a project at a fixed point; a clean lint alongside a failing gate means the project changed between the calls (e.g. a work item advanced status), not that lint omits a check.')]
 class LintProject extends Tool
 {
     private const SECTIONS = [
