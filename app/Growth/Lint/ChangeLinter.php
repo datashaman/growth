@@ -24,7 +24,7 @@ class ChangeLinter
             ->get();
 
         foreach ($changes as $change) {
-            array_push($findings, ...$this->checkChange($change));
+            array_push($findings, ...$this->checkChange($change, $project->rigor_level));
         }
 
         return $findings;
@@ -33,7 +33,7 @@ class ChangeLinter
     /**
      * @return list<array{rule:string,severity:string,message:string,subject_type:string,subject_id:string}>
      */
-    private function checkChange(ChangeRequest $change): array
+    private function checkChange(ChangeRequest $change, int $rigorLevel): array
     {
         $findings = [];
 
@@ -47,7 +47,10 @@ class ChangeLinter
             );
         }
 
-        if (in_array($change->status, ['under_review', 'approved', 'implemented'], true) && ! $change->review_id) {
+        // Linking a change to a formal review is an L3+ control. At lower rigor
+        // an approved change request alone satisfies change control, so this
+        // does not drag in the full review → participant → role machinery.
+        if ($rigorLevel >= 3 && in_array($change->status, ['under_review', 'approved', 'implemented'], true) && ! $change->review_id) {
             $findings[] = $this->finding(
                 'change.review.missing',
                 'warning',
