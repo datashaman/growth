@@ -1,9 +1,13 @@
 <?php
 
+use App\Growth\Lint\ChangeLinter;
 use App\Growth\Transitions\ApproveChangeRequest;
+use App\Growth\Transitions\DeferChangeRequest;
 use App\Growth\Transitions\IllegalTransitionException;
+use App\Growth\Transitions\RejectChangeRequest;
 use App\Growth\Transitions\SubmitChangeRequest;
 use App\Models\ChangeApprovalEvent;
+use App\Models\ChangeImpact;
 use App\Models\ChangeRequest;
 use App\Models\Project;
 use App\Models\User;
@@ -43,6 +47,42 @@ it('applies a legal change request transition and records an approval event', fu
         ->and($event->rationale)->toBe('Approved at CCB')
         ->and($event->recorded_by_user_id)->toBe($this->user->id)
         ->and(ChangeApprovalEvent::count())->toBe(1);
+});
+
+it('stamps the reason onto the change request as the decision rationale', function (string $transition) {
+    $change = ($this->makeChange)('under_review');
+
+    (new $transition)->apply($change, $this->user, 'Recorded at CCB');
+
+    expect($change->fresh()->decision_rationale)->toBe('Recorded at CCB');
+})->with([
+    'approve' => ApproveChangeRequest::class,
+    'reject' => RejectChangeRequest::class,
+    'defer' => DeferChangeRequest::class,
+]);
+
+it('leaves an existing decision rationale intact when the reason is blank', function () {
+    $change = ($this->makeChange)('under_review');
+    $change->forceFill(['decision_rationale' => 'pre-existing'])->save();
+
+    (new ApproveChangeRequest)->apply($change, $this->user, '   ');
+
+    expect($change->fresh()->decision_rationale)->toBe('pre-existing');
+});
+
+it('clears the change.decision_rationale.empty lint once a decision carries a reason', function () {
+    $change = ($this->makeChange)('under_review');
+    ChangeImpact::create([
+        'change_request_id' => $change->id,
+        'impactable_type' => 'requirement',
+        'impactable_id' => 'rq-placeholder',
+        'impact_kind' => 'modifies',
+    ]);
+
+    (new ApproveChangeRequest)->apply($change, $this->user, 'Approved at CCB');
+
+    $rules = collect((new ChangeLinter)->check($this->project->fresh()))->pluck('rule');
+    expect($rules)->not->toContain('change.decision_rationale.empty');
 });
 
 it('rejects an illegal source state without writing an approval event', function () {
