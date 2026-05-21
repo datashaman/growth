@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\ChangeRequest;
+use App\Support\ArtifactLink;
 use App\Support\BadgeVariant;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -113,8 +114,16 @@ new class extends Component {
                             <flux:table.cell>
                                 <flux:badge color="zinc" size="sm">{{ str_replace('_', ' ', $impact->impact_kind) }}</flux:badge>
                             </flux:table.cell>
-                            <flux:table.cell class="font-mono text-xs">
-                                {{ class_basename($impact->impactable_type) }}:{{ $impact->impactable_id }}
+                            <flux:table.cell>
+                                @php($artifact = $impact->impactable)
+                                @if ($artifact && ($href = ArtifactLink::route($artifact)))
+                                    <a href="{{ $href }}" wire:navigate class="font-medium hover:underline">{{ ArtifactLink::label($artifact) }}</a>
+                                @elseif ($artifact)
+                                    <span class="font-medium">{{ ArtifactLink::label($artifact) }}</span>
+                                @else
+                                    <span class="text-zinc-500 dark:text-zinc-400">{{ __('deleted') }}</span>
+                                @endif
+                                <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ ArtifactLink::typeLabel($impact->impactable_type) }}</div>
                             </flux:table.cell>
                             <flux:table.cell>{{ $impact->description ?? '—' }}</flux:table.cell>
                         </flux:table.row>
