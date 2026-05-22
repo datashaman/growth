@@ -76,6 +76,34 @@ test('an empty filter result explains that the filter, not the feed, is empty', 
         ->assertSee('No tool invocations match the current filter.');
 });
 
+test('filters render in the tool invocations table header', function () {
+    makeToolInvocation($this->workspaceId, 'list-projects', true, 'stdio');
+
+    Livewire::test('pages::tool-invocations')
+        ->assertSeeInOrder(['Tool invocations', '1 recent', 'All results', 'All transports', 'All tools', 'Time'])
+        ->assertSee('lg:flex-row lg:items-center lg:justify-between', false)
+        ->assertSee('data-test="tool-invocations-result-filter"', false)
+        ->assertSee('data-test="tool-invocations-transport-filter"', false)
+        ->assertSee('data-test="tool-invocations-tool-filter"', false);
+});
+
+test('clear filters resets the tool invocations feed', function () {
+    makeToolInvocation($this->workspaceId, 'list-projects', true, 'stdio');
+    makeToolInvocation($this->workspaceId, 'broken-tool', false, 'http');
+
+    Livewire::test('pages::tool-invocations')
+        ->set('resultFilter', 'error')
+        ->set('transportFilter', 'http')
+        ->set('toolFilter', 'broken-tool')
+        ->assertSee('Clear filters')
+        ->call('clearFilters')
+        ->assertSet('resultFilter', 'all')
+        ->assertSet('transportFilter', 'all')
+        ->assertSet('toolFilter', 'all')
+        ->assertSee('list-projects')
+        ->assertSee('broken-tool');
+});
+
 test('the notification bell links to the full notifications page', function () {
     Livewire::test('notification-bell')
         ->assertSee('View all notifications')
