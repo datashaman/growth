@@ -11,7 +11,7 @@
      so prose wraps inside its (already fixed-width) column instead. Headers stay nowrap. --}}
 <section class="rounded-xl border border-zinc-200 bg-white p-5 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-zinc-50 [&_td]:whitespace-normal [&_td]:break-words dark:border-zinc-700 dark:bg-zinc-900 dark:[&_tbody_tr:hover]:bg-zinc-800/50">
     @isset($header)
-        <div class="mb-3 flex w-full items-start justify-between gap-4">
+        <div class="mb-3 flex w-full items-start justify-between gap-4 [&_.data-table-count]:shrink-0 [&_.data-table-count]:whitespace-nowrap">
             {{ $header }}
         </div>
     @else
@@ -21,7 +21,7 @@
                     <flux:heading size="lg">{{ $title }}</flux:heading>
                 @endif
                 @if ($count !== null)
-                    <flux:text class="whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
+                    <flux:text class="data-table-count whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
                         {{ $count }}@if ($countLabel) {{ $countLabel }}@endif
                     </flux:text>
                 @endif

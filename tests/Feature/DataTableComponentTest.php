@@ -16,8 +16,27 @@ test('data table headers keep count filters and actions in a consistent non wrap
         ->toContain('12 elements')
         ->toContain('Filter')
         ->toContain('Action')
+        ->toContain('data-table-count')
         ->toContain('whitespace-nowrap')
         ->toContain('[&_tbody_tr:hover]:bg-zinc-50');
+});
+
+test('custom data table headers can mark count text as non wrapping', function () {
+    $html = Blade::render(<<<'BLADE'
+        <x-data-table>
+            <x-slot:header>
+                <div>Verification</div>
+                <div class="data-table-count">10 cases</div>
+            </x-slot:header>
+            <div>Rows</div>
+        </x-data-table>
+    BLADE);
+
+    expect($html)
+        ->toContain('10 cases')
+        ->toContain('data-table-count')
+        ->toContain('[&_.data-table-count]:shrink-0')
+        ->toContain('[&_.data-table-count]:whitespace-nowrap');
 });
 
 test('sortable columns provide a reusable livewire sorting trigger', function () {
