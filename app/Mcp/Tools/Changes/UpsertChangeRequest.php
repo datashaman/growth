@@ -17,7 +17,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive(false)]
-#[Description('Create or update a project change request, including optional impacted artifacts for impact analysis and review linkage.')]
+#[Description('Create or update a project change request, including optional impacted artifacts for impact analysis and review linkage. Before updating or deciding an existing change artifact, read its change impact brief (`growth://change-requests/{change_request}/change-impact-brief`); before creating one, inspect relevant requirements, work items, architecture context, reviews, risks, and trace-query/analyze-change-impact output so impacts and rationale reflect captured context.')]
 class UpsertChangeRequest extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -90,6 +90,7 @@ class UpsertChangeRequest extends Tool
             'decision' => $change->decision,
             'impacts' => $change->impacts()->count(),
             'approval_events' => $change->approvalEvents()->count(),
+            'change_impact_brief' => "growth://change-requests/{$change->id}/change-impact-brief",
             'created' => $change->wasRecentlyCreated,
         ]);
     }
@@ -102,8 +103,8 @@ class UpsertChangeRequest extends Tool
             'requester_role_id' => $schema->string()->description('Role ULID requesting the change'),
             'review_id' => $schema->string()->description('Review ULID where this change was approved or raised'),
             'title' => $schema->string()->description('Change request title. Do not embed a "CR-NNN" prefix — a per-project reference is assigned automatically.')->required(),
-            'description' => $schema->string()->description('Change description'),
-            'rationale' => $schema->string()->description('Reason for the change'),
+            'description' => $schema->string()->description('Change description grounded in the relevant captured artifacts and trace context'),
+            'rationale' => $schema->string()->description('Reason for the change, including the source context or decision pressure that makes it necessary'),
             'decision_rationale' => $schema->string()->description('Decision rationale. Normally set via the reason argument to approve/reject/defer-change-request; settable here only to backfill a decision recorded without one.'),
             'category' => $schema->string()->description('Change category')->enum(ChangeRequest::CATEGORIES)->required(),
             'priority' => $schema->string()->description('Change priority')->enum(ChangeRequest::PRIORITIES),
@@ -140,6 +141,7 @@ class UpsertChangeRequest extends Tool
             'decision' => $schema->string(),
             'impacts' => $schema->integer()->required(),
             'approval_events' => $schema->integer()->required(),
+            'change_impact_brief' => $schema->string()->description('Brief resource to read before refining, analyzing, deciding, or implementing this change request')->required(),
             'created' => $schema->boolean()->required(),
         ];
     }

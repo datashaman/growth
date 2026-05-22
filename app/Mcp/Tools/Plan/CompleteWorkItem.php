@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive(false)]
-#[Description('Complete a work item: move it from in_progress to done. Rejects any other source status with a clear message. Records a status transition with the acting user and timestamp.')]
+#[Description('Complete a work item: move it from in_progress to done. Before completion, read the implementation brief (`growth://work-items/{work_item}/implementation-brief`) to check linked requirements, architecture context, dependencies, mockups, and delivery evidence. Rejects any other source status with a clear message. Records a status transition with the acting user and timestamp.')]
 class CompleteWorkItem extends Tool
 {
     public function handle(Request $request): ResponseFactory

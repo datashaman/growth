@@ -81,6 +81,7 @@ test('the upsert-change-request tool returns the assigned number and reference',
         ->assertStructuredContent(function ($json) {
             $json->where('number', 1)
                 ->where('reference', 'CR-001')
+                ->where('change_impact_brief', fn (string $uri): bool => str_starts_with($uri, 'growth://change-requests/') && str_ends_with($uri, '/change-impact-brief'))
                 ->etc();
         });
 });

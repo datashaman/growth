@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Throwable;
 
 #[IsDestructive(false)]
-#[Description('Create or update up to 100 architecture elements in one call. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
+#[Description('Create or update up to 100 architecture elements in one call. Before generating element artifacts, inspect the parent view, addressed concerns, related requirements, existing elements, and source citations so each element preserves useful design context. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
 class UpsertArchitectureElements extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -102,8 +102,8 @@ class UpsertArchitectureElements extends Tool
                     'kind' => $s->string()->description('Element kind')->enum(['entity', 'relationship', 'attribute', 'constraint'])->required(),
                     'name' => $s->string()->description('Element name')->required(),
                     'type' => $s->string()->description('Element type within the viewpoint vocabulary'),
-                    'purpose' => $s->string()->description('Why this element exists'),
-                    'properties' => $s->object()->description('Kind-specific structured data'),
+                    'purpose' => $s->string()->description('Why this element exists, grounded in the relevant view, concern, requirement, or source context'),
+                    'properties' => $s->object()->description('Kind-specific structured data that helps future agents preserve design intent'),
                 ]))
                 ->min(1)
                 ->max(100)

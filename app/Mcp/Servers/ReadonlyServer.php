@@ -3,11 +3,13 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Resources\ArchitectureResource;
+use App\Mcp\Resources\ChangeImpactBriefResource;
 use App\Mcp\Resources\EvidenceResource;
 use App\Mcp\Resources\GateStatusApp;
 use App\Mcp\Resources\IntentResource;
 use App\Mcp\Resources\ManifestResource;
 use App\Mcp\Resources\ManifestSectionResource;
+use App\Mcp\Resources\MockupDesignBriefResource;
 use App\Mcp\Resources\MockupResource;
 use App\Mcp\Resources\OwnerMockupResource;
 use App\Mcp\Resources\PlanResource;
@@ -24,9 +26,12 @@ use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\ReadinessResource;
 use App\Mcp\Resources\RequirementExplorerApp;
 use App\Mcp\Resources\RequirementsResource;
+use App\Mcp\Resources\RequirementVerificationBriefResource;
+use App\Mcp\Resources\ReviewBriefResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Resources\TraceGraphApp;
 use App\Mcp\Resources\VerificationResource;
+use App\Mcp\Resources\WorkItemImplementationBriefResource;
 use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
 use App\Mcp\Tools\Architecture\ListArchitectureElements;
 use App\Mcp\Tools\Architecture\ListArchitectureViewpoints;
@@ -185,8 +190,13 @@ class ReadonlyServer extends Server
         ProjectSourcesResource::class,
         ProjectChangesResource::class,
         ProjectReviewsResource::class,
+        ReviewBriefResource::class,
+        ChangeImpactBriefResource::class,
+        MockupDesignBriefResource::class,
         MockupResource::class,
         OwnerMockupResource::class,
+        RequirementVerificationBriefResource::class,
+        WorkItemImplementationBriefResource::class,
         ManifestResource::class,
         ManifestSectionResource::class,
     ];

@@ -8,6 +8,7 @@ use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\ReadinessResource;
 use App\Mcp\Resources\RequirementsResource;
+use App\Mcp\Resources\RequirementVerificationBriefResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Resources\VerificationResource;
 use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
@@ -125,6 +126,7 @@ class VerificationServer extends Server
         RigorLevelsResource::class,
         ProjectIndexResource::class,
         RequirementsResource::class,
+        RequirementVerificationBriefResource::class,
         VerificationResource::class,
         EvidenceResource::class,
         ReadinessResource::class,

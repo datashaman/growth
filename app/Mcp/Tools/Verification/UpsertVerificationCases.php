@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Throwable;
 
 #[IsDestructive(false)]
-#[Description('Create or update up to 100 verification cases in one call, syncing the requirements each case verifies. Each item is committed in its own transaction — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
+#[Description('Create or update up to 100 verification cases in one call, syncing the requirements each case verifies. Before generating cases, read each requirement\'s verification brief (`growth://requirements/{requirement}/verification-brief`) so expected results reflect acceptance checks, mockups, architecture context, existing cases, and anomalies. Each item is committed in its own transaction — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
 class UpsertVerificationCases extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -113,7 +113,7 @@ class UpsertVerificationCases extends Tool
                     'objective' => $s->string()->description('What this case verifies'),
                     'preconditions' => $s->array()->description('Required state before execution'),
                     'inputs' => $s->array()->description('Inputs used during execution'),
-                    'expected_results' => $s->string()->description('Expected outcome')->required(),
+                    'expected_results' => $s->string()->description('Expected outcome grounded in the relevant requirement verification brief')->required(),
                     'environment' => $s->string()->description('Environment notes'),
                     'verifies_requirement_ids' => $s->array()->description('Requirement ULIDs verified by this case')->required(),
                 ]))

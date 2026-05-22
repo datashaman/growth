@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
+use App\Models\Project;
 use App\Models\WorkItem;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -12,7 +13,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('List work items for a project. Filterable by kind, status, responsible_role_id, parent_id, and substring. "root_only=true" returns only top-level deliverables. For the requirements, milestones, and roles a work item is linked to, use `trace-query` with the work-item id.')]
+#[Description('List work items for a project. Filterable by kind, status, responsible_role_id, parent_id, and substring. "root_only=true" returns only top-level deliverables. For the requirements, milestones, and roles a work item is linked to, use `trace-query` with the work-item id. When architecture context is available, inspect `list-architecture-views` and `list-architecture-elements` before implementing work items.')]
 class ListWorkItems extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -47,6 +48,13 @@ class ListWorkItems extends Tool
         }
 
         $total = (clone $query)->count();
+        $architectureViews = Project::findOrFail($data['project_id'])
+            ->designViews()
+            ->withCount('elements')
+            ->orderBy('viewpoint')
+            ->orderBy('name')
+            ->limit(5)
+            ->get(['id', 'project_id', 'viewpoint', 'name']);
 
         $rows = $query
             ->orderBy('kind')
@@ -71,6 +79,19 @@ class ListWorkItems extends Tool
                 'parent_id' => $w->parent_id,
                 'responsible_role_id' => $w->responsible_role_id,
             ])->all(),
+            'architecture_context' => [
+                'available' => $architectureViews->isNotEmpty(),
+                'guidance' => $architectureViews->isNotEmpty()
+                    ? 'Architecture content is agent-facing design context. Before implementing these work items, inspect the relevant views and elements with list-architecture-views, list-architecture-elements, and trace-query.'
+                    : 'No architecture views are captured for this project yet.',
+                'tools' => ['list-architecture-views', 'list-architecture-elements', 'trace-query'],
+                'views' => $architectureViews->map(fn ($view): array => [
+                    'id' => $view->id,
+                    'viewpoint' => $view->viewpoint,
+                    'name' => $view->name,
+                    'elements_count' => $view->elements_count,
+                ])->all(),
+            ],
         ]);
     }
 
@@ -96,6 +117,7 @@ class ListWorkItems extends Tool
             'limit' => $schema->integer()->required(),
             'offset' => $schema->integer()->required(),
             'results' => $schema->array()->required(),
+            'architecture_context' => $schema->object()->required(),
         ];
     }
 }

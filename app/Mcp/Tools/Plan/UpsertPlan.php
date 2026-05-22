@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive(false)]
-#[Description('Create or update the delivery plan for a Growth project. Status is not set here: a new plan starts as draft and moves only through the baseline-plan, activate-plan, and close-plan transitions.')]
+#[Description('Create or update the delivery plan for a Growth project. Before generating plan artifacts, inspect project intent, requirements, architecture context, risks, roles, milestones, and existing work items so the plan reflects captured context. Status is not set here: a new plan starts as draft and moves only through the baseline-plan, activate-plan, and close-plan transitions.')]
 class UpsertPlan extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -51,7 +51,7 @@ class UpsertPlan extends Tool
             'scope_summary' => $schema->string()->description('What is in scope and out of scope'),
             'objectives' => $schema->string()->description('Project objectives'),
             'deliverables_summary' => $schema->string()->description('High-level deliverables'),
-            'approach' => $schema->string()->description('Delivery approach, sequencing, and collaboration model'),
+            'approach' => $schema->string()->description('Delivery approach, sequencing, and collaboration model grounded in the relevant requirement, architecture, risk, and role context'),
             'organization_summary' => $schema->string()->description('How people and agents are organized'),
             'assumptions' => $schema->string()->description('Planning assumptions'),
             'constraints' => $schema->string()->description('Fixed delivery constraints'),

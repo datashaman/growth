@@ -3,11 +3,13 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Prompts\CheckReadiness;
+use App\Mcp\Resources\ChangeImpactBriefResource;
 use App\Mcp\Resources\EvidenceResource;
 use App\Mcp\Resources\GateStatusApp;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\ReadinessResource;
+use App\Mcp\Resources\ReviewBriefResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
 use App\Mcp\Tools\Assurance\AssessReleaseReadiness;
@@ -165,6 +167,8 @@ class GovernanceServer extends Server
         ProjectIndexResource::class,
         EvidenceResource::class,
         ReadinessResource::class,
+        ReviewBriefResource::class,
+        ChangeImpactBriefResource::class,
         GateStatusApp::class,
     ];
 
