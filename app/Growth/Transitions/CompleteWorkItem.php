@@ -5,7 +5,7 @@ namespace App\Growth\Transitions;
 /**
  * Finish a work item: `in_progress` → `done`.
  */
-class CompleteWorkItem extends Transition
+class CompleteWorkItem extends WorkItemTransition
 {
     public function allowedFrom(): array
     {
@@ -20,10 +20,5 @@ class CompleteWorkItem extends Transition
     public function verb(): string
     {
         return 'complete';
-    }
-
-    public function subjectLabel(): string
-    {
-        return 'work item';
     }
 }

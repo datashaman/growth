@@ -5,7 +5,7 @@ namespace App\Growth\Transitions;
 /**
  * Unblock a work item: `blocked` → `in_progress`.
  */
-class UnblockWorkItem extends Transition
+class UnblockWorkItem extends WorkItemTransition
 {
     public function allowedFrom(): array
     {
@@ -20,10 +20,5 @@ class UnblockWorkItem extends Transition
     public function verb(): string
     {
         return 'unblock';
-    }
-
-    public function subjectLabel(): string
-    {
-        return 'work item';
     }
 }

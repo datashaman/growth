@@ -5,7 +5,7 @@ namespace App\Growth\Transitions;
 /**
  * Reopen a finished or cancelled work item: `done`/`cancelled` → `todo`.
  */
-class ReopenWorkItem extends Transition
+class ReopenWorkItem extends WorkItemTransition
 {
     public function allowedFrom(): array
     {
@@ -20,10 +20,5 @@ class ReopenWorkItem extends Transition
     public function verb(): string
     {
         return 'reopen';
-    }
-
-    public function subjectLabel(): string
-    {
-        return 'work item';
     }
 }

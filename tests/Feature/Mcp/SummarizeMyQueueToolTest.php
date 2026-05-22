@@ -130,6 +130,25 @@ it('includes a blocked work item via a RACI responsible assignment', function ()
         ->assertStructuredContent(fn ($json) => $json->has('blocked_work_items', 1)->etc());
 });
 
+it('includes a blocked work item via a RACI accountable assignment', function () {
+    $item = ($this->blockedItem)($this->otherRole->id);
+    $item->raciRoles()->attach($this->role->id, ['raci' => 'a']);
+
+    ReadonlyServer::tool(SummarizeMyQueue::class, ['project_id' => $this->project->id])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->has('blocked_work_items', 1)->etc());
+});
+
+it('omits a blocked work item where the caller is only consulted or informed', function () {
+    $item = ($this->blockedItem)($this->otherRole->id);
+    $item->raciRoles()->attach($this->role->id, ['raci' => 'c']);
+    $item->raciRoles()->attach($this->role->id, ['raci' => 'i']);
+
+    ReadonlyServer::tool(SummarizeMyQueue::class, ['project_id' => $this->project->id])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->has('blocked_work_items', 0)->etc());
+});
+
 it('omits decision requests routed to a role the caller does not hold', function () {
     DecisionRequest::factory()->create([
         'project_id' => $this->project->id,

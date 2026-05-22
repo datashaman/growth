@@ -167,8 +167,10 @@ class WhatNeedsMeDigest
     }
 
     /**
-     * Blocked work items the caller's roles are responsible for, either by the
-     * responsible-role column or a RACI "responsible" assignment.
+     * Blocked work items the caller's roles are on the hook for, either by the
+     * responsible-role column or a RACI Responsible/Accountable assignment. The
+     * Accountable role owns the outcome, so a block is exactly what it needs to
+     * see; Consulted/Informed are advisory and stay out of the action queue.
      *
      * @param  list<string>  $roleIds
      * @return list<array<string, mixed>>
@@ -185,7 +187,7 @@ class WhatNeedsMeDigest
                 ->whereIn('responsible_role_id', $roleIds)
                 ->orWhereHas('raciRoles', fn ($roles) => $roles
                     ->whereIn('roles.id', $roleIds)
-                    ->where('raci_assignments.raci', 'r')))
+                    ->whereIn('raci_assignments.raci', ['r', 'a'])))
             ->orderBy('name')
             ->get()
             ->map(fn (WorkItem $workItem): array => [

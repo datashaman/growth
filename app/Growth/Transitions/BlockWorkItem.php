@@ -5,7 +5,7 @@ namespace App\Growth\Transitions;
 /**
  * Block a work item: `todo`/`in_progress` → `blocked`.
  */
-class BlockWorkItem extends Transition
+class BlockWorkItem extends WorkItemTransition
 {
     public function allowedFrom(): array
     {
@@ -20,11 +20,6 @@ class BlockWorkItem extends Transition
     public function verb(): string
     {
         return 'block';
-    }
-
-    public function subjectLabel(): string
-    {
-        return 'work item';
     }
 
     public function requiresReason(): bool

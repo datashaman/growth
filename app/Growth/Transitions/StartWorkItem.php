@@ -5,7 +5,7 @@ namespace App\Growth\Transitions;
 /**
  * Begin work on a work item: `todo` → `in_progress`.
  */
-class StartWorkItem extends Transition
+class StartWorkItem extends WorkItemTransition
 {
     public function allowedFrom(): array
     {
@@ -20,10 +20,5 @@ class StartWorkItem extends Transition
     public function verb(): string
     {
         return 'start';
-    }
-
-    public function subjectLabel(): string
-    {
-        return 'work item';
     }
 }
