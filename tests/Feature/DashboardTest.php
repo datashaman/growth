@@ -4,6 +4,7 @@ use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\Capability;
+use Livewire\Livewire;
 
 /**
  * Create a project whose dashboard exercises every panel: counts, readiness,
@@ -324,4 +325,126 @@ test('dashboard my queue panel always shows and lists unowned lint errors', func
         ->assertOk()
         ->assertSee('My Queue')
         ->assertSee('lint error (unowned)');
+});
+
+/*
+ * #363: dashboard polish — the panels below each fix one reported defect.
+ */
+
+test('#363 readiness panel is not boxed into a half-width grid', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+
+    // The Readiness section used to sit alone in a two-column grid, rendering at
+    // half width. No panel on the dashboard should use that wrapper now.
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('Readiness')
+        ->assertDontSee('lg:grid-cols-2', false);
+});
+
+test('#363 count tiles link to the section that lists their entities', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('href="'.route('requirements', ['project' => $project->id]).'"', false)
+        ->assertSee('href="'.route('architecture', ['project' => $project->id]).'"', false)
+        ->assertSee('href="'.route('verification', ['project' => $project->id]).'"', false)
+        ->assertSee('href="'.route('plan', ['project' => $project->id]).'"', false)
+        ->assertSee('href="'.route('changes', ['project' => $project->id]).'"', false)
+        ->assertSee('href="'.route('evidence', ['project' => $project->id]).'"', false);
+});
+
+test('#363 my queue humanizes lint rule codes instead of showing raw rule strings', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+
+    // A project with no plan raises the project-scoped pmp.missing lint finding.
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('PMP missing')
+        ->assertDontSee('pmp.missing');
+});
+
+test('#363 my queue resolves project-scoped lint findings to the Plan page', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+    session(['selected_project_id' => $project->id]);
+
+    $this->actingAs($user);
+    $subjects = Livewire::test('pages::dashboard')->instance()->queueLintSubjects;
+
+    expect($subjects)->toHaveKey('project:'.$project->id);
+    expect($subjects['project:'.$project->id]['route'])->toBe(route('plan'));
+});
+
+test('#363 implementation panel previews the top work items and links to the full list', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+
+    foreach (range(1, 9) as $n) {
+        $project->workItems()->create([
+            'kind' => 'task',
+            'name' => sprintf('Build subsystem %02d', $n),
+            'status' => 'todo',
+        ]);
+    }
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('Build subsystem 01')
+        ->assertSee('Build subsystem 08')
+        ->assertDontSee('Build subsystem 09')
+        ->assertSee('View all 9 work items in Plan');
+});
+
+test('#363 implementation panel surfaces blocked and in-progress work before idle work', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+
+    $project->workItems()->create(['kind' => 'task', 'name' => 'Idle item', 'status' => 'todo']);
+    $project->workItems()->create(['kind' => 'task', 'name' => 'Active item', 'status' => 'in_progress']);
+    $project->workItems()->create(['kind' => 'task', 'name' => 'Stuck item', 'status' => 'blocked']);
+
+    $content = $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->getContent();
+
+    $blocked = strpos($content, 'Stuck item');
+    $inProgress = strpos($content, 'Active item');
+    $idle = strpos($content, 'Idle item');
+
+    expect($blocked)->toBeLessThan($inProgress);
+    expect($inProgress)->toBeLessThan($idle);
 });
