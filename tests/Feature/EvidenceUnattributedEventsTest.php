@@ -84,6 +84,49 @@ test('it hides unattributed events past the retention window', function () {
         ->assertDontSee('could not be matched to a work item');
 });
 
+test('it can dismiss unattributed event groups without deleting the audit record', function () {
+    foreach (['aaa1234567890', 'bbb1234567890'] as $sha) {
+        UnattributedGithubEvent::create([
+            'github_repo' => 'datashaman/growth',
+            'event_type' => 'check_run',
+            'branch' => 'feature/lander',
+            'commit_sha' => $sha,
+            'reason' => 'missing_link',
+            'received_at' => now(),
+        ]);
+    }
+
+    Livewire::test('pages::evidence')
+        ->assertSee('could not be matched to a work item')
+        ->assertSee('Mark resolved')
+        ->call('dismissUnattributedEventGroup', 'unbound')
+        ->assertDontSee('could not be matched to a work item')
+        ->assertDontSee('feature/lander');
+
+    expect(UnattributedGithubEvent::count())->toBe(2)
+        ->and(UnattributedGithubEvent::whereNull('resolved_at')->count())->toBe(0)
+        ->and(UnattributedGithubEvent::where('resolved_by_user_id', $this->user->id)->count())->toBe(2)
+        ->and(UnattributedGithubEvent::where('resolution_note', 'Dismissed from Evidence after operator review.')->count())->toBe(2);
+});
+
+test('it does not surface resolved unattributed events', function () {
+    UnattributedGithubEvent::create([
+        'github_repo' => 'datashaman/growth',
+        'event_type' => 'check_run',
+        'branch' => 'feature/handled',
+        'commit_sha' => 'handled1234567890',
+        'reason' => 'missing_link',
+        'received_at' => now(),
+        'resolved_at' => now(),
+        'resolved_by_user_id' => $this->user->id,
+        'resolution_note' => 'Dismissed from Evidence after operator review.',
+    ]);
+
+    Livewire::test('pages::evidence')
+        ->assertDontSee('feature/handled')
+        ->assertDontSee('could not be matched to a work item');
+});
+
 test('it does not surface unattributed events for a repo in another workspace', function () {
     $other = User::factory()->create();
     Project::create([
