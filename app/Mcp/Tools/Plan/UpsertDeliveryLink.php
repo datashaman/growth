@@ -30,6 +30,11 @@ class UpsertDeliveryLink extends Tool
         $id = $data['id'] ?? null;
         unset($data['id']);
 
+        // Canonicalise before the match key is built and before persisting, so
+        // a PR supplied as `14`, `#14`, `PR-14`, or a `.../pull/14` URL all
+        // resolve to the same row instead of creating duplicates.
+        $data['ref'] = WorkItemDeliveryLink::canonicalRef($data['type'], $data['ref']);
+
         $link = $id
             ? tap(WorkItemDeliveryLink::findOrFail($id))->update($data)
             : WorkItemDeliveryLink::updateOrCreate(
@@ -88,7 +93,7 @@ class UpsertDeliveryLink extends Tool
             'id' => $schema->string()->description('Existing delivery link ULID. Omit to create.'),
             'work_item_id' => $schema->string()->description('Work item ULID')->required(),
             'type' => $schema->string()->description('Delivery link type')->enum(WorkItemDeliveryLink::TYPES)->required(),
-            'ref' => $schema->string()->description('Commit SHA, pull request number/ref, branch name, or — for an evidence link — the pull request ref the gallery belongs to')->required(),
+            'ref' => $schema->string()->description('Commit SHA, branch name, or pull request ref — for a pull request use the canonical `#<number>` form (a bare number, `PR-<n>`, or a `.../pull/<n>` URL are accepted and normalised). For an evidence link, the pull request ref the gallery belongs to.')->required(),
             'url' => $schema->string()->description('Optional URL to the commit, pull request, branch, or evidence gallery'),
             'description' => $schema->string()->description('Optional delivery evidence notes'),
         ];
