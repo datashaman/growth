@@ -88,14 +88,16 @@ new #[Title('Intent')] class extends Component {
                             <flux:table.cell class="whitespace-normal">{{ $concern->text }}</flux:table.cell>
                             <flux:table.cell class="whitespace-normal">{{ $concern->raisedBy?->name ?? '—' }}</flux:table.cell>
                             <flux:table.cell class="whitespace-normal">
-                                @if ($concern->designViews->isNotEmpty())
-                                    <ul class="flex flex-col gap-0.5">
-                                        @foreach ($concern->designViews as $view)
-                                            <li>
-                                                <a href="{{ route('architecture', ['project' => $this->selectedProject->id]) }}" wire:navigate class="text-sm hover:underline">{{ $view->name }}</a>
-                                            </li>
-                                        @endforeach
-                                    </ul>
+                                @php($addressingViews = $concern->designViews->sortBy([['viewpoint', 'asc'], ['name', 'asc']])->values())
+                                @if ($addressingViews->isNotEmpty())
+                                    <div class="flex flex-col gap-1">
+                                        <a href="{{ route('architecture') }}" wire:navigate class="text-sm font-medium hover:underline">
+                                            {{ trans_choice('{1} 1 architecture view|[2,*] :count architecture views', $addressingViews->count(), ['count' => $addressingViews->count()]) }}
+                                        </a>
+                                        <div class="text-xs text-zinc-500 dark:text-zinc-400">
+                                            {{ $addressingViews->pluck('name')->join(', ') }}
+                                        </div>
+                                    </div>
                                 @else
                                     <span class="text-zinc-500 dark:text-zinc-400">{{ __('Not yet addressed') }}</span>
                                 @endif

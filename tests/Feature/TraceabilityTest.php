@@ -31,7 +31,25 @@ test('a concern links to the design views that address it', function () {
     Livewire::test('pages::intent')
         ->assertSee('Addressed by')
         ->assertSee('Telemetry pipeline')
-        ->assertSee(route('architecture', ['project' => $this->project->id]), false);
+        ->assertSee('1 architecture view')
+        ->assertSee(route('architecture'), false)
+        ->assertDontSee(route('architecture', ['project' => $this->project->id]), false);
+});
+
+test('a concern with multiple design views has one stable architecture link', function () {
+    $concern = $this->project->concerns()->create(['text' => 'Telemetry must stay available.']);
+    $dependencyView = $this->project->designViews()->create(['viewpoint' => 'dependency', 'name' => 'Redis dependencies']);
+    $logicalView = $this->project->designViews()->create(['viewpoint' => 'logical', 'name' => 'Telemetry pipeline']);
+    $concern->designViews()->attach([$logicalView->id, $dependencyView->id]);
+
+    Livewire::test('pages::intent')
+        ->assertSee('2 architecture views')
+        ->assertSee('Redis dependencies, Telemetry pipeline')
+        ->assertSeeHtmlInOrder([
+            'href="'.route('architecture').'"',
+            'Redis dependencies, Telemetry pipeline',
+        ])
+        ->assertDontSee(route('architecture', ['project' => $this->project->id]), false);
 });
 
 test('a concern with no design views shows the not-yet-addressed state', function () {
