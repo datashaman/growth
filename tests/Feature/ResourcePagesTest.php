@@ -80,9 +80,15 @@ test('architecture page renders design views and elements', function () {
         ->assertSee('Architecture')
         ->assertSee('Descent stack')
         ->assertSee('Diagram')
+        ->assertSee('Positioned architecture relationships for Descent stack')
+        ->assertSee('positioned relationships')
+        ->assertSee('<svg', false)
+        ->assertSee('<path d=', false)
+        ->assertSee('left: 40px', false)
+        ->assertSee('left: 360px', false)
         ->assertSee('GuidanceComputer')
         ->assertSee('FlightSoftware')
-        ->assertSee('-&gt;', false);
+        ->assertDontSee('-&gt;', false);
 });
 
 test('verification page renders test plans, cases, and anomalies', function () {

@@ -1,9 +1,11 @@
 <?php
 
 use App\Concerns\ProjectScoped;
+use App\Support\ArchitectureDiagram;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
 use App\Support\TableColumn;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -72,27 +74,80 @@ new #[Title('Architecture')] class extends Component {
 
                 {{-- Shared leading-column widths keep the element tables aligned across
                      views (see #376); empty Type/Purpose columns are hidden per #362. --}}
-                @php($diagramNodes = $view->elements->where('kind', 'entity')->values())
-                @php($diagramRelationships = $view->elements->where('kind', 'relationship')->values())
-                @php($diagramAnnotations = $view->elements->whereIn('kind', ['attribute', 'constraint'])->values())
-                @php($showType = TableColumn::hasValues($view->elements, fn ($element) => $element->type))
-                @php($showPurpose = TableColumn::hasValues($view->elements, fn ($element) => $element->purpose))
+                @php
+                    $diagram = ArchitectureDiagram::fromElements($view->elements);
+                    $diagramNodes = $diagram['nodes'];
+                    $matchedRelationships = $diagram['relationships'];
+                    $unmatchedRelationships = $diagram['unmatched_relationships'];
+                    $diagramAnnotations = $view->elements->whereIn('kind', ['attribute', 'constraint'])->values();
+                    $showType = TableColumn::hasValues($view->elements, fn ($element) => $element->type);
+                    $showPurpose = TableColumn::hasValues($view->elements, fn ($element) => $element->purpose);
+                @endphp
 
                 <div class="mb-5 border-y border-zinc-100 py-4 dark:border-zinc-800" aria-label="{{ __('Architecture diagram for :view', ['view' => $view->name]) }}">
                     <div class="mb-3 flex items-center justify-between gap-3">
                         <flux:text class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Diagram') }}</flux:text>
                         <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">
-                            {{ $diagramNodes->count() }} {{ __('nodes') }} / {{ $diagramRelationships->count() }} {{ __('relationships') }}
+                            {{ count($diagramNodes) }} {{ __('nodes') }} / {{ count($matchedRelationships) }} {{ __('positioned relationships') }}
                         </flux:text>
                     </div>
 
-                    @if ($diagramNodes->isNotEmpty())
-                        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                            @foreach ($diagramNodes as $element)
+                    @if ($diagramNodes)
+                        <div class="overflow-x-auto rounded-sm border border-zinc-200 bg-zinc-50/70 p-3 dark:border-zinc-700 dark:bg-zinc-950/40">
+                            <div class="relative" style="width: {{ $diagram['width'] }}px; height: {{ $diagram['height'] }}px;">
+                                <svg
+                                    class="absolute inset-0 size-full"
+                                    viewBox="0 0 {{ $diagram['width'] }} {{ $diagram['height'] }}"
+                                    role="img"
+                                    aria-label="{{ __('Positioned architecture relationships for :view', ['view' => $view->name]) }}"
+                                >
+                                    <defs>
+                                        <marker id="architecture-arrow-{{ $view->id }}" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                                            <path d="M0,0 L0,6 L9,3 z" class="fill-zinc-400 dark:fill-zinc-500" />
+                                        </marker>
+                                    </defs>
+
+                                    @foreach ($matchedRelationships as $edge)
+                                        @php
+                                            $fromPosition = $edge['from_position'];
+                                            $toPosition = $edge['to_position'];
+                                            $deltaX = $toPosition['center_x'] - $fromPosition['center_x'];
+                                            $deltaY = $toPosition['center_y'] - $fromPosition['center_y'];
+                                            $startsHorizontally = abs($deltaX) >= abs($deltaY);
+                                            $startX = $startsHorizontally
+                                                ? $fromPosition['center_x'] + (($deltaX >= 0 ? 1 : -1) * ($diagram['node_width'] / 2))
+                                                : $fromPosition['center_x'];
+                                            $startY = $startsHorizontally
+                                                ? $fromPosition['center_y']
+                                                : $fromPosition['center_y'] + (($deltaY >= 0 ? 1 : -1) * ($diagram['node_height'] / 2));
+                                            $endX = $startsHorizontally
+                                                ? $toPosition['center_x'] - (($deltaX >= 0 ? 1 : -1) * ($diagram['node_width'] / 2))
+                                                : $toPosition['center_x'];
+                                            $endY = $startsHorizontally
+                                                ? $toPosition['center_y']
+                                                : $toPosition['center_y'] - (($deltaY >= 0 ? 1 : -1) * ($diagram['node_height'] / 2));
+                                            $midX = ($startX + $endX) / 2;
+                                            $midY = ($startY + $endY) / 2;
+                                            $controlOffset = $startsHorizontally ? 0 : 42;
+                                            $path = $startsHorizontally
+                                                ? "M {$startX} {$startY} C {$midX} {$startY}, {$midX} {$endY}, {$endX} {$endY}"
+                                                : "M {$startX} {$startY} C ".($startX + $controlOffset)." {$midY}, ".($endX + $controlOffset)." {$midY}, {$endX} {$endY}";
+                                        @endphp
+                                        <a href="{{ route('architecture-elements.show', $edge['element']) }}" wire:navigate>
+                                            <path d="{{ $path }}" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#architecture-arrow-{{ $view->id }})" class="text-zinc-300 transition hover:text-zinc-500 dark:text-zinc-600 dark:hover:text-zinc-400" />
+                                            <rect x="{{ $midX - 70 }}" y="{{ $midY - 13 }}" width="140" height="26" rx="3" class="fill-white/95 stroke-zinc-200 dark:fill-zinc-900/95 dark:stroke-zinc-700" />
+                                            <text x="{{ $midX }}" y="{{ $midY + 4 }}" text-anchor="middle" class="fill-zinc-600 text-[11px] font-medium dark:fill-zinc-300">{{ Str::limit($edge['element']->type ?: $edge['element']->name, 22) }}</text>
+                                        </a>
+                                    @endforeach
+                                </svg>
+
+                            @foreach ($diagramNodes as $position)
+                                @php($element = $position['element'])
                                 <a
                                     href="{{ route('architecture-elements.show', $element) }}"
                                     wire:navigate
-                                    class="group min-h-28 border border-zinc-200 bg-zinc-50 p-3 transition hover:border-zinc-400 hover:bg-white dark:border-zinc-700 dark:bg-zinc-950/40 dark:hover:border-zinc-500 dark:hover:bg-zinc-900"
+                                    class="group absolute z-10 border border-zinc-200 bg-white p-3 shadow-sm transition hover:border-zinc-400 hover:shadow dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-500"
+                                    style="left: {{ $position['x'] }}px; top: {{ $position['y'] }}px; width: {{ $diagram['node_width'] }}px; height: {{ $diagram['node_height'] }}px;"
                                 >
                                     <div class="flex items-start justify-between gap-3">
                                         <div class="min-w-0">
@@ -109,25 +164,24 @@ new #[Title('Architecture')] class extends Component {
                                 </a>
                             @endforeach
                         </div>
+                        </div>
                     @else
                         <div class="border border-dashed border-zinc-200 p-4 text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
                             {{ __('No entity nodes in this view yet.') }}
                         </div>
                     @endif
 
-                    @if ($diagramRelationships->isNotEmpty())
+                    @if ($unmatchedRelationships)
                         <div class="mt-4 space-y-2">
-                            @foreach ($diagramRelationships as $relationship)
-                                @php($from = data_get($relationship->properties, 'from') ?? data_get($relationship->properties, 'source'))
-                                @php($to = data_get($relationship->properties, 'to') ?? data_get($relationship->properties, 'target'))
+                            @foreach ($unmatchedRelationships as $relationship)
                                 <a
-                                    href="{{ route('architecture-elements.show', $relationship) }}"
+                                    href="{{ route('architecture-elements.show', $relationship['element']) }}"
                                     wire:navigate
                                     class="grid gap-2 border-l-2 border-zinc-300 bg-zinc-50 px-3 py-2 text-sm hover:bg-white dark:border-zinc-600 dark:bg-zinc-950/40 dark:hover:bg-zinc-900 md:grid-cols-[1fr_auto_1fr]"
                                 >
-                                    <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $from ?: $relationship->name }}</span>
+                                    <span class="font-medium text-zinc-800 dark:text-zinc-100">{{ $relationship['from'] ?: $relationship['element']->name }}</span>
                                     <span class="hidden text-zinc-400 md:inline">-&gt;</span>
-                                    <span class="text-zinc-600 dark:text-zinc-300">{{ $to ?: ($relationship->purpose ?: $relationship->type ?: __('relationship')) }}</span>
+                                    <span class="text-zinc-600 dark:text-zinc-300">{{ $relationship['to'] ?: ($relationship['element']->purpose ?: $relationship['element']->type ?: __('relationship')) }}</span>
                                 </a>
                             @endforeach
                         </div>
