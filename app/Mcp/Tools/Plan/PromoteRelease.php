@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive(false)]
-#[Description('Promote a release to a release candidate: move it from planned to candidate. Rejects any other source status with a clear message. Records a status transition with the acting user and timestamp.')]
+#[Description('Promote a release to a release candidate: move it from planned to candidate after release readiness has no blockers. Rejects any other source status or failed readiness with a clear message. Records a status transition with the acting user and timestamp.')]
 class PromoteRelease extends Tool
 {
     public function handle(Request $request): ResponseFactory

@@ -1,5 +1,6 @@
 <?php
 
+use App\Growth\Assurance\ReleaseReadinessAssessor;
 use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Tools\Plan\CancelRelease;
 use App\Mcp\Tools\Plan\MarkReleaseReleased;
@@ -26,10 +27,26 @@ beforeEach(function () {
         'version' => '1.0.0',
         'status' => $status,
     ]);
+
+    $this->bindReleaseReadiness = function (string $status, array $blockers = []): void {
+        app()->instance(ReleaseReadinessAssessor::class, new class($status, $blockers) extends ReleaseReadinessAssessor
+        {
+            public function __construct(private readonly string $status, private readonly array $blockers) {}
+
+            public function assess(Project $project, ?Release $release = null): array
+            {
+                return [
+                    'status' => $this->status,
+                    'blockers' => $this->blockers,
+                ];
+            }
+        });
+    };
 });
 
 it('promotes a planned release and records a transition', function () {
     $release = ($this->makeRelease)('planned');
+    ($this->bindReleaseReadiness)('ready');
 
     PlanningServer::tool(PromoteRelease::class, ['release_id' => $release->id])
         ->assertOk()
@@ -48,6 +65,17 @@ it('promotes a planned release and records a transition', function () {
         ->and($transition->transitionable->is($release))->toBeTrue();
 });
 
+it('rejects promoting a release that is not release ready', function () {
+    $release = ($this->makeRelease)('planned');
+    ($this->bindReleaseReadiness)('not_ready', ['no_successful_deployment']);
+
+    PlanningServer::tool(PromoteRelease::class, ['release_id' => $release->id])
+        ->assertHasErrors(['Cannot promote a release until release readiness passes: no_successful_deployment.']);
+
+    expect($release->fresh()->status)->toBe('planned');
+    expect(StatusTransition::count())->toBe(0);
+});
+
 it('rejects promoting a release that is not planned', function () {
     $release = ($this->makeRelease)('released');
 
@@ -60,6 +88,7 @@ it('rejects promoting a release that is not planned', function () {
 
 it('marks a candidate release as released', function () {
     $release = ($this->makeRelease)('candidate');
+    ($this->bindReleaseReadiness)('ready');
 
     PlanningServer::tool(MarkReleaseReleased::class, ['release_id' => $release->id, 'reason' => 'Shipped'])
         ->assertOk()
