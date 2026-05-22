@@ -58,7 +58,10 @@ test('the Plan work-items table nests children under their work package in WBS o
 
     Livewire::test('pages::plan')
         ->assertSeeInOrder([$package->reference(), $child->reference()])
-        ->assertSeeHtml('data-test="work-item-tree-connector"');
+        ->assertSeeHtml('data-test="work-item-tree-connector"')
+        ->assertSee('table-fixed', false)
+        ->assertSee('rounded border border-zinc-200 bg-zinc-50', false)
+        ->assertSee('left-5 top-2.5', false);
 });
 
 test('the work item detail children table shows child references with a labeled count', function () {
