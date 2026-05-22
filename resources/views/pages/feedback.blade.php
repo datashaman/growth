@@ -79,21 +79,21 @@ new #[Title('Feedback')] class extends Component {
         :title="__('Feedback')"
         :description="__('Feedback agents submitted about the MCP tools, newest first. Triage and resolve it with the feedback MCP tools.')" />
 
-    <div class="flex justify-end">
-        <flux:select wire:model.live="statusFilter" size="sm" class="max-w-3xs" data-test="feedback-status-filter">
-            <flux:select.option value="open">{{ __('Open') }}</flux:select.option>
-            <flux:select.option value="new">{{ __('New') }}</flux:select.option>
-            <flux:select.option value="triaged">{{ __('Triaged') }}</flux:select.option>
-            <flux:select.option value="resolved">{{ __('Resolved') }}</flux:select.option>
-            <flux:select.option value="all">{{ __('All') }}</flux:select.option>
-        </flux:select>
-    </div>
-
     <x-data-table
+        :title="__('Feedback')"
         :count="$this->items->count()"
         :count-label="__('recent')"
         :empty="$this->items->isEmpty()"
         :empty-message="__('No feedback yet.')">
+        <x-slot:filters>
+            <flux:select wire:model.live="statusFilter" size="sm" class="max-w-3xs" data-test="feedback-status-filter">
+                <flux:select.option value="open">{{ __('Open') }}</flux:select.option>
+                <flux:select.option value="new">{{ __('New') }}</flux:select.option>
+                <flux:select.option value="triaged">{{ __('Triaged') }}</flux:select.option>
+                <flux:select.option value="resolved">{{ __('Resolved') }}</flux:select.option>
+                <flux:select.option value="all">{{ __('All') }}</flux:select.option>
+            </flux:select>
+        </x-slot:filters>
         <flux:table class="[&_td]:align-top">
             <flux:table.columns>
                 <flux:table.column>{{ __('When') }}</flux:table.column>

@@ -76,6 +76,15 @@ test('the inbox hides resolved feedback by default and reveals it via the status
         ->assertSee('Resolved item');
 });
 
+test('the inbox renders its status filter inside the table card header', function () {
+    ($this->makeFeedback)(['summary' => 'Open item']);
+
+    Livewire::test('pages::feedback')
+        ->assertSee('recent')
+        ->assertSee('data-test="feedback-status-filter"', false)
+        ->assertSeeInOrder(['Feedback', 'recent']);
+});
+
 test('the listener is empty when the user has no active workspace', function () {
     $orphan = User::factory()->create();
     $orphan->forceFill(['active_workspace_id' => null])->save();
