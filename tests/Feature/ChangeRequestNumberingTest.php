@@ -4,7 +4,9 @@ use App\Mcp\Servers\GovernanceServer;
 use App\Mcp\Tools\Changes\UpsertChangeRequest;
 use App\Models\ChangeRequest;
 use App\Models\Project;
+use App\Models\Role;
 use App\Models\User;
+use App\Models\WorkItem;
 use Illuminate\Database\QueryException;
 use Laravel\Passport\Passport;
 
@@ -84,6 +86,37 @@ test('the upsert-change-request tool returns the assigned number and reference',
                 ->where('change_impact_brief', fn (string $uri): bool => str_starts_with($uri, 'growth://change-requests/') && str_ends_with($uri, '/change-impact-brief'))
                 ->etc();
         });
+});
+
+test('the upsert-change-request tool surfaces consulted roles on impacted work items', function () {
+    $consultedRole = Role::create([
+        'project_id' => $this->project->id,
+        'name' => 'Security',
+    ]);
+    $workItem = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'task',
+        'name' => 'Review access rules',
+    ]);
+    $workItem->raciRoles()->attach($consultedRole->id, ['raci' => 'c']);
+
+    GovernanceServer::tool(UpsertChangeRequest::class, [
+        'project_id' => $this->project->id,
+        'title' => 'Change access rules',
+        'category' => 'requirements',
+        'impacts' => [[
+            'type' => 'work_item',
+            'id' => $workItem->id,
+            'impact_kind' => 'modifies',
+        ]],
+    ])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('consult_with.0.work_item_id', $workItem->id)
+            ->where('consult_with.0.reference', $workItem->reference())
+            ->where('consult_with.0.roles.0.id', $consultedRole->id)
+            ->where('consult_with.0.roles.0.name', 'Security')
+            ->etc());
 });
 
 test('a change request cannot be moved to another project', function () {

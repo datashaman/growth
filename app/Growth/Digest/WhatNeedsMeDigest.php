@@ -16,6 +16,7 @@ use App\Models\Review;
 use App\Models\ReviewFinding;
 use App\Models\ReviewParticipant;
 use App\Models\Risk;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Model;
@@ -189,12 +190,20 @@ class WhatNeedsMeDigest
                     ->whereIn('roles.id', $roleIds)
                     ->whereIn('raci_assignments.raci', ['r', 'a'])))
             ->orderBy('name')
+            ->with('consultedRoles:id,name')
             ->get()
             ->map(fn (WorkItem $workItem): array => [
                 'id' => $workItem->id,
                 'reference' => $workItem->reference(),
                 'name' => $workItem->name,
                 'kind' => $workItem->kind,
+                'consult_with' => $workItem->consultedRoles
+                    ->map(fn (Role $role): array => [
+                        'id' => $role->id,
+                        'name' => $role->name,
+                    ])
+                    ->values()
+                    ->all(),
             ])
             ->all();
     }

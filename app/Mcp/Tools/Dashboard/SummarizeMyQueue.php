@@ -41,7 +41,7 @@ class SummarizeMyQueue extends Tool
         return [
             'change_requests' => $schema->array()->description('Approved change requests requested by a role you hold')->required(),
             'reviews' => $schema->array()->description('Open reviews awaiting your sign-off')->required(),
-            'blocked_work_items' => $schema->array()->description('Blocked work items you are responsible for')->required(),
+            'blocked_work_items' => $schema->array()->description('Blocked work items you are responsible for, including consult_with roles to involve before decisions when present')->required(),
             'decision_requests' => $schema->array()->description('Open decision requests routed to a role you hold')->required(),
             'lint_findings' => $schema->array()->description('Lint errors on artifacts owned by a role you hold')->required(),
             'unowned_lint_findings' => $schema->array()->description('Lint errors on artifacts with no owning role')->required(),

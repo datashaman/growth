@@ -142,6 +142,11 @@ class WorkItem extends Model
             ->withTimestamps();
     }
 
+    public function consultedRoles(): BelongsToMany
+    {
+        return $this->raciRoles()->wherePivot('raci', 'c');
+    }
+
     public function reviewTargets(): MorphMany
     {
         return $this->morphMany(ReviewTarget::class, 'reviewable');
