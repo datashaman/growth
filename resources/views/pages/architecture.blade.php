@@ -70,14 +70,16 @@ new #[Title('Architecture')] class extends Component {
                     </div>
                 </x-slot:header>
 
+                {{-- Shared leading-column widths keep the element tables aligned across
+                     views (see #376); empty Type/Purpose columns are hidden per #362. --}}
                 @php($showType = TableColumn::hasValues($view->elements, fn ($element) => $element->type))
                 @php($showPurpose = TableColumn::hasValues($view->elements, fn ($element) => $element->purpose))
                 <flux:table class="[&_td]:align-top">
                     <flux:table.columns>
-                        <flux:table.column>{{ __('Element') }}</flux:table.column>
-                        <flux:table.column>{{ __('Kind') }}</flux:table.column>
+                        <flux:table.column class="w-1/4">{{ __('Element') }}</flux:table.column>
+                        <flux:table.column class="w-1/6">{{ __('Kind') }}</flux:table.column>
                         @if ($showType)
-                            <flux:table.column>{{ __('Type') }}</flux:table.column>
+                            <flux:table.column class="w-1/6">{{ __('Type') }}</flux:table.column>
                         @endif
                         @if ($showPurpose)
                             <flux:table.column>{{ __('Purpose') }}</flux:table.column>
@@ -86,7 +88,9 @@ new #[Title('Architecture')] class extends Component {
                     <flux:table.rows>
                         @foreach ($view->elements as $element)
                             <flux:table.row>
-                                <flux:table.cell class="font-medium">{{ $element->name }}</flux:table.cell>
+                                <flux:table.cell class="font-medium">
+                                    <a href="{{ route('architecture-elements.show', $element) }}" wire:navigate class="hover:underline">{{ $element->name }}</a>
+                                </flux:table.cell>
                                 <flux:table.cell>
                                     <flux:badge :color="BadgeVariant::designElementKind($element->kind)" size="sm">{{ EnumLabel::lower($element->kind) }}</flux:badge>
                                 </flux:table.cell>
