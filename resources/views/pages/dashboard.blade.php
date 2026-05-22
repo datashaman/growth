@@ -361,17 +361,16 @@ new #[Title('Dashboard')] class extends Component {
 
             @if ($lens->revealsPanel('counts'))
             <section>
-                <flux:heading size="lg" class="mb-3">{{ __('Counts') }}</flux:heading>
-                <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+                <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10">
                     @foreach ($this->countTiles as $tile)
                         @if ($tile['route'])
                             <a href="{{ $tile['route'] }}" wire:navigate
-                                class="rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:bg-zinc-800">
+                                class="rounded-xl border border-zinc-200 bg-white p-3 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:bg-zinc-800">
                                 <div class="text-sm text-zinc-500 dark:text-zinc-400">{{ $tile['label'] }}</div>
                                 <div class="mt-1 text-2xl font-semibold">{{ $tile['value'] }}</div>
                             </a>
                         @else
-                            <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+                            <div class="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-900">
                                 <div class="text-sm text-zinc-500 dark:text-zinc-400">{{ $tile['label'] }}</div>
                                 <div class="mt-1 text-2xl font-semibold">{{ $tile['value'] }}</div>
                             </div>
@@ -597,11 +596,16 @@ new #[Title('Dashboard')] class extends Component {
                 :empty="count($this->implementation['results']) === 0"
                 :empty-message="__('No work items defined.')">
                 <x-slot:header>
-                    <flux:heading size="lg">{{ __('Implementation') }}</flux:heading>
-                    <div class="flex flex-wrap gap-3 text-xs text-zinc-500 dark:text-zinc-400">
-                        <span>{{ __(':n with evidence', ['n' => $this->implementation['summary']['with_delivery_evidence']]) }}</span>
-                        <span>{{ __(':n deployed', ['n' => $this->implementation['summary']['deployed']]) }}</span>
-                        <span>{{ __(':n done without evidence', ['n' => $this->implementation['summary']['done_without_delivery_evidence']]) }}</span>
+                    <div>
+                        <flux:heading size="lg">{{ __('Implementation') }}</flux:heading>
+                        <flux:text class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            {{ __('Ordered by failed checks, blocked work, active work, then planned work.') }}
+                        </flux:text>
+                    </div>
+                    <div class="flex flex-wrap justify-end gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+                        <span class="whitespace-nowrap">{{ __(':n with evidence', ['n' => $this->implementation['summary']['with_delivery_evidence']]) }}</span>
+                        <span class="whitespace-nowrap">{{ __(':n deployed', ['n' => $this->implementation['summary']['deployed']]) }}</span>
+                        <span class="whitespace-nowrap">{{ __(':n done without evidence', ['n' => $this->implementation['summary']['done_without_delivery_evidence']]) }}</span>
                     </div>
                 </x-slot:header>
 

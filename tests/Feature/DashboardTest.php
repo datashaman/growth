@@ -89,13 +89,13 @@ test('dashboard renders sections for the selected project', function () {
         ->assertOk()
         ->assertSee('Lunar Lander')
         ->assertSee('Mission control.')
-        ->assertSee('Counts')
         ->assertSee('Stakeholders')
         ->assertSee('Readiness')
         ->assertSee('Implementation')
         ->assertSee('Risks')
         ->assertSee('Anomalies')
-        ->assertSee('Reviews');
+        ->assertSee('Reviews')
+        ->assertDontSee('Counts');
 });
 
 test('dashboard readiness gates render their findings inline', function () {
@@ -180,9 +180,9 @@ test('dashboard surfaces risks, anomalies, and reviews', function () {
 });
 
 /*
- * Each panel is identified by a string unique to it: a section heading
- * ("Counts") or a table column header ("Gate"
- * for readiness, "Deploys" for implementation, "Exposure" for risks,
+ * Each panel is identified by a string unique to it: a count tile label
+ * ("Stakeholders") or a table column header ("Gate" for readiness,
+ * "Deploys" for implementation, "Exposure" for risks,
  * "Environment" for anomalies, "Decision" for reviews). Neither entity titles
  * nor the word "Implementation" are used as anchors — the readiness panel
  * cross-references risks, anomalies, reviews, and work items as finding
@@ -197,7 +197,7 @@ test('the All lens renders every dashboard panel', function () {
     $this->actingAs($user)
         ->get('/dashboard?project='.$project->id)
         ->assertOk()
-        ->assertSee('Counts')
+        ->assertSee('Stakeholders')
         ->assertSee('Gate')
         ->assertSee('Deploys')
         ->assertSee('Exposure')
@@ -218,7 +218,7 @@ test('a requirements role renders only counts and readiness', function () {
     $this->actingAs($user)
         ->get('/dashboard?project='.$project->id)
         ->assertOk()
-        ->assertSee('Counts')
+        ->assertSee('Stakeholders')
         ->assertSee('Gate')
         ->assertDontSee('Deploys')
         ->assertDontSee('Exposure')
@@ -240,7 +240,7 @@ test('an implementation role renders implementation, risks, and anomalies', func
         ->assertSee('Deploys')
         ->assertSee('Exposure')
         ->assertSee('Environment')
-        ->assertDontSee('Counts')
+        ->assertDontSee('Stakeholders')
         ->assertDontSee('Gate')
         ->assertDontSee('Decision');
 });
@@ -258,7 +258,7 @@ test('a reviewer role renders only readiness and reviews', function () {
         ->assertOk()
         ->assertSee('Gate')
         ->assertSee('Decision')
-        ->assertDontSee('Counts')
+        ->assertDontSee('Stakeholders')
         ->assertDontSee('Deploys')
         ->assertDontSee('Exposure')
         ->assertDontSee('Environment');
@@ -367,6 +367,22 @@ test('#363 count tiles link to the section that lists their entities', function 
         ->assertSee('href="'.route('evidence', ['project' => $project->id]).'"', false);
 });
 
+test('dashboard count tiles use a dense desktop grid without a redundant heading', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('xl:grid-cols-10', false)
+        ->assertSee('Stakeholders')
+        ->assertDontSee('Counts');
+});
+
 test('#363 my queue humanizes lint rule codes instead of showing raw rule strings', function () {
     $user = User::factory()->create();
     $project = Project::create([
@@ -421,6 +437,7 @@ test('#363 implementation panel previews the top work items and links to the ful
         ->assertSee('Build subsystem 01')
         ->assertSee('Build subsystem 08')
         ->assertDontSee('Build subsystem 09')
+        ->assertSee('Ordered by failed checks, blocked work, active work, then planned work.')
         ->assertSee('View all 9 work items in Plan');
 });
 
