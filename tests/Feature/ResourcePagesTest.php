@@ -59,13 +59,30 @@ test('architecture page renders design views and elements', function () {
         'name' => 'GuidanceComputer',
         'type' => 'component',
     ]);
+    $view->elements()->create([
+        'kind' => 'entity',
+        'name' => 'FlightSoftware',
+        'type' => 'runtime',
+    ]);
+    $view->elements()->create([
+        'kind' => 'relationship',
+        'name' => 'Computes trajectory for',
+        'type' => 'control flow',
+        'properties' => [
+            'from' => 'GuidanceComputer',
+            'to' => 'FlightSoftware',
+        ],
+    ]);
 
     $this->actingAs($this->user)
         ->get('/architecture?project='.$this->project->id)
         ->assertOk()
         ->assertSee('Architecture')
         ->assertSee('Descent stack')
-        ->assertSee('GuidanceComputer');
+        ->assertSee('Diagram')
+        ->assertSee('GuidanceComputer')
+        ->assertSee('FlightSoftware')
+        ->assertSee('-&gt;', false);
 });
 
 test('verification page renders test plans, cases, and anomalies', function () {
