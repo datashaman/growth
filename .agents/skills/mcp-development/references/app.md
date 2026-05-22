@@ -104,7 +104,7 @@ MCP Apps add interactive UI to the Model Context Protocol. The server returns se
 └─────────────────────────────────────────────┘
 ```
 
-The server automatically advertises `io.modelcontextprotocol/ui` requirement when any `AppResource` is registered. The client declares support in `requirements.extensions["io.modelcontextprotocol/ui"]` during the initialize handshake.
+The server automatically advertises `io.modelcontextprotocol/ui` capability when any `AppResource` is registered. The client declares support in `capabilities.extensions["io.modelcontextprotocol/ui"]` during the initialize handshake.
 
 ---
 
@@ -442,10 +442,10 @@ ctx?.styles?.css?.fonts; // font CSS from host
 const info = app.getHostInfo();
 ```
 
-#### app.getHostRequirements()
+#### app.getHostCapabilities()
 
 ```js
-const caps = app.getHostRequirements();
+const caps = app.getHostCapabilities();
 ```
 
 ### Navigation & Files
