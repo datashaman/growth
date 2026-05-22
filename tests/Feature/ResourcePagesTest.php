@@ -91,6 +91,28 @@ test('architecture page renders design views and elements', function () {
         ->assertDontSee('-&gt;', false);
 });
 
+test('architecture page renders unconnected entities in a compact grid', function () {
+    $view = $this->project->designViews()->create([
+        'viewpoint' => 'context',
+        'name' => 'System Context',
+    ]);
+
+    collect(['Buyer', 'Vendor', 'Organiser', 'Platform'])->each(fn (string $name) => $view->elements()->create([
+        'kind' => 'entity',
+        'name' => $name,
+    ]));
+
+    $this->actingAs($this->user)
+        ->get('/architecture?project='.$this->project->id)
+        ->assertOk()
+        ->assertSee('System Context')
+        ->assertSee('4 nodes / 0 positioned relationships')
+        ->assertSee('left: 40px', false)
+        ->assertSee('left: 360px', false)
+        ->assertSee('top: 40px', false)
+        ->assertSee('top: 216px', false);
+});
+
 test('verification page renders test plans, cases, and anomalies', function () {
     $plan = $this->project->testPlans()->create([
         'level' => 'system',

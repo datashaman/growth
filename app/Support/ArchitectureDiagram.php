@@ -83,6 +83,16 @@ class ArchitectureDiagram
             }
         }
 
+        if ($edges === []) {
+            $diagram = self::gridDiagram($nodes, $nodeWidth, $nodeHeight, $nodeGapX, $nodeGapY, $nodeInset);
+
+            return [
+                ...$diagram,
+                'relationships' => [],
+                'unmatched_relationships' => $unmatchedRelationships,
+            ];
+        }
+
         $remainingIncoming = $incoming;
         $queue = collect(array_keys($nodes))
             ->filter(fn (string $key): bool => $incoming[$key] === 0)
@@ -165,6 +175,44 @@ class ArchitectureDiagram
     private static function key(mixed $value): string
     {
         return Str::lower(trim((string) $value));
+    }
+
+    /**
+     * @param  array<string, array{key:string,index:int,element:DesignElement}>  $nodes
+     * @return array{width:int,height:int,node_width:int,node_height:int,nodes:list<array{key:string,x:int,y:int,center_x:float,center_y:float,element:DesignElement}>}
+     */
+    private static function gridDiagram(array $nodes, int $nodeWidth, int $nodeHeight, int $nodeGapX, int $nodeGapY, int $nodeInset): array
+    {
+        $nodeCount = count($nodes);
+        $columnCount = min(3, max(1, (int) ceil(sqrt(max(1, $nodeCount)))));
+        $rowCount = max(1, (int) ceil(max(1, $nodeCount) / $columnCount));
+        $width = max(720, ($nodeInset * 2) + ($columnCount * $nodeWidth) + (($columnCount - 1) * $nodeGapX));
+        $height = max(260, ($nodeInset * 2) + ($rowCount * $nodeHeight) + (($rowCount - 1) * $nodeGapY));
+        $positionedNodes = [];
+
+        foreach (collect($nodes)->sortBy('index')->values() as $index => $node) {
+            $column = $index % $columnCount;
+            $row = intdiv($index, $columnCount);
+            $x = $nodeInset + ($column * ($nodeWidth + $nodeGapX));
+            $y = $nodeInset + ($row * ($nodeHeight + $nodeGapY));
+
+            $positionedNodes[] = [
+                'key' => $node['key'],
+                'x' => $x,
+                'y' => $y,
+                'center_x' => $x + ($nodeWidth / 2),
+                'center_y' => $y + ($nodeHeight / 2),
+                'element' => $node['element'],
+            ];
+        }
+
+        return [
+            'width' => $width,
+            'height' => $height,
+            'node_width' => $nodeWidth,
+            'node_height' => $nodeHeight,
+            'nodes' => $positionedNodes,
+        ];
     }
 
     /**
