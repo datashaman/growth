@@ -3,6 +3,7 @@
 use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
+use App\Support\TableColumn;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -69,14 +70,20 @@ new #[Title('Architecture')] class extends Component {
                     </div>
                 </x-slot:header>
 
-                {{-- Shared column widths keep every element table on the page aligned,
-                     even when one view leaves Type/Purpose empty (see #376). --}}
+                {{-- Shared leading-column widths keep the element tables aligned across
+                     views (see #376); empty Type/Purpose columns are hidden per #362. --}}
+                @php($showType = TableColumn::hasValues($view->elements, fn ($element) => $element->type))
+                @php($showPurpose = TableColumn::hasValues($view->elements, fn ($element) => $element->purpose))
                 <flux:table class="[&_td]:align-top">
                     <flux:table.columns>
                         <flux:table.column class="w-1/4">{{ __('Element') }}</flux:table.column>
                         <flux:table.column class="w-1/6">{{ __('Kind') }}</flux:table.column>
-                        <flux:table.column class="w-1/6">{{ __('Type') }}</flux:table.column>
-                        <flux:table.column>{{ __('Purpose') }}</flux:table.column>
+                        @if ($showType)
+                            <flux:table.column class="w-1/6">{{ __('Type') }}</flux:table.column>
+                        @endif
+                        @if ($showPurpose)
+                            <flux:table.column>{{ __('Purpose') }}</flux:table.column>
+                        @endif
                     </flux:table.columns>
                     <flux:table.rows>
                         @foreach ($view->elements as $element)
@@ -87,8 +94,12 @@ new #[Title('Architecture')] class extends Component {
                                 <flux:table.cell>
                                     <flux:badge :color="BadgeVariant::designElementKind($element->kind)" size="sm">{{ EnumLabel::lower($element->kind) }}</flux:badge>
                                 </flux:table.cell>
-                                <flux:table.cell>{{ $element->type ?? '—' }}</flux:table.cell>
-                                <flux:table.cell>{{ $element->purpose ?? '—' }}</flux:table.cell>
+                                @if ($showType)
+                                    <flux:table.cell>{{ $element->type ?? '—' }}</flux:table.cell>
+                                @endif
+                                @if ($showPurpose)
+                                    <flux:table.cell>{{ $element->purpose ?? '—' }}</flux:table.cell>
+                                @endif
                             </flux:table.row>
                         @endforeach
                     </flux:table.rows>
