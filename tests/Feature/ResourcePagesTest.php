@@ -54,12 +54,12 @@ test('architecture page renders design views and elements', function () {
         'name' => 'Descent stack',
         'description' => 'Modules involved in landing.',
     ]);
-    $view->elements()->create([
+    $guidanceComputer = $view->elements()->create([
         'kind' => 'entity',
         'name' => 'GuidanceComputer',
         'type' => 'component',
     ]);
-    $view->elements()->create([
+    $flightSoftware = $view->elements()->create([
         'kind' => 'entity',
         'name' => 'FlightSoftware',
         'type' => 'runtime',
@@ -69,8 +69,8 @@ test('architecture page renders design views and elements', function () {
         'name' => 'Computes trajectory for',
         'type' => 'control flow',
         'properties' => [
-            'from' => 'GuidanceComputer',
-            'to' => 'FlightSoftware',
+            'source_id' => $guidanceComputer->id,
+            'target_id' => $flightSoftware->id,
         ],
     ]);
 
