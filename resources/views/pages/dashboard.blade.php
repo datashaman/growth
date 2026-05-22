@@ -361,7 +361,7 @@ new #[Title('Dashboard')] class extends Component {
 
             @if ($lens->revealsPanel('counts'))
             <section>
-                <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10">
+                <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
                     @foreach ($this->countTiles as $tile)
                         @if ($tile['route'])
                             <a href="{{ $tile['route'] }}" wire:navigate

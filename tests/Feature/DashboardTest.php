@@ -367,7 +367,7 @@ test('#363 count tiles link to the section that lists their entities', function 
         ->assertSee('href="'.route('evidence', ['project' => $project->id]).'"', false);
 });
 
-test('dashboard count tiles use a dense desktop grid without a redundant heading', function () {
+test('dashboard count tiles use a five-up desktop grid without a redundant heading', function () {
     $user = User::factory()->create();
     $project = Project::create([
         'workspace_id' => $user->active_workspace_id,
@@ -378,7 +378,8 @@ test('dashboard count tiles use a dense desktop grid without a redundant heading
     $this->actingAs($user)
         ->get('/dashboard?project='.$project->id)
         ->assertOk()
-        ->assertSee('xl:grid-cols-10', false)
+        ->assertSee('lg:grid-cols-5', false)
+        ->assertDontSee('xl:grid-cols-10', false)
         ->assertSee('Stakeholders')
         ->assertDontSee('Counts');
 });
