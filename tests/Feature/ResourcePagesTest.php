@@ -79,6 +79,8 @@ test('architecture page renders design views and elements', function () {
         ->assertOk()
         ->assertSee('Architecture')
         ->assertSee('Descent stack')
+        ->assertSee('3 elements')
+        ->assertSee('whitespace-nowrap', false)
         ->assertSee('Diagram')
         ->assertSee('Positioned architecture relationships for Descent stack')
         ->assertSee('positioned relationships')

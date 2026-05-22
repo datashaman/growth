@@ -67,8 +67,8 @@ new #[Title('Architecture')] class extends Component {
                             <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ $view->description }}</flux:text>
                         @endif
                     </div>
-                    <div class="flex items-center gap-2">
-                        <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ $view->elements->count() }} {{ __('elements') }}</flux:text>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <flux:text class="whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">{{ $view->elements->count() }} {{ __('elements') }}</flux:text>
                     </div>
                 </x-slot:header>
 
