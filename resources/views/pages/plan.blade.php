@@ -171,10 +171,15 @@ new #[Title('Plan')] class extends Component {
                         @php($item = $row['item'])
                         <flux:table.row>
                             <flux:table.cell>
-                                <a href="{{ route('work-items.show', $item) }}" wire:navigate class="flex items-baseline gap-2 font-medium hover:underline" @style(['padding-left: '.($row['depth'] * 1.25).'rem' => $row['depth'] > 0])>
-                                    <span class="font-mono text-zinc-500 dark:text-zinc-400">{{ $item->reference() }}</span>
-                                    {{ $item->name }}
-                                </a>
+                                <div class="flex items-start gap-2" @style(['padding-left: '.(($row['depth'] - 1) * 1.25).'rem' => $row['depth'] > 1])>
+                                    @if ($row['depth'] > 0)
+                                        <span aria-hidden="true" data-test="work-item-tree-connector" class="mt-1 h-4 w-4 shrink-0 rounded-bl border-b border-l border-zinc-300 dark:border-zinc-600"></span>
+                                    @endif
+                                    <a href="{{ route('work-items.show', $item) }}" wire:navigate class="flex items-baseline gap-2 font-medium hover:underline">
+                                        <span class="font-mono text-zinc-500 dark:text-zinc-400">{{ $item->reference() }}</span>
+                                        {{ $item->name }}
+                                    </a>
+                                </div>
                             </flux:table.cell>
                             <flux:table.cell>
                                 <flux:badge :color="BadgeVariant::workItemKind($item->kind)" size="sm">{{ str_replace('_', ' ', $item->kind) }}</flux:badge>

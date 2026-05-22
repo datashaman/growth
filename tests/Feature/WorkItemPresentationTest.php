@@ -57,7 +57,30 @@ test('the Plan work-items table nests children under their work package in WBS o
     ]);
 
     Livewire::test('pages::plan')
-        ->assertSeeInOrder([$package->reference(), $child->reference()]);
+        ->assertSeeInOrder([$package->reference(), $child->reference()])
+        ->assertSeeHtml('data-test="work-item-tree-connector"');
+});
+
+test('the work item detail children table shows child references with a labeled count', function () {
+    $package = $this->project->workItems()->create([
+        'kind' => 'work_package',
+        'name' => 'Descent phase',
+        'status' => 'in_progress',
+    ]);
+    $child = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Calibrate throttle',
+        'status' => 'todo',
+        'parent_id' => $package->id,
+    ]);
+
+    Livewire::test('pages::work-items.show', ['workItem' => $package])
+        ->assertSee('Children')
+        ->assertSee('items')
+        ->assertSee('ID')
+        ->assertSee($child->reference())
+        ->assertSee('Calibrate throttle')
+        ->assertSeeHtml('href="'.route('work-items.show', $child).'"');
 });
 
 test('the Plan surfaces the project plan status in the page header', function () {

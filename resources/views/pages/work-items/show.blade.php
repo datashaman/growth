@@ -159,9 +159,11 @@ new class extends Component {
     @if ($workItem->children->isNotEmpty())
         <x-data-table
             :title="__('Children')"
-            :count="$workItem->children->count()">
+            :count="$workItem->children->count()"
+            :count-label="__('items')">
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
+                    <flux:table.column>{{ __('ID') }}</flux:table.column>
                     <flux:table.column>{{ __('Name') }}</flux:table.column>
                     <flux:table.column>{{ __('Kind') }}</flux:table.column>
                     <flux:table.column>{{ __('Status') }}</flux:table.column>
@@ -169,6 +171,9 @@ new class extends Component {
                 <flux:table.rows>
                     @foreach ($workItem->children as $child)
                         <flux:table.row>
+                            <flux:table.cell class="whitespace-nowrap">
+                                <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ $child->reference() }}</span>
+                            </flux:table.cell>
                             <flux:table.cell>
                                 <a href="{{ route('work-items.show', $child) }}" wire:navigate class="font-medium hover:underline">{{ $child->name }}</a>
                             </flux:table.cell>
