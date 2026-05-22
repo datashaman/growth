@@ -1,14 +1,26 @@
 <?php
 
 use App\Concerns\ProjectScoped;
+use App\Models\WorkItem;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Plan')] class extends Component {
     use ProjectScoped;
+
+    private const WORK_ITEM_BRANCH_LIMIT = 100;
+
+    private const WORK_ITEM_VISIBLE_LIMIT = 500;
+
+    /**
+     * @var list<string>
+     */
+    public array $expandedWorkItemIds = [];
 
     /**
      * @return array<string,string>
@@ -20,7 +32,7 @@ new #[Title('Plan')] class extends Component {
 
     public function onProjectDataChanged(): void
     {
-        unset($this->workItems, $this->milestones, $this->projectPlan);
+        unset($this->workItemRows, $this->workItemCount, $this->milestones, $this->projectPlan);
     }
 
     #[Computed]
@@ -39,57 +51,119 @@ new #[Title('Plan')] class extends Component {
     }
 
     /**
-     * Work items flattened into WBS reading order: each parent is immediately
-     * followed by its descendants, depth-first. Each entry carries the nesting
-     * depth so the table can indent children under their work package.
-     *
-     * @return \Illuminate\Support\Collection<int,array{item:\App\Models\WorkItem,depth:int}>
+     * Total work items in the selected project. This is counted separately so
+     * the Plan page can report the full size without loading every item.
      */
     #[Computed]
-    public function workItems()
+    public function workItemCount(): int
     {
-        $items = $this->selectedProject?->workItems()
-            ->with('responsibleRole')
-            ->get()
-            ?? collect();
-
-        return $this->arrangeByHierarchy($items);
+        return $this->selectedProject?->workItems()->count() ?? 0;
     }
 
     /**
-     * Walk the parent/child tree from the roots down, ordering siblings so
-     * active work surfaces first (in_progress, blocked, todo, done, cancelled)
-     * and then by name. Items whose parent is absent from the set are treated
-     * as roots so nothing is dropped.
+     * Work items flattened into bounded WBS reading order. Only root items and
+     * expanded direct children are loaded, with caps at both branch and page
+     * levels so large projects do not render thousands of DOM rows.
      *
-     * @param  \Illuminate\Support\Collection<int,\App\Models\WorkItem>  $items
-     * @return \Illuminate\Support\Collection<int,array{item:\App\Models\WorkItem,depth:int}>
+     * @return \Illuminate\Support\Collection<int,array{item:WorkItem,depth:int,has_more_siblings:bool,hidden_siblings:int,limit_reached:bool}>
      */
-    protected function arrangeByHierarchy($items)
+    #[Computed]
+    public function workItemRows(): Collection
     {
-        $statusOrder = ['in_progress' => 0, 'blocked' => 1, 'todo' => 2, 'done' => 3, 'cancelled' => 4];
-        $sortSiblings = fn ($group) => $group->sortBy(
-            fn ($item) => sprintf('%d-%s', $statusOrder[$item->status] ?? 9, strtolower((string) $item->name))
-        )->values();
-
-        $present = $items->keyBy('id');
-        $childrenOf = $items
-            ->filter(fn ($item) => $item->parent_id !== null && $present->has($item->parent_id))
-            ->groupBy('parent_id');
-        $roots = $items->filter(fn ($item) => $item->parent_id === null || ! $present->has($item->parent_id));
+        if ($this->selectedProject === null) {
+            return collect();
+        }
 
         $ordered = collect();
-        $walk = function ($siblings, $depth) use (&$walk, $childrenOf, $sortSiblings, $ordered): void {
-            foreach ($sortSiblings($siblings) as $item) {
-                $ordered->push(['item' => $item, 'depth' => $depth]);
-                if ($children = $childrenOf->get($item->id)) {
-                    $walk($children, $depth + 1);
-                }
-            }
-        };
-        $walk($roots, 0);
+        $this->appendWorkItemRows($ordered, null, 0);
 
         return $ordered;
+    }
+
+    public function toggleWorkItem(string $workItemId): void
+    {
+        if (in_array($workItemId, $this->expandedWorkItemIds, true)) {
+            $this->expandedWorkItemIds = array_values(array_diff($this->expandedWorkItemIds, [$workItemId]));
+        } else {
+            $this->expandedWorkItemIds[] = $workItemId;
+        }
+
+        unset($this->workItemRows);
+    }
+
+    public function workItemBranchLimit(): int
+    {
+        return self::WORK_ITEM_BRANCH_LIMIT;
+    }
+
+    private function appendWorkItemRows(Collection $ordered, ?string $parentId, int $depth): void
+    {
+        if ($ordered->count() >= self::WORK_ITEM_VISIBLE_LIMIT) {
+            return;
+        }
+
+        $siblings = $this->workItemSiblings($parentId);
+        $siblingCount = $this->workItemSiblingCount($parentId);
+        $hasMoreSiblings = $siblingCount > self::WORK_ITEM_BRANCH_LIMIT;
+        $visibleSiblings = $siblings->take(self::WORK_ITEM_BRANCH_LIMIT);
+
+        foreach ($visibleSiblings as $index => $item) {
+            if ($ordered->count() >= self::WORK_ITEM_VISIBLE_LIMIT) {
+                $ordered->push([
+                    'item' => $item,
+                    'depth' => $depth,
+                    'has_more_siblings' => false,
+                    'hidden_siblings' => 0,
+                    'limit_reached' => true,
+                ]);
+
+                return;
+            }
+
+            $ordered->push([
+                'item' => $item,
+                'depth' => $depth,
+                'has_more_siblings' => $hasMoreSiblings && $index === $visibleSiblings->count() - 1,
+                'hidden_siblings' => max(0, $siblingCount - self::WORK_ITEM_BRANCH_LIMIT),
+                'limit_reached' => false,
+            ]);
+
+            if (in_array($item->id, $this->expandedWorkItemIds, true)) {
+                $this->appendWorkItemRows($ordered, $item->id, $depth + 1);
+            }
+        }
+    }
+
+    /**
+     * @return Collection<int,WorkItem>
+     */
+    private function workItemSiblings(?string $parentId): Collection
+    {
+        return $this->selectedProject
+            ->workItems()
+            ->with('responsibleRole')
+            ->withCount('children')
+            ->when(
+                $parentId === null,
+                fn (Builder $query) => $query->whereNull('parent_id'),
+                fn (Builder $query) => $query->where('parent_id', $parentId),
+            )
+            ->orderByRaw("case status when 'in_progress' then 0 when 'blocked' then 1 when 'todo' then 2 when 'done' then 3 when 'cancelled' then 4 else 9 end")
+            ->orderBy('name')
+            ->limit(self::WORK_ITEM_BRANCH_LIMIT + 1)
+            ->get();
+    }
+
+    private function workItemSiblingCount(?string $parentId): int
+    {
+        return $this->selectedProject
+            ->workItems()
+            ->when(
+                $parentId === null,
+                fn (Builder $query) => $query->whereNull('parent_id'),
+                fn (Builder $query) => $query->where('parent_id', $parentId),
+            )
+            ->count();
     }
 
     #[Computed]
@@ -155,37 +229,81 @@ new #[Title('Plan')] class extends Component {
 
         <x-data-table
             :title="__('Work items')"
-            :count="$this->workItems->count()"
+            :count="$this->workItemCount"
             :count-label="__('items')"
-            :empty="$this->workItems->isEmpty()"
+            :empty="$this->workItemCount === 0"
             :empty-message="__('No work items defined.')">
-            <div class="space-y-1" data-test="work-item-tree-list">
-                @foreach ($this->workItems as $row)
+            <flux:table class="[&_td]:align-middle [&_table]:table-fixed [&_th:first-child]:w-[52%] [&_th:nth-child(2)]:w-[16%] [&_th:nth-child(3)]:w-[14%] [&_th:nth-child(4)]:w-[18%]" data-test="work-item-tree-list">
+                <flux:table.columns>
+                    <flux:table.column data-test="work-item-tree-header">{{ __('Work item') }}</flux:table.column>
+                    <flux:table.column>{{ __('Kind') }}</flux:table.column>
+                    <flux:table.column>{{ __('Status') }}</flux:table.column>
+                    <flux:table.column>{{ __('Role') }}</flux:table.column>
+                </flux:table.columns>
+                <flux:table.rows>
+                @foreach ($this->workItemRows as $row)
                     @php($item = $row['item'])
-                    <div class="group flex min-w-0 items-center gap-3 rounded-md px-2.5 py-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50" @style(['margin-left: '.($row['depth'] * 1.5).'rem' => $row['depth'] > 0])>
-                        @if ($row['depth'] > 0)
-                            <span aria-hidden="true" data-test="work-item-tree-connector" class="h-px w-5 shrink-0 bg-zinc-400 dark:bg-zinc-500"></span>
-                        @else
-                            <span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-300 dark:bg-zinc-600"></span>
-                        @endif
+                    <flux:table.row>
+                        <flux:table.cell>
+                            <div class="grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-2" @style(['padding-left: '.($row['depth'] * 1.5).'rem' => $row['depth'] > 0])>
+                                @if ($item->children_count > 0)
+                                    <button type="button" wire:click="toggleWorkItem('{{ $item->id }}')" class="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-zinc-200 text-xs text-zinc-500 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100" aria-label="{{ in_array($item->id, $expandedWorkItemIds, true) ? __('Collapse :name', ['name' => $item->name]) : __('Expand :name', ['name' => $item->name]) }}" data-test="work-item-tree-toggle">
+                                        {{ in_array($item->id, $expandedWorkItemIds, true) ? '−' : '+' }}
+                                    </button>
+                                @else
+                                    <span aria-hidden="true" class="h-5 w-5 shrink-0"></span>
+                                @endif
 
-                        <a href="{{ route('work-items.show', $item) }}" wire:navigate class="flex min-w-0 flex-1 items-center gap-2 hover:underline">
-                            <span class="shrink-0 rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 font-mono text-xs font-semibold text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400">{{ $item->reference() }}</span>
-                            <span class="truncate font-medium text-zinc-900 dark:text-zinc-100">{{ $item->name }}</span>
-                        </a>
-
-                        <div class="hidden shrink-0 items-center gap-2 md:flex">
+                                <a href="{{ route('work-items.show', $item) }}" wire:navigate class="flex min-w-0 items-center gap-2 hover:underline">
+                                    <span class="w-fit shrink-0 rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 font-mono text-xs font-semibold text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400">{{ $item->reference() }}</span>
+                                    <span class="min-w-0 truncate font-medium text-zinc-900 dark:text-zinc-100">{{ $item->name }}</span>
+                                </a>
+                            </div>
+                        </flux:table.cell>
+                        <flux:table.cell>
                             <flux:badge :color="BadgeVariant::workItemKind($item->kind)" size="sm">{{ str_replace('_', ' ', $item->kind) }}</flux:badge>
+                        </flux:table.cell>
+                        <flux:table.cell>
                             <span title="{{ __('Workflow status set by the team. The Dashboard Implementation table shows the evidence-derived delivery State alongside it.') }}">
                                 <flux:badge :color="BadgeVariant::workItemStatus($item->status)" size="sm">{{ str_replace('_', ' ', $item->status) }}</flux:badge>
                             </span>
+                        </flux:table.cell>
+                        <flux:table.cell>
                             @if ($item->responsibleRole)
-                                <span class="max-w-40 truncate text-sm text-zinc-500 dark:text-zinc-400">{{ $item->responsibleRole->name }}</span>
+                                <span class="text-sm text-zinc-500 dark:text-zinc-400">{{ $item->responsibleRole->name }}</span>
+                            @else
+                                <span class="text-sm text-zinc-400 dark:text-zinc-500">—</span>
                             @endif
-                        </div>
-                    </div>
+                        </flux:table.cell>
+                    </flux:table.row>
+                    @if ($row['has_more_siblings'])
+                        <flux:table.row>
+                            <flux:table.cell>
+                                <span class="text-sm text-zinc-500 dark:text-zinc-400" @style(['padding-left: '.(($row['depth'] + 1) * 1.5).'rem'])>
+                                    {{ __('Showing first :limit at this level; :count more are not rendered.', ['limit' => $this->workItemBranchLimit(), 'count' => $row['hidden_siblings']]) }}
+                                </span>
+                            </flux:table.cell>
+                            <flux:table.cell></flux:table.cell>
+                            <flux:table.cell></flux:table.cell>
+                            <flux:table.cell></flux:table.cell>
+                        </flux:table.row>
+                    @endif
+                    @if ($row['limit_reached'])
+                        <flux:table.row>
+                            <flux:table.cell>
+                                <span class="text-sm text-zinc-500 dark:text-zinc-400">
+                                    {{ __('Display limit reached. Collapse branches or use MCP/API filters to inspect more work items.') }}
+                                </span>
+                            </flux:table.cell>
+                            <flux:table.cell></flux:table.cell>
+                            <flux:table.cell></flux:table.cell>
+                            <flux:table.cell></flux:table.cell>
+                        </flux:table.row>
+                        @break
+                    @endif
                 @endforeach
-            </div>
+                </flux:table.rows>
+            </flux:table>
         </x-data-table>
 
         <x-data-table
