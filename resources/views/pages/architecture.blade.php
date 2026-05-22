@@ -67,8 +67,8 @@ new #[Title('Architecture')] class extends Component {
                             <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ $view->description }}</flux:text>
                         @endif
                     </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                        <flux:text class="whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">{{ $view->elements->count() }} {{ __('elements') }}</flux:text>
+                    <div class="data-table-count flex items-center gap-2">
+                        <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ $view->elements->count() }} {{ __('elements') }}</flux:text>
                     </div>
                 </x-slot:header>
 
@@ -87,7 +87,7 @@ new #[Title('Architecture')] class extends Component {
                 <div class="mb-5 border-y border-zinc-100 py-4 dark:border-zinc-800" aria-label="{{ __('Architecture diagram for :view', ['view' => $view->name]) }}">
                     <div class="mb-3 flex items-center justify-between gap-3">
                         <flux:text class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Diagram') }}</flux:text>
-                        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">
+                        <flux:text class="whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400">
                             {{ count($diagramNodes) }} {{ __('nodes') }} / {{ count($matchedRelationships) }} {{ __('positioned relationships') }}
                         </flux:text>
                     </div>

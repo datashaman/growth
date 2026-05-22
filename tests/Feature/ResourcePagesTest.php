@@ -80,6 +80,7 @@ test('architecture page renders design views and elements', function () {
         ->assertSee('Architecture')
         ->assertSee('Descent stack')
         ->assertSee('3 elements')
+        ->assertSee('data-table-count', false)
         ->assertSee('whitespace-nowrap', false)
         ->assertSee('Diagram')
         ->assertSee('Positioned architecture relationships for Descent stack')
@@ -109,6 +110,7 @@ test('architecture page renders unconnected entities in a compact grid', functio
         ->assertOk()
         ->assertSee('System Context')
         ->assertSee('4 nodes / 0 positioned relationships')
+        ->assertSee('whitespace-nowrap', false)
         ->assertSee('left: 40px', false)
         ->assertSee('left: 360px', false)
         ->assertSee('top: 40px', false)
@@ -138,6 +140,8 @@ test('verification page renders test plans, cases, and anomalies', function () {
         ->assertOk()
         ->assertSee('Verification')
         ->assertSee('Powered descent end-to-end')
+        ->assertSee('1 cases')
+        ->assertSee('data-table-count', false)
         ->assertSee('Nominal burn timing')
         ->assertSee('Telemetry sync drift');
 });

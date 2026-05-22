@@ -84,7 +84,7 @@ new #[Title('Verification')] class extends Component {
                             <flux:text class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ $plan->scope }}</flux:text>
                         @endif
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="data-table-count flex items-center gap-2">
                         <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">{{ $plan->cases->count() }} {{ __('cases') }}</flux:text>
                     </div>
                 </x-slot:header>
