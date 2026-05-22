@@ -57,12 +57,36 @@ test('the Plan work-items table nests children under their work package in WBS o
     ]);
 
     Livewire::test('pages::plan')
+        ->assertSee($package->reference())
+        ->assertDontSee($child->reference())
+        ->assertSeeHtml('data-test="work-item-tree-toggle"')
+        ->call('toggleWorkItem', $package->id)
         ->assertSeeInOrder([$package->reference(), $child->reference()])
         ->assertSeeHtml('data-test="work-item-tree-connector"')
         ->assertSeeHtml('data-test="work-item-tree-list"')
+        ->assertSeeHtml('data-test="work-item-tree-header"')
         ->assertSee('rounded border border-zinc-200 bg-zinc-50', false)
         ->assertSee('space-y-1', false)
         ->assertSee('hover:bg-zinc-50', false);
+});
+
+test('the Plan work-items tree caps each rendered level instead of rendering every item', function () {
+    $this->project->workItems()->delete();
+
+    foreach (range(1, 105) as $index) {
+        $this->project->workItems()->create([
+            'kind' => 'task',
+            'name' => sprintf('Bulk work item %03d', $index),
+            'status' => 'todo',
+        ]);
+    }
+
+    Livewire::test('pages::plan')
+        ->assertSee('105')
+        ->assertSee('items')
+        ->assertSee('Bulk work item 100')
+        ->assertDontSee('Bulk work item 101')
+        ->assertSee('Showing first 100 at this level; 5 more are not rendered.');
 });
 
 test('the work item detail children table shows child references with a labeled count', function () {
