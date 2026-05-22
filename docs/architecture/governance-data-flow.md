@@ -213,9 +213,126 @@ This tier should stay honest: if a field is neither read, surfaced at the right
 moment, nor expected to inform a human or Client Agent, it is ceremony and should
 be wired into a consumer or removed in a follow-up issue.
 
+## Lifecycle Sequence Diagrams
+
+These sequence diagrams use the same tier vocabulary as the data-consumer map.
+They are descriptive: they explain current supported flows and decision points,
+but they do not define new behavior.
+
+### Requirement To Release Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Human as Human or Client Agent
+    participant Req as Requirements
+    participant Arch as Architecture Context
+    participant Plan as Plan and Work Items
+    participant Impl as Implementation Evidence
+    participant Verify as Verification
+    participant Ready as Readiness / Release Reports
+    participant Release as Release
+
+    Human->>Req: Capture requirement text and acceptance checks
+    Req-->>Human: Requirement reference and trace anchor
+    Human->>Arch: Add or inspect views, concerns, elements, and prose
+    Arch-->>Human: Agent-facing design context
+    Human->>Plan: Create work items and link them to requirements
+    Plan-->>Human: WBS, dependencies, RACI, and implementation brief context
+    Human->>Impl: Attach delivery links, check runs, and deployments
+    Impl-->>Plan: Implementation status summary
+    Human->>Verify: Add verification cases, runs, anomalies, and visual evidence
+    Verify-->>Ready: Advisory verification and implementation findings
+    Req-->>Ready: Advisory requirements findings
+    Arch-->>Ready: Advisory architecture findings
+    Plan-->>Ready: Advisory planning findings
+    Ready-->>Human: Readiness gates and release readiness report
+    alt readiness reports fail or caution
+        Human->>Human: Decide whether to remediate or accept the advisory risk
+    else readiness reports ready
+        Human->>Release: Promote, release, or record deployment evidence
+    end
+```
+
+Readiness in this sequence is advisory unless a separate transition explicitly
+uses it as a precondition. Issue #398 owns the decision about which readiness
+failures should become enforced.
+
+### Change Request Review And Implementation Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Requester as Requester
+    participant CR as Change Request
+    participant Trace as Trace / Impact Context
+    participant Review as Review
+    participant Decision as Change Decision
+    participant Work as Work Items / Evidence
+
+    Requester->>CR: Create proposed change request
+    Requester->>CR: Link impacted artifacts
+    CR->>Trace: Analyze impacted artifacts and nearby trace context
+    Trace-->>CR: Impact analysis and consult_with candidates
+    Requester->>CR: Submit for review
+    CR->>Review: Link review or review findings
+    Review-->>Decision: Record evidence, findings, and recommendation
+    alt approve
+        Decision->>CR: Move under_review to approved and stamp approved decision
+        CR->>Work: Implementation may now be marked against the approved change
+        Work-->>CR: Delivery evidence and implementation status
+        CR->>CR: Move approved to implemented
+    else reject
+        Decision->>CR: Move under_review to rejected
+        CR-->>Requester: Implementation path is closed by lifecycle state
+    else defer
+        Decision->>CR: Move under_review to deferred
+        CR-->>Requester: Revisit later and keep implementation path closed
+    end
+```
+
+The approved-before-implemented rule is enforced by lifecycle state reachability:
+`implemented` is only reachable from `approved`, and `approved` is produced by
+the approval transition.
+
+### Milestone Achievement Gate Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Agent as Human or Client Agent
+    participant Milestone as Milestone
+    participant Items as Member Work Items
+    participant Evidence as Delivery Links / Checks / Deployments
+    participant Gate as MilestoneGateEvaluator
+    participant Transition as AchieveMilestone
+
+    Agent->>Milestone: Request achievement
+    Transition->>Gate: Evaluate milestone gate
+    Gate->>Milestone: Load member work items
+    Gate->>Items: Check project membership and status
+    Gate->>Evidence: Inspect delivery links, check runs, and deployments
+    Evidence-->>Gate: Evidence summary
+    alt blocking errors exist
+        Gate-->>Transition: fail with blocking findings
+        Transition-->>Agent: Refuse achievement with actionable reason
+    else warnings or informational gaps only
+        Gate-->>Transition: pass or warn without blocking
+        Transition->>Milestone: Move pending to achieved
+        Transition-->>Agent: Milestone achieved with warnings still visible
+    else clean evidence
+        Gate-->>Transition: pass
+        Transition->>Milestone: Move pending to achieved
+        Transition-->>Agent: Milestone achieved
+    end
+```
+
+This is the hard data-content gate currently shown in the tier map. Blocking
+errors stop the supported transition. Warning and informational evidence gaps
+remain visible but do not stop milestone achievement.
+
 ## Open Follow-Ups
 
 - #398 decides which readiness gate failures, if any, should become enforced
   transition blockers.
-- Future diagram work may add rigor-level, role/profile, or sequence diagrams.
-  This page is only the first docs-first tier map.
+- Future diagram work may add rigor-level or role/profile diagrams.
