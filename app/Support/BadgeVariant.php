@@ -134,16 +134,6 @@ class BadgeVariant
         };
     }
 
-    public static function doc(string $doc): string
-    {
-        return match ($doc) {
-            'strs' => 'purple',
-            'syrs' => 'indigo',
-            'srs' => 'blue',
-            default => 'zinc',
-        };
-    }
-
     /**
      * Verification coverage derived for a requirement: verified (a linked case
      * passed), covered (linked cases but none passing), or uncovered (no cases).

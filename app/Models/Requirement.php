@@ -20,12 +20,13 @@ class Requirement extends Model
     use ScopedByOwner;
 
     protected $fillable = [
-        'project_id', 'parent_id', 'slug', 'doc', 'type', 'text',
+        'project_id', 'parent_id', 'number', 'slug', 'doc', 'type', 'text',
         'rationale', 'acceptance_criteria', 'source', 'priority', 'tags',
         'renders_ui',
     ];
 
     protected $casts = [
+        'number' => 'integer',
         'acceptance_criteria' => 'array',
         'tags' => 'array',
         'renders_ui' => 'boolean',
@@ -34,10 +35,47 @@ class Requirement extends Model
     protected static function booted(): void
     {
         static::creating(function (self $requirement): void {
+            if ($requirement->number === null) {
+                $requirement->number = $requirement->nextNumberForDoc();
+            }
+
             if ($requirement->slug === null || $requirement->slug === '') {
                 $requirement->slug = self::deriveUniqueSlug($requirement->project_id, (string) $requirement->text);
             }
         });
+
+        // The reference embeds the document tier (e.g. "SRS-001"), so moving a
+        // requirement to another tier must re-number it within that tier —
+        // otherwise the stale number can collide on the (project, doc, number)
+        // unique index and the reference would misreport the tier.
+        static::updating(function (self $requirement): void {
+            if ($requirement->isDirty('doc')) {
+                $requirement->number = $requirement->nextNumberForDoc();
+            }
+        });
+    }
+
+    /**
+     * Human-readable per-document reference, e.g. "SRS-001". The document tier
+     * is the prefix, so each tier numbers independently within a project.
+     */
+    public function reference(): string
+    {
+        return strtoupper($this->doc).'-'.str_pad((string) $this->number, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Allocate the next sequential number within this requirement's document
+     * tier. Callers that may run concurrently should wrap the create in a
+     * transaction so the project row lock held here spans the insert.
+     */
+    protected function nextNumberForDoc(): int
+    {
+        Project::whereKey($this->project_id)->lockForUpdate()->first();
+
+        return (int) static::where('project_id', $this->project_id)
+            ->where('doc', $this->doc)
+            ->max('number') + 1;
     }
 
     public static function deriveUniqueSlug(string $projectId, string $text, ?string $ignoreId = null): string

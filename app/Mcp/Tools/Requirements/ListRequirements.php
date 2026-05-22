@@ -53,6 +53,7 @@ class ListRequirements extends Tool
             'offset' => $offset,
             'results' => $rows->map(fn ($requirement) => [
                 'id' => $requirement->id,
+                'reference' => $requirement->reference(),
                 'layer' => AlignmentText::docToLayer($requirement->doc),
                 'type' => $requirement->type,
                 'priority' => $requirement->priority,

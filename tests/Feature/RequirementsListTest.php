@@ -22,7 +22,7 @@ beforeEach(function () {
     session(['selected_project_id' => $this->project->id]);
 });
 
-test('the list shows each requirement identifier', function () {
+test('the list shows each requirement reference as its identifier', function () {
     $requirement = $this->project->requirements()->create([
         'doc' => 'srs',
         'type' => 'functional',
@@ -31,7 +31,9 @@ test('the list shows each requirement identifier', function () {
 
     Livewire::test('pages::requirements.index')
         ->assertSee('ID')
-        ->assertSee($requirement->slug);
+        ->assertSee($requirement->reference())
+        ->assertSee('SRS-001')
+        ->assertDontSee($requirement->slug);
 });
 
 test('the list can be filtered by type', function () {
