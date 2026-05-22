@@ -1,6 +1,9 @@
 <?php
 
 use App\Mcp\Servers\ReadonlyServer;
+use App\Models\Concern;
+use App\Models\DesignElement;
+use App\Models\DesignView;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\User;
@@ -76,4 +79,47 @@ it('does not serve a default mockup from another workspace', function () {
 
     readResource(ReadonlyServer::class, "growth://owners/work_item/{$otherItem->id}/mockup")
         ->assertHasErrors(['No default mockup']);
+});
+
+it('serves a mockup design brief for a work item', function () {
+    $requirement = Requirement::create([
+        'project_id' => $this->project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The checkout must show payment status.',
+        'acceptance_criteria' => ['Payment status is visible before submit.'],
+    ]);
+    $this->workItem->requirements()->attach($requirement->id);
+
+    $concern = Concern::create([
+        'project_id' => $this->project->id,
+        'text' => 'Users need clear payment feedback.',
+    ]);
+    $view = DesignView::create([
+        'project_id' => $this->project->id,
+        'viewpoint' => 'interaction',
+        'name' => 'Checkout interaction',
+        'description' => 'Payment state flow.',
+    ]);
+    $view->concerns()->attach($concern->id);
+    DesignElement::create([
+        'design_view_id' => $view->id,
+        'kind' => 'entity',
+        'name' => 'Payment status panel',
+        'type' => 'ui_component',
+        'purpose' => 'Shows whether payment is pending, accepted, or failed.',
+    ]);
+    $mockup = createMockup($this->workItem, 'default', '<!doctype html><html><body>v1</body></html>');
+
+    readResource(ReadonlyServer::class, "growth://owners/work_item/{$this->workItem->id}/mockup-design-brief")
+        ->assertOk()
+        ->assertSee('Mockup Design Brief - Mockups')
+        ->assertSee($this->workItem->reference())
+        ->assertSee('The checkout must show payment status.')
+        ->assertSee('Payment status is visible before submit.')
+        ->assertSee('Checkout interaction')
+        ->assertSee('Users need clear payment feedback.')
+        ->assertSee('Payment status panel')
+        ->assertSee("growth://mockups/{$mockup->id}")
+        ->assertSee('Represent relevant architecture views/elements');
 });

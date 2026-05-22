@@ -2,6 +2,8 @@
 
 use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Tools\Plan\UpsertMockup;
+use App\Models\DesignElement;
+use App\Models\DesignView;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\SpecMockup;
@@ -45,6 +47,39 @@ it('stores a mockup for a work item', function () {
     $mockups = SpecMockup::where('owner_id', $this->workItem->id)->get();
     expect($mockups)->toHaveCount(1)
         ->and($mockups->first()->currentRevision->html)->toContain('<h1>Checkout</h1>');
+});
+
+it('returns architecture guidance when creating a mockup in a project with design context', function () {
+    $view = DesignView::create([
+        'project_id' => $this->project->id,
+        'viewpoint' => 'interaction',
+        'name' => 'Checkout interaction',
+        'description' => 'How checkout panels exchange state.',
+    ]);
+
+    DesignElement::create([
+        'design_view_id' => $view->id,
+        'kind' => 'entity',
+        'name' => 'Checkout panel',
+        'type' => 'ui_component',
+        'purpose' => 'Collects payment and shipping intent.',
+    ]);
+
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'name' => 'Checkout layout',
+        'html' => '<!doctype html><html><body><h1>Checkout</h1></body></html>',
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use ($view) {
+            $json->where('design_brief.architecture_available', true)
+                ->where('design_brief.uri', "growth://owners/work_item/{$this->workItem->id}/mockup-design-brief")
+                ->where('design_brief.architecture_views.0.id', $view->id)
+                ->where('design_brief.architecture_views.0.name', 'Checkout interaction')
+                ->where('design_brief.architecture_views.0.elements_count', 1)
+                ->etc();
+        });
 });
 
 it('stores a mockup for a requirement', function () {

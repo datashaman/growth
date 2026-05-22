@@ -46,6 +46,8 @@ You are tightening Growth intent before more implementation work is planned.
 
 Use these tools as needed: `upsert-stakeholder`, `upsert-concerns`, `upsert-source`, `upsert-requirements`, `upsert-citation`, and `list-requirements`.
 
+When generating a new intent artifact, first inspect the most useful existing context: current stakeholders, concerns, sources, requirements, and citations. Do not invent missing human intent just to fill a field.
+
 Ask for missing intent only when it blocks a useful next requirement. Prefer concrete product behavior, constraints, evidence, and acceptance checks over broad discovery.
 MD;
 

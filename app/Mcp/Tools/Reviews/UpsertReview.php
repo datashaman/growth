@@ -18,7 +18,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive(false)]
-#[Description('Create or update a review record. Supports management reviews, technical reviews, inspections, walkthroughs, and audits, with optional reviewed artifact targets. New reviews start as `planned`; status is not set here — it moves only through the start-review, hold-review, close-review, and cancel-review transitions. The response includes a missing_prerequisites list summarising which lint-reviews readiness checks the review will currently fail (targets, participants, entry/exit criteria, inspection roles, review-plan expected responsibilities) so you can address them before running lint-reviews.')]
+#[Description('Create or update a review record. Before updating or refining a review artifact, read its review brief (`growth://reviews/{review}/review-brief`); before creating one, inspect the target artifacts, trace context, architecture context, requirements, findings, and review plan so objective and criteria focus on the useful evidence. Supports management reviews, technical reviews, inspections, walkthroughs, and audits, with optional reviewed artifact targets. New reviews start as `planned`; status is not set here — it moves only through the start-review, hold-review, close-review, and cancel-review transitions. The response includes a missing_prerequisites list summarising which lint-reviews readiness checks the review will currently fail (targets, participants, entry/exit criteria, inspection roles, review-plan expected responsibilities) so you can address them before running lint-reviews.')]
 class UpsertReview extends Tool
 {
     use ValidatesReviewArtifacts;
@@ -105,6 +105,7 @@ class UpsertReview extends Tool
             'decision' => $review->decision,
             'decision_events' => $review->decisionEvents()->count(),
             'targets' => $review->targets()->count(),
+            'review_brief' => "growth://reviews/{$review->id}/review-brief",
             'created' => $review->wasRecentlyCreated,
             'missing_prerequisites' => $this->missingPrerequisites($review->fresh(['reviewPlan', 'targets', 'participants'])),
         ]);
@@ -160,7 +161,7 @@ class UpsertReview extends Tool
             'owner_role_id' => $schema->string()->description('Role ULID accountable for the review'),
             'type' => $schema->string()->description('Review type')->enum(Review::TYPES)->required(),
             'title' => $schema->string()->description('Review title')->required(),
-            'objective' => $schema->string()->description('Review objective/scope'),
+            'objective' => $schema->string()->description('Review objective/scope grounded in the relevant target, trace, requirement, architecture, or review-plan context'),
             'planned_at' => $schema->string()->description('Planned review date/time'),
             'held_at' => $schema->string()->description('Actual review date/time'),
             'entry_criteria' => $schema->array()->description('Entry criteria checklist'),
@@ -196,6 +197,7 @@ class UpsertReview extends Tool
             'decision' => $schema->string(),
             'decision_events' => $schema->integer()->required(),
             'targets' => $schema->integer()->required(),
+            'review_brief' => $schema->string()->description('Brief resource to read before refining, holding, or closing this review')->required(),
             'created' => $schema->boolean()->required(),
             'missing_prerequisites' => $schema->array()
                 ->description('Lint-reviews readiness checks the review currently fails. Empty when the review is fully set up.')

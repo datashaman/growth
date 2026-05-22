@@ -17,7 +17,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Throwable;
 
 #[IsDestructive(false)]
-#[Description('Create or update up to 100 requirements in one call. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
+#[Description('Create or update up to 100 requirements in one call. Before generating requirement artifacts, inspect relevant stakeholders, concerns, sources, citations, and existing requirements so new text is grounded in captured intent. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items.')]
 class UpsertRequirements extends Tool
 {
     public function __construct(private readonly RequirementLinter $linter) {}
@@ -131,8 +131,8 @@ class UpsertRequirements extends Tool
                     'parent_id' => $s->string()->description('Parent requirement ULID for derived requirements'),
                     'layer' => $s->string()->description('Requirement layer')->enum(['stakeholder', 'system', 'software'])->required(),
                     'type' => $s->string()->description('Requirement type')->enum(['functional', 'performance', 'usability', 'interface', 'design_constraint', 'process', 'non_functional'])->required(),
-                    'text' => $s->string()->description('Requirement statement')->required(),
-                    'rationale' => $s->string()->description('Why this requirement matters'),
+                    'text' => $s->string()->description('Requirement statement grounded in the relevant captured stakeholder, concern, source, or existing requirement context')->required(),
+                    'rationale' => $s->string()->description('Why this requirement matters, preferably tied to the source context used to generate it'),
                     'acceptance_checks' => $s->array()->description('Concrete pass/fail checks for acceptance'),
                     'source' => $s->string()->description('Originating stakeholder, source, or decision'),
                     'priority' => $s->string()->description('Delivery priority')->enum(['high', 'medium', 'low']),

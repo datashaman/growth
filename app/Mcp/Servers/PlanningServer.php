@@ -3,13 +3,16 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Prompts\PlanSlice;
+use App\Mcp\Resources\MockupDesignBriefResource;
 use App\Mcp\Resources\MockupResource;
 use App\Mcp\Resources\OwnerMockupResource;
 use App\Mcp\Resources\PlanResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\RequirementsResource;
+use App\Mcp\Resources\RequirementVerificationBriefResource;
 use App\Mcp\Resources\RigorLevelsResource;
+use App\Mcp\Resources\WorkItemImplementationBriefResource;
 use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
 use App\Mcp\Tools\Common\AdoptRole;
 use App\Mcp\Tools\Common\BulkLink;
@@ -226,8 +229,11 @@ class PlanningServer extends Server
         ProjectIndexResource::class,
         RequirementsResource::class,
         PlanResource::class,
+        MockupDesignBriefResource::class,
         MockupResource::class,
         OwnerMockupResource::class,
+        RequirementVerificationBriefResource::class,
+        WorkItemImplementationBriefResource::class,
     ];
 
     protected array $prompts = [

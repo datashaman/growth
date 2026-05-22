@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Throwable;
 
 #[IsDestructive(false)]
-#[Description('Create or update up to 100 work items in one call. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items. Status is not set here: new items start as todo and move only through the work item transition tools (start, complete, block, unblock, cancel, reopen).')]
+#[Description('Create or update up to 100 work items in one call. Before updating an existing work item, read its implementation brief (`growth://work-items/{work_item}/implementation-brief`) so the artifact reflects linked requirements, architecture, dependencies, mockups, and evidence. For new work items, use `plan-slice` and project planning context first. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items. Status is not set here: new items start as todo and move only through the work item transition tools (start, complete, block, unblock, cancel, reopen).')]
 class UpsertWorkItems extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -118,7 +118,7 @@ class UpsertWorkItems extends Tool
                     'responsible_role_id' => $s->string()->description('Responsible role ULID'),
                     'kind' => $s->string()->description('Work item kind')->enum(WorkItem::KINDS)->required(),
                     'name' => $s->string()->description('Short label')->required(),
-                    'description' => $s->string()->description('Optional details or acceptance notes'),
+                    'description' => $s->string()->description('Optional details or acceptance notes. For an existing work item, preserve relevant context from its implementation brief.'),
                     'needs_mockups' => $s->boolean()->description('Whether this work item requires one or more spec mockups before it is ready. Defaults to false.'),
                 ]))
                 ->min(1)

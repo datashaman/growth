@@ -47,7 +47,7 @@ it('lists every prerequisite a freshly-created review is missing', function () {
                 && str_contains($joined, 'participants:')
                 && str_contains($joined, 'entry_criteria:')
                 && str_contains($joined, 'exit_criteria:');
-        })->etc();
+        })->where('review_brief', fn (string $uri): bool => str_starts_with($uri, 'growth://reviews/') && str_ends_with($uri, '/review-brief'))->etc();
     });
 });
 
