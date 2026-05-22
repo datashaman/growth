@@ -3,6 +3,7 @@
 use App\Concerns\ProjectScoped;
 use App\Models\Requirement;
 use App\Support\BadgeVariant;
+use App\Support\EnumLabel;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -90,6 +91,14 @@ new #[Title('Requirements')] class extends Component {
     {
         return $this->typeFilter !== 'all' || $this->priorityFilter !== 'all';
     }
+
+    public function clearFilters(): void
+    {
+        $this->typeFilter = 'all';
+        $this->priorityFilter = 'all';
+
+        unset($this->requirements);
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -103,33 +112,47 @@ new #[Title('Requirements')] class extends Component {
             <flux:callout.text>{{ __('Pick a project from the dropdown to see its requirements.') }}</flux:callout.text>
         </flux:callout>
     @else
-        <div class="flex flex-wrap justify-end gap-2">
-            <flux:select wire:model.live="typeFilter" size="sm" class="max-w-3xs" data-test="requirements-type-filter">
-                <flux:select.option value="all">{{ __('All types') }}</flux:select.option>
-                @foreach (self::TYPES as $type)
-                    <flux:select.option value="{{ $type }}">{{ str_replace('_', ' ', $type) }}</flux:select.option>
-                @endforeach
-            </flux:select>
-            <flux:select wire:model.live="priorityFilter" size="sm" class="max-w-3xs" data-test="requirements-priority-filter">
-                <flux:select.option value="all">{{ __('All priorities') }}</flux:select.option>
-                @foreach (self::PRIORITIES as $priority)
-                    <flux:select.option value="{{ $priority }}">{{ $priority }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        </div>
-
         <x-data-table
             :count="$this->requirements->count()"
             :count-label="__('captured')"
             :empty="$this->requirements->isEmpty()"
             :empty-message="$this->isFiltered() ? __('No requirements match the current filter.') : __('No requirements captured.')">
+            <x-slot:header>
+                <div class="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex items-baseline gap-3">
+                        <flux:heading size="lg">{{ __('Requirements') }}</flux:heading>
+                        <flux:text class="whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
+                            {{ $this->requirements->count() }} {{ __('captured') }}
+                        </flux:text>
+                    </div>
+                    <div class="flex flex-wrap gap-2 lg:justify-end">
+                        <flux:select wire:model.live="typeFilter" size="sm" class="max-w-3xs" data-test="requirements-type-filter">
+                            <flux:select.option value="all">{{ __('All types') }}</flux:select.option>
+                            @foreach (self::TYPES as $type)
+                                <flux:select.option value="{{ $type }}">{{ EnumLabel::lower($type) }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                        <flux:select wire:model.live="priorityFilter" size="sm" class="max-w-3xs" data-test="requirements-priority-filter">
+                            <flux:select.option value="all">{{ __('All priorities') }}</flux:select.option>
+                            @foreach (self::PRIORITIES as $priority)
+                                <flux:select.option value="{{ $priority }}">{{ EnumLabel::lower($priority) }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
+                        @if ($this->isFiltered())
+                            <flux:button wire:click="clearFilters" size="sm" variant="subtle" data-test="requirements-clear-filters">
+                                {{ __('Clear filters') }}
+                            </flux:button>
+                        @endif
+                    </div>
+                </div>
+            </x-slot:header>
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
-                    <flux:table.column>{{ __('ID') }}</flux:table.column>
+                    <flux:table.column class="w-28">{{ __('ID') }}</flux:table.column>
                     <flux:table.column>{{ __('Statement') }}</flux:table.column>
-                    <flux:table.column>{{ __('Type') }}</flux:table.column>
-                    <flux:table.column>{{ __('Priority') }}</flux:table.column>
-                    <flux:table.column>{{ __('Verification') }}</flux:table.column>
+                    <flux:table.column class="w-40">{{ __('Type') }}</flux:table.column>
+                    <flux:table.column class="w-28">{{ __('Priority') }}</flux:table.column>
+                    <flux:table.column class="w-32">{{ __('Verification') }}</flux:table.column>
                     <flux:table.column>{{ __('Source') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
@@ -137,20 +160,29 @@ new #[Title('Requirements')] class extends Component {
                         @php($state = $this->verificationState($requirement))
                         <flux:table.row>
                             <flux:table.cell class="whitespace-nowrap">
-                                <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ $requirement->reference() }}</span>
+                                <a href="{{ route('requirements.show', $requirement) }}" wire:navigate class="font-mono text-xs font-medium text-zinc-700 hover:underline dark:text-zinc-300" aria-label="{{ __('Open requirement :reference', ['reference' => $requirement->reference()]) }}">
+                                    {{ $requirement->reference() }}
+                                </a>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <a href="{{ route('requirements.show', $requirement) }}" wire:navigate class="hover:underline">{{ $requirement->text }}</a>
-                                @if ($requirement->rationale)
-                                    <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($requirement->rationale, 120) }}</div>
-                                @endif
+                                <div class="max-w-3xl">
+                                    <div class="font-medium text-zinc-900 dark:text-zinc-100">{{ \Illuminate\Support\Str::limit($requirement->text, 180) }}</div>
+                                    @if ($requirement->rationale)
+                                        <div class="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+                                            <span class="font-medium text-zinc-600 dark:text-zinc-300">{{ __('Rationale:') }}</span>
+                                            {{ \Illuminate\Support\Str::limit($requirement->rationale, 180) }}
+                                        </div>
+                                    @endif
+                                </div>
                             </flux:table.cell>
-                            <flux:table.cell>{{ str_replace('_', ' ', $requirement->type) }}</flux:table.cell>
-                            <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::priority($requirement->priority)" size="sm">{{ $requirement->priority ?? '—' }}</flux:badge>
+                            <flux:table.cell class="whitespace-nowrap">
+                                <flux:badge color="zinc" size="sm">{{ EnumLabel::lower($requirement->type) }}</flux:badge>
                             </flux:table.cell>
-                            <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::requirementVerification($state)" size="sm">{{ $state }}</flux:badge>
+                            <flux:table.cell class="whitespace-nowrap">
+                                <flux:badge :color="BadgeVariant::priority($requirement->priority)" size="sm">{{ EnumLabel::lower($requirement->priority) }}</flux:badge>
+                            </flux:table.cell>
+                            <flux:table.cell class="whitespace-nowrap">
+                                <flux:badge :color="BadgeVariant::requirementVerification($state)" size="sm">{{ EnumLabel::lower($state) }}</flux:badge>
                                 @if ($requirement->testCases->isNotEmpty())
                                     <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ trans_choice(':count case|:count cases', $requirement->testCases->count()) }}</div>
                                 @endif

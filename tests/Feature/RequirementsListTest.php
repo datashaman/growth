@@ -7,6 +7,7 @@
 
 use App\Models\Project;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -32,8 +33,31 @@ test('the list shows each requirement reference as its identifier', function () 
     Livewire::test('pages::requirements.index')
         ->assertSee('ID')
         ->assertSee($requirement->reference())
+        ->assertSeeHtml('href="'.route('requirements.show', $requirement).'"')
         ->assertSee('SRS-001')
         ->assertDontSee($requirement->slug);
+});
+
+test('the list uses the id as the row link and summarizes long requirement prose', function () {
+    $statement = 'The system shall '.str_repeat('coordinate descent telemetry with mission control before committing to the next burn window. ', 6);
+    $rationale = 'Rationale keeps the landing timeline reviewable without forcing every operator to inspect downstream verification assets.';
+
+    $requirement = $this->project->requirements()->create([
+        'doc' => 'srs',
+        'type' => 'design_constraint',
+        'priority' => 'medium',
+        'text' => $statement,
+        'rationale' => $rationale,
+    ]);
+
+    Livewire::test('pages::requirements.index')
+        ->assertSee($requirement->reference())
+        ->assertSeeHtml('href="'.route('requirements.show', $requirement).'"')
+        ->assertSee(Str::limit($statement, 180))
+        ->assertDontSee($statement)
+        ->assertSee('Rationale:')
+        ->assertSee($rationale)
+        ->assertSee('design constraint');
 });
 
 test('the list can be filtered by type', function () {
@@ -64,6 +88,30 @@ test('the list can be filtered by priority', function () {
         ->set('priorityFilter', 'high')
         ->assertSee('High priority abort path.')
         ->assertDontSee('Low priority telemetry colour.');
+});
+
+test('active filters can be cleared', function () {
+    $this->project->requirements()->create([
+        'doc' => 'srs', 'type' => 'functional', 'priority' => 'high', 'text' => 'High priority abort path.',
+    ]);
+    $this->project->requirements()->create([
+        'doc' => 'srs', 'type' => 'process', 'priority' => 'low', 'text' => 'Low priority review cadence.',
+    ]);
+
+    Livewire::test('pages::requirements.index')
+        ->set('typeFilter', 'process')
+        ->set('priorityFilter', 'low')
+        ->assertSet('typeFilter', 'process')
+        ->assertSet('priorityFilter', 'low')
+        ->assertSee('Clear filters')
+        ->assertSee('Low priority review cadence.')
+        ->assertDontSee('High priority abort path.')
+        ->call('clearFilters')
+        ->assertSet('typeFilter', 'all')
+        ->assertSet('priorityFilter', 'all')
+        ->assertDontSee('Clear filters')
+        ->assertSee('Low priority review cadence.')
+        ->assertSee('High priority abort path.');
 });
 
 test('an empty filter result explains that the filter, not the register, is empty', function () {
