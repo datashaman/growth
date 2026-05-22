@@ -191,18 +191,18 @@ new class extends Component {
             :count="$workItem->requirements->count()">
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
+                    <flux:table.column>{{ __('ID') }}</flux:table.column>
                     <flux:table.column>{{ __('Requirement') }}</flux:table.column>
-                    <flux:table.column>{{ __('Doc') }}</flux:table.column>
                     <flux:table.column>{{ __('Priority') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($workItem->requirements as $req)
                         <flux:table.row>
-                            <flux:table.cell>
-                                <a href="{{ route('requirements.show', $req) }}" wire:navigate class="hover:underline">{{ \Illuminate\Support\Str::limit($req->text, 80) }}</a>
+                            <flux:table.cell class="whitespace-nowrap">
+                                <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ $req->reference() }}</span>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::doc($req->doc)" size="sm">{{ strtoupper($req->doc) }}</flux:badge>
+                                <a href="{{ route('requirements.show', $req) }}" wire:navigate class="hover:underline">{{ \Illuminate\Support\Str::limit($req->text, 80) }}</a>
                             </flux:table.cell>
                             <flux:table.cell>
                                 <flux:badge :color="BadgeVariant::priority($req->priority)" size="sm">{{ $req->priority ?? '—' }}</flux:badge>

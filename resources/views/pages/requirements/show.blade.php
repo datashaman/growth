@@ -35,7 +35,7 @@ new class extends Component {
         back-route="requirements"
         :back-label="__('Back to requirements')">
         <x-slot:badges>
-            <flux:badge :color="BadgeVariant::doc($requirement->doc)" size="sm">{{ strtoupper($requirement->doc) }}</flux:badge>
+            <flux:badge color="zinc" size="sm" class="font-mono">{{ $requirement->reference() }}</flux:badge>
             <flux:badge color="zinc" size="sm">{{ EnumLabel::lower($requirement->type) }}</flux:badge>
             @if ($requirement->priority)
                 <flux:badge :color="BadgeVariant::priority($requirement->priority)" size="sm">{{ EnumLabel::lower($requirement->priority) }}</flux:badge>
@@ -108,18 +108,18 @@ new class extends Component {
             :count="$requirement->children->count()">
             <flux:table class="[&_td]:align-top">
                 <flux:table.columns>
+                    <flux:table.column>{{ __('ID') }}</flux:table.column>
                     <flux:table.column>{{ __('Requirement') }}</flux:table.column>
-                    <flux:table.column>{{ __('Doc') }}</flux:table.column>
                     <flux:table.column>{{ __('Priority') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($requirement->children as $child)
                         <flux:table.row>
-                            <flux:table.cell>
-                                <a href="{{ route('requirements.show', $child) }}" wire:navigate class="hover:underline">{{ \Illuminate\Support\Str::limit($child->text, 80) }}</a>
+                            <flux:table.cell class="whitespace-nowrap">
+                                <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ $child->reference() }}</span>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::doc($child->doc)" size="sm">{{ strtoupper($child->doc) }}</flux:badge>
+                                <a href="{{ route('requirements.show', $child) }}" wire:navigate class="hover:underline">{{ \Illuminate\Support\Str::limit($child->text, 80) }}</a>
                             </flux:table.cell>
                             <flux:table.cell>
                                 <flux:badge :color="BadgeVariant::priority($child->priority)" size="sm">{{ $child->priority ?? '—' }}</flux:badge>

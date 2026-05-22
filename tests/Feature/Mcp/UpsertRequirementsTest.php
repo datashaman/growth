@@ -53,6 +53,33 @@ it('upserts multiple requirements in one batch and reports per-item failures wit
     expect(Requirement::where('project_id', $project->id)->count())->toBe(2);
 });
 
+it('returns the short per-document reference for each created requirement', function () {
+    $user = User::factory()->create();
+    Passport::actingAs($user, ['mcp:use']);
+    $project = Project::create(['workspace_id' => $user->active_workspace_id, 'name' => 'Refs', 'rigor_level' => 2]);
+
+    IntakeServer::tool(UpsertRequirements::class, [
+        'items' => [
+            [
+                'project_id' => $project->id,
+                'layer' => 'software',
+                'type' => 'functional',
+                'text' => 'The app shall greet the user on first run.',
+            ],
+            [
+                'project_id' => $project->id,
+                'layer' => 'software',
+                'type' => 'functional',
+                'text' => 'The app shall persist todos across reloads.',
+            ],
+        ],
+    ])->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('items.0.reference', 'SRS-001')
+            ->where('items.1.reference', 'SRS-002')
+            ->etc();
+    });
+});
+
 it('creates a requirement flagged as UI-bearing and defaults the flag to false', function () {
     $user = User::factory()->create();
     Passport::actingAs($user, ['mcp:use']);

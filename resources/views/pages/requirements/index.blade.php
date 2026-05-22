@@ -127,7 +127,6 @@ new #[Title('Requirements')] class extends Component {
                 <flux:table.columns>
                     <flux:table.column>{{ __('ID') }}</flux:table.column>
                     <flux:table.column>{{ __('Statement') }}</flux:table.column>
-                    <flux:table.column>{{ __('Doc') }}</flux:table.column>
                     <flux:table.column>{{ __('Type') }}</flux:table.column>
                     <flux:table.column>{{ __('Priority') }}</flux:table.column>
                     <flux:table.column>{{ __('Verification') }}</flux:table.column>
@@ -137,17 +136,14 @@ new #[Title('Requirements')] class extends Component {
                     @foreach ($this->requirements as $requirement)
                         @php($state = $this->verificationState($requirement))
                         <flux:table.row>
-                            <flux:table.cell>
-                                <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ $requirement->slug }}</span>
+                            <flux:table.cell class="whitespace-nowrap">
+                                <span class="font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ $requirement->reference() }}</span>
                             </flux:table.cell>
                             <flux:table.cell>
                                 <a href="{{ route('requirements.show', $requirement) }}" wire:navigate class="hover:underline">{{ $requirement->text }}</a>
                                 @if ($requirement->rationale)
                                     <div class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($requirement->rationale, 120) }}</div>
                                 @endif
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::doc($requirement->doc)" size="sm">{{ strtoupper($requirement->doc) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>{{ str_replace('_', ' ', $requirement->type) }}</flux:table.cell>
                             <flux:table.cell>
