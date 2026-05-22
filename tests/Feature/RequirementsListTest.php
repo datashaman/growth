@@ -114,6 +114,18 @@ test('active filters can be cleared', function () {
         ->assertSee('High priority abort path.');
 });
 
+test('filter controls render side by side on normal width screens', function () {
+    $this->project->requirements()->create([
+        'doc' => 'srs', 'type' => 'functional', 'text' => 'Functional ignition control.',
+    ]);
+
+    Livewire::test('pages::requirements.index')
+        ->assertSee('data-test="requirements-type-filter"', false)
+        ->assertSee('data-test="requirements-priority-filter"', false)
+        ->assertSee('sm:grid-cols-2', false)
+        ->assertSee('sm:w-48', false);
+});
+
 test('an empty filter result explains that the filter, not the register, is empty', function () {
     $this->project->requirements()->create([
         'doc' => 'srs', 'type' => 'functional', 'text' => 'Only functional requirement.',
