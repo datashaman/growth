@@ -3,6 +3,7 @@
 use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -31,6 +32,14 @@ new #[Title('Changes')] class extends Component {
             ->orderByDesc('number')
             ->get()
             ?? collect();
+    }
+
+    public function markdownPreview(?string $markdown): string
+    {
+        return Str::of(Str::markdown($markdown ?? '', [
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+        ]))->stripTags()->squish()->limit(100)->toString();
     }
 }; ?>
 
@@ -70,7 +79,7 @@ new #[Title('Changes')] class extends Component {
                                     {{ $cr->title }}
                                 </a>
                                 @if ($cr->description)
-                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ \Illuminate\Support\Str::limit($cr->description, 100) }}</div>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ $this->markdownPreview($cr->description) }}</div>
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell>

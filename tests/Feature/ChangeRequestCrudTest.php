@@ -2,6 +2,7 @@
 
 use App\Models\Project;
 use App\Models\User;
+use Carbon\Carbon;
 use Livewire\Livewire;
 
 beforeEach(function () {
@@ -30,6 +31,32 @@ test('owner can view a change request show page', function () {
         ->assertSee('Replace existing burner with O2-augmented variant.')
         ->assertSee('Improves combustion stability under load.')
         ->assertSee('under review');
+});
+
+test('change request prose renders safe markdown on detail and plain previews on the index', function () {
+    $cr = $this->project->changeRequests()->create([
+        'title' => 'Markdown change',
+        'description' => "**Replace** the burner.\n\n<script>alert('x')</script>",
+        'rationale' => "- Keeps the burn stable\n- Reduces operator ambiguity",
+        'decision_rationale' => 'Approved for **safety**.',
+        'category' => 'design',
+        'status' => 'approved',
+        'priority' => 'high',
+        'decision' => 'approved',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get('/change-requests/'.$cr->id)
+        ->assertOk()
+        ->assertSee('<strong>Replace</strong>', false)
+        ->assertSee('<li>Keeps the burn stable</li>', false)
+        ->assertSee('Approved for <strong>safety</strong>.', false)
+        ->assertDontSee("alert('x')");
+
+    Livewire::actingAs($this->user)
+        ->test('pages::changes')
+        ->assertSee('Replace the burner.')
+        ->assertDontSee('**Replace**');
 });
 
 test('impacts render named, linked artifacts instead of type:ULID', function () {
@@ -73,6 +100,35 @@ test('an impact on a type without a detail page shows a name but no link', funct
         ->assertSee('Launch readiness')
         ->assertSee('milestone')
         ->assertDontSee('milestone:'.$milestone->id);
+});
+
+test('approval events render non-wrapping metadata and badge-style transitions', function () {
+    $cr = $this->project->changeRequests()->create([
+        'title' => 'Approve the launch gate',
+        'category' => 'scope',
+        'status' => 'approved',
+        'priority' => 'high',
+        'decision' => 'approved',
+    ]);
+    $cr->approvalEvents()->create([
+        'recorded_by_user_id' => $this->user->id,
+        'from_status' => 'under_review',
+        'to_status' => 'approved',
+        'from_decision' => null,
+        'to_decision' => 'approved',
+        'rationale' => 'Risk accepted.',
+        'recorded_at' => Carbon::parse('2026-05-22 13:20:00'),
+    ]);
+
+    $this->actingAs($this->user)
+        ->get('/change-requests/'.$cr->id)
+        ->assertOk()
+        ->assertSee('2026-05-22 13:20')
+        ->assertSee($this->user->name)
+        ->assertSee('under review')
+        ->assertSee('approved')
+        ->assertSee('->', false)
+        ->assertSee('whitespace-nowrap', false);
 });
 
 test('changes index links each title to the show page', function () {
