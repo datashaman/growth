@@ -38,14 +38,58 @@ new #[Title('Plan')] class extends Component {
             ?? collect();
     }
 
+    /**
+     * Work items flattened into WBS reading order: each parent is immediately
+     * followed by its descendants, depth-first. Each entry carries the nesting
+     * depth so the table can indent children under their work package.
+     *
+     * @return \Illuminate\Support\Collection<int,array{item:\App\Models\WorkItem,depth:int}>
+     */
     #[Computed]
     public function workItems()
     {
-        return $this->selectedProject?->workItems()
+        $items = $this->selectedProject?->workItems()
             ->with('responsibleRole')
-            ->orderBy('name')
             ->get()
             ?? collect();
+
+        return $this->arrangeByHierarchy($items);
+    }
+
+    /**
+     * Walk the parent/child tree from the roots down, ordering siblings so
+     * active work surfaces first (in_progress, blocked, todo, done, cancelled)
+     * and then by name. Items whose parent is absent from the set are treated
+     * as roots so nothing is dropped.
+     *
+     * @param  \Illuminate\Support\Collection<int,\App\Models\WorkItem>  $items
+     * @return \Illuminate\Support\Collection<int,array{item:\App\Models\WorkItem,depth:int}>
+     */
+    protected function arrangeByHierarchy($items)
+    {
+        $statusOrder = ['in_progress' => 0, 'blocked' => 1, 'todo' => 2, 'done' => 3, 'cancelled' => 4];
+        $sortSiblings = fn ($group) => $group->sortBy(
+            fn ($item) => sprintf('%d-%s', $statusOrder[$item->status] ?? 9, strtolower((string) $item->name))
+        )->values();
+
+        $present = $items->keyBy('id');
+        $childrenOf = $items
+            ->filter(fn ($item) => $item->parent_id !== null && $present->has($item->parent_id))
+            ->groupBy('parent_id');
+        $roots = $items->filter(fn ($item) => $item->parent_id === null || ! $present->has($item->parent_id));
+
+        $ordered = collect();
+        $walk = function ($siblings, $depth) use (&$walk, $childrenOf, $sortSiblings, $ordered): void {
+            foreach ($sortSiblings($siblings) as $item) {
+                $ordered->push(['item' => $item, 'depth' => $depth]);
+                if ($children = $childrenOf->get($item->id)) {
+                    $walk($children, $depth + 1);
+                }
+            }
+        };
+        $walk($roots, 0);
+
+        return $ordered;
     }
 
     #[Computed]
@@ -69,7 +113,13 @@ new #[Title('Plan')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-project-page-header
         :title="__('Plan')"
-        :description="__('Milestones, work items, and roles delivering the project.')" />
+        :description="__('Milestones, work items, and roles delivering the project.')">
+        @if ($this->selectedProject !== null && $this->projectPlan)
+            <x-slot:actions>
+                <flux:badge :color="BadgeVariant::planStatus($this->projectPlan->status)" size="sm">{{ EnumLabel::lower($this->projectPlan->status) }}</flux:badge>
+            </x-slot:actions>
+        @endif
+    </x-project-page-header>
 
     @if ($this->selectedProject === null)
         <flux:callout icon="cursor-arrow-rays">
@@ -77,13 +127,6 @@ new #[Title('Plan')] class extends Component {
             <flux:callout.text>{{ __('Pick a project to see its plan.') }}</flux:callout.text>
         </flux:callout>
     @else
-        @if ($this->projectPlan)
-            <section class="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-                <flux:heading size="lg">{{ __('Project plan') }}</flux:heading>
-                <flux:badge :color="BadgeVariant::planStatus($this->projectPlan->status)" size="sm">{{ EnumLabel::lower($this->projectPlan->status) }}</flux:badge>
-            </section>
-        @endif
-
         <x-data-table
             :title="__('Milestones')"
             :count="$this->milestones->count()"
@@ -124,10 +167,11 @@ new #[Title('Plan')] class extends Component {
                     <flux:table.column>{{ __('Role') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
-                    @foreach ($this->workItems as $item)
+                    @foreach ($this->workItems as $row)
+                        @php($item = $row['item'])
                         <flux:table.row>
                             <flux:table.cell>
-                                <a href="{{ route('work-items.show', $item) }}" wire:navigate class="font-medium hover:underline">
+                                <a href="{{ route('work-items.show', $item) }}" wire:navigate class="flex items-baseline gap-2 font-medium hover:underline" @style(['padding-left: '.($row['depth'] * 1.25).'rem' => $row['depth'] > 0])>
                                     <span class="font-mono text-zinc-500 dark:text-zinc-400">{{ $item->reference() }}</span>
                                     {{ $item->name }}
                                 </a>

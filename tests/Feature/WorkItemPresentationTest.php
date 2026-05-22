@@ -43,6 +43,30 @@ test('the Plan work-items table leads with the WI- reference and the role', func
         ->assertSee('Descent Engineer');
 });
 
+test('the Plan work-items table nests children under their work package in WBS order', function () {
+    $package = $this->project->workItems()->create([
+        'kind' => 'work_package',
+        'name' => 'Descent phase',
+        'status' => 'in_progress',
+    ]);
+    $child = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Calibrate throttle',
+        'status' => 'todo',
+        'parent_id' => $package->id,
+    ]);
+
+    Livewire::test('pages::plan')
+        ->assertSeeInOrder([$package->reference(), $child->reference()]);
+});
+
+test('the Plan surfaces the project plan status in the page header', function () {
+    $this->project->projectPlan()->create(['status' => 'baselined']);
+
+    Livewire::test('pages::plan')
+        ->assertSee('baselined');
+});
+
 test('the Plan Status header explains the team-set vs evidence-derived distinction', function () {
     Livewire::test('pages::plan')
         ->assertSee('evidence-derived delivery State');
