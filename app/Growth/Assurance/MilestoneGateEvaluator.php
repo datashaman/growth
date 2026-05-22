@@ -36,6 +36,7 @@ class MilestoneGateEvaluator
             'project',
             'workItems.deliveryLinks.checkRuns',
             'workItems.deliveryLinks.deployments',
+            'workItems.responsibleRole',
             // The adoption classifier only needs each work item's `done`
             // transitions — constrain the load so a long status history does
             // not balloon the query payload.
