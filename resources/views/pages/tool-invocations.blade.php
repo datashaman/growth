@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\ToolInvocation;
+use App\Support\TableColumn;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -166,13 +167,19 @@ new #[Title('Tool invocations')] class extends Component {
         :count-label="__('recent')"
         :empty="$this->invocations->isEmpty()"
         :empty-message="$this->isFiltered() ? __('No tool invocations match the current filter.') : __('No tool invocations yet.')">
+        @php($showSurface = TableColumn::hasValues($this->invocations, fn ($invocation) => $invocation->acting_surface))
+        @php($showRole = TableColumn::hasValues($this->invocations, fn ($invocation) => $invocation->acting_role_name))
         <flux:table class="[&_td]:align-top">
             <flux:table.columns>
                 <flux:table.column>{{ __('Time') }}</flux:table.column>
                 <flux:table.column>{{ __('Tool') }}</flux:table.column>
                 <flux:table.column>{{ __('Caller') }}</flux:table.column>
-                <flux:table.column>{{ __('Surface') }}</flux:table.column>
-                <flux:table.column>{{ __('Role') }}</flux:table.column>
+                @if ($showSurface)
+                    <flux:table.column>{{ __('Surface') }}</flux:table.column>
+                @endif
+                @if ($showRole)
+                    <flux:table.column>{{ __('Role') }}</flux:table.column>
+                @endif
                 <flux:table.column>{{ __('Transport') }}</flux:table.column>
                 <flux:table.column>{{ __('Result') }}</flux:table.column>
                 <flux:table.column align="end">{{ __('Duration') }}</flux:table.column>
@@ -185,20 +192,24 @@ new #[Title('Tool invocations')] class extends Component {
                         </flux:table.cell>
                         <flux:table.cell class="font-medium">{{ $invocation->tool_name }}</flux:table.cell>
                         <flux:table.cell>{{ $invocation->agent?->name ?? $invocation->user?->name ?? '—' }}</flux:table.cell>
-                        <flux:table.cell>
-                            @if ($invocation->acting_surface)
-                                <flux:badge color="zinc" size="sm">{{ $invocation->acting_surface }}</flux:badge>
-                            @else
-                                <span class="text-zinc-400 dark:text-zinc-500">{{ __('unbound') }}</span>
-                            @endif
-                        </flux:table.cell>
-                        <flux:table.cell>
-                            @if ($invocation->acting_role_name)
-                                {{ $invocation->acting_role_name }}
-                            @else
-                                <span class="text-zinc-400 dark:text-zinc-500">—</span>
-                            @endif
-                        </flux:table.cell>
+                        @if ($showSurface)
+                            <flux:table.cell>
+                                @if ($invocation->acting_surface)
+                                    <flux:badge color="zinc" size="sm">{{ $invocation->acting_surface }}</flux:badge>
+                                @else
+                                    <span class="text-zinc-400 dark:text-zinc-500">{{ __('unbound') }}</span>
+                                @endif
+                            </flux:table.cell>
+                        @endif
+                        @if ($showRole)
+                            <flux:table.cell>
+                                @if ($invocation->acting_role_name)
+                                    {{ $invocation->acting_role_name }}
+                                @else
+                                    <span class="text-zinc-400 dark:text-zinc-500">—</span>
+                                @endif
+                            </flux:table.cell>
+                        @endif
                         <flux:table.cell>
                             <flux:badge color="zinc" size="sm">{{ $invocation->transport ?? '—' }}</flux:badge>
                         </flux:table.cell>

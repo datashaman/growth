@@ -9,15 +9,23 @@ namespace App\Support;
  *   green  → terminal success
  *   teal   → intermediate success
  *   blue   → in-flight work
- *   sky    → not yet started / low
+ *   orange → high priority
+ *   sky    → not yet started / medium priority
  *   amber  → warning / attention
- *   red    → blocked / failing / high
- *   zinc   → neutral / inert
+ *   red    → blocked / failing / critical priority
+ *   zinc   → neutral / inert / low priority
  *   purple → deliverable / system level
  *   indigo → work_package / integration level
  */
 class BadgeVariant
 {
+    /**
+     * A gate's pass/warn/fail status and a finding's error/warning/info severity
+     * are two axes that meet on the Readiness card. They keep their own words
+     * (different domain concepts) but share one colour axis so the card reads
+     * coherently: gate `fail` ≙ finding `error` (red); gate `warn` ≙ finding
+     * `warning` (amber); gate `pass` (green); anything else neutral (zinc).
+     */
     public static function gate(string $status): string
     {
         return match ($status) {
@@ -28,6 +36,10 @@ class BadgeVariant
         };
     }
 
+    /**
+     * Finding severity, colour-aligned with {@see self::gate()}: `error` ≙ gate
+     * `fail` (red), `warning` ≙ gate `warn` (amber), info/other neutral (zinc).
+     */
     public static function finding(string $severity): string
     {
         return match ($severity) {
@@ -102,12 +114,22 @@ class BadgeVariant
         };
     }
 
+    /**
+     * One priority colour scale shared by every priority surface (requirements,
+     * change requests, …). A given priority word therefore reads identically
+     * everywhere. `red` is reserved for `critical` so it stands out; `high` steps
+     * down to `orange`; `medium` is `sky` (calm/informational — deliberately not
+     * the `amber` warning colour, which would read as "caution" for the default
+     * middle level); `low` is muted `zinc`. Change requests add `critical` above
+     * this scale; requirement priority tops out at `high`.
+     */
     public static function priority(?string $priority): string
     {
         return match ($priority) {
-            'high' => 'red',
-            'medium' => 'amber',
-            'low' => 'sky',
+            'critical' => 'red',
+            'high' => 'orange',
+            'medium' => 'sky',
+            'low' => 'zinc',
             default => 'zinc',
         };
     }
@@ -118,6 +140,19 @@ class BadgeVariant
             'strs' => 'purple',
             'syrs' => 'indigo',
             'srs' => 'blue',
+            default => 'zinc',
+        };
+    }
+
+    /**
+     * Verification coverage derived for a requirement: verified (a linked case
+     * passed), covered (linked cases but none passing), or uncovered (no cases).
+     */
+    public static function requirementVerification(string $state): string
+    {
+        return match ($state) {
+            'verified' => 'emerald',
+            'covered' => 'amber',
             default => 'zinc',
         };
     }
@@ -292,17 +327,6 @@ class BadgeVariant
             'rejected' => 'red',
             'deferred' => 'amber',
             'cancelled' => 'zinc',
-            default => 'zinc',
-        };
-    }
-
-    public static function changeRequestPriority(string $priority): string
-    {
-        return match ($priority) {
-            'critical' => 'red',
-            'high' => 'amber',
-            'medium' => 'blue',
-            'low' => 'sky',
             default => 'zinc',
         };
     }

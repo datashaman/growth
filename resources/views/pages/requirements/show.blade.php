@@ -17,7 +17,7 @@ new class extends Component {
             'parent',
             'children',
             'workItems',
-            'testCases',
+            'testCases.latestRun',
             'anomalies',
             'mockups',
         ]);
@@ -52,35 +52,37 @@ new class extends Component {
         <flux:text class="whitespace-pre-line">{{ $requirement->text }}</flux:text>
     </section>
 
-    <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-        <flux:heading size="lg" class="mb-3">{{ __('Properties') }}</flux:heading>
-        <dl class="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-            <div>
-                <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Source') }}</dt>
-                <dd class="mt-0.5">{{ $requirement->source ?? '—' }}</dd>
-            </div>
-            <div>
-                <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Parent') }}</dt>
-                <dd class="mt-0.5">
-                    @if ($requirement->parent)
-                        <a href="{{ route('requirements.show', $requirement->parent) }}" wire:navigate class="underline">{{ \Illuminate\Support\Str::limit($requirement->parent->text, 60) }}</a>
-                    @else
-                        —
-                    @endif
-                </dd>
-            </div>
-            @if ($requirement->tags)
-                <div class="sm:col-span-2">
-                    <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Tags') }}</dt>
-                    <dd class="mt-0.5 flex flex-wrap gap-1">
-                        @foreach ($requirement->tags as $tag)
-                            <flux:badge color="zinc" size="sm">{{ $tag }}</flux:badge>
-                        @endforeach
-                    </dd>
-                </div>
-            @endif
-        </dl>
-    </section>
+    @if ($requirement->source || $requirement->parent || $requirement->tags)
+        <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
+            <flux:heading size="lg" class="mb-3">{{ __('Properties') }}</flux:heading>
+            <dl class="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+                @if ($requirement->source)
+                    <div>
+                        <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Source') }}</dt>
+                        <dd class="mt-0.5">{{ $requirement->source }}</dd>
+                    </div>
+                @endif
+                @if ($requirement->parent)
+                    <div>
+                        <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Parent') }}</dt>
+                        <dd class="mt-0.5">
+                            <a href="{{ route('requirements.show', $requirement->parent) }}" wire:navigate class="underline">{{ \Illuminate\Support\Str::limit($requirement->parent->text, 60) }}</a>
+                        </dd>
+                    </div>
+                @endif
+                @if ($requirement->tags)
+                    <div class="sm:col-span-2">
+                        <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Tags') }}</dt>
+                        <dd class="mt-0.5 flex flex-wrap gap-1">
+                            @foreach ($requirement->tags as $tag)
+                                <flux:badge color="zinc" size="sm">{{ $tag }}</flux:badge>
+                            @endforeach
+                        </dd>
+                    </div>
+                @endif
+            </dl>
+        </section>
+    @endif
 
     @if ($requirement->rationale)
         <section class="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
@@ -158,26 +160,37 @@ new class extends Component {
         </x-data-table>
     @endif
 
-    @if ($requirement->testCases->isNotEmpty())
-        <x-data-table
-            :title="__('Test cases verifying this')"
-            :count="$requirement->testCases->count()">
-            <flux:table class="[&_td]:align-top">
-                <flux:table.columns>
-                    <flux:table.column>{{ __('Case') }}</flux:table.column>
-                    <flux:table.column>{{ __('Objective') }}</flux:table.column>
-                </flux:table.columns>
-                <flux:table.rows>
-                    @foreach ($requirement->testCases as $case)
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">{{ $case->name }}</flux:table.cell>
-                            <flux:table.cell>{{ $case->objective ?? '—' }}</flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
-        </x-data-table>
-    @endif
+    <x-data-table
+        :title="__('Verification')"
+        :count="$requirement->testCases->count()"
+        :count-label="__('verifying')"
+        :empty="$requirement->testCases->isEmpty()"
+        :empty-message="__('Not yet verified — no verification cases are linked to this requirement.')">
+        <flux:table class="[&_td]:align-top">
+            <flux:table.columns>
+                <flux:table.column>{{ __('Case') }}</flux:table.column>
+                <flux:table.column>{{ __('Objective') }}</flux:table.column>
+                <flux:table.column>{{ __('Latest run') }}</flux:table.column>
+            </flux:table.columns>
+            <flux:table.rows>
+                @foreach ($requirement->testCases as $case)
+                    <flux:table.row>
+                        <flux:table.cell class="font-medium">
+                            <a href="{{ route('verification', ['project' => $requirement->project_id]) }}" wire:navigate class="hover:underline">{{ $case->name }}</a>
+                        </flux:table.cell>
+                        <flux:table.cell>{{ $case->objective ?? '—' }}</flux:table.cell>
+                        <flux:table.cell>
+                            @if ($case->latestRun)
+                                <flux:badge :color="BadgeVariant::testRunStatus($case->latestRun->status)" size="sm">{{ EnumLabel::lower($case->latestRun->status) }}</flux:badge>
+                            @else
+                                <span class="text-zinc-500 dark:text-zinc-400">{{ __('no runs') }}</span>
+                            @endif
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+        </flux:table>
+    </x-data-table>
 
     @if ($requirement->anomalies->isNotEmpty())
         <x-data-table

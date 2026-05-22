@@ -68,7 +68,20 @@ test('verification page shows latest run for each case and refreshes on broadcas
         ->assertSee('fail');
 });
 
-test('verification page renders no-runs placeholder when a case has never run', function () {
+test('verification page renders no-runs placeholder for a never-run case when the column is shown', function () {
+    // The Latest-run column is hidden when no case in the plan has run (#362),
+    // so the "no runs" placeholder only appears alongside a case that has run.
+    $ranCase = TestCase::create([
+        'test_plan_id' => $this->plan->id,
+        'name' => 'fuel valve check',
+        'expected_results' => 'valve seals',
+    ]);
+    TestRun::create([
+        'test_case_id' => $ranCase->id,
+        'status' => 'pass',
+        'run_at' => now(),
+    ]);
+
     Livewire::test('pages::verification')
         ->assertSee('engine ignition')
         ->assertSee('no runs');
