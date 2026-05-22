@@ -125,21 +125,21 @@ new #[Title('Requirements')] class extends Component {
                             {{ $this->requirements->count() }} {{ __('captured') }}
                         </flux:text>
                     </div>
-                    <div class="flex flex-wrap gap-2 lg:justify-end">
-                        <flux:select wire:model.live="typeFilter" size="sm" class="max-w-3xs" data-test="requirements-type-filter">
+                    <div class="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2 lg:justify-end">
+                        <flux:select wire:model.live="typeFilter" size="sm" class="w-full sm:w-48" data-test="requirements-type-filter">
                             <flux:select.option value="all">{{ __('All types') }}</flux:select.option>
                             @foreach (self::TYPES as $type)
                                 <flux:select.option value="{{ $type }}">{{ EnumLabel::lower($type) }}</flux:select.option>
                             @endforeach
                         </flux:select>
-                        <flux:select wire:model.live="priorityFilter" size="sm" class="max-w-3xs" data-test="requirements-priority-filter">
+                        <flux:select wire:model.live="priorityFilter" size="sm" class="w-full sm:w-48" data-test="requirements-priority-filter">
                             <flux:select.option value="all">{{ __('All priorities') }}</flux:select.option>
                             @foreach (self::PRIORITIES as $priority)
                                 <flux:select.option value="{{ $priority }}">{{ EnumLabel::lower($priority) }}</flux:select.option>
                             @endforeach
                         </flux:select>
                         @if ($this->isFiltered())
-                            <flux:button wire:click="clearFilters" size="sm" variant="subtle" data-test="requirements-clear-filters">
+                            <flux:button wire:click="clearFilters" size="sm" variant="subtle" class="sm:col-span-2 lg:col-span-1" data-test="requirements-clear-filters">
                                 {{ __('Clear filters') }}
                             </flux:button>
                         @endif
