@@ -17,7 +17,7 @@ new class extends Component {
             'parent',
             'children',
             'workItems',
-            'testCases',
+            'testCases.latestRun',
             'anomalies',
             'mockups',
         ]);
@@ -160,26 +160,37 @@ new class extends Component {
         </x-data-table>
     @endif
 
-    @if ($requirement->testCases->isNotEmpty())
-        <x-data-table
-            :title="__('Test cases verifying this')"
-            :count="$requirement->testCases->count()">
-            <flux:table class="[&_td]:align-top">
-                <flux:table.columns>
-                    <flux:table.column>{{ __('Case') }}</flux:table.column>
-                    <flux:table.column>{{ __('Objective') }}</flux:table.column>
-                </flux:table.columns>
-                <flux:table.rows>
-                    @foreach ($requirement->testCases as $case)
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">{{ $case->name }}</flux:table.cell>
-                            <flux:table.cell>{{ $case->objective ?? '—' }}</flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
-        </x-data-table>
-    @endif
+    <x-data-table
+        :title="__('Verification')"
+        :count="$requirement->testCases->count()"
+        :count-label="__('verifying')"
+        :empty="$requirement->testCases->isEmpty()"
+        :empty-message="__('Not yet verified — no verification cases are linked to this requirement.')">
+        <flux:table class="[&_td]:align-top">
+            <flux:table.columns>
+                <flux:table.column>{{ __('Case') }}</flux:table.column>
+                <flux:table.column>{{ __('Objective') }}</flux:table.column>
+                <flux:table.column>{{ __('Latest run') }}</flux:table.column>
+            </flux:table.columns>
+            <flux:table.rows>
+                @foreach ($requirement->testCases as $case)
+                    <flux:table.row>
+                        <flux:table.cell class="font-medium">
+                            <a href="{{ route('verification', ['project' => $requirement->project_id]) }}" wire:navigate class="hover:underline">{{ $case->name }}</a>
+                        </flux:table.cell>
+                        <flux:table.cell>{{ $case->objective ?? '—' }}</flux:table.cell>
+                        <flux:table.cell>
+                            @if ($case->latestRun)
+                                <flux:badge :color="BadgeVariant::testRunStatus($case->latestRun->status)" size="sm">{{ EnumLabel::lower($case->latestRun->status) }}</flux:badge>
+                            @else
+                                <span class="text-zinc-500 dark:text-zinc-400">{{ __('no runs') }}</span>
+                            @endif
+                        </flux:table.cell>
+                    </flux:table.row>
+                @endforeach
+            </flux:table.rows>
+        </flux:table>
+    </x-data-table>
 
     @if ($requirement->anomalies->isNotEmpty())
         <x-data-table
