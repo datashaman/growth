@@ -62,12 +62,13 @@ test('the Plan work-items table nests children under their work package in WBS o
         ->assertSeeHtml('data-test="work-item-tree-toggle"')
         ->call('toggleWorkItem', $package->id)
         ->assertSeeInOrder([$package->reference(), $child->reference()])
-        ->assertSeeHtml('data-test="work-item-tree-connector"')
         ->assertSeeHtml('data-test="work-item-tree-list"')
         ->assertSeeHtml('data-test="work-item-tree-header"')
         ->assertSee('rounded border border-zinc-200 bg-zinc-50', false)
-        ->assertSee('space-y-1', false)
-        ->assertSee('hover:bg-zinc-50', false);
+        ->assertSee('data-flux-table', false)
+        ->assertSee('padding-left: 1.5rem', false)
+        ->assertDontSee('data-test="work-item-tree-connector"', false)
+        ->assertDontSee('h-1.5 w-1.5', false);
 });
 
 test('the Plan work-items tree caps each rendered level instead of rendering every item', function () {

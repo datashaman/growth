@@ -233,62 +233,77 @@ new #[Title('Plan')] class extends Component {
             :count-label="__('items')"
             :empty="$this->workItemCount === 0"
             :empty-message="__('No work items defined.')">
-            <div class="space-y-1" data-test="work-item-tree-list">
-                <div class="hidden grid-cols-[minmax(0,1fr)_7rem_7rem_10rem] gap-3 px-2.5 pb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 md:grid" data-test="work-item-tree-header">
-                    <span>{{ __('Work item') }}</span>
-                    <span>{{ __('Kind') }}</span>
-                    <span>{{ __('Status') }}</span>
-                    <span>{{ __('Role') }}</span>
-                </div>
+            <flux:table class="[&_td]:align-middle [&_table]:table-fixed [&_th:first-child]:w-[52%] [&_th:nth-child(2)]:w-[16%] [&_th:nth-child(3)]:w-[14%] [&_th:nth-child(4)]:w-[18%]" data-test="work-item-tree-list">
+                <flux:table.columns>
+                    <flux:table.column data-test="work-item-tree-header">{{ __('Work item') }}</flux:table.column>
+                    <flux:table.column>{{ __('Kind') }}</flux:table.column>
+                    <flux:table.column>{{ __('Status') }}</flux:table.column>
+                    <flux:table.column>{{ __('Role') }}</flux:table.column>
+                </flux:table.columns>
+                <flux:table.rows>
                 @foreach ($this->workItemRows as $row)
                     @php($item = $row['item'])
-                    <div class="group grid min-w-0 grid-cols-[minmax(0,1fr)] items-center gap-2 rounded-md px-2.5 py-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50 md:grid-cols-[minmax(0,1fr)_7rem_7rem_10rem] md:gap-3" @style(['margin-left: '.($row['depth'] * 1.5).'rem' => $row['depth'] > 0])>
-                        <div class="flex min-w-0 items-center gap-3">
-                            @if ($item->children_count > 0)
-                                <button type="button" wire:click="toggleWorkItem('{{ $item->id }}')" class="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-zinc-200 text-xs text-zinc-500 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100" aria-label="{{ in_array($item->id, $expandedWorkItemIds, true) ? __('Collapse :name', ['name' => $item->name]) : __('Expand :name', ['name' => $item->name]) }}" data-test="work-item-tree-toggle">
-                                    {{ in_array($item->id, $expandedWorkItemIds, true) ? '−' : '+' }}
-                                </button>
-                            @elseif ($row['depth'] > 0)
-                                <span aria-hidden="true" data-test="work-item-tree-connector" class="h-px w-5 shrink-0 bg-zinc-400 dark:bg-zinc-500"></span>
-                            @else
-                                <span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-300 dark:bg-zinc-600"></span>
-                            @endif
+                    <flux:table.row>
+                        <flux:table.cell>
+                            <div class="grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-2" @style(['padding-left: '.($row['depth'] * 1.5).'rem' => $row['depth'] > 0])>
+                                @if ($item->children_count > 0)
+                                    <button type="button" wire:click="toggleWorkItem('{{ $item->id }}')" class="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-zinc-200 text-xs text-zinc-500 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100" aria-label="{{ in_array($item->id, $expandedWorkItemIds, true) ? __('Collapse :name', ['name' => $item->name]) : __('Expand :name', ['name' => $item->name]) }}" data-test="work-item-tree-toggle">
+                                        {{ in_array($item->id, $expandedWorkItemIds, true) ? '−' : '+' }}
+                                    </button>
+                                @else
+                                    <span aria-hidden="true" class="h-5 w-5 shrink-0"></span>
+                                @endif
 
-                            <a href="{{ route('work-items.show', $item) }}" wire:navigate class="flex min-w-0 flex-1 items-center gap-2 hover:underline">
-                                <span class="shrink-0 rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 font-mono text-xs font-semibold text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400">{{ $item->reference() }}</span>
-                                <span class="truncate font-medium text-zinc-900 dark:text-zinc-100">{{ $item->name }}</span>
-                            </a>
-                        </div>
-
-                        <div class="hidden md:block">
+                                <a href="{{ route('work-items.show', $item) }}" wire:navigate class="flex min-w-0 items-center gap-2 hover:underline">
+                                    <span class="w-fit shrink-0 rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 font-mono text-xs font-semibold text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400">{{ $item->reference() }}</span>
+                                    <span class="min-w-0 truncate font-medium text-zinc-900 dark:text-zinc-100">{{ $item->name }}</span>
+                                </a>
+                            </div>
+                        </flux:table.cell>
+                        <flux:table.cell>
                             <flux:badge :color="BadgeVariant::workItemKind($item->kind)" size="sm">{{ str_replace('_', ' ', $item->kind) }}</flux:badge>
-                        </div>
-                        <div class="hidden md:block">
+                        </flux:table.cell>
+                        <flux:table.cell>
                             <span title="{{ __('Workflow status set by the team. The Dashboard Implementation table shows the evidence-derived delivery State alongside it.') }}">
                                 <flux:badge :color="BadgeVariant::workItemStatus($item->status)" size="sm">{{ str_replace('_', ' ', $item->status) }}</flux:badge>
                             </span>
-                        </div>
-                        <div class="hidden min-w-0 md:block">
+                        </flux:table.cell>
+                        <flux:table.cell>
                             @if ($item->responsibleRole)
-                                <span class="max-w-40 truncate text-sm text-zinc-500 dark:text-zinc-400">{{ $item->responsibleRole->name }}</span>
+                                <span class="text-sm text-zinc-500 dark:text-zinc-400">{{ $item->responsibleRole->name }}</span>
                             @else
                                 <span class="text-sm text-zinc-400 dark:text-zinc-500">—</span>
                             @endif
-                        </div>
-                    </div>
+                        </flux:table.cell>
+                    </flux:table.row>
                     @if ($row['has_more_siblings'])
-                        <div class="px-2.5 py-2 text-sm text-zinc-500 dark:text-zinc-400" @style(['margin-left: '.(($row['depth'] + 1) * 1.5).'rem'])>
-                            {{ __('Showing first :limit at this level; :count more are not rendered.', ['limit' => $this->workItemBranchLimit(), 'count' => $row['hidden_siblings']]) }}
-                        </div>
+                        <flux:table.row>
+                            <flux:table.cell>
+                                <span class="text-sm text-zinc-500 dark:text-zinc-400" @style(['padding-left: '.(($row['depth'] + 1) * 1.5).'rem'])>
+                                    {{ __('Showing first :limit at this level; :count more are not rendered.', ['limit' => $this->workItemBranchLimit(), 'count' => $row['hidden_siblings']]) }}
+                                </span>
+                            </flux:table.cell>
+                            <flux:table.cell></flux:table.cell>
+                            <flux:table.cell></flux:table.cell>
+                            <flux:table.cell></flux:table.cell>
+                        </flux:table.row>
                     @endif
                     @if ($row['limit_reached'])
-                        <div class="px-2.5 py-2 text-sm text-zinc-500 dark:text-zinc-400">
-                            {{ __('Display limit reached. Collapse branches or use MCP/API filters to inspect more work items.') }}
-                        </div>
+                        <flux:table.row>
+                            <flux:table.cell>
+                                <span class="text-sm text-zinc-500 dark:text-zinc-400">
+                                    {{ __('Display limit reached. Collapse branches or use MCP/API filters to inspect more work items.') }}
+                                </span>
+                            </flux:table.cell>
+                            <flux:table.cell></flux:table.cell>
+                            <flux:table.cell></flux:table.cell>
+                            <flux:table.cell></flux:table.cell>
+                        </flux:table.row>
                         @break
                     @endif
                 @endforeach
-            </div>
+                </flux:table.rows>
+            </flux:table>
         </x-data-table>
 
         <x-data-table
