@@ -292,6 +292,16 @@ it('serves a change impact brief', function () {
         'project_id' => $this->project->id,
         'name' => 'Change Control',
     ]);
+    $consultedRole = Role::create([
+        'project_id' => $this->project->id,
+        'name' => 'Security',
+    ]);
+    $workItem = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'task',
+        'name' => 'Render rationale column',
+    ]);
+    $workItem->raciRoles()->attach($consultedRole->id, ['raci' => 'c']);
     $review = Review::create([
         'project_id' => $this->project->id,
         'type' => 'technical_review',
@@ -332,6 +342,13 @@ it('serves a change impact brief', function () {
         'impact_kind' => 'modifies',
         'description' => 'Adds explicit rationale display behavior.',
     ]);
+    ChangeImpact::create([
+        'change_request_id' => $change->id,
+        'impactable_type' => 'work_item',
+        'impactable_id' => $workItem->id,
+        'impact_kind' => 'modifies',
+        'description' => 'Updates the approval UI implementation.',
+    ]);
     ChangeApprovalEvent::create([
         'change_request_id' => $change->id,
         'recorded_by_user_id' => $this->user->id,
@@ -363,6 +380,8 @@ it('serves a change impact brief', function () {
         ->assertSee('modifies')
         ->assertSee('The approval screen shall expose decision rationale.')
         ->assertSee('Adds explicit rationale display behavior.')
+        ->assertSee('Render rationale column')
+        ->assertSee('Consult with: Security')
         ->assertSee('Approval rationale review')
         ->assertSee("growth://reviews/{$review->id}/review-brief")
         ->assertSee('UI omits rationale')

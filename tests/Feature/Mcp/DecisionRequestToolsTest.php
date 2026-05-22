@@ -11,6 +11,7 @@ use App\Models\DecisionRequestOption;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\WorkItem;
 use App\Notifications\DecisionRequestAnswered;
 use App\Notifications\DecisionRequestRaised;
 use Illuminate\Support\Facades\Notification;
@@ -124,6 +125,32 @@ it('links a decision request to a polymorphic subject', function () {
         ->and($decisionRequest->subjectable->is($change))->toBeTrue();
 });
 
+it('returns consulted roles as candidates when creating a decision request about a work item', function () {
+    $consultedRole = Role::create([
+        'project_id' => $this->project->id,
+        'name' => 'Security',
+    ]);
+    $workItem = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'task',
+        'name' => 'Review access rules',
+    ]);
+    $workItem->raciRoles()->attach($consultedRole->id, ['raci' => 'c']);
+
+    ReadonlyServer::tool(CreateDecisionRequest::class, [
+        'target_role_id' => $this->role->id,
+        'question' => 'Can we ship the access rules?',
+        'options' => ['Ship', 'Hold'],
+        'subject_type' => 'work_item',
+        'subject_id' => $workItem->id,
+    ])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('consult_with.0.id', $consultedRole->id)
+            ->where('consult_with.0.name', 'Security')
+            ->etc());
+});
+
 it('rejects a decision request with an unknown subject type', function () {
     ReadonlyServer::tool(CreateDecisionRequest::class, [
         'target_role_id' => $this->role->id,
@@ -169,6 +196,33 @@ it('lists open decision requests for roles the caller is assigned to', function 
             ->where('count', 1)
             ->where('status', 'open')
             ->where('decision_requests.0.id', $decisionRequest->id)
+            ->etc());
+});
+
+it('lists consulted roles as candidates on queued decisions about work items', function () {
+    $this->actor->roles()->attach($this->role);
+    $consultedRole = Role::create([
+        'project_id' => $this->project->id,
+        'name' => 'Security',
+    ]);
+    $workItem = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'task',
+        'name' => 'Review access rules',
+    ]);
+    $workItem->raciRoles()->attach($consultedRole->id, ['raci' => 'c']);
+    $decisionRequest = ($this->makeRequest)([
+        'subjectable_type' => 'work_item',
+        'subjectable_id' => $workItem->id,
+    ]);
+
+    ReadonlyServer::tool(ListDecisionQueue::class, [])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('count', 1)
+            ->where('decision_requests.0.id', $decisionRequest->id)
+            ->where('decision_requests.0.consult_with.0.id', $consultedRole->id)
+            ->where('decision_requests.0.consult_with.0.name', 'Security')
             ->etc());
 });
 

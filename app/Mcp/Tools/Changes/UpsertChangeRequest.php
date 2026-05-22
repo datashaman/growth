@@ -6,6 +6,8 @@ use App\Growth\Artifacts\ArtifactRegistry;
 use App\Models\ChangeImpact;
 use App\Models\ChangeRequest;
 use App\Models\Review;
+use App\Models\Role;
+use App\Models\WorkItem;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -90,6 +92,7 @@ class UpsertChangeRequest extends Tool
             'decision' => $change->decision,
             'impacts' => $change->impacts()->count(),
             'approval_events' => $change->approvalEvents()->count(),
+            'consult_with' => $this->consultWith($change),
             'change_impact_brief' => "growth://change-requests/{$change->id}/change-impact-brief",
             'created' => $change->wasRecentlyCreated,
         ]);
@@ -141,6 +144,7 @@ class UpsertChangeRequest extends Tool
             'decision' => $schema->string(),
             'impacts' => $schema->integer()->required(),
             'approval_events' => $schema->integer()->required(),
+            'consult_with' => $schema->array()->description('Consulted RACI roles from impacted work items, if any. These are candidates for input, not auto-routed assignees.')->required(),
             'change_impact_brief' => $schema->string()->description('Brief resource to read before refining, analyzing, deciding, or implementing this change request')->required(),
             'created' => $schema->boolean()->required(),
         ];
@@ -170,5 +174,51 @@ class UpsertChangeRequest extends Tool
         foreach ($rows as $row) {
             $change->impacts()->create($row);
         }
+    }
+
+    /**
+     * @return list<array{work_item_id:string,reference:string,name:string,roles:list<array{id:string,name:string}>}>
+     */
+    private function consultWith(ChangeRequest $change): array
+    {
+        return $change->impacts()
+            ->where('impactable_type', 'work_item')
+            ->with('impactable')
+            ->get()
+            ->map(fn (ChangeImpact $impact): ?array => $this->consultWithImpact($impact))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{work_item_id:string,reference:string,name:string,roles:list<array{id:string,name:string}>}|null
+     */
+    private function consultWithImpact(ChangeImpact $impact): ?array
+    {
+        $workItem = $impact->impactable;
+        if (! $workItem instanceof WorkItem) {
+            return null;
+        }
+
+        $workItem->loadMissing('consultedRoles:id,name');
+        $roles = $workItem->consultedRoles
+            ->map(fn (Role $role): array => [
+                'id' => $role->id,
+                'name' => $role->name,
+            ])
+            ->values()
+            ->all();
+
+        if ($roles === []) {
+            return null;
+        }
+
+        return [
+            'work_item_id' => $workItem->id,
+            'reference' => $workItem->reference(),
+            'name' => $workItem->name,
+            'roles' => $roles,
+        ];
     }
 }

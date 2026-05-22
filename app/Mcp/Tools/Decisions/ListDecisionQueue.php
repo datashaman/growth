@@ -3,6 +3,8 @@
 namespace App\Mcp\Tools\Decisions;
 
 use App\Models\DecisionRequest;
+use App\Models\Role;
+use App\Models\WorkItem;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -39,7 +41,7 @@ class ListDecisionQueue extends Tool
         $total = (clone $query)->count();
 
         $requests = $query
-            ->with(['options', 'requester', 'targetRole'])
+            ->with(['options', 'requester', 'targetRole', 'subjectable'])
             ->orderBy('created_at')
             ->limit($limit)
             ->offset($offset)
@@ -58,6 +60,7 @@ class ListDecisionQueue extends Tool
                 'target_role_id' => $decisionRequest->target_role_id,
                 'target_role' => $decisionRequest->targetRole?->name,
                 'requester' => $decisionRequest->requester?->name,
+                'consult_with' => $this->consultWith($decisionRequest),
                 'deadline' => $decisionRequest->deadline?->toIso8601String(),
                 'options' => $decisionRequest->options->map(fn ($option): array => [
                     'id' => $option->id,
@@ -88,5 +91,26 @@ class ListDecisionQueue extends Tool
             'count' => $schema->integer()->required(),
             'decision_requests' => $schema->array()->description('The queued decision requests, oldest first')->required(),
         ];
+    }
+
+    /**
+     * @return list<array{id:string,name:string}>
+     */
+    private function consultWith(DecisionRequest $decisionRequest): array
+    {
+        $subject = $decisionRequest->subjectable;
+        if (! $subject instanceof WorkItem) {
+            return [];
+        }
+
+        $subject->loadMissing('consultedRoles:id,name');
+
+        return $subject->consultedRoles
+            ->map(fn (Role $role): array => [
+                'id' => $role->id,
+                'name' => $role->name,
+            ])
+            ->values()
+            ->all();
     }
 }

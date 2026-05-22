@@ -3,6 +3,8 @@
 namespace App\Mcp\Resources;
 
 use App\Models\ChangeRequest;
+use App\Models\Role;
+use App\Models\WorkItem;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -75,6 +77,14 @@ class ChangeImpactBriefResource extends Resource implements HasUriTemplate
                     $md .= " - {$impact->description}";
                 }
                 $md .= "\n";
+                if ($impact->impactable instanceof WorkItem) {
+                    $impact->impactable->loadMissing('consultedRoles:id,name');
+                    if ($impact->impactable->consultedRoles->isNotEmpty()) {
+                        $md .= '  - Consult with: '.$impact->impactable->consultedRoles
+                            ->map(fn (Role $role): string => $role->name)
+                            ->implode(', ')."\n";
+                    }
+                }
             }
             $md .= "\n";
         }
@@ -152,6 +162,7 @@ class ChangeImpactBriefResource extends Resource implements HasUriTemplate
         $md .= "## Change Guidance\n\n";
         $md .= "- Treat impacted artifacts as a starting point, then use `analyze-change-impact` and trace context to find adjacent requirements, work items, tests, risks, and architecture elements.\n";
         $md .= "- Make the rationale and impact descriptions explicit enough for a reviewer to see what behavior, evidence, or plan changes are expected.\n";
+        $md .= "- Consulted RACI roles on impacted work items are candidates for input before the change decision; they are not automatic approvers or notification recipients.\n";
         $md .= "- Reconcile review findings, approval events, and architecture context before recording a decision.\n";
 
         return Response::text($md);

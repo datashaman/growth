@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\Decisions;
 use App\Models\DecisionRequest;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\WorkItem;
 use App\Notifications\DecisionRequestRaised;
 use App\Notifications\WorkspaceNotifier;
 use App\Providers\AppServiceProvider;
@@ -71,6 +72,7 @@ class CreateDecisionRequest extends Tool
             'id' => $decisionRequest->id,
             'status' => $decisionRequest->status,
             'target_role_id' => $role->id,
+            'consult_with' => $this->consultWith($data['subject_type'] ?? null, $data['subject_id'] ?? null),
             'options' => $decisionRequest->options->map(fn ($option): array => [
                 'id' => $option->id,
                 'label' => $option->label,
@@ -101,7 +103,7 @@ class CreateDecisionRequest extends Tool
             'question' => $schema->string()->description('The decision to be made')->required(),
             'options' => $schema->array()->description('The choices to decide between (2-10)')->required(),
             'deadline' => $schema->string()->description('Optional ISO-8601 deadline; an open request past it is expired'),
-            'subject_type' => $schema->string()->description('Optional artifact type the decision is about, e.g. change_request'),
+            'subject_type' => $schema->string()->description('Optional artifact type the decision is about, e.g. change_request. When this is a work_item, Consulted RACI roles are returned as consult_with candidates.'),
             'subject_id' => $schema->string()->description('Optional artifact id, required when subject_type is given'),
         ];
     }
@@ -112,8 +114,32 @@ class CreateDecisionRequest extends Tool
             'id' => $schema->string()->required(),
             'status' => $schema->string()->required(),
             'target_role_id' => $schema->string()->required(),
+            'consult_with' => $schema->array()->description('Consulted RACI roles from the linked work item, if any. These are candidates for input, not auto-routed assignees.')->required(),
             'options' => $schema->array()->description('The created options, each with id and label')->required(),
             'created' => $schema->boolean()->required(),
         ];
+    }
+
+    /**
+     * @return list<array{id:string,name:string}>
+     */
+    private function consultWith(?string $subjectType, ?string $subjectId): array
+    {
+        if ($subjectType !== 'work_item' || $subjectId === null) {
+            return [];
+        }
+
+        $workItem = WorkItem::with('consultedRoles:id,name')->find($subjectId);
+        if (! $workItem) {
+            return [];
+        }
+
+        return $workItem->consultedRoles
+            ->map(fn (Role $role): array => [
+                'id' => $role->id,
+                'name' => $role->name,
+            ])
+            ->values()
+            ->all();
     }
 }
