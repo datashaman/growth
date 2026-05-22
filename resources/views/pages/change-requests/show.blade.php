@@ -36,7 +36,7 @@ new class extends Component {
         :back-label="__('Back to changes')">
         <x-slot:badges>
             <flux:badge color="zinc" size="sm">{{ $changeRequest->category }}</flux:badge>
-            <flux:badge :color="BadgeVariant::changeRequestPriority($changeRequest->priority)" size="sm">{{ __('priority: :v', ['v' => $changeRequest->priority]) }}</flux:badge>
+            <flux:badge :color="BadgeVariant::priority($changeRequest->priority)" size="sm">{{ __('priority: :v', ['v' => $changeRequest->priority]) }}</flux:badge>
             <flux:badge :color="BadgeVariant::changeRequestStatus($changeRequest->status)" size="sm">{{ __('status: :v', ['v' => str_replace('_', ' ', $changeRequest->status)]) }}</flux:badge>
             @if ($changeRequest->decision)
                 <flux:badge :color="BadgeVariant::changeRequestDecision($changeRequest->decision)" size="sm">{{ __('decision: :v', ['v' => $changeRequest->decision]) }}</flux:badge>

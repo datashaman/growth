@@ -77,7 +77,7 @@ new #[Title('Changes')] class extends Component {
                                 <flux:badge color="zinc" size="sm">{{ EnumLabel::lower($cr->category) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::changeRequestPriority($cr->priority)" size="sm">{{ EnumLabel::lower($cr->priority) }}</flux:badge>
+                                <flux:badge :color="BadgeVariant::priority($cr->priority)" size="sm">{{ EnumLabel::lower($cr->priority) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>
                                 <flux:badge :color="BadgeVariant::changeRequestStatus($cr->status)" size="sm">{{ EnumLabel::lower($cr->status) }}</flux:badge>

@@ -65,6 +65,11 @@
                             {{ __('Changes') }}
                         </flux:sidebar.item>
                     @endif
+                    @if ($lens->reveals('reviews'))
+                        <flux:sidebar.item icon="clipboard-document-check" :href="route('reviews')" :current="request()->routeIs('reviews')" wire:navigate>
+                            {{ __('Reviews') }}
+                        </flux:sidebar.item>
+                    @endif
                 </flux:sidebar.group>
                 <flux:sidebar.group :heading="__('Workspace')" class="grid">
                     <flux:sidebar.item icon="bolt" :href="route('tool-invocations')" :current="request()->routeIs('tool-invocations')" wire:navigate>

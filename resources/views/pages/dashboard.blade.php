@@ -23,6 +23,12 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 new #[Title('Dashboard')] class extends Component {
+    /**
+     * How many work items the Implementation panel previews before linking out to
+     * the full list on the Plan page.
+     */
+    private const IMPLEMENTATION_PREVIEW = 8;
+
     public ?string $selectedProjectId = null;
 
     public function mount(): void
@@ -66,6 +72,8 @@ new #[Title('Dashboard')] class extends Component {
             $this->reviews,
             $this->countTiles,
             $this->findingSubjects,
+            $this->queueLintSubjects,
+            $this->implementationPreview,
             $this->myQueue,
         );
     }
@@ -119,6 +127,35 @@ new #[Title('Dashboard')] class extends Component {
         return $this->project ? app(ImplementationStatusSummarizer::class)->summarize($this->project) : null;
     }
 
+    /**
+     * The most attention-worthy slice of the implementation results for the panel:
+     * failing checks first, then blocked, then in-progress, then everything else,
+     * capped at IMPLEMENTATION_PREVIEW. The full list lives on the Plan page.
+     *
+     * @return array{rows:list<array<string,mixed>>,total:int}
+     */
+    #[Computed]
+    public function implementationPreview(): array
+    {
+        $results = $this->implementation['results'] ?? [];
+
+        $tier = function (array $row): int {
+            return match (true) {
+                $row['failed_checks'] > 0 => 0,
+                $row['status'] === 'blocked' => 1,
+                $row['status'] === 'in_progress' => 2,
+                default => 3,
+            };
+        };
+
+        usort($results, fn (array $a, array $b) => $tier($a) <=> $tier($b));
+
+        return [
+            'rows' => array_slice($results, 0, self::IMPLEMENTATION_PREVIEW),
+            'total' => count($results),
+        ];
+    }
+
     #[Computed]
     public function risks()
     {
@@ -144,7 +181,12 @@ new #[Title('Dashboard')] class extends Component {
     }
 
     /**
-     * @return array<int,array{label:string,value:int}>
+     * Count tiles, each linking to the section that lists its entities. A tile is
+     * a link only when the viewer's lens reveals that section; otherwise (or when
+     * the section has no index, e.g. Reviews) it carries a null route and renders
+     * as a static card.
+     *
+     * @return array<int,array{label:string,value:int,route:?string}>
      */
     #[Computed]
     public function countTiles(): array
@@ -155,17 +197,22 @@ new #[Title('Dashboard')] class extends Component {
             return [];
         }
 
+        $lens = auth()->user()->lens();
+        $to = fn (string $section): ?string => $lens->reveals($section)
+            ? route($section, ['project' => $project->id])
+            : null;
+
         return [
-            ['label' => 'Stakeholders', 'value' => $project->stakeholders_count],
-            ['label' => 'Concerns', 'value' => $project->concerns_count],
-            ['label' => 'Requirements', 'value' => $project->requirements_count],
-            ['label' => 'Architecture views', 'value' => $project->design_views_count],
-            ['label' => 'Verification plans', 'value' => $project->test_plans_count],
-            ['label' => 'Work items', 'value' => $project->work_items_count],
-            ['label' => 'Changes', 'value' => $project->change_requests_count],
-            ['label' => 'Reviews', 'value' => $project->reviews_count],
-            ['label' => 'Releases', 'value' => $project->releases_count],
-            ['label' => 'Deployments', 'value' => $project->deployments_count],
+            ['label' => 'Stakeholders', 'value' => $project->stakeholders_count, 'route' => $to('intent')],
+            ['label' => 'Concerns', 'value' => $project->concerns_count, 'route' => $to('intent')],
+            ['label' => 'Requirements', 'value' => $project->requirements_count, 'route' => $to('requirements')],
+            ['label' => 'Architecture views', 'value' => $project->design_views_count, 'route' => $to('architecture')],
+            ['label' => 'Verification plans', 'value' => $project->test_plans_count, 'route' => $to('verification')],
+            ['label' => 'Work items', 'value' => $project->work_items_count, 'route' => $to('plan')],
+            ['label' => 'Changes', 'value' => $project->change_requests_count, 'route' => $to('changes')],
+            ['label' => 'Reviews', 'value' => $project->reviews_count, 'route' => null],
+            ['label' => 'Releases', 'value' => $project->releases_count, 'route' => $to('evidence')],
+            ['label' => 'Deployments', 'value' => $project->deployments_count, 'route' => $to('evidence')],
         ];
     }
 
@@ -182,7 +229,50 @@ new #[Title('Dashboard')] class extends Component {
             return [];
         }
 
+        return $this->resolveSubjects(
+            collect($this->readiness['gates'] ?? [])->flatMap(fn (array $gate) => $gate['findings'])
+        );
+    }
+
+    /**
+     * Resolve labels and routes for the lint findings shown in My Queue, so each
+     * row can link to its subject's detail/section page.
+     *
+     * @return array<string,array{label:string,route:?string}>
+     */
+    #[Computed]
+    public function queueLintSubjects(): array
+    {
+        $queue = $this->myQueue;
+
+        if ($queue === null) {
+            return [];
+        }
+
+        return $this->resolveSubjects(collect([
+            ...$queue['lint_findings'],
+            ...$queue['unowned_lint_findings'],
+        ]));
+    }
+
+    /**
+     * Batch-resolve a label and route for every (subject_type, subject_id) pair in
+     * the given findings, one query per type. Findings whose type is unknown fall
+     * through unresolved, so callers render them as plain text. Subjects that link
+     * to a section (rather than a detail page) only get a route when the viewer's
+     * lens reveals that section — never surface a link the viewer can't follow.
+     *
+     * @param  \Illuminate\Support\Collection<int,array<string,mixed>>  $findings
+     * @return array<string,array{label:string,route:?string}>
+     */
+    private function resolveSubjects(\Illuminate\Support\Collection $findings): array
+    {
+        $lens = auth()->user()->lens();
+
         $map = [
+            // Project-scoped findings (no plan, empty WBS, baseline drift) are all
+            // plan/baseline concerns, so they link to the Plan page where you fix them.
+            'project' => [Project::class, 'name', null, 'plan'],
             'requirement' => [Requirement::class, 'text', 'requirements.show', null],
             'design_view' => [DesignView::class, 'name', null, 'architecture'],
             'custom_viewpoint' => [CustomViewpoint::class, 'name', null, 'architecture'],
@@ -197,10 +287,7 @@ new #[Title('Dashboard')] class extends Component {
             'change_request' => [ChangeRequest::class, 'title', 'change-requests.show', null],
         ];
 
-        $gateFindings = collect($this->readiness['gates'] ?? [])
-            ->flatMap(fn (array $gate) => $gate['findings']);
-
-        $idsByType = $gateFindings
+        $idsByType = $findings
             ->filter(fn (array $f) => isset($f['subject_type'], $f['subject_id']) && isset($map[$f['subject_type']]))
             ->groupBy('subject_type')
             ->map(fn ($group) => $group->pluck('subject_id')->unique()->values()->all())
@@ -209,7 +296,7 @@ new #[Title('Dashboard')] class extends Component {
         $result = [];
         foreach ($idsByType as $type => $ids) {
             [$modelClass, $field, $routeName, $indexRouteName] = $map[$type];
-            $fallbackRoute = $indexRouteName ? route($indexRouteName) : null;
+            $fallbackRoute = $indexRouteName && $lens->reveals($indexRouteName) ? route($indexRouteName) : null;
             $modelClass::query()
                 ->whereIn('id', $ids)
                 ->get(['id', $field])
@@ -277,10 +364,18 @@ new #[Title('Dashboard')] class extends Component {
                 <flux:heading size="lg" class="mb-3">{{ __('Counts') }}</flux:heading>
                 <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
                     @foreach ($this->countTiles as $tile)
-                        <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
-                            <div class="text-sm text-zinc-500 dark:text-zinc-400">{{ $tile['label'] }}</div>
-                            <div class="mt-1 text-2xl font-semibold">{{ $tile['value'] }}</div>
-                        </div>
+                        @if ($tile['route'])
+                            <a href="{{ $tile['route'] }}" wire:navigate
+                                class="rounded-xl border border-zinc-200 bg-white p-4 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600 dark:hover:bg-zinc-800">
+                                <div class="text-sm text-zinc-500 dark:text-zinc-400">{{ $tile['label'] }}</div>
+                                <div class="mt-1 text-2xl font-semibold">{{ $tile['value'] }}</div>
+                            </a>
+                        @else
+                            <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+                                <div class="text-sm text-zinc-500 dark:text-zinc-400">{{ $tile['label'] }}</div>
+                                <div class="mt-1 text-2xl font-semibold">{{ $tile['value'] }}</div>
+                            </div>
+                        @endif
                     @endforeach
                 </div>
             </section>
@@ -310,7 +405,7 @@ new #[Title('Dashboard')] class extends Component {
                                     <a href="{{ route('change-requests.show', $item['id']) }}" wire:navigate class="font-medium hover:underline">{{ $item['reference'] }} — {{ $item['title'] }}</a>
                                 </flux:table.cell>
                                 <flux:table.cell>
-                                    <flux:badge :color="BadgeVariant::changeRequestPriority($item['priority'])" size="sm">{{ EnumLabel::lower($item['priority']) }}</flux:badge>
+                                    <flux:badge :color="BadgeVariant::priority($item['priority'])" size="sm">{{ EnumLabel::lower($item['priority']) }}</flux:badge>
                                 </flux:table.cell>
                             </flux:table.row>
                         @endforeach
@@ -350,23 +445,37 @@ new #[Title('Dashboard')] class extends Component {
                             </flux:table.row>
                         @endforeach
                         @foreach ($queue['lint_findings'] as $item)
+                            @php
+                                $subject = $this->queueLintSubjects[$item['subject_type'].':'.$item['subject_id']] ?? null;
+                            @endphp
                             <flux:table.row>
                                 <flux:table.cell><flux:badge :color="BadgeVariant::finding('error')" size="sm">{{ __('lint error') }}</flux:badge></flux:table.cell>
                                 <flux:table.cell>
-                                    <div class="font-medium">{{ $item['message'] }}</div>
+                                    @if ($subject && $subject['route'])
+                                        <a href="{{ $subject['route'] }}" wire:navigate class="font-medium hover:underline">{{ $item['message'] }}</a>
+                                    @else
+                                        <div class="font-medium">{{ $item['message'] }}</div>
+                                    @endif
                                     <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ str_replace('_', ' ', (string) $item['subject_type']) }}</div>
                                 </flux:table.cell>
-                                <flux:table.cell class="text-xs text-zinc-500 dark:text-zinc-400">{{ $item['rule'] }}</flux:table.cell>
+                                <flux:table.cell class="text-xs text-zinc-500 dark:text-zinc-400">{{ EnumLabel::findingRule($item['rule']) }}</flux:table.cell>
                             </flux:table.row>
                         @endforeach
                         @foreach ($queue['unowned_lint_findings'] as $item)
+                            @php
+                                $subject = $this->queueLintSubjects[$item['subject_type'].':'.$item['subject_id']] ?? null;
+                            @endphp
                             <flux:table.row>
                                 <flux:table.cell><flux:badge color="zinc" size="sm">{{ __('lint error (unowned)') }}</flux:badge></flux:table.cell>
                                 <flux:table.cell>
-                                    <div class="font-medium">{{ $item['message'] }}</div>
+                                    @if ($subject && $subject['route'])
+                                        <a href="{{ $subject['route'] }}" wire:navigate class="font-medium hover:underline">{{ $item['message'] }}</a>
+                                    @else
+                                        <div class="font-medium">{{ $item['message'] }}</div>
+                                    @endif
                                     <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ str_replace('_', ' ', (string) $item['subject_type']) }}</div>
                                 </flux:table.cell>
-                                <flux:table.cell class="text-xs text-zinc-500 dark:text-zinc-400">{{ $item['rule'] }}</flux:table.cell>
+                                <flux:table.cell class="text-xs text-zinc-500 dark:text-zinc-400">{{ EnumLabel::findingRule($item['rule']) }}</flux:table.cell>
                             </flux:table.row>
                         @endforeach
                     </flux:table.rows>
@@ -374,8 +483,6 @@ new #[Title('Dashboard')] class extends Component {
             </x-data-table>
 
             @if ($lens->revealsPanel('readiness'))
-            <section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                @if ($lens->revealsPanel('readiness'))
                 <x-data-table
                     :empty="count($this->readiness['gates']) === 0"
                     :empty-message="__('No readiness gates defined.')">
@@ -483,9 +590,6 @@ new #[Title('Dashboard')] class extends Component {
                         </flux:table.rows>
                     </flux:table>
                 </x-data-table>
-                @endif
-
-            </section>
             @endif
 
             @if ($lens->revealsPanel('implementation'))
@@ -513,7 +617,7 @@ new #[Title('Dashboard')] class extends Component {
                         <flux:table.column align="end">{{ __('Deploys') }}</flux:table.column>
                     </flux:table.columns>
                     <flux:table.rows>
-                        @foreach ($this->implementation['results'] as $row)
+                        @foreach ($this->implementationPreview['rows'] as $row)
                             <flux:table.row>
                                 <flux:table.cell>
                                     <a href="{{ route('work-items.show', $row['id']) }}" wire:navigate class="font-medium hover:underline">
@@ -563,6 +667,14 @@ new #[Title('Dashboard')] class extends Component {
                         @endforeach
                     </flux:table.rows>
                 </flux:table>
+
+                @if ($this->implementationPreview['total'] > count($this->implementationPreview['rows']))
+                    <div class="mt-3 text-sm">
+                        <a href="{{ route('plan', ['project' => $this->project->id]) }}" wire:navigate class="text-zinc-600 hover:underline dark:text-zinc-300">
+                            {{ __('View all :n work items in Plan', ['n' => $this->implementationPreview['total']]) }}
+                        </a>
+                    </div>
+                @endif
             </x-data-table>
             @endif
 
