@@ -49,14 +49,19 @@ class ArchitectureDiagram
 
         $edges = [];
         $unmatchedRelationships = [];
+        $nodeReferences = self::nodeReferences($nodes);
         $incoming = array_fill_keys(array_keys($nodes), 0);
         $adjacent = array_fill_keys(array_keys($nodes), []);
 
         foreach ($relationships as $relationship) {
-            $from = data_get($relationship->properties, 'from') ?? data_get($relationship->properties, 'source');
-            $to = data_get($relationship->properties, 'to') ?? data_get($relationship->properties, 'target');
-            $fromKey = self::key($from);
-            $toKey = self::key($to);
+            $from = data_get($relationship->properties, 'from')
+                ?? data_get($relationship->properties, 'source')
+                ?? data_get($relationship->properties, 'source_id');
+            $to = data_get($relationship->properties, 'to')
+                ?? data_get($relationship->properties, 'target')
+                ?? data_get($relationship->properties, 'target_id');
+            $fromKey = $nodeReferences[self::key($from)] ?? '';
+            $toKey = $nodeReferences[self::key($to)] ?? '';
 
             if ($fromKey !== '' && $toKey !== '' && isset($nodes[$fromKey], $nodes[$toKey])) {
                 $edges[] = [
@@ -160,5 +165,22 @@ class ArchitectureDiagram
     private static function key(mixed $value): string
     {
         return Str::lower(trim((string) $value));
+    }
+
+    /**
+     * @param  array<string, array{element:DesignElement}>  $nodes
+     * @return array<string, string>
+     */
+    private static function nodeReferences(array $nodes): array
+    {
+        $references = [];
+
+        foreach ($nodes as $key => $node) {
+            $references[$key] = $key;
+            $references[self::key($node['element']->getKey())] = $key;
+            $references[self::key($node['element']->name)] = $key;
+        }
+
+        return array_filter($references, fn (string $reference): bool => $reference !== '');
     }
 }
