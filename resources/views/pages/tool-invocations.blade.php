@@ -135,6 +135,15 @@ new #[Title('Tool invocations')] class extends Component {
             || $this->transportFilter !== 'all'
             || $this->toolFilter !== 'all';
     }
+
+    public function clearFilters(): void
+    {
+        $this->resultFilter = 'all';
+        $this->transportFilter = 'all';
+        $this->toolFilter = 'all';
+
+        unset($this->invocations);
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -142,31 +151,45 @@ new #[Title('Tool invocations')] class extends Component {
         :title="__('Tool invocations')"
         :description="__('Recent MCP tool calls in this workspace, newest first.')" />
 
-    <div class="flex flex-wrap justify-end gap-2">
-        <flux:select wire:model.live="resultFilter" size="sm" class="max-w-3xs" data-test="tool-invocations-result-filter">
-            <flux:select.option value="all">{{ __('All results') }}</flux:select.option>
-            <flux:select.option value="ok">{{ __('Succeeded') }}</flux:select.option>
-            <flux:select.option value="error">{{ __('Errors only') }}</flux:select.option>
-        </flux:select>
-        <flux:select wire:model.live="transportFilter" size="sm" class="max-w-3xs" data-test="tool-invocations-transport-filter">
-            <flux:select.option value="all">{{ __('All transports') }}</flux:select.option>
-            @foreach ($this->transports as $transport)
-                <flux:select.option value="{{ $transport }}">{{ $transport }}</flux:select.option>
-            @endforeach
-        </flux:select>
-        <flux:select wire:model.live="toolFilter" size="sm" class="max-w-3xs" data-test="tool-invocations-tool-filter">
-            <flux:select.option value="all">{{ __('All tools') }}</flux:select.option>
-            @foreach ($this->tools as $tool)
-                <flux:select.option value="{{ $tool }}">{{ $tool }}</flux:select.option>
-            @endforeach
-        </flux:select>
-    </div>
-
     <x-data-table
         :count="$this->invocations->count()"
         :count-label="__('recent')"
         :empty="$this->invocations->isEmpty()"
         :empty-message="$this->isFiltered() ? __('No tool invocations match the current filter.') : __('No tool invocations yet.')">
+        <x-slot:header>
+            <div class="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex items-baseline gap-3">
+                    <flux:heading size="lg">{{ __('Tool invocations') }}</flux:heading>
+                    <flux:text class="whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
+                        {{ $this->invocations->count() }} {{ __('recent') }}
+                    </flux:text>
+                </div>
+                <div class="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-3 lg:justify-end">
+                    <flux:select wire:model.live="resultFilter" size="sm" class="w-full sm:w-48" data-test="tool-invocations-result-filter">
+                        <flux:select.option value="all">{{ __('All results') }}</flux:select.option>
+                        <flux:select.option value="ok">{{ __('Succeeded') }}</flux:select.option>
+                        <flux:select.option value="error">{{ __('Errors only') }}</flux:select.option>
+                    </flux:select>
+                    <flux:select wire:model.live="transportFilter" size="sm" class="w-full sm:w-48" data-test="tool-invocations-transport-filter">
+                        <flux:select.option value="all">{{ __('All transports') }}</flux:select.option>
+                        @foreach ($this->transports as $transport)
+                            <flux:select.option value="{{ $transport }}">{{ $transport }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                    <flux:select wire:model.live="toolFilter" size="sm" class="w-full sm:w-48" data-test="tool-invocations-tool-filter">
+                        <flux:select.option value="all">{{ __('All tools') }}</flux:select.option>
+                        @foreach ($this->tools as $tool)
+                            <flux:select.option value="{{ $tool }}">{{ $tool }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+                    @if ($this->isFiltered())
+                        <flux:button wire:click="clearFilters" size="sm" variant="subtle" class="sm:col-span-3 lg:col-span-1" data-test="tool-invocations-clear-filters">
+                            {{ __('Clear filters') }}
+                        </flux:button>
+                    @endif
+                </div>
+            </div>
+        </x-slot:header>
         @php($showSurface = TableColumn::hasValues($this->invocations, fn ($invocation) => $invocation->acting_surface))
         @php($showRole = TableColumn::hasValues($this->invocations, fn ($invocation) => $invocation->acting_role_name))
         <flux:table class="[&_td]:align-top">
