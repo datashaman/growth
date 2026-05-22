@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive(false)]
-#[Description('Mark a release candidate as released: move it from candidate to released. Rejects any other source status with a clear message. Records a status transition with the acting user and timestamp.')]
+#[Description('Mark a release candidate as released: move it from candidate to released after release readiness has no blockers. Rejects any other source status or failed readiness with a clear message. Records a status transition with the acting user and timestamp.')]
 class MarkReleaseReleased extends Tool
 {
     public function handle(Request $request): ResponseFactory
