@@ -159,47 +159,33 @@ new #[Title('Plan')] class extends Component {
             :count-label="__('items')"
             :empty="$this->workItems->isEmpty()"
             :empty-message="__('No work items defined.')">
-            <flux:table class="table-fixed [&_td]:align-top">
-                <flux:table.columns>
-                    <flux:table.column class="w-[58%]">{{ __('Work item') }}</flux:table.column>
-                    <flux:table.column class="w-[14%]">{{ __('Kind') }}</flux:table.column>
-                    <flux:table.column class="w-[14%]" :title="__('Workflow status set by the team. The Dashboard Implementation table shows the evidence-derived delivery State alongside it.')">{{ __('Status') }}</flux:table.column>
-                    <flux:table.column class="w-[14%]">{{ __('Role') }}</flux:table.column>
-                </flux:table.columns>
-                <flux:table.rows>
-                    @foreach ($this->workItems as $row)
-                        @php($item = $row['item'])
-                        <flux:table.row>
-                            <flux:table.cell>
-                                <div class="flex min-w-0 items-start gap-3" @style(['padding-left: '.($row['depth'] * 1.25).'rem' => $row['depth'] > 0])>
-                                    @if ($row['depth'] > 0)
-                                        <span aria-hidden="true" data-test="work-item-tree-connector" class="relative mt-0.5 h-6 w-6 shrink-0">
-                                            <span class="absolute left-2 top-0 h-3 border-l border-zinc-500/70 dark:border-zinc-400/60"></span>
-                                            <span class="absolute left-2 top-3 w-4 border-t border-zinc-500/70 dark:border-zinc-400/60"></span>
-                                            <span class="absolute left-5 top-2.5 h-1.5 w-1.5 rounded-full bg-zinc-500 dark:bg-zinc-400"></span>
-                                        </span>
-                                    @else
-                                        <span aria-hidden="true" class="mt-2 h-2 w-2 shrink-0 rounded-full bg-zinc-300 dark:bg-zinc-600"></span>
-                                    @endif
-                                    <a href="{{ route('work-items.show', $item) }}" wire:navigate class="group grid min-w-0 gap-1">
-                                        <span class="flex min-w-0 items-baseline gap-2">
-                                            <span class="rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 font-mono text-xs font-semibold text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400">{{ $item->reference() }}</span>
-                                            <span class="truncate font-medium text-zinc-900 group-hover:underline dark:text-zinc-100">{{ $item->name }}</span>
-                                        </span>
-                                    </a>
-                                </div>
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::workItemKind($item->kind)" size="sm">{{ str_replace('_', ' ', $item->kind) }}</flux:badge>
-                            </flux:table.cell>
-                            <flux:table.cell>
+            <div class="space-y-1" data-test="work-item-tree-list">
+                @foreach ($this->workItems as $row)
+                    @php($item = $row['item'])
+                    <div class="group flex min-w-0 items-center gap-3 rounded-md px-2.5 py-2 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50" @style(['margin-left: '.($row['depth'] * 1.5).'rem' => $row['depth'] > 0])>
+                        @if ($row['depth'] > 0)
+                            <span aria-hidden="true" data-test="work-item-tree-connector" class="h-px w-5 shrink-0 bg-zinc-400 dark:bg-zinc-500"></span>
+                        @else
+                            <span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-300 dark:bg-zinc-600"></span>
+                        @endif
+
+                        <a href="{{ route('work-items.show', $item) }}" wire:navigate class="flex min-w-0 flex-1 items-center gap-2 hover:underline">
+                            <span class="shrink-0 rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 font-mono text-xs font-semibold text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-400">{{ $item->reference() }}</span>
+                            <span class="truncate font-medium text-zinc-900 dark:text-zinc-100">{{ $item->name }}</span>
+                        </a>
+
+                        <div class="hidden shrink-0 items-center gap-2 md:flex">
+                            <flux:badge :color="BadgeVariant::workItemKind($item->kind)" size="sm">{{ str_replace('_', ' ', $item->kind) }}</flux:badge>
+                            <span title="{{ __('Workflow status set by the team. The Dashboard Implementation table shows the evidence-derived delivery State alongside it.') }}">
                                 <flux:badge :color="BadgeVariant::workItemStatus($item->status)" size="sm">{{ str_replace('_', ' ', $item->status) }}</flux:badge>
-                            </flux:table.cell>
-                            <flux:table.cell>{{ $item->responsibleRole?->name ?? '—' }}</flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
+                            </span>
+                            @if ($item->responsibleRole)
+                                <span class="max-w-40 truncate text-sm text-zinc-500 dark:text-zinc-400">{{ $item->responsibleRole->name }}</span>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         </x-data-table>
 
         <x-data-table
