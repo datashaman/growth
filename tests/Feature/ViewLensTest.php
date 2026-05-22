@@ -65,6 +65,43 @@ it('shows no project sections to a non-admin participant with no project role', 
     expect($viewer->lens()->sections())->toBe([]);
 });
 
+it('keeps the see-all fallback for an owner whose only role has no capabilities', function () {
+    $user = User::factory()->create();
+    $project = projectForLens($user);
+
+    assignRoleWithCapabilities($user, $project, []);
+
+    expect($user->lens()->sections())->toEqualCanonicalizing([
+        'dashboard',
+        'intent',
+        'requirements',
+        'architecture',
+        'plan',
+        'verification',
+        'changes',
+        'reviews',
+        'evidence',
+    ]);
+});
+
+it('shows no project sections to a non-owner whose only role has no capabilities', function () {
+    $owner = User::factory()->create();
+    $project = projectForLens($owner);
+
+    $viewer = User::factory()->create();
+    WorkspaceMembership::create([
+        'workspace_id' => $owner->active_workspace_id,
+        'user_id' => $viewer->id,
+        'role' => WorkspaceMembership::ROLE_VIEWER,
+    ]);
+    $viewer->switchWorkspace($owner->activeWorkspace);
+    session(['selected_project_id' => $project->id]);
+
+    assignRoleWithCapabilities($viewer, $project, []);
+
+    expect($viewer->lens()->sections())->toBe([]);
+});
+
 it('derives sections from the assigned role capabilities', function () {
     $user = User::factory()->create();
     $project = projectForLens($user);
@@ -141,4 +178,38 @@ it('still serves a section the active lens hides', function () {
     $this->actingAs($user)
         ->get('/plan?project='.$project->id)
         ->assertOk();
+});
+
+it('explains the empty Project nav to a non-owner whose role has no capabilities', function () {
+    $owner = User::factory()->create();
+    $project = projectForLens($owner);
+
+    $viewer = User::factory()->create();
+    WorkspaceMembership::create([
+        'workspace_id' => $owner->active_workspace_id,
+        'user_id' => $viewer->id,
+        'role' => WorkspaceMembership::ROLE_VIEWER,
+    ]);
+    $viewer->switchWorkspace($owner->activeWorkspace);
+    assignRoleWithCapabilities($viewer, $project, []);
+
+    $this->actingAs($viewer)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSee('No project sections are visible for you here')
+        ->assertDontSee(route('plan'))
+        ->assertDontSee(route('requirements'));
+});
+
+it('shows the full Project nav and no hint to an owner whose role has no capabilities', function () {
+    $user = User::factory()->create();
+    $project = projectForLens($user);
+    assignRoleWithCapabilities($user, $project, []);
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertDontSee('No project sections are visible for you here')
+        ->assertSee(route('dashboard'))
+        ->assertSee(route('plan'));
 });

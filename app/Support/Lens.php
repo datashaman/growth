@@ -50,6 +50,15 @@ class Lens
     }
 
     /**
+     * True when the Lens reveals no sections at all — every capability-gated
+     * nav item is hidden. Used to explain an empty Project nav in-product.
+     */
+    public function revealsNothing(): bool
+    {
+        return $this->sections() === [];
+    }
+
+    /**
      * @return list<string>
      */
     public function panels(): array
