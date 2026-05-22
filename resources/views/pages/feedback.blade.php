@@ -117,7 +117,7 @@ new #[Title('Feedback')] class extends Component {
                             <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400" title="{{ $item->body }}">{{ Str::limit($item->body, 160) }}</div>
                         </flux:table.cell>
                         <flux:table.cell class="whitespace-nowrap">{{ $item->tool_name ?? '—' }}</flux:table.cell>
-                        <flux:table.cell>{{ $item->agent?->name ?? $item->user?->name ?? '—' }}</flux:table.cell>
+                        <flux:table.cell class="whitespace-nowrap">{{ $item->agent?->name ?? $item->user?->name ?? '—' }}</flux:table.cell>
                         <flux:table.cell>
                             <flux:badge :color="BadgeVariant::feedbackStatus($item->status)" size="sm">{{ EnumLabel::lower($item->status) }}</flux:badge>
                         </flux:table.cell>

@@ -92,3 +92,31 @@ it('marks every notification read', function () {
 
     expect($this->user->notifications()->whereNull('read_at')->count())->toBe(0);
 });
+
+it('only shows mark all read when unread notifications exist', function () {
+    Livewire::actingAs($this->user)
+        ->test('pages::notifications')
+        ->assertDontSee('Mark all read');
+
+    ($this->makeNotification)([], now()->toDateTimeString());
+
+    Livewire::actingAs($this->user)
+        ->test('pages::notifications')
+        ->assertDontSee('Mark all read');
+
+    ($this->makeNotification)(['title' => 'Unread message']);
+
+    Livewire::actingAs($this->user)
+        ->test('pages::notifications')
+        ->assertSee('Mark all read');
+});
+
+it('does not pad read thread messages with a transparent unread marker', function () {
+    ($this->makeNotification)(['title' => 'Already read'], now()->toDateTimeString());
+
+    Livewire::actingAs($this->user)
+        ->test('pages::notifications')
+        ->assertSee('Already read')
+        ->assertDontSee('border-transparent', false)
+        ->assertDontSee('ps-2', false);
+});
