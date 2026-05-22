@@ -38,6 +38,16 @@ it('renders the full feedback record', function () {
         ->assertSee($this->user->name);
 });
 
+it('renders detail timestamps for browser-local formatting', function () {
+    $feedback = ($this->makeFeedback)();
+
+    $this->actingAs($this->user)
+        ->get(route('feedback.show', $feedback))
+        ->assertOk()
+        ->assertSee('data-local-time', false)
+        ->assertSee('datetime=', false);
+});
+
 it('renders the status-transition history', function () {
     $feedback = ($this->makeFeedback)();
     (new TriageFeedback)->apply($feedback, $this->user, 'Looking into it');

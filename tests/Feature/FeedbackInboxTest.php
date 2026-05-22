@@ -70,6 +70,15 @@ test('the inbox only shows the active workspace feedback', function () {
         ->assertDontSee('Foreign feedback');
 });
 
+test('the inbox renders timestamps for browser-local formatting', function () {
+    ($this->makeFeedback)(['summary' => 'Timed feedback']);
+
+    Livewire::test('pages::feedback')
+        ->assertSee('Timed feedback')
+        ->assertSee('data-local-time', false)
+        ->assertSee('datetime=', false);
+});
+
 test('the inbox hides resolved feedback by default and reveals it via the status filter', function () {
     ($this->makeFeedback)(['status' => 'new', 'summary' => 'Open item']);
     ($this->makeFeedback)(['status' => 'resolved', 'summary' => 'Resolved item']);

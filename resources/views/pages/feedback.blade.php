@@ -107,7 +107,7 @@ new #[Title('Feedback')] class extends Component {
                 @foreach ($this->items as $item)
                     <flux:table.row>
                         <flux:table.cell class="whitespace-nowrap">
-                            <span title="{{ $item->created_at?->toIso8601String() }}">{{ $item->created_at?->diffForHumans() ?? '—' }}</span>
+                            <x-timestamp :value="$item->created_at" />
                         </flux:table.cell>
                         <flux:table.cell>
                             <flux:badge :color="BadgeVariant::feedbackCategory($item->category)" size="sm">{{ EnumLabel::lower($item->category) }}</flux:badge>

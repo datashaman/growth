@@ -60,13 +60,13 @@ new #[Title('Feedback')] class extends Component {
             <div>
                 <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Created') }}</dt>
                 <dd class="mt-0.5">
-                    <span title="{{ $feedback->created_at?->toIso8601String() }}">{{ $feedback->created_at?->diffForHumans() ?? '—' }}</span>
+                    <x-timestamp :value="$feedback->created_at" />
                 </dd>
             </div>
             <div>
                 <dt class="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Last updated') }}</dt>
                 <dd class="mt-0.5">
-                    <span title="{{ $feedback->updated_at?->toIso8601String() }}">{{ $feedback->updated_at?->diffForHumans() ?? '—' }}</span>
+                    <x-timestamp :value="$feedback->updated_at" />
                 </dd>
             </div>
         </dl>
@@ -93,8 +93,8 @@ new #[Title('Feedback')] class extends Component {
                             @if ($comment->acting_surface)
                                 <span class="text-zinc-400 dark:text-zinc-500">· {{ $comment->acting_surface }}</span>
                             @endif
-                            <span class="text-zinc-400 dark:text-zinc-500" title="{{ $comment->created_at?->toIso8601String() }}">
-                                · {{ $comment->created_at?->diffForHumans() }}
+                            <span class="text-zinc-400 dark:text-zinc-500">
+                                · <x-timestamp :value="$comment->created_at" />
                             </span>
                         </div>
                         <flux:text class="whitespace-pre-line">{{ $comment->body }}</flux:text>
@@ -125,8 +125,8 @@ new #[Title('Feedback')] class extends Component {
                             @if ($transition->acting_surface)
                                 <span class="text-zinc-400 dark:text-zinc-500">· {{ $transition->acting_surface }}</span>
                             @endif
-                            <span class="text-zinc-400 dark:text-zinc-500" title="{{ $transition->transitioned_at?->toIso8601String() }}">
-                                · {{ $transition->transitioned_at?->diffForHumans() }}
+                            <span class="text-zinc-400 dark:text-zinc-500">
+                                · <x-timestamp :value="$transition->transitioned_at" />
                             </span>
                         </div>
                         @if ($transition->reason)
