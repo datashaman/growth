@@ -28,13 +28,15 @@ class UnattributedGithubEvent extends Model
     public const RETENTION_DAYS = 30;
 
     protected $fillable = [
-        'github_repo', 'event_type', 'branch', 'commit_sha', 'reason', 'url', 'received_at',
+        'github_repo', 'event_type', 'branch', 'commit_sha', 'reason', 'url',
+        'received_at', 'resolved_at', 'resolved_by_user_id', 'resolution_note',
     ];
 
     protected function casts(): array
     {
         return [
             'received_at' => 'datetime',
+            'resolved_at' => 'datetime',
         ];
     }
 
@@ -68,5 +70,10 @@ class UnattributedGithubEvent extends Model
     public function scopeWithinRetention(Builder $query): Builder
     {
         return $query->where('received_at', '>=', Carbon::now()->subDays(self::RETENTION_DAYS));
+    }
+
+    public function scopeUnresolved(Builder $query): Builder
+    {
+        return $query->whereNull('resolved_at');
     }
 }

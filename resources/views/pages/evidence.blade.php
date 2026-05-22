@@ -85,6 +85,7 @@ new #[Title('Evidence')] class extends Component {
         return UnattributedGithubEvent::query()
             ->where('github_repo', $this->selectedProject->github_repo)
             ->withinRetention()
+            ->unresolved()
             ->orderByDesc('received_at')
             ->orderByDesc('id')
             ->get();
@@ -115,6 +116,31 @@ new #[Title('Evidence')] class extends Component {
         return $reason === 'ambiguous_branch'
             ? __('The branch is bound to more than one work item, so the commit cannot be attributed. Bind the branch to a single work item, then re-run the check.')
             : __('The commit has no Growth-Work-Item trailer and its branch is not bound to a work item. Bind the branch or add the trailer, then re-run the check.');
+    }
+
+    public function dismissUnattributedEventGroup(string $reason): void
+    {
+        if ($this->selectedProject?->github_repo === null || ! in_array($reason, ['ambiguous_branch', 'unbound'], true)) {
+            return;
+        }
+
+        UnattributedGithubEvent::query()
+            ->where('github_repo', $this->selectedProject->github_repo)
+            ->withinRetention()
+            ->unresolved()
+            ->when(
+                $reason === 'ambiguous_branch',
+                fn ($query) => $query->where('reason', 'ambiguous_branch'),
+                fn ($query) => $query->where('reason', '!=', 'ambiguous_branch'),
+            )
+            ->update([
+                'resolved_at' => now(),
+                'resolved_by_user_id' => auth()->id(),
+                'resolution_note' => 'Dismissed from Evidence after operator review.',
+                'updated_at' => now(),
+            ]);
+
+        unset($this->unattributedEvents, $this->unattributedEventGroups);
     }
 }; ?>
 
@@ -147,7 +173,12 @@ new #[Title('Evidence')] class extends Component {
                         <div class="mt-3 flex flex-col gap-4">
                             @foreach ($this->unattributedEventGroups as $group)
                                 <div class="flex flex-col gap-1">
-                                    <div class="text-sm">{{ $group['message'] }}</div>
+                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                        <div class="text-sm">{{ $group['message'] }}</div>
+                                        <flux:button wire:click="dismissUnattributedEventGroup('{{ $group['reason'] }}')" size="xs" variant="subtle" data-test="dismiss-unattributed-event-group">
+                                            {{ __('Mark resolved') }}
+                                        </flux:button>
+                                    </div>
                                     <ul class="flex flex-col gap-1">
                                         @foreach ($group['events'] as $event)
                                             <li class="text-xs">
