@@ -205,5 +205,17 @@ new class extends Component {
                 </div>
             @endforelse
         </div>
+
+        <div class="border-t border-zinc-200 px-4 py-3 text-center dark:border-zinc-700">
+            <a
+                href="{{ route('notifications') }}"
+                wire:navigate
+                @click="open = false"
+                data-test="notifications-view-all"
+                class="text-sm font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+            >
+                {{ __('View all notifications') }}
+            </a>
+        </div>
     </div>
 </div>

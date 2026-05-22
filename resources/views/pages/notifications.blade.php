@@ -152,7 +152,10 @@ new #[Title('Notifications')] class extends Component {
                             @if ($unread->isNotEmpty())
                                 <flux:button wire:click="markThreadRead('{{ $threadKey }}')" size="xs" variant="subtle">{{ __('Mark read') }}</flux:button>
                             @else
-                                <flux:badge color="zinc" size="sm">{{ __('read') }}</flux:badge>
+                                <span class="inline-flex items-center gap-1 text-xs text-zinc-400 dark:text-zinc-500">
+                                    <flux:icon.check class="size-3.5" />
+                                    {{ __('read') }}
+                                </span>
                             @endif
                         </flux:table.cell>
                     </flux:table.row>
