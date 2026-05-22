@@ -3,6 +3,7 @@
 use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
+use App\Support\TableColumn;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -71,12 +72,15 @@ new #[Title('Intent')] class extends Component {
             :count-label="__('raised')"
             :empty="$this->concerns->isEmpty()"
             :empty-message="__('No concerns raised.')">
+            @php($showHints = TableColumn::hasValues($this->concerns, fn ($concern) => $concern->viewpoint_hints))
             <flux:table class="w-full table-fixed [&_td]:align-top [&_td]:break-words">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Concern') }}</flux:table.column>
                     <flux:table.column class="w-40">{{ __('Raised by') }}</flux:table.column>
                     <flux:table.column class="w-48">{{ __('Addressed by') }}</flux:table.column>
-                    <flux:table.column class="w-48">{{ __('Viewpoint hints') }}</flux:table.column>
+                    @if ($showHints)
+                        <flux:table.column class="w-48">{{ __('Viewpoint hints') }}</flux:table.column>
+                    @endif
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->concerns as $concern)
@@ -96,13 +100,15 @@ new #[Title('Intent')] class extends Component {
                                     <span class="text-zinc-500 dark:text-zinc-400">{{ __('Not yet addressed') }}</span>
                                 @endif
                             </flux:table.cell>
-                            <flux:table.cell class="whitespace-normal">
-                                @if ($concern->viewpoint_hints)
-                                    {{ is_array($concern->viewpoint_hints) ? implode(', ', $concern->viewpoint_hints) : $concern->viewpoint_hints }}
-                                @else
-                                    —
-                                @endif
-                            </flux:table.cell>
+                            @if ($showHints)
+                                <flux:table.cell class="whitespace-normal">
+                                    @if ($concern->viewpoint_hints)
+                                        {{ is_array($concern->viewpoint_hints) ? implode(', ', $concern->viewpoint_hints) : $concern->viewpoint_hints }}
+                                    @else
+                                        —
+                                    @endif
+                                </flux:table.cell>
+                            @endif
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>

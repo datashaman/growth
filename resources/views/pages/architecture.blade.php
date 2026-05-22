@@ -3,6 +3,7 @@
 use App\Concerns\ProjectScoped;
 use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
+use App\Support\TableColumn;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -69,12 +70,18 @@ new #[Title('Architecture')] class extends Component {
                     </div>
                 </x-slot:header>
 
+                @php($showType = TableColumn::hasValues($view->elements, fn ($element) => $element->type))
+                @php($showPurpose = TableColumn::hasValues($view->elements, fn ($element) => $element->purpose))
                 <flux:table class="[&_td]:align-top">
                     <flux:table.columns>
                         <flux:table.column>{{ __('Element') }}</flux:table.column>
                         <flux:table.column>{{ __('Kind') }}</flux:table.column>
-                        <flux:table.column>{{ __('Type') }}</flux:table.column>
-                        <flux:table.column>{{ __('Purpose') }}</flux:table.column>
+                        @if ($showType)
+                            <flux:table.column>{{ __('Type') }}</flux:table.column>
+                        @endif
+                        @if ($showPurpose)
+                            <flux:table.column>{{ __('Purpose') }}</flux:table.column>
+                        @endif
                     </flux:table.columns>
                     <flux:table.rows>
                         @foreach ($view->elements as $element)
@@ -83,8 +90,12 @@ new #[Title('Architecture')] class extends Component {
                                 <flux:table.cell>
                                     <flux:badge :color="BadgeVariant::designElementKind($element->kind)" size="sm">{{ EnumLabel::lower($element->kind) }}</flux:badge>
                                 </flux:table.cell>
-                                <flux:table.cell>{{ $element->type ?? '—' }}</flux:table.cell>
-                                <flux:table.cell>{{ $element->purpose ?? '—' }}</flux:table.cell>
+                                @if ($showType)
+                                    <flux:table.cell>{{ $element->type ?? '—' }}</flux:table.cell>
+                                @endif
+                                @if ($showPurpose)
+                                    <flux:table.cell>{{ $element->purpose ?? '—' }}</flux:table.cell>
+                                @endif
                             </flux:table.row>
                         @endforeach
                     </flux:table.rows>

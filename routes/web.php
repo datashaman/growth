@@ -30,6 +30,7 @@ Route::middleware('auth')->group(function () {
     Route::get('mockups/{mockup}/raw', [SpecMockupController::class, 'raw'])->name('mockups.raw');
     Route::livewire('requirements/{requirement}', 'pages::requirements.show')->name('requirements.show');
     Route::livewire('anomalies/{anomaly}', 'pages::anomalies.show')->name('anomalies.show');
+    Route::livewire('reviews', 'pages::reviews.index')->name('reviews');
     Route::livewire('reviews/{review}', 'pages::reviews.show')->name('reviews.show');
     Route::livewire('tool-invocations', 'pages::tool-invocations')->name('tool-invocations');
     Route::livewire('feedback', 'pages::feedback')->name('feedback');
