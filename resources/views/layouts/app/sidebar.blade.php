@@ -70,6 +70,11 @@
                             {{ __('Reviews') }}
                         </flux:sidebar.item>
                     @endif
+                    @if ($lens->revealsNothing())
+                        <flux:text class="px-2 py-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                            {{ __('No project sections are visible for you here. Ask a workspace admin to grant your project role some capabilities to populate this navigation.') }}
+                        </flux:text>
+                    @endif
                 </flux:sidebar.group>
                 <flux:sidebar.group :heading="__('Workspace')" class="grid">
                     <flux:sidebar.item icon="bolt" :href="route('tool-invocations')" :current="request()->routeIs('tool-invocations')" wire:navigate>

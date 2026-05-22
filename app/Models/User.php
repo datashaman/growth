@@ -132,7 +132,18 @@ class User extends Authenticatable implements OAuthenticatable
             return $this->isWorkspaceMutator($project->workspace_id) ? Lens::all() : Lens::empty();
         }
 
-        return Lens::fromCapabilities($roles->flatMap(fn (Role $role) => $role->capabilities()));
+        $capabilities = $roles->flatMap(fn (Role $role) => $role->capabilities());
+
+        // A workspace owner/admin who self-assigned only capability-less roles
+        // would otherwise fall into an empty Lens (and an empty Project nav).
+        // Treat that exactly like the no-role case so the mutator keeps the
+        // see-all fallback — assigning yourself a role shouldn't silently strip
+        // your own navigation.
+        if ($capabilities->isEmpty() && $this->isWorkspaceMutator($project->workspace_id)) {
+            return Lens::all();
+        }
+
+        return Lens::fromCapabilities($capabilities);
     }
 
     public function ownedWorkspaces(): HasMany
