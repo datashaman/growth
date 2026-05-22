@@ -49,6 +49,11 @@ new #[Title('Notifications')] class extends Component {
         unset($this->items, $this->threads);
     }
 
+    public function hasUnreadNotifications(): bool
+    {
+        return $this->items->contains(fn (object $note): bool => $note->read_at === null);
+    }
+
     /**
      * The caller's notifications in the active workspace.
      */
@@ -95,9 +100,11 @@ new #[Title('Notifications')] class extends Component {
     <x-project-page-header
         :title="__('Notifications')"
         :description="__('Notifications addressed to you in this workspace, grouped by thread.')">
-        <x-slot:actions>
-            <flux:button wire:click="markAllRead" size="sm" variant="subtle">{{ __('Mark all read') }}</flux:button>
-        </x-slot:actions>
+        @if ($this->hasUnreadNotifications())
+            <x-slot:actions>
+                <flux:button wire:click="markAllRead" size="sm" variant="subtle">{{ __('Mark all read') }}</flux:button>
+            </x-slot:actions>
+        @endif
     </x-project-page-header>
 
     <x-data-table
@@ -131,7 +138,7 @@ new #[Title('Notifications')] class extends Component {
                             @endif
                             <div class="flex flex-col gap-2">
                                 @foreach ($thread as $message)
-                                    <div @class(['border-s-2 ps-2', 'border-green-500' => $message->read_at === null, 'border-transparent' => $message->read_at !== null])>
+                                    <div @class(['border-s-2 border-green-500 ps-2' => $message->read_at === null])>
                                         @if ($message->data['url'] ?? null)
                                             <a href="{{ $message->data['url'] }}" wire:navigate class="hover:underline">{{ $message->data['title'] ?? __('Notification') }}</a>
                                         @else

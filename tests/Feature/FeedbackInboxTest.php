@@ -43,6 +43,15 @@ test('the inbox renders feedback and refreshes on broadcast', function () {
         ->assertSee('Missing bulk tool');
 });
 
+test('the inbox keeps caller metadata on one line', function () {
+    ($this->makeFeedback)(['summary' => 'Confusing schema']);
+
+    Livewire::test('pages::feedback')
+        ->assertSee('Caller')
+        ->assertSee($this->user->name)
+        ->assertSee('whitespace-nowrap', false);
+});
+
 test('the inbox only shows the active workspace feedback', function () {
     ($this->makeFeedback)(['summary' => 'Local feedback']);
 
