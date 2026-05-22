@@ -70,6 +70,76 @@ it('accepts a visual-evidence gallery link from the sync action', function () {
         ->toBe(1);
 });
 
+it('resolves every pull-request ref form to one canonical row', function (string $ref) {
+    PlanningServer::tool(UpsertDeliveryLink::class, [
+        'work_item_id' => $this->workItem->id,
+        'type' => 'pull_request',
+        'ref' => $ref,
+    ])->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('ref', '#14')->etc();
+    });
+
+    expect(WorkItemDeliveryLink::where('work_item_id', $this->workItem->id)->where('ref', '#14')->count())
+        ->toBe(1);
+})->with(['14', '#14', 'PR-14', 'https://github.com/datashaman/growth/pull/14']);
+
+it('treats the ref variants as the same row, so re-attachment is idempotent', function () {
+    foreach (['14', '#14', 'PR-14', 'https://github.com/datashaman/growth/pull/14'] as $i => $ref) {
+        PlanningServer::tool(UpsertDeliveryLink::class, [
+            'work_item_id' => $this->workItem->id,
+            'type' => 'pull_request',
+            'ref' => $ref,
+        ])->assertOk()->assertStructuredContent(function ($json) use ($i) {
+            $json->where('created', $i === 0)->etc();
+        });
+    }
+
+    expect(WorkItemDeliveryLink::where('work_item_id', $this->workItem->id)->where('type', 'pull_request')->count())
+        ->toBe(1);
+});
+
+it('canonicalises the ref on the explicit-id update path too', function () {
+    $link = WorkItemDeliveryLink::create([
+        'work_item_id' => $this->workItem->id,
+        'type' => 'pull_request',
+        'ref' => '#14',
+    ]);
+
+    PlanningServer::tool(UpsertDeliveryLink::class, [
+        'id' => $link->id,
+        'work_item_id' => $this->workItem->id,
+        'type' => 'pull_request',
+        'ref' => '14',
+    ])->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('ref', '#14')->etc();
+    });
+
+    expect($link->fresh()->ref)->toBe('#14');
+});
+
+it('canonicalises an evidence ref that is a pull-request ref', function () {
+    PlanningServer::tool(UpsertDeliveryLink::class, [
+        'work_item_id' => $this->workItem->id,
+        'type' => 'evidence',
+        'ref' => 'PR-14',
+    ])->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('ref', '#14')->etc();
+    });
+});
+
+it('stores branch and commit refs exactly as supplied', function (string $type, string $ref) {
+    PlanningServer::tool(UpsertDeliveryLink::class, [
+        'work_item_id' => $this->workItem->id,
+        'type' => $type,
+        'ref' => $ref,
+    ])->assertOk()->assertStructuredContent(function ($json) use ($ref) {
+        $json->where('ref', $ref)->etc();
+    });
+})->with([
+    ['branch', 'feature/14'],
+    ['commit', 'a1b2c3d'],
+]);
+
 it('clears unattributed events for a branch once it is bound', function () {
     $this->project->update(['github_repo' => 'datashaman/growth']);
 
