@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
-use App\Models\ProjectTheme;
+use App\Models\Theme;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -12,8 +12,8 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('List project themes/design languages available for mockup generation and preview.')]
-class ListProjectThemes extends Tool
+#[Description('List themes/design languages available for mockup generation and preview.')]
+class ListThemes extends Tool
 {
     public function handle(Request $request): ResponseFactory
     {
@@ -21,7 +21,7 @@ class ListProjectThemes extends Tool
             'project_id' => 'required|string|owned_project',
         ]);
 
-        $themes = ProjectTheme::query()
+        $themes = Theme::query()
             ->where('project_id', $data['project_id'])
             ->orderByDesc('is_default')
             ->orderBy('name')
@@ -31,7 +31,7 @@ class ListProjectThemes extends Tool
             'project_id' => $data['project_id'],
             'default_theme_id' => $themes->firstWhere('is_default', true)?->id,
             'total' => $themes->count(),
-            'themes' => $themes->map(fn (ProjectTheme $theme): array => $this->row($theme))->values()->all(),
+            'themes' => $themes->map(fn (Theme $theme): array => $this->row($theme))->values()->all(),
         ]);
     }
 
@@ -52,7 +52,7 @@ class ListProjectThemes extends Tool
         ];
     }
 
-    private function row(ProjectTheme $theme): array
+    private function row(Theme $theme): array
     {
         return [
             'id' => $theme->id,

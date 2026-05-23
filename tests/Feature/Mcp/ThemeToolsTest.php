@@ -2,12 +2,12 @@
 
 use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Servers\ReadonlyServer;
-use App\Mcp\Tools\Plan\DeleteProjectTheme;
-use App\Mcp\Tools\Plan\GetProjectTheme;
-use App\Mcp\Tools\Plan\ListProjectThemes;
-use App\Mcp\Tools\Plan\UpsertProjectTheme;
+use App\Mcp\Tools\Plan\DeleteTheme;
+use App\Mcp\Tools\Plan\GetTheme;
+use App\Mcp\Tools\Plan\ListThemes;
+use App\Mcp\Tools\Plan\UpsertTheme;
 use App\Models\Project;
-use App\Models\ProjectTheme;
+use App\Models\Theme;
 use App\Models\User;
 use Laravel\Passport\Passport;
 
@@ -22,8 +22,8 @@ beforeEach(function () {
     ]);
 });
 
-it('creates lists fetches and deletes project themes through MCP', function () {
-    PlanningServer::tool(UpsertProjectTheme::class, [
+it('creates lists fetches and deletes themes through MCP', function () {
+    PlanningServer::tool(UpsertTheme::class, [
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
         'slug' => 'mission-control',
@@ -42,9 +42,9 @@ it('creates lists fetches and deletes project themes through MCP', function () {
                 ->etc();
         });
 
-    $theme = ProjectTheme::where('project_id', $this->project->id)->sole();
+    $theme = Theme::where('project_id', $this->project->id)->sole();
 
-    ReadonlyServer::tool(ListProjectThemes::class, ['project_id' => $this->project->id])
+    ReadonlyServer::tool(ListThemes::class, ['project_id' => $this->project->id])
         ->assertOk()
         ->assertStructuredContent(function ($json) use ($theme) {
             $json->where('default_theme_id', $theme->id)
@@ -53,29 +53,50 @@ it('creates lists fetches and deletes project themes through MCP', function () {
                 ->etc();
         });
 
-    ReadonlyServer::tool(GetProjectTheme::class, ['id' => $theme->id])
+    ReadonlyServer::tool(GetTheme::class, ['id' => $theme->id])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('compiled_css', fn (string $css): bool => str_contains($css, '--surface: #101418;'))
                 ->etc();
         });
 
-    PlanningServer::tool(DeleteProjectTheme::class, ['id' => $theme->id])
+    PlanningServer::tool(DeleteTheme::class, ['id' => $theme->id])
         ->assertOk()
         ->assertStructuredContent(fn ($json) => $json->where('deleted', true)->etc());
 
-    expect(ProjectTheme::count())->toBe(0);
+    expect(Theme::count())->toBe(0);
+});
+
+it('registers theme tools using the standard resource names', function () {
+    $planningTools = collect($this->postJson('/mcp/planning', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+        'params' => ['per_page' => 300],
+    ])->assertOk()->json('result.tools'))->pluck('name');
+
+    $readonlyTools = collect($this->postJson('/mcp/readonly', [
+        'jsonrpc' => '2.0',
+        'id' => 2,
+        'method' => 'tools/list',
+        'params' => ['per_page' => 300],
+    ])->assertOk()->json('result.tools'))->pluck('name');
+
+    expect($planningTools->all())->toContain('list-themes', 'get-theme', 'upsert-theme', 'delete-theme')
+        ->and($readonlyTools->all())->toContain('list-themes', 'get-theme')
+        ->and($planningTools->all())->not->toContain('list-project-themes', 'get-project-theme', 'upsert-project-theme', 'delete-project-theme')
+        ->and($readonlyTools->all())->not->toContain('list-project-themes', 'get-project-theme');
 });
 
 it('keeps one default theme per project', function () {
-    $first = ProjectTheme::create([
+    $first = Theme::create([
         'project_id' => $this->project->id,
         'name' => 'First',
         'slug' => 'first',
         'is_default' => true,
     ]);
 
-    PlanningServer::tool(UpsertProjectTheme::class, [
+    PlanningServer::tool(UpsertTheme::class, [
         'project_id' => $this->project->id,
         'name' => 'Second',
         'slug' => 'second',
@@ -83,11 +104,11 @@ it('keeps one default theme per project', function () {
     ])->assertOk();
 
     expect($first->fresh()->is_default)->toBeFalse()
-        ->and(ProjectTheme::where('project_id', $this->project->id)->where('is_default', true)->value('slug'))->toBe('second');
+        ->and(Theme::where('project_id', $this->project->id)->where('is_default', true)->value('slug'))->toBe('second');
 });
 
 it('rejects remote theme css', function () {
-    PlanningServer::tool(UpsertProjectTheme::class, [
+    PlanningServer::tool(UpsertTheme::class, [
         'project_id' => $this->project->id,
         'name' => 'Remote',
         'slug' => 'remote',
@@ -102,12 +123,12 @@ it('does not expose themes from another workspace', function () {
         'name' => 'Foreign',
         'rigor_level' => 2,
     ]);
-    $foreignTheme = ProjectTheme::create([
+    $foreignTheme = Theme::create([
         'project_id' => $foreignProject->id,
         'name' => 'Secret',
         'slug' => 'secret',
     ]);
 
-    ReadonlyServer::tool(GetProjectTheme::class, ['id' => $foreignTheme->id])
+    ReadonlyServer::tool(GetTheme::class, ['id' => $foreignTheme->id])
         ->assertHasErrors(['selected id is invalid']);
 });

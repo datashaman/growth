@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
-use App\Models\ProjectTheme;
+use App\Models\Theme;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -15,13 +15,13 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive(false)]
-#[Description('Create or update a project theme/design language for mockup generation and preview. This is the primary theme management surface; the web app only displays and selects themes.')]
-class UpsertProjectTheme extends Tool
+#[Description('Create or update a theme/design language for mockup generation and preview. This is the primary theme management surface; the web app only displays and selects themes.')]
+class UpsertTheme extends Tool
 {
     public function handle(Request $request): ResponseFactory
     {
         $data = $request->validate([
-            'id' => 'nullable|string|owned_project_theme',
+            'id' => 'nullable|string|owned_theme',
             'project_id' => 'required_without:id|string|owned_project',
             'name' => 'required_without:id|string|max:255',
             'slug' => [
@@ -29,8 +29,8 @@ class UpsertProjectTheme extends Tool
                 'string',
                 'max:255',
                 'regex:/^[a-z0-9][a-z0-9_-]*$/',
-                Rule::unique('project_themes', 'slug')
-                    ->where('project_id', $request->get('project_id') ?? ProjectTheme::whereKey($request->get('id'))->value('project_id'))
+                Rule::unique('themes', 'slug')
+                    ->where('project_id', $request->get('project_id') ?? Theme::whereKey($request->get('id'))->value('project_id'))
                     ->ignore($request->get('id')),
             ],
             'description' => 'nullable|string',
@@ -41,13 +41,13 @@ class UpsertProjectTheme extends Tool
         ]);
 
         $theme = isset($data['id'])
-            ? ProjectTheme::findOrFail($data['id'])
-            : new ProjectTheme(['project_id' => $data['project_id']]);
+            ? Theme::findOrFail($data['id'])
+            : new Theme(['project_id' => $data['project_id']]);
 
         $projectId = $theme->project_id ?? $data['project_id'];
         $tokens = array_key_exists('css_tokens', $data) ? $data['css_tokens'] : $theme->css_tokens;
         $rawCss = array_key_exists('raw_css', $data) ? $data['raw_css'] : $theme->raw_css;
-        ProjectTheme::validateSelfContainedCss($tokens, $rawCss);
+        Theme::validateSelfContainedCss($tokens, $rawCss);
 
         foreach (['name', 'slug', 'description', 'design_notes', 'css_tokens', 'raw_css'] as $field) {
             if (array_key_exists($field, $data)) {
@@ -63,7 +63,7 @@ class UpsertProjectTheme extends Tool
             $theme->slug = 'theme-'.Str::lower((string) Str::ulid());
         }
 
-        $slugTaken = ProjectTheme::query()
+        $slugTaken = Theme::query()
             ->where('project_id', $projectId)
             ->where('slug', $theme->slug)
             ->when($theme->exists, fn ($query) => $query->whereKeyNot($theme->getKey()))
@@ -101,7 +101,7 @@ class UpsertProjectTheme extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'id' => $schema->string()->description('Existing project theme ULID. Omit to create.'),
+            'id' => $schema->string()->description('Existing theme ULID. Omit to create.'),
             'project_id' => $schema->string()->description('Project ULID. Required when creating.'),
             'name' => $schema->string()->description('Human-readable theme name. Required when creating.'),
             'slug' => $schema->string()->description('Stable per-project key used by mockup preview URLs. Lowercase letters, digits, underscores, and hyphens. Omit to derive from name on create.'),

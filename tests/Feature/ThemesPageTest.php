@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Project;
-use App\Models\ProjectTheme;
+use App\Models\Theme;
 use App\Models\User;
 
 beforeEach(function () {
@@ -17,8 +17,8 @@ beforeEach(function () {
     session(['selected_project_id' => $this->project->id]);
 });
 
-it('displays project themes without web crud controls', function () {
-    ProjectTheme::create([
+it('displays themes without web crud controls', function () {
+    Theme::create([
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
         'slug' => 'mission-control',

@@ -1,8 +1,8 @@
 <?php
 
 use App\Models\Project;
-use App\Models\ProjectTheme;
 use App\Models\Requirement;
+use App\Models\Theme;
 use App\Models\User;
 use App\Models\WorkItem;
 use Livewire\Livewire;
@@ -47,7 +47,7 @@ it('renders the mockup inside a sandboxed iframe with no same-origin access', fu
 });
 
 it('shows a localStorage-backed theme selector on the mockup detail page', function () {
-    ProjectTheme::create([
+    Theme::create([
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
         'slug' => 'mission-control',
@@ -82,8 +82,8 @@ it('serves the raw mockup HTML under a locked-down content security policy', fun
         ->and($response->headers->get('X-Content-Type-Options'))->toBe('nosniff');
 });
 
-it('injects selected project theme css into raw mockup html without changing stored html', function () {
-    ProjectTheme::create([
+it('injects selected theme css into raw mockup html without changing stored html', function () {
+    Theme::create([
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
         'slug' => 'mission-control',
@@ -95,13 +95,13 @@ it('injects selected project theme css into raw mockup html without changing sto
         ->withHeader('Sec-Fetch-Dest', 'iframe')
         ->get(route('mockups.raw', ['mockup' => $this->mockup, 'theme' => 'mission-control']))
         ->assertOk()
-        ->assertSee('data-growth-project-theme="mission-control"', false)
+        ->assertSee('data-growth-theme="mission-control"', false)
         ->assertSee('--surface: #101418;', false)
         ->assertSee('body { background: var(--surface); }', false)
         ->assertSee('Checkout mockup', false);
 
     expect($this->mockup->currentRevision->fresh()->html)
-        ->not->toContain('data-growth-project-theme')
+        ->not->toContain('data-growth-theme')
         ->and($this->mockup->currentRevision->fresh()->html)->toContain('Checkout mockup');
 });
 
@@ -112,7 +112,7 @@ it('ignores a theme slug from another project when serving raw mockup html', fun
         'name' => 'Other',
         'rigor_level' => 2,
     ]);
-    ProjectTheme::create([
+    Theme::create([
         'project_id' => $otherProject->id,
         'name' => 'Secret',
         'slug' => 'secret',
@@ -123,7 +123,7 @@ it('ignores a theme slug from another project when serving raw mockup html', fun
         ->withHeader('Sec-Fetch-Dest', 'iframe')
         ->get(route('mockups.raw', ['mockup' => $this->mockup, 'theme' => 'secret']))
         ->assertOk()
-        ->assertDontSee('data-growth-project-theme', false)
+        ->assertDontSee('data-growth-theme', false)
         ->assertDontSee('color: red', false);
 });
 

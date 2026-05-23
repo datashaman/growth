@@ -62,13 +62,13 @@ use App\Mcp\Tools\Plan\DeleteMilestone;
 use App\Mcp\Tools\Plan\DeleteMockup;
 use App\Mcp\Tools\Plan\DeleteOwnerMockups;
 use App\Mcp\Tools\Plan\DeletePlan;
-use App\Mcp\Tools\Plan\DeleteProjectTheme;
 use App\Mcp\Tools\Plan\DeleteRelease;
 use App\Mcp\Tools\Plan\DeleteRisk;
 use App\Mcp\Tools\Plan\DeleteRole;
+use App\Mcp\Tools\Plan\DeleteTheme;
 use App\Mcp\Tools\Plan\DeleteWorkItem;
 use App\Mcp\Tools\Plan\GetMockup;
-use App\Mcp\Tools\Plan\GetProjectTheme;
+use App\Mcp\Tools\Plan\GetTheme;
 use App\Mcp\Tools\Plan\GetWorkItem;
 use App\Mcp\Tools\Plan\LinkWorkItemDependency;
 use App\Mcp\Tools\Plan\LinkWorkItemToMilestone;
@@ -82,10 +82,10 @@ use App\Mcp\Tools\Plan\ListMockups;
 use App\Mcp\Tools\Plan\ListPlanBaselines;
 use App\Mcp\Tools\Plan\ListProjectMockups;
 use App\Mcp\Tools\Plan\ListProjectPlans;
-use App\Mcp\Tools\Plan\ListProjectThemes;
 use App\Mcp\Tools\Plan\ListReleases;
 use App\Mcp\Tools\Plan\ListRisks;
 use App\Mcp\Tools\Plan\ListRoles;
+use App\Mcp\Tools\Plan\ListThemes;
 use App\Mcp\Tools\Plan\ListWorkItems;
 use App\Mcp\Tools\Plan\MarkDeploymentFailed;
 use App\Mcp\Tools\Plan\MarkDeploymentSucceeded;
@@ -115,10 +115,10 @@ use App\Mcp\Tools\Plan\UpsertDeployment;
 use App\Mcp\Tools\Plan\UpsertMilestone;
 use App\Mcp\Tools\Plan\UpsertMockup;
 use App\Mcp\Tools\Plan\UpsertPlan;
-use App\Mcp\Tools\Plan\UpsertProjectTheme;
 use App\Mcp\Tools\Plan\UpsertRelease;
 use App\Mcp\Tools\Plan\UpsertRisk;
 use App\Mcp\Tools\Plan\UpsertRole;
+use App\Mcp\Tools\Plan\UpsertTheme;
 use App\Mcp\Tools\Plan\UpsertWorkItems;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Requirements\ListRequirements;
@@ -215,10 +215,10 @@ class PlanningServer extends Server
         RevertMockup::class,
         DeleteMockup::class,
         DeleteOwnerMockups::class,
-        ListProjectThemes::class,
-        GetProjectTheme::class,
-        UpsertProjectTheme::class,
-        DeleteProjectTheme::class,
+        ListThemes::class,
+        GetTheme::class,
+        UpsertTheme::class,
+        DeleteTheme::class,
         UpsertRisk::class,
         ListRisks::class,
         DeleteRisk::class,

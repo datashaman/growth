@@ -144,12 +144,12 @@ class Project extends Model
 
     public function themes(): HasMany
     {
-        return $this->hasMany(ProjectTheme::class);
+        return $this->hasMany(Theme::class);
     }
 
     public function defaultTheme(): HasOne
     {
-        return $this->hasOne(ProjectTheme::class)->where('is_default', true);
+        return $this->hasOne(Theme::class)->where('is_default', true);
     }
 
     public function milestones(): HasMany

@@ -1,7 +1,7 @@
 <?php
 
 use App\Concerns\ProjectScoped;
-use App\Models\ProjectTheme;
+use App\Models\Theme;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -24,7 +24,7 @@ new #[Title('Themes')] class extends Component {
     }
 
     /**
-     * @return Collection<int,ProjectTheme>
+     * @return Collection<int,Theme>
      */
     #[Computed]
     public function themes(): Collection
@@ -59,14 +59,14 @@ new #[Title('Themes')] class extends Component {
         </flux:callout>
     @else
         <x-data-table
-            :title="__('Project themes')"
+            :title="__('Themes')"
             :count="$this->themes->count()"
             :count-label="__('themes')"
             :empty="$this->themes->isEmpty()"
-            :empty-message="__('No themes have been created for this project yet. Create and manage project themes through the MCP theme tools.')">
-            <div class="grid gap-3" data-test="project-themes-list">
+            :empty-message="__('No themes have been created for this project yet. Create and manage themes through the MCP theme tools.')">
+            <div class="grid gap-3" data-test="themes-list">
                 @foreach ($this->themes as $theme)
-                    <article class="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-950/40" data-test="project-theme-card">
+                    <article class="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-950/40" data-test="theme-card">
                         <div class="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">

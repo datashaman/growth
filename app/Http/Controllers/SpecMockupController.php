@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ProjectTheme;
 use App\Models\SpecMockup;
+use App\Models\Theme;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response as BaseResponse;
 
@@ -92,7 +92,7 @@ class SpecMockupController extends Controller
             return $html;
         }
 
-        $theme = ProjectTheme::query()
+        $theme = Theme::query()
             ->where('project_id', $projectId)
             ->where('slug', $themeSlug)
             ->first();

@@ -133,9 +133,9 @@ class WorkItemImplementationBriefResource extends Resource implements HasUriTemp
             $md .= "\n";
         }
 
-        $md .= "## Project Themes\n\n";
+        $md .= "## Themes\n\n";
         if ($project->themes->isEmpty()) {
-            $md .= "_No project themes are captured yet._\n\n";
+            $md .= "_No themes are captured yet._\n\n";
         } else {
             $default = $project->themes->firstWhere('is_default', true);
             if ($default) {
@@ -179,7 +179,7 @@ class WorkItemImplementationBriefResource extends Resource implements HasUriTemp
         $md .= "## Implementation Guidance\n\n";
         $md .= "- Preserve linked requirement behavior and acceptance checks.\n";
         $md .= "- Respect architecture context where it affects component boundaries, data flow, or user-facing behavior.\n";
-        $md .= "- Apply project theme guidance when changing user-facing UI; browser-local preview selection is not server state, so use the project default or an explicitly requested theme slug.\n";
+        $md .= "- Apply theme guidance when changing user-facing UI; browser-local preview selection is not server state, so use the project default or an explicitly requested theme slug.\n";
         $md .= "- Consider dependencies, RACI, mockups, and existing delivery evidence before changing code.\n";
 
         return Response::text($md);

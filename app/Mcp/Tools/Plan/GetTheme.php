@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
-use App\Models\ProjectTheme;
+use App\Models\Theme;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -12,16 +12,16 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Fetch a project theme/design language, including CSS tokens and raw self-contained CSS.')]
-class GetProjectTheme extends Tool
+#[Description('Fetch a theme/design language, including CSS tokens and raw self-contained CSS.')]
+class GetTheme extends Tool
 {
     public function handle(Request $request): ResponseFactory
     {
         $data = $request->validate([
-            'id' => 'required|string|owned_project_theme',
+            'id' => 'required|string|owned_theme',
         ]);
 
-        $theme = ProjectTheme::findOrFail($data['id']);
+        $theme = Theme::findOrFail($data['id']);
 
         return Response::structured([
             'id' => $theme->id,
@@ -41,7 +41,7 @@ class GetProjectTheme extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'id' => $schema->string()->description('Project theme ULID')->required(),
+            'id' => $schema->string()->description('Theme ULID')->required(),
         ];
     }
 

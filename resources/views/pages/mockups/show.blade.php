@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Requirement;
-use App\Models\ProjectTheme;
+use App\Models\Theme;
 use App\Models\SpecMockup;
 use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
@@ -80,7 +80,7 @@ new class extends Component {
     }
 
     /**
-     * @return Collection<int,ProjectTheme>
+     * @return Collection<int,Theme>
      */
     #[Computed]
     public function projectThemes(): Collection
@@ -91,7 +91,7 @@ new class extends Component {
             return collect();
         }
 
-        return ProjectTheme::query()
+        return Theme::query()
             ->where('project_id', $projectId)
             ->orderByDesc('is_default')
             ->orderBy('name')
