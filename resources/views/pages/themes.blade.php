@@ -40,42 +40,85 @@ new #[Title('Themes')] class extends Component {
             ->get();
     }
 
-    /**
-     * @return array<string,string>
-     */
-    public function themePreviewColors(Theme $theme): array
+    public function themePreviewHtml(Theme $theme): string
     {
-        $tokens = $theme->normalizedCssTokens();
-
-        $colors = [
-            'surface' => $this->safePreviewColor($tokens['surface'] ?? null, '#111827'),
-            'surface-muted' => $this->safePreviewColor($tokens['surface-muted'] ?? null, '#1f2937'),
-            'panel' => $this->safePreviewColor($tokens['panel'] ?? null, '#ffffff'),
-            'panel-muted' => $this->safePreviewColor($tokens['panel-muted'] ?? null, '#d1d5db'),
-            'text' => $this->safePreviewColor($tokens['text'] ?? null, '#111827'),
-            'accent' => $this->safePreviewColor($tokens['accent'] ?? null, '#2563eb'),
-            'accent-strong' => $this->safePreviewColor($tokens['accent-strong'] ?? null, $tokens['accent'] ?? '#1d4ed8'),
-            'warning' => $this->safePreviewColor($tokens['warning'] ?? null, '#f59e0b'),
-        ];
-
-        return $colors;
-    }
-
-    private function safePreviewColor(mixed $value, string $fallback): string
-    {
-        if (! is_scalar($value) && $value !== null) {
-            return $fallback;
-        }
-
-        $color = trim((string) $value);
-
-        if ($color === '') {
-            return $fallback;
-        }
-
-        $colorPattern = '/\A(?:#[0-9a-fA-F]{3,8}|(?:rgb|rgba|hsl|hsla|oklch|oklab|lab|lch)\([0-9a-zA-Z\s%,.\/+-]+\)|[a-zA-Z]+)\z/';
-
-        return preg_match($colorPattern, $color) === 1 ? $color : $fallback;
+        return <<<'HTML'
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; overflow: hidden; }
+body {
+  background: linear-gradient(180deg, #111827, #1f2937);
+  color: #f8fafc;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+main { min-height: 100vh; padding: 18px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.label { font-size: 11px; font-weight: 700; letter-spacing: .08em; opacity: .72; text-transform: uppercase; }
+h1 { margin: 3px 0 0; font-size: 20px; line-height: 1.1; }
+.status, button.active {
+  border: 1px solid #2563eb;
+  border-radius: 999px;
+  background: #2563eb;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 11px;
+}
+.panel {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  color: #0f172a;
+  padding: 14px;
+}
+.bar { height: 10px; border-radius: 999px; background: linear-gradient(90deg, #1d4ed8, #38bdf8); margin-bottom: 14px; }
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.metric { min-height: 52px; border-radius: 6px; background: #e2e8f0; padding: 9px; }
+.metric strong { display: block; font-size: 20px; line-height: 1; }
+.metric span { display: block; margin-top: 7px; font-size: 10px; opacity: .68; text-transform: uppercase; }
+.spark { height: 7px; border-radius: 999px; background: #38bdf8; margin-top: 10px; }
+.warn { margin-top: 12px; border: 1px solid #f59e0b; border-radius: 6px; background: #fef3c7; color: #7c2d12; padding: 8px 10px; font-size: 12px; font-weight: 650; }
+table { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 11px; }
+th { text-align: left; opacity: .7; }
+td, th { padding: 5px 0; border-bottom: 1px solid rgba(100, 116, 139, .22); }
+</style>
+<style data-growth-theme-preview>
+HTML
+            ."\n".$theme->cssForInjection()."\n"
+            . <<<'HTML'
+</style>
+</head>
+<body>
+<main>
+  <div class="topbar">
+    <div>
+      <div class="label">Preview</div>
+      <h1>Interface sample</h1>
+    </div>
+    <button class="active">Live</button>
+  </div>
+  <section class="panel">
+    <div class="bar"></div>
+    <div class="metrics">
+      <div class="metric"><strong>42</strong><span>primary</span></div>
+      <div class="metric"><strong>18</strong><span>secondary</span></div>
+      <div class="metric"><strong>7</strong><span>warning</span></div>
+    </div>
+    <div class="spark"></div>
+    <div class="warn">Attention state</div>
+    <table>
+      <thead><tr><th>Element</th><th>State</th></tr></thead>
+      <tbody><tr><td>Sample row</td><td>Active</td></tr></tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>
+HTML;
     }
 }; ?>
 
@@ -106,7 +149,6 @@ new #[Title('Themes')] class extends Component {
                 @foreach ($this->themes as $theme)
                     @php
                         $tokens = $theme->normalizedCssTokens();
-                        $previewColors = $this->themePreviewColors($theme);
                     @endphp
 
                     <article class="rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-950/40" data-test="theme-card">
@@ -146,39 +188,12 @@ new #[Title('Themes')] class extends Component {
                                 @endif
                             </div>
 
-                            <div class="overflow-hidden rounded-md border border-zinc-200 shadow-sm dark:border-zinc-700" data-test="theme-preview" style="background: linear-gradient(135deg, {{ $previewColors['surface'] }}, {{ $previewColors['surface-muted'] }}); color: {{ $previewColors['text'] }};">
-                                <div class="flex items-center justify-between gap-2 px-4 py-3">
-                                    <div class="min-w-0">
-                                        <div class="text-xs font-semibold uppercase opacity-70">{{ __('Telemetry') }}</div>
-                                        <div class="truncate text-sm font-semibold">{{ $theme->name }}</div>
-                                    </div>
-                                    <div class="rounded-full px-2 py-1 text-xs font-semibold text-white" style="background-color: {{ $previewColors['accent-strong'] }};">
-                                        {{ __('Live') }}
-                                    </div>
-                                </div>
-
-                                <div class="grid grid-cols-[1fr_5rem] gap-3 px-4 pb-4">
-                                    <div class="min-w-0 rounded border p-3" style="background-color: {{ $previewColors['panel'] }}; border-color: {{ $previewColors['panel-muted'] }};">
-                                        <div class="mb-3 h-2 rounded-full" style="background: linear-gradient(90deg, {{ $previewColors['accent-strong'] }}, {{ $previewColors['accent'] }});"></div>
-                                        <div class="grid grid-cols-3 gap-2">
-                                            <div class="h-9 rounded" style="background-color: {{ $previewColors['panel-muted'] }};"></div>
-                                            <div class="h-9 rounded" style="background-color: {{ $previewColors['accent'] }};"></div>
-                                            <div class="h-9 rounded" style="background-color: {{ $previewColors['warning'] }};"></div>
-                                        </div>
-                                    </div>
-                                    <div class="grid content-between gap-2">
-                                        @foreach (['surface', 'panel', 'accent', 'warning'] as $swatch)
-                                            <div class="h-8 rounded border border-black/10" title="--{{ $swatch }}" style="background-color: {{ $previewColors[$swatch] }};"></div>
-                                        @endforeach
-                                    </div>
-                                </div>
-
-                                <div class="grid grid-cols-4 border-t border-black/10 text-[10px] font-medium uppercase">
-                                    @foreach (['surface', 'panel', 'accent', 'warn'] as $label)
-                                        <span class="truncate px-2 py-2 opacity-75">{{ $label }}</span>
-                                    @endforeach
-                                </div>
-                            </div>
+                            <iframe
+                                title="{{ __('Theme preview for :theme', ['theme' => $theme->name]) }}"
+                                class="h-72 w-full overflow-hidden rounded-md border border-zinc-200 bg-white shadow-sm dark:border-zinc-700"
+                                data-test="theme-preview"
+                                sandbox
+                                srcdoc="{{ $this->themePreviewHtml($theme) }}"></iframe>
                         </div>
                     </article>
                 @endforeach
