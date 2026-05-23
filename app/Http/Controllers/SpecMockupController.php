@@ -58,7 +58,9 @@ class SpecMockupController extends Controller
 
         abort_if($revision === null, 404);
 
-        $html = $this->applyTheme((string) $revision->html, $mockup, (string) $request->query('theme', ''));
+        $html = $this->makePreviewInert(
+            $this->applyTheme((string) $revision->html, $mockup, (string) $request->query('theme', '')),
+        );
 
         return response($html)
             ->header('Content-Type', 'text/html; charset=UTF-8')
@@ -70,6 +72,7 @@ class SpecMockupController extends Controller
                 'font-src data: https:',
                 "connect-src 'none'",
                 "form-action 'none'",
+                "navigate-to 'none'",
                 "frame-ancestors 'self'",
                 "base-uri 'none'",
                 'sandbox allow-scripts',
@@ -116,5 +119,34 @@ class SpecMockupController extends Controller
         }
 
         return $style."\n".$html;
+    }
+
+    private function makePreviewInert(string $html): string
+    {
+        $script = <<<'HTML'
+<script data-growth-preview-inert>
+(() => {
+  document.addEventListener('click', (event) => {
+    if (event.target && event.target.closest('a[href]')) {
+      event.preventDefault();
+    }
+  }, true);
+
+  document.addEventListener('submit', (event) => {
+    event.preventDefault();
+  }, true);
+})();
+</script>
+HTML;
+
+        if (str_contains($html, 'data-growth-preview-inert')) {
+            return $html;
+        }
+
+        if (preg_match('/<\/body>/i', $html) === 1) {
+            return preg_replace('/<\/body>/i', $script."\n".'$0', $html, 1) ?? $html;
+        }
+
+        return $html."\n".$script;
     }
 }

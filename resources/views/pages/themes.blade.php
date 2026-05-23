@@ -95,6 +95,9 @@ new #[Title('Themes')] class extends Component {
                                     <div class="flex shrink-0 flex-wrap gap-2">
                                         <flux:badge color="zinc" size="sm">{{ count($tokens) }} {{ __('tokens') }}</flux:badge>
                                         <flux:badge :color="filled($theme->raw_css) ? 'green' : 'zinc'" size="sm">{{ filled($theme->raw_css) ? __('CSS') : __('no CSS') }}</flux:badge>
+                                        <flux:button :href="route('themes.show', $theme)" wire:navigate size="xs" variant="subtle" icon="eye" data-test="theme-detail-link">
+                                            {{ __('Inspect') }}
+                                        </flux:button>
                                     </div>
                                 </div>
 
