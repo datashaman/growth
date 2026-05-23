@@ -104,6 +104,10 @@ it('serves the raw mockup HTML under a locked-down content security policy', fun
 });
 
 it('injects selected theme css into raw mockup html without changing stored html', function () {
+    $this->mockup->currentRevision->forceFill([
+        'html' => '<!doctype html><html><head><style>body { background: hotpink; }</style></head><body><h1>Checkout mockup</h1></body></html>',
+    ])->save();
+
     Theme::create([
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
@@ -112,7 +116,7 @@ it('injects selected theme css into raw mockup html without changing stored html
         'raw_css' => 'body { background: var(--surface); }',
     ]);
 
-    $this->actingAs($this->user)
+    $response = $this->actingAs($this->user)
         ->withHeader('Sec-Fetch-Dest', 'iframe')
         ->get(route('mockups.raw', ['mockup' => $this->mockup, 'theme' => 'mission-control']))
         ->assertOk()
@@ -120,6 +124,8 @@ it('injects selected theme css into raw mockup html without changing stored html
         ->assertSee('--surface: #101418;', false)
         ->assertSee('body { background: var(--surface); }', false)
         ->assertSee('Checkout mockup', false);
+
+    expect($response->getContent())->toMatch('/<style>body \{ background: hotpink; \}<\/style>.*<style data-growth-theme="mission-control">/s');
 
     expect($this->mockup->currentRevision->fresh()->html)
         ->not->toContain('data-growth-theme')
