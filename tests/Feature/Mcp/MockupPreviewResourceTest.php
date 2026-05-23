@@ -74,6 +74,11 @@ HTML);
         'revision' => $revision->id,
         'theme' => 'assigned',
     ]);
+    $mcpUrl = route('api.mockup-shots.show', [
+        'mockup' => $mockup->id,
+        'revision' => $revision->id,
+        'theme' => 'assigned',
+    ]);
 
     readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}")
         ->assertOk()
@@ -83,6 +88,7 @@ HTML);
         ->assertSee('"uri":"growth://mockups/'.$mockup->id.'/'.$revision->id.'/html"')
         ->assertSee('"uri":"growth://mockups/'.$mockup->id.'/'.$revision->id.'/preview"')
         ->assertSee('"asset":{"url":"'.$screenshotUrl.'"')
+        ->assertSee('"mcp_url":"'.$mcpUrl.'"')
         ->assertSee('"mime_type":"image/png"')
         ->assertDontSee('Customer dashboard')
         ->assertDontSee('WI-003 implementation note')
@@ -91,6 +97,10 @@ HTML);
         ->assertDontSee("growth://mockups/{$mockup->id}/{$revision->id}/screenshot");
 
     $this->get($screenshotUrl)
+        ->assertOk()
+        ->assertHeader('Content-Type', 'image/png');
+
+    $this->get($mcpUrl)
         ->assertOk()
         ->assertHeader('Content-Type', 'image/png');
 
@@ -139,8 +149,17 @@ it('returns screenshot pixels through the inspectable asset url', function () {
         'revision' => $revision->id,
         'theme' => 'assigned',
     ]);
+    $mcpUrl = route('api.mockup-shots.show', [
+        'mockup' => $mockup->id,
+        'revision' => $revision->id,
+        'theme' => 'assigned',
+    ]);
 
     $this->get($screenshotUrl)
+        ->assertOk()
+        ->assertHeader('Content-Type', 'image/png');
+
+    $this->get($mcpUrl)
         ->assertOk()
         ->assertHeader('Content-Type', 'image/png');
 });
@@ -166,13 +185,23 @@ it('supports disabling theme rendering for preview resources', function () {
         'revision' => $revision->id,
         'theme' => 'none',
     ]);
+    $mcpUrl = route('api.mockup-shots.show', [
+        'mockup' => $mockup->id,
+        'revision' => $revision->id,
+        'theme' => 'none',
+    ]);
 
     readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$revision->id}?theme=none")
         ->assertOk()
         ->assertSee('"theme":"none"')
-        ->assertSee($screenshotUrl);
+        ->assertSee($screenshotUrl)
+        ->assertSee($mcpUrl);
 
     $this->get($screenshotUrl)
+        ->assertOk()
+        ->assertHeader('Content-Type', 'image/png');
+
+    $this->get($mcpUrl)
         ->assertOk()
         ->assertHeader('Content-Type', 'image/png');
 });
@@ -202,6 +231,12 @@ it('does not serve a mockup from another workspace', function () {
 
     readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$revisionId}")
         ->assertHasErrors(['not found']);
+
+    $this->get(route('api.mockup-shots.show', [
+        'mockup' => $mockup->id,
+        'revision' => $revisionId,
+        'theme' => 'assigned',
+    ]))->assertNotFound();
 });
 
 it('is available on the planning server too', function () {

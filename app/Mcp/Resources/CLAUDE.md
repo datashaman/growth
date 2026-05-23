@@ -30,12 +30,13 @@ Mockup resources separate metadata from inspectable artifacts:
 - `growth://mockups/{mockup}/{revision}` returns JSON metadata for a specific revision.
 - `growth://mockups/{mockup}/{revision}/html` returns raw stored HTML.
 - `growth://mockups/{mockup}/{revision}/preview` returns theme-aware preview HTML.
-- Mockup metadata exposes `screenshot.asset.url` for inspectable PNG pixels.
+- Mockup metadata exposes `screenshot.asset.url` for signed browser access and
+  `screenshot.asset.mcp_url` for OAuth-protected MCP/client access to PNG pixels.
 
 Metadata JSON stays lightweight: include URI references and the screenshot
 asset reference, but do not inline screenshot bytes or advertise a screenshot
-MCP resource. Use `?theme=none` or `?theme={slug}` on revision metadata or
-preview HTML when previewing theme overrides.
+MCP resource. Use `?theme=none` or `?theme={slug}` on revision metadata,
+preview HTML, or the screenshot `mcp_url` when previewing theme overrides.
 
 ## App resources (MCP UI)
 

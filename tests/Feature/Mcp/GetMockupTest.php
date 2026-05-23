@@ -46,6 +46,7 @@ it("returns the default mockup's raw html resource uris for a work item", functi
                 ->where('resources.screenshot_asset.mime_type', 'image/png')
                 ->where('resources.screenshot_asset.theme', 'assigned')
                 ->where('resources.screenshot_asset.url', fn (string $url): bool => str_contains($url, "/mockups/{$mockup->id}/revisions/{$revision->id}/screenshot.png"))
+                ->where('resources.screenshot_asset.mcp_url', fn (string $url): bool => str_contains($url, "/api/mockup-shots/{$mockup->id}/{$revision->id}") && ! str_contains($url, 'signature='))
                 ->missing('html')
                 ->etc();
         });
@@ -69,6 +70,7 @@ it('returns a named alternative when name is supplied', function () {
                 ->where('resources.preview_uri', "growth://mockups/{$compact->id}/{$compact->currentRevision->id}/preview")
                 ->where('resources.screenshot_asset.mime_type', 'image/png')
                 ->where('resources.screenshot_asset.url', fn (string $url): bool => str_contains($url, "/mockups/{$compact->id}/revisions/{$compact->currentRevision->id}/screenshot.png"))
+                ->where('resources.screenshot_asset.mcp_url', fn (string $url): bool => str_contains($url, "/api/mockup-shots/{$compact->id}/{$compact->currentRevision->id}") && ! str_contains($url, 'signature='))
                 ->missing('html')
                 ->etc();
         });
@@ -112,6 +114,7 @@ it("returns a requirement's default mockup", function () {
                 ->where('resources.html_uri', fn (string $uri): bool => str_ends_with($uri, '/html'))
                 ->where('resources.preview_uri', fn (string $uri): bool => str_ends_with($uri, '/preview'))
                 ->where('resources.screenshot_asset.mime_type', 'image/png')
+                ->where('resources.screenshot_asset.mcp_url', fn (string $url): bool => str_contains($url, '/api/mockup-shots/') && ! str_contains($url, 'signature='))
                 ->missing('html')
                 ->etc();
         });

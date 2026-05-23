@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\EvidenceAssetUploadController;
+use App\Http\Controllers\MockupScreenshotController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -14,3 +15,7 @@ Route::get('/user', function (Request $request) {
 Route::middleware('auth:api')
     ->post('/evidence-assets', [EvidenceAssetUploadController::class, 'store'])
     ->name('evidence-assets.store');
+
+Route::middleware('auth:api')
+    ->get('/mockup-shots/{mockup}/{revision}', [MockupScreenshotController::class, 'show'])
+    ->name('api.mockup-shots.show');
