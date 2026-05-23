@@ -134,10 +134,13 @@ new #[Title('Mockups')] class extends Component {
         $owner = $mockup->owner;
         $keys = $owner instanceof WorkItem
             ? [
+                ['mockup', $mockup->id],
                 ['work_item', $owner->id],
                 ['work_item', $owner->reference()],
             ]
-            : [];
+            : [
+                ['mockup', $mockup->id],
+            ];
 
         $assignment = $this->projectThemeAssignments->first(
             fn (ThemeAssignment $assignment): bool => in_array([$assignment->scope_type, $assignment->scope_key], $keys, true),

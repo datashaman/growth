@@ -12,6 +12,7 @@ use App\Models\Project;
 use App\Models\Theme;
 use App\Models\ThemeAssignment;
 use App\Models\User;
+use App\Models\WorkItem;
 use Laravel\Passport\Passport;
 
 beforeEach(function () {
@@ -127,6 +128,94 @@ it('creates and lists scoped theme assignments through MCP', function () {
                 ->where('assignments.0.theme_slug', 'vendor-warmth')
                 ->etc();
         });
+});
+
+it('creates and lists canonical mockup theme assignments through MCP', function () {
+    $theme = Theme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Buyer Market',
+        'slug' => 'buyer-market',
+    ]);
+    $workItem = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'deliverable',
+        'name' => 'Checkout',
+    ]);
+    $mockup = createMockup($workItem, 'Checkout layout', '<!doctype html><html><body>checkout</body></html>');
+
+    PlanningServer::tool(UpsertThemeAssignment::class, [
+        'project_id' => $this->project->id,
+        'theme_id' => $theme->id,
+        'scope_type' => 'mockup',
+        'scope_key' => $mockup->id,
+        'label' => 'Checkout preview',
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use ($mockup) {
+            $json->where('scope_type', 'mockup')
+                ->where('scope_key', $mockup->id)
+                ->where('target.mockup_id', $mockup->id)
+                ->where('target.mockup_uri', "growth://mockups/{$mockup->id}")
+                ->where('created', true)
+                ->etc();
+        });
+
+    ReadonlyServer::tool(ListThemeAssignments::class, ['project_id' => $this->project->id, 'scope_type' => 'mockup'])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use ($mockup) {
+            $json->where('total', 1)
+                ->where('assignments.0.scope_type', 'mockup')
+                ->where('assignments.0.scope_key', $mockup->id)
+                ->where('assignments.0.target.mockup_id', $mockup->id)
+                ->where('assignments.0.target.mockup_uri', "growth://mockups/{$mockup->id}")
+                ->where('assignments.0.target.preview_url', route('mockups.show', $mockup))
+                ->etc();
+        });
+});
+
+it('rejects mockup theme assignments for non-mockup keys', function () {
+    $theme = Theme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Buyer Market',
+        'slug' => 'buyer-market',
+    ]);
+
+    PlanningServer::tool(UpsertThemeAssignment::class, [
+        'project_id' => $this->project->id,
+        'theme_id' => $theme->id,
+        'scope_type' => 'mockup',
+        'scope_key' => 'wi-007-vendor-application-public',
+    ])->assertHasErrors(['mockup scope key must be an existing mockup ULID']);
+
+    expect(ThemeAssignment::count())->toBe(0);
+});
+
+it('rejects mockup theme assignments for mockups in another project', function () {
+    $theme = Theme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Buyer Market',
+        'slug' => 'buyer-market',
+    ]);
+    $foreignProject = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Foreign',
+        'rigor_level' => 2,
+    ]);
+    $foreignWorkItem = WorkItem::create([
+        'project_id' => $foreignProject->id,
+        'kind' => 'deliverable',
+        'name' => 'Foreign checkout',
+    ]);
+    $foreignMockup = createMockup($foreignWorkItem, 'Foreign layout', '<!doctype html><html><body>foreign</body></html>');
+
+    PlanningServer::tool(UpsertThemeAssignment::class, [
+        'project_id' => $this->project->id,
+        'theme_id' => $theme->id,
+        'scope_type' => 'mockup',
+        'scope_key' => $foreignMockup->id,
+    ])->assertHasErrors(['mockup scope key must be an existing mockup ULID in the assignment project']);
+
+    expect(ThemeAssignment::count())->toBe(0);
 });
 
 it('rejects theme assignments that reference a theme from another project', function () {

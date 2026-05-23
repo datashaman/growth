@@ -256,17 +256,29 @@ class MockupDesignBriefResource extends Resource implements HasUriTemplate
     private function ownerThemeAssignmentKeys(Model $owner): array
     {
         if ($owner instanceof WorkItem) {
-            return [
+            $keys = [
                 ['work_item', $owner->id],
                 ['work_item', $owner->reference()],
             ];
+
+            foreach ($owner->mockups as $mockup) {
+                array_unshift($keys, ['mockup', $mockup->id]);
+            }
+
+            return $keys;
         }
 
         if ($owner instanceof Requirement) {
-            return [
+            $keys = [
                 ['requirement', $owner->id],
                 ['requirement', $owner->reference()],
             ];
+
+            foreach ($owner->mockups as $mockup) {
+                array_unshift($keys, ['mockup', $mockup->id]);
+            }
+
+            return $keys;
         }
 
         return [];

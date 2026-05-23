@@ -227,6 +227,10 @@ class WorkItemImplementationBriefResource extends Resource implements HasUriTemp
             ['work_item', $workItem->reference()],
         ];
 
+        foreach ($workItem->mockups as $mockup) {
+            array_unshift($keys, ['mockup', $mockup->id]);
+        }
+
         return $assignments
             ->filter(fn (ThemeAssignment $assignment): bool => in_array([$assignment->scope_type, $assignment->scope_key], $keys, true))
             ->values();

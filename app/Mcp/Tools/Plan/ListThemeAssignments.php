@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
+use App\Models\SpecMockup;
 use App\Models\ThemeAssignment;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -12,7 +13,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('List scoped theme assignments for a project. These rules tell agents which project theme applies to a site section, vendor/profile/entity, or similar project scope.')]
+#[Description('List scoped theme assignments for a project. These rules tell agents which project theme applies to a site section, vendor/profile/entity, mockup, or similar project scope. For scope_type=mockup, scope_key is the mockup ULID.')]
 class ListThemeAssignments extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -41,7 +42,7 @@ class ListThemeAssignments extends Tool
     {
         return [
             'project_id' => $schema->string()->description('Project ULID')->required(),
-            'scope_type' => $schema->string()->description('Optional assignment scope type filter, such as site_section or entity.'),
+            'scope_type' => $schema->string()->description('Optional assignment scope type filter, such as site_section, entity, or mockup.'),
         ];
     }
 
@@ -66,7 +67,34 @@ class ListThemeAssignments extends Tool
             'scope_key' => $assignment->scope_key,
             'label' => $assignment->label,
             'notes' => $assignment->notes,
+            'target' => $this->target($assignment),
             'updated_at' => $assignment->updated_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * @return array<string,bool|string>|null
+     */
+    private function target(ThemeAssignment $assignment): ?array
+    {
+        if ($assignment->scope_type !== 'mockup') {
+            return null;
+        }
+
+        $mockup = SpecMockup::find($assignment->scope_key);
+
+        if (! $mockup) {
+            return [
+                'mockup_exists' => false,
+                'expected_scope_key' => 'mockup ULID',
+            ];
+        }
+
+        return [
+            'mockup_exists' => true,
+            'mockup_id' => $mockup->id,
+            'mockup_uri' => "growth://mockups/{$mockup->id}",
+            'preview_url' => route('mockups.show', $mockup),
         ];
     }
 }
