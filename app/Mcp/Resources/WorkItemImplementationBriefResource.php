@@ -2,7 +2,9 @@
 
 namespace App\Mcp\Resources;
 
+use App\Models\ThemeAssignment;
 use App\Models\WorkItem;
+use Illuminate\Support\Collection;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -29,6 +31,7 @@ class WorkItemImplementationBriefResource extends Resource implements HasUriTemp
             'project.designViews.concerns',
             'project.designViews.elements' => fn ($query) => $query->orderBy('kind')->orderBy('name'),
             'project.themes' => fn ($query) => $query->orderByDesc('is_default')->orderBy('name'),
+            'project.themeAssignments.theme' => fn ($query) => $query->orderBy('name'),
             'requirements',
             'dependencies',
             'dependents',
@@ -153,6 +156,34 @@ class WorkItemImplementationBriefResource extends Resource implements HasUriTemp
                 $md .= "\n";
             }
             $md .= "\n";
+
+            $md .= "### Scoped Theme Assignments\n\n";
+            if ($project->themeAssignments->isEmpty()) {
+                $md .= "_No scoped theme assignments are captured yet._\n\n";
+            } else {
+                $relevant = $this->relevantThemeAssignments($project->themeAssignments, $workItem);
+                if ($relevant->isNotEmpty()) {
+                    $md .= "Most relevant to this work item:\n";
+                    foreach ($relevant as $assignment) {
+                        $md .= "- {$assignment->scopeLabel()} uses `{$assignment->theme->slug}`";
+                        if ($assignment->notes) {
+                            $md .= " - {$assignment->notes}";
+                        }
+                        $md .= "\n";
+                    }
+                    $md .= "\n";
+                }
+
+                $md .= "All captured assignments:\n";
+                foreach ($project->themeAssignments->sortBy(['scope_type', 'scope_key']) as $assignment) {
+                    $md .= "- {$assignment->scopeLabel()} uses `{$assignment->theme->slug}`";
+                    if ($assignment->notes) {
+                        $md .= " - {$assignment->notes}";
+                    }
+                    $md .= "\n";
+                }
+                $md .= "\n";
+            }
         }
 
         $md .= "## Delivery Evidence\n\n";
@@ -183,5 +214,21 @@ class WorkItemImplementationBriefResource extends Resource implements HasUriTemp
         $md .= "- Consider dependencies, RACI, mockups, and existing delivery evidence before changing code.\n";
 
         return Response::text($md);
+    }
+
+    /**
+     * @param  Collection<int,ThemeAssignment>  $assignments
+     * @return Collection<int,ThemeAssignment>
+     */
+    private function relevantThemeAssignments(Collection $assignments, WorkItem $workItem): Collection
+    {
+        $keys = [
+            ['work_item', $workItem->id],
+            ['work_item', $workItem->reference()],
+        ];
+
+        return $assignments
+            ->filter(fn (ThemeAssignment $assignment): bool => in_array([$assignment->scope_type, $assignment->scope_key], $keys, true))
+            ->values();
     }
 }

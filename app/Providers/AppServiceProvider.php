@@ -39,6 +39,7 @@ use App\Models\TestCase;
 use App\Models\TestPlan;
 use App\Models\TestRun;
 use App\Models\Theme;
+use App\Models\ThemeAssignment;
 use App\Models\ToolFeedback;
 use App\Models\User;
 use App\Models\WorkItem;
@@ -86,6 +87,7 @@ class AppServiceProvider extends ServiceProvider
         'anomaly' => Anomaly::class,
         'project_plan' => ProjectPlan::class,
         'theme' => Theme::class,
+        'theme_assignment' => ThemeAssignment::class,
         'release' => Release::class,
         'milestone' => Milestone::class,
         'role' => Role::class,
@@ -126,6 +128,7 @@ class AppServiceProvider extends ServiceProvider
         'owned_project_plan' => [ProjectPlan::class,     'project_plans.id'],
         'owned_project_plan_baseline' => [ProjectPlanBaseline::class, 'project_plan_baselines.id'],
         'owned_theme' => [Theme::class,    'themes.id'],
+        'owned_theme_assignment' => [ThemeAssignment::class, 'theme_assignments.id'],
         'owned_release' => [Release::class,         'releases.id'],
         'owned_milestone' => [Milestone::class,       'milestones.id'],
         'owned_mockup' => [SpecMockup::class,        'spec_mockups.id'],

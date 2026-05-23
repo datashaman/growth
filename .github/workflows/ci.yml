@@ -85,7 +85,7 @@ jobs:
         run: vendor/bin/pint --test --format agent
 
       - name: Tests
-        run: php artisan test --compact
+        run: vendor/bin/pest --compact
 
       - name: Growth-sync action tests
         run: node --test
@@ -144,7 +144,7 @@ jobs:
           DB_DATABASE: database/database.sqlite
 
       - name: Browser tests
-        run: php artisan test --testsuite=Browser --compact
+        run: vendor/bin/pest --testsuite=Browser --compact
         env:
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite

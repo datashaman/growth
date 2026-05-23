@@ -85,6 +85,7 @@ use App\Mcp\Tools\Plan\ListProjectPlans;
 use App\Mcp\Tools\Plan\ListReleases;
 use App\Mcp\Tools\Plan\ListRisks;
 use App\Mcp\Tools\Plan\ListRoles;
+use App\Mcp\Tools\Plan\ListThemeAssignments;
 use App\Mcp\Tools\Plan\ListThemes;
 use App\Mcp\Tools\Plan\ListWorkItems;
 use App\Mcp\Tools\Plan\MarkDeploymentFailed;
@@ -119,6 +120,7 @@ use App\Mcp\Tools\Plan\UpsertRelease;
 use App\Mcp\Tools\Plan\UpsertRisk;
 use App\Mcp\Tools\Plan\UpsertRole;
 use App\Mcp\Tools\Plan\UpsertTheme;
+use App\Mcp\Tools\Plan\UpsertThemeAssignment;
 use App\Mcp\Tools\Plan\UpsertWorkItems;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Requirements\ListRequirements;
@@ -219,6 +221,8 @@ class PlanningServer extends Server
         GetTheme::class,
         UpsertTheme::class,
         DeleteTheme::class,
+        ListThemeAssignments::class,
+        UpsertThemeAssignment::class,
         UpsertRisk::class,
         ListRisks::class,
         DeleteRisk::class,

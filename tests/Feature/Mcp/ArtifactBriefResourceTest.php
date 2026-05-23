@@ -21,6 +21,7 @@ use App\Models\TestCase;
 use App\Models\TestPlan;
 use App\Models\TestRun;
 use App\Models\Theme;
+use App\Models\ThemeAssignment;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
@@ -58,12 +59,20 @@ it('serves a work item implementation brief', function () {
     ]);
     $workItem->requirements()->attach($requirement->id);
     $workItem->raciRoles()->attach($role->id, ['raci' => 'r']);
-    Theme::create([
+    $theme = Theme::create([
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
         'slug' => 'mission-control',
         'description' => 'Dense operational UI.',
         'is_default' => true,
+    ]);
+    ThemeAssignment::create([
+        'project_id' => $this->project->id,
+        'theme_id' => $theme->id,
+        'scope_type' => 'work_item',
+        'scope_key' => $workItem->reference(),
+        'label' => 'Approval dashboard',
+        'notes' => 'Use for the approval implementation.',
     ]);
     $milestone = Milestone::create([
         'project_id' => $this->project->id,
@@ -113,6 +122,9 @@ it('serves a work item implementation brief', function () {
         ->assertSee('Mission Control')
         ->assertSee('mission-control')
         ->assertSee('Use the default theme')
+        ->assertSee('Scoped Theme Assignments')
+        ->assertSee('Approval dashboard')
+        ->assertSee('Use for the approval implementation.')
         ->assertSee('Developer')
         ->assertSee('Beta')
         ->assertSee('growth://mockups/')

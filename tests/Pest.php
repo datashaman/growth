@@ -32,6 +32,8 @@ pest()->extend(TestCase::class)
 pest()->extend(TestCase::class)
     ->in('Browser');
 
+pest()->in('Architecture');
+
 /*
 |--------------------------------------------------------------------------
 | Expectations

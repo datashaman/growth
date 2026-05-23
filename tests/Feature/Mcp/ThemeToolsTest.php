@@ -4,10 +4,13 @@ use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Servers\ReadonlyServer;
 use App\Mcp\Tools\Plan\DeleteTheme;
 use App\Mcp\Tools\Plan\GetTheme;
+use App\Mcp\Tools\Plan\ListThemeAssignments;
 use App\Mcp\Tools\Plan\ListThemes;
 use App\Mcp\Tools\Plan\UpsertTheme;
+use App\Mcp\Tools\Plan\UpsertThemeAssignment;
 use App\Models\Project;
 use App\Models\Theme;
+use App\Models\ThemeAssignment;
 use App\Models\User;
 use Laravel\Passport\Passport;
 
@@ -82,10 +85,69 @@ it('registers theme tools using the standard resource names', function () {
         'params' => ['per_page' => 300],
     ])->assertOk()->json('result.tools'))->pluck('name');
 
-    expect($planningTools->all())->toContain('list-themes', 'get-theme', 'upsert-theme', 'delete-theme')
-        ->and($readonlyTools->all())->toContain('list-themes', 'get-theme')
+    expect($planningTools->all())->toContain('list-themes', 'get-theme', 'upsert-theme', 'delete-theme', 'list-theme-assignments', 'upsert-theme-assignment')
+        ->and($readonlyTools->all())->toContain('list-themes', 'get-theme', 'list-theme-assignments')
         ->and($planningTools->all())->not->toContain('list-project-themes', 'get-project-theme', 'upsert-project-theme', 'delete-project-theme')
         ->and($readonlyTools->all())->not->toContain('list-project-themes', 'get-project-theme');
+});
+
+it('creates and lists scoped theme assignments through MCP', function () {
+    $theme = Theme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Vendor Warmth',
+        'slug' => 'vendor-warmth',
+    ]);
+
+    PlanningServer::tool(UpsertThemeAssignment::class, [
+        'project_id' => $this->project->id,
+        'theme_id' => $theme->id,
+        'scope_type' => 'vendor',
+        'scope_key' => 'acme',
+        'label' => 'Acme Foods',
+        'notes' => 'Use for Acme profile and product cards.',
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use ($theme) {
+            $json->where('theme_id', $theme->id)
+                ->where('theme_slug', 'vendor-warmth')
+                ->where('scope_type', 'vendor')
+                ->where('scope_key', 'acme')
+                ->where('created', true)
+                ->etc();
+        });
+
+    ReadonlyServer::tool(ListThemeAssignments::class, ['project_id' => $this->project->id])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('total', 1)
+                ->where('assignments.0.scope_type', 'vendor')
+                ->where('assignments.0.scope_key', 'acme')
+                ->where('assignments.0.theme_slug', 'vendor-warmth')
+                ->etc();
+        });
+});
+
+it('rejects theme assignments that reference a theme from another project', function () {
+    $other = User::factory()->create();
+    $foreignProject = Project::create([
+        'workspace_id' => $other->active_workspace_id,
+        'name' => 'Foreign',
+        'rigor_level' => 2,
+    ]);
+    $foreignTheme = Theme::withoutGlobalScopes()->create([
+        'project_id' => $foreignProject->id,
+        'name' => 'Foreign',
+        'slug' => 'foreign',
+    ]);
+
+    PlanningServer::tool(UpsertThemeAssignment::class, [
+        'project_id' => $this->project->id,
+        'theme_id' => $foreignTheme->id,
+        'scope_type' => 'site_section',
+        'scope_key' => 'home',
+    ])->assertHasErrors(['selected theme id is invalid']);
+
+    expect(ThemeAssignment::count())->toBe(0);
 });
 
 it('keeps one default theme per project', function () {

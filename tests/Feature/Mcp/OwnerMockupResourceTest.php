@@ -7,6 +7,7 @@ use App\Models\DesignView;
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\Theme;
+use App\Models\ThemeAssignment;
 use App\Models\User;
 use App\Models\WorkItem;
 use Laravel\Passport\Passport;
@@ -113,13 +114,21 @@ it('serves a mockup design brief for a work item', function () {
         'purpose' => 'Shows whether payment is pending, accepted, or failed.',
     ]);
     $mockup = createMockup($this->workItem, 'default', '<!doctype html><html><body>v1</body></html>');
-    Theme::create([
+    $theme = Theme::create([
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
         'slug' => 'mission-control',
         'description' => 'Dense operational UI.',
         'css_tokens' => ['surface' => '#101418'],
         'is_default' => true,
+    ]);
+    ThemeAssignment::create([
+        'project_id' => $this->project->id,
+        'theme_id' => $theme->id,
+        'scope_type' => 'work_item',
+        'scope_key' => $this->workItem->reference(),
+        'label' => 'Checkout flow',
+        'notes' => 'Use this theme for checkout mockups.',
     ]);
 
     readResource(ReadonlyServer::class, "growth://owners/work_item/{$this->workItem->id}/mockup-design-brief")
@@ -140,6 +149,9 @@ it('serves a mockup design brief for a work item', function () {
         ->assertSee('Themes')
         ->assertSee('Mission Control')
         ->assertSee('mission-control')
+        ->assertSee('Scoped Theme Assignments')
+        ->assertSee('Checkout flow')
+        ->assertSee('Use this theme for checkout mockups.')
         ->assertSee('surface')
         ->assertSee('Represent relevant architecture views/elements');
 });

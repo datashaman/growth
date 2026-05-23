@@ -84,6 +84,7 @@ use App\Mcp\Tools\Plan\ListProjectMockups;
 use App\Mcp\Tools\Plan\ListReleases;
 use App\Mcp\Tools\Plan\ListRisks;
 use App\Mcp\Tools\Plan\ListRoles;
+use App\Mcp\Tools\Plan\ListThemeAssignments;
 use App\Mcp\Tools\Plan\ListThemes;
 use App\Mcp\Tools\Plan\ListWorkItems;
 use App\Mcp\Tools\Plan\SummarizeImplementationStatus;
@@ -151,6 +152,7 @@ class ReadonlyServer extends Server
         ListProjectMockups::class,
         ListThemes::class,
         GetTheme::class,
+        ListThemeAssignments::class,
         ListDeliveryLinks::class,
         ListChangeRequestDeliveryLinks::class,
         ResolveChangeRequestByBranch::class,

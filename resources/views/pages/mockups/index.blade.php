@@ -3,6 +3,7 @@
 use App\Concerns\ProjectScoped;
 use App\Models\Theme;
 use App\Models\SpecMockup;
+use App\Models\ThemeAssignment;
 use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -23,7 +24,7 @@ new #[Title('Mockups')] class extends Component {
 
     public function onProjectDataChanged(): void
     {
-        unset($this->workItemsWithMockups, $this->missingMockupWorkItems, $this->mockupCount, $this->projectThemes);
+        unset($this->workItemsWithMockups, $this->missingMockupWorkItems, $this->mockupCount, $this->projectThemes, $this->projectThemeAssignments);
     }
 
     #[Computed]
@@ -98,6 +99,67 @@ new #[Title('Mockups')] class extends Component {
             ->orderBy('name')
             ->get();
     }
+
+    /**
+     * @return Collection<int,ThemeAssignment>
+     */
+    #[Computed]
+    public function projectThemeAssignments(): Collection
+    {
+        if ($this->selectedProject === null) {
+            return collect();
+        }
+
+        return $this->selectedProject
+            ->themeAssignments()
+            ->with('theme')
+            ->orderBy('scope_type')
+            ->orderBy('scope_key')
+            ->get();
+    }
+
+    public function themePreviewOverride(): string
+    {
+        $theme = (string) request()->query('theme', '');
+
+        if ($theme === 'none') {
+            return 'none';
+        }
+
+        return $this->projectThemes->contains('slug', $theme) ? $theme : '';
+    }
+
+    public function assignedThemeSlug(SpecMockup $mockup): string
+    {
+        $owner = $mockup->owner;
+        $keys = $owner instanceof WorkItem
+            ? [
+                ['work_item', $owner->id],
+                ['work_item', $owner->reference()],
+            ]
+            : [];
+
+        $assignment = $this->projectThemeAssignments->first(
+            fn (ThemeAssignment $assignment): bool => in_array([$assignment->scope_type, $assignment->scope_key], $keys, true),
+        );
+
+        return (string) ($assignment?->theme?->slug ?? $this->projectThemes->firstWhere('is_default', true)?->slug ?? '');
+    }
+
+    public function mockupPreviewUrl(SpecMockup $mockup): string
+    {
+        $theme = $this->themePreviewOverride() === ''
+            ? $this->assignedThemeSlug($mockup)
+            : $this->themePreviewOverride();
+
+        $parameters = ['mockup' => $mockup];
+
+        if ($theme !== '' && $theme !== 'none') {
+            $parameters['theme'] = $theme;
+        }
+
+        return route('mockups.raw', $parameters);
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -107,16 +169,17 @@ new #[Title('Mockups')] class extends Component {
         @if ($this->selectedProject !== null)
             <x-slot:actions>
                 <label class="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-                    <span>{{ __('Theme') }}</span>
+                    <span>{{ __('Preview as') }}</span>
                     <select
                         class="rounded-md border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                         data-growth-theme-selector
                         data-project-id="{{ $this->selectedProject->id }}"
-                        data-default-theme="{{ $this->projectThemes->firstWhere('is_default', true)?->slug ?? '' }}"
+                        data-current-theme="{{ $this->themePreviewOverride() }}"
                         data-test="mockup-theme-selector">
-                        <option value="">{{ __('No theme') }}</option>
+                        <option value="">{{ __('Assigned/default theme') }}</option>
+                        <option value="none" @selected($this->themePreviewOverride() === 'none')>{{ __('No theme') }}</option>
                         @foreach ($this->projectThemes as $theme)
-                            <option value="{{ $theme->slug }}">{{ $theme->name }}@if ($theme->is_default) {{ __('(default)') }}@endif</option>
+                            <option value="{{ $theme->slug }}" @selected($this->themePreviewOverride() === $theme->slug)>{{ $theme->name }}@if ($theme->is_default) {{ __('(default)') }}@endif</option>
                         @endforeach
                     </select>
                 </label>
@@ -172,10 +235,12 @@ new #[Title('Mockups')] class extends Component {
                                 <a href="{{ route('mockups.show', $mockup) }}" wire:navigate class="group block w-72 shrink-0 rounded-lg border border-zinc-200 bg-white p-2 transition hover:border-sky-300 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-sky-700" data-test="project-mockup-card">
                                     <div class="h-40 overflow-hidden rounded-md border border-zinc-200 bg-white dark:border-zinc-700">
                                         <iframe
-                                            src="{{ route('mockups.raw', $mockup) }}"
+                                            src="{{ $this->mockupPreviewUrl($mockup) }}"
                                             data-themed-mockup-frame
                                             data-src-base="{{ route('mockups.raw', $mockup) }}"
+                                            data-assigned-theme="{{ $this->assignedThemeSlug($mockup) }}"
                                             sandbox="allow-scripts"
+                                            loading="lazy"
                                             tabindex="-1"
                                             aria-hidden="true"
                                             title="{{ $mockup->name }}"
@@ -208,25 +273,14 @@ new #[Title('Mockups')] class extends Component {
 
                     selector.dataset.growthThemeBound = 'true';
 
-                    const projectId = selector.dataset.projectId;
-                    const storageKey = `growth:project:${projectId}:mockup-theme`;
-                    const defaultTheme = selector.dataset.defaultTheme || '';
-                    let selectedTheme = localStorage.getItem(storageKey);
-
-                    if (selectedTheme === null) {
-                        selectedTheme = defaultTheme;
-                        if (selectedTheme !== '') {
-                            localStorage.setItem(storageKey, selectedTheme);
-                        }
-                    }
-
-                    selector.value = selectedTheme;
+                    selector.value = selector.dataset.currentTheme || '';
 
                     const applyTheme = () => {
                         document.querySelectorAll('[data-themed-mockup-frame]').forEach((frame) => {
                             const url = new URL(frame.dataset.srcBase, window.location.origin);
-                            if (selector.value) {
-                                url.searchParams.set('theme', selector.value);
+                            const theme = selector.value === '' ? (frame.dataset.assignedTheme || '') : selector.value;
+                            if (theme && theme !== 'none') {
+                                url.searchParams.set('theme', theme);
                             } else {
                                 url.searchParams.delete('theme');
                             }
@@ -235,7 +289,13 @@ new #[Title('Mockups')] class extends Component {
                     };
 
                     selector.addEventListener('change', () => {
-                        localStorage.setItem(storageKey, selector.value);
+                        const url = new URL(window.location.href);
+                        if (selector.value === '') {
+                            url.searchParams.delete('theme');
+                        } else {
+                            url.searchParams.set('theme', selector.value);
+                        }
+                        window.history.replaceState({}, '', url.toString());
                         applyTheme();
                     });
 
