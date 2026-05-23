@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('List work items for a project. Filterable by kind, status, responsible_role_id, parent_id, and substring. "root_only=true" returns only top-level deliverables. For the requirements, milestones, and roles a work item is linked to, use `trace-query` with the work-item id. When architecture context is available, inspect `list-architecture-views` and `list-architecture-elements` before implementing work items.')]
+#[Description('List work items for a project. Filterable by kind, status, responsible_role_id, parent_id, needs_mockups, mockup presence, and substring/reference query. "root_only=true" returns only top-level deliverables. Result rows include needs_mockups and mockups_count for UI/mockup discovery without per-item detail reads. For the requirements, milestones, and roles a work item is linked to, use `trace-query` with the work-item id. When architecture context is available, inspect `list-architecture-views` and `list-architecture-elements` before implementing work items.')]
 class ListWorkItems extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -25,6 +25,8 @@ class ListWorkItems extends Tool
             'responsible_role_id' => 'nullable|string|owned_role',
             'parent_id' => 'nullable|string|owned_work_item',
             'root_only' => 'nullable|boolean',
+            'needs_mockups' => 'nullable|boolean',
+            'has_mockups' => 'nullable|boolean',
             'q' => 'nullable|string|max:255',
             'limit' => 'nullable|integer|min:1|max:200',
             'offset' => 'nullable|integer|min:0',
@@ -43,8 +45,24 @@ class ListWorkItems extends Tool
         if (! empty($data['root_only'])) {
             $query->whereNull('parent_id');
         }
+        if (array_key_exists('needs_mockups', $data)) {
+            $query->where('needs_mockups', (bool) $data['needs_mockups']);
+        }
+        if (array_key_exists('has_mockups', $data)) {
+            $hasMockups = (bool) $data['has_mockups'];
+            $query->{$hasMockups ? 'has' : 'doesntHave'}('mockups');
+        }
         if (isset($data['q'])) {
-            $query->where('name', 'like', '%'.$data['q'].'%');
+            $term = trim($data['q']);
+            $number = $this->referenceNumber($term);
+
+            $query->where(function ($query) use ($term, $number): void {
+                $query->where('name', 'like', '%'.$term.'%');
+
+                if ($number !== null) {
+                    $query->orWhere('number', $number);
+                }
+            });
         }
 
         $total = (clone $query)->count();
@@ -57,12 +75,13 @@ class ListWorkItems extends Tool
             ->get(['id', 'project_id', 'viewpoint', 'name']);
 
         $rows = $query
+            ->withCount('mockups')
             ->orderBy('kind')
             ->orderBy('name')
             ->limit($limit)
             ->offset($offset)
             ->get([
-                'id', 'number', 'kind', 'name', 'status', 'parent_id', 'responsible_role_id',
+                'id', 'number', 'kind', 'name', 'status', 'parent_id', 'responsible_role_id', 'needs_mockups',
             ]);
 
         return Response::structured([
@@ -78,6 +97,8 @@ class ListWorkItems extends Tool
                 'status' => $w->status,
                 'parent_id' => $w->parent_id,
                 'responsible_role_id' => $w->responsible_role_id,
+                'needs_mockups' => $w->needs_mockups,
+                'mockups_count' => $w->mockups_count,
             ])->all(),
             'architecture_context' => [
                 'available' => $architectureViews->isNotEmpty(),
@@ -104,7 +125,9 @@ class ListWorkItems extends Tool
             'responsible_role_id' => $schema->string()->description('Filter by responsible role'),
             'parent_id' => $schema->string()->description('Filter to direct children of this parent'),
             'root_only' => $schema->boolean()->description('If true, only top-level work items (no parent)'),
-            'q' => $schema->string()->description('Substring match on name'),
+            'needs_mockups' => $schema->boolean()->description('Filter by whether the work item requires one or more spec mockups'),
+            'has_mockups' => $schema->boolean()->description('Filter by whether the work item already has one or more work-item-owned mockups. Use needs_mockups=true and has_mockups=false to find missing mockup coverage.'),
+            'q' => $schema->string()->description('Substring match on name, or reference match such as WI-019, wi-019, or 19'),
             'limit' => $schema->integer()->description('Page size (1-200, default 50)'),
             'offset' => $schema->integer()->description('Offset for pagination (default 0)'),
         ];
@@ -119,5 +142,14 @@ class ListWorkItems extends Tool
             'results' => $schema->array()->required(),
             'architecture_context' => $schema->object()->required(),
         ];
+    }
+
+    private function referenceNumber(string $term): ?int
+    {
+        if (preg_match('/^(?:wi-?)?0*([1-9][0-9]*)$/i', $term, $matches) !== 1) {
+            return null;
+        }
+
+        return (int) $matches[1];
     }
 }
