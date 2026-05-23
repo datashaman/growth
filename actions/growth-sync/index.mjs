@@ -7,6 +7,7 @@ import { inflateRawSync } from 'node:zlib';
 import { basename } from 'node:path';
 
 const TRAILER_KEY = 'Growth-Work-Item';
+const CHANGE_REQUEST_TRAILER_KEY = 'Growth-Change-Request';
 
 // Name of the GitHub check growth-sync posts back to a pull request to
 // make a missed work item attribution loud instead of silent.
@@ -28,7 +29,15 @@ const GALLERY_MARKER = '<!-- growth-sync:evidence-gallery -->';
  * Returns null when no trailer is present.
  */
 export function parseTrailer(commitMessage) {
-  const pattern = new RegExp(`^${TRAILER_KEY}:\\s*(\\S+)\\s*$`, 'gim');
+  return parseNamedTrailer(commitMessage, TRAILER_KEY);
+}
+
+export function parseChangeRequestTrailer(commitMessage) {
+  return parseNamedTrailer(commitMessage, CHANGE_REQUEST_TRAILER_KEY);
+}
+
+function parseNamedTrailer(commitMessage, trailerKey) {
+  const pattern = new RegExp(`^${trailerKey}:\\s*(\\S+)\\s*$`, 'gim');
   let workItemId = null;
   let match;
   while ((match = pattern.exec(commitMessage ?? '')) !== null) {
@@ -47,6 +56,11 @@ export function parseTrailer(commitMessage) {
 export function parseBranchReference(branch) {
   const match = /(?:^|[/_-])WI-(\d+)(?=$|[/_-])/i.exec(branch ?? '');
   return match ? `WI-${Number(match[1])}` : null;
+}
+
+export function parseChangeRequestBranchReference(branch) {
+  const match = /(?:^|[/_-])CR-(\d+)(?=$|[/_-])/i.exec(branch ?? '');
+  return match ? `CR-${Number(match[1])}` : null;
 }
 
 /**
@@ -296,6 +310,27 @@ async function resolveWorkItemByBranch({ callTool, repository, branch, log }) {
   };
 }
 
+async function resolveChangeRequestByBranch({ callTool, repository, branch, log }) {
+  if (!branch) {
+    return { changeRequestId: null, ambiguous: false };
+  }
+  const result = await callTool('resolve-change-request-by-branch', {
+    github_repo: repository,
+    branch,
+  });
+  if (result.isError) {
+    throw new Error(`Growth rejected the change-request branch lookup: ${result.errorText}`);
+  }
+  const ambiguous = result.structured?.ambiguous === true;
+  if (ambiguous) {
+    log?.warn(`Branch ${branch} is bound to more than one change request; cannot attribute trailer-less commits.`);
+  }
+  return {
+    changeRequestId: result.structured?.found ? result.structured.change_request_id : null,
+    ambiguous,
+  };
+}
+
 /**
  * Resolve a per-project work item reference (`WI-<number>`) found in a branch
  * name to a work item id within the repository. Returns the work item id, or
@@ -310,6 +345,17 @@ async function resolveWorkItemByReference({ callTool, repository, reference }) {
     throw new Error(`Growth rejected the reference lookup: ${result.errorText}`);
   }
   return result.structured?.found ? result.structured.work_item_id : null;
+}
+
+async function resolveChangeRequestByReference({ callTool, repository, reference }) {
+  const result = await callTool('resolve-change-request-by-reference', {
+    github_repo: repository,
+    reference,
+  });
+  if (result.isError) {
+    throw new Error(`Growth rejected the change-request reference lookup: ${result.errorText}`);
+  }
+  return result.structured?.found ? result.structured.change_request_id : null;
 }
 
 /**
@@ -358,14 +404,30 @@ async function recordBranchBinding({ callTool, repository, workItemId, branch })
   }
 }
 
+async function recordChangeRequestBranchBinding({ callTool, repository, changeRequestId, branch }) {
+  const branchPath = branch.split('/').map(encodeURIComponent).join('/');
+  const result = await callTool('upsert-change-request-delivery-link', {
+    change_request_id: changeRequestId,
+    type: 'branch',
+    ref: branch,
+    url: `https://github.com/${repository}/tree/${branchPath}`,
+  });
+  if (result.isError) {
+    throw new Error(`Growth rejected the change-request branch link: ${result.errorText}`);
+  }
+}
+
+function changeRequestTrailerIsReference(value) {
+  return /^(?:CR-)?0*\d+$/i.test(String(value ?? '').trim());
+}
+
 /**
- * Resolve a work item from a commit message, falling back first to a
- * `WI-NNN` reference in the branch name and then to a branch delivery-link
- * binding when the commit carries no trailer. When the trailer resolves and
- * a branch is known, the branch is bound so later trailer-less events still
- * attribute. Returns the work item id, or null when unattributable.
+ * Resolve a Growth delivery target from commit trailers, branch references,
+ * and finally branch delivery-link bindings. Work item attribution stays
+ * first for compatibility; change requests cover CR-only work that has no
+ * work item. Returns `{ kind, id }`, or null when unattributable.
  */
-async function attributeWorkItem({ callTool, repository, eventName, commitMessage, branch, sha, url, isFork = false, log }) {
+async function attributeDeliveryTarget({ callTool, repository, eventName, commitMessage, branch, sha, url, isFork = false, log }) {
   const trailerId = parseTrailer(commitMessage);
   if (trailerId !== null) {
     // Two forks can share a head ref, so a fork branch must never become a
@@ -374,7 +436,21 @@ async function attributeWorkItem({ callTool, repository, eventName, commitMessag
     if (branch && !isFork) {
       await recordBranchBinding({ callTool, repository, workItemId: trailerId, branch });
     }
-    return trailerId;
+    return { kind: 'work_item', id: trailerId };
+  }
+
+  const changeRequestTrailer = parseChangeRequestTrailer(commitMessage);
+  if (changeRequestTrailer !== null) {
+    const changeRequestId = changeRequestTrailerIsReference(changeRequestTrailer)
+      ? await resolveChangeRequestByReference({ callTool, repository, reference: changeRequestTrailer })
+      : changeRequestTrailer;
+    if (changeRequestId === null) {
+      throw new Error(`Growth could not resolve change request trailer ${changeRequestTrailer}.`);
+    }
+    if (branch && !isFork) {
+      await recordChangeRequestBranchBinding({ callTool, repository, changeRequestId, branch });
+    }
+    return { kind: 'change_request', id: changeRequestId };
   }
 
   // A `WI-NNN` token in the branch name is a per-project work item reference,
@@ -387,9 +463,23 @@ async function attributeWorkItem({ callTool, repository, eventName, commitMessag
     const referencedId = await resolveWorkItemByReference({ callTool, repository, reference });
     if (referencedId !== null) {
       log.info(`Attributed commit ${sha} to work item ${referencedId} via branch reference ${reference}.`);
-      return referencedId;
+      return { kind: 'work_item', id: referencedId };
     }
     log.warn(`Branch ${branch} carries reference ${reference}, but no work item matches it in ${repository}.`);
+  }
+
+  const changeRequestReference = parseChangeRequestBranchReference(branch);
+  if (changeRequestReference !== null) {
+    const referencedId = await resolveChangeRequestByReference({
+      callTool,
+      repository,
+      reference: changeRequestReference,
+    });
+    if (referencedId !== null) {
+      log.info(`Attributed commit ${sha} to change request ${referencedId} via branch reference ${changeRequestReference}.`);
+      return { kind: 'change_request', id: referencedId };
+    }
+    log.warn(`Branch ${branch} carries reference ${changeRequestReference}, but no change request matches it in ${repository}.`);
   }
 
   // A fork's trailer-less commit cannot borrow a base-repo branch binding:
@@ -399,17 +489,39 @@ async function attributeWorkItem({ callTool, repository, eventName, commitMessag
     : await resolveWorkItemByBranch({ callTool, repository, branch, log });
   if (workItemId !== null) {
     log.info(`Attributed commit ${sha} to work item ${workItemId} via branch ${branch}.`);
-    return workItemId;
+    return { kind: 'work_item', id: workItemId };
+  }
+  if (ambiguous) {
+    log.warn(`No ${TRAILER_KEY} trailer on commit ${sha} and branch ${branch ?? '(unknown)'} is ambiguous; skipping.`);
+    await recordUnattributedEvent({
+      callTool,
+      repository,
+      eventName,
+      branch,
+      sha,
+      reason: 'ambiguous_branch',
+      url,
+      log,
+    });
+    return null;
   }
 
-  log.warn(`No ${TRAILER_KEY} trailer on commit ${sha} and no work item bound to branch ${branch ?? '(unknown)'}; skipping.`);
+  const { changeRequestId, ambiguous: crAmbiguous } = isFork
+    ? { changeRequestId: null, ambiguous: false }
+    : await resolveChangeRequestByBranch({ callTool, repository, branch, log });
+  if (changeRequestId !== null) {
+    log.info(`Attributed commit ${sha} to change request ${changeRequestId} via branch ${branch}.`);
+    return { kind: 'change_request', id: changeRequestId };
+  }
+
+  log.warn(`No Growth attribution trailer on commit ${sha} and no work item or change request bound to branch ${branch ?? '(unknown)'}; skipping.`);
   await recordUnattributedEvent({
     callTool,
     repository,
     eventName,
     branch,
     sha,
-    reason: ambiguous ? 'ambiguous_branch' : 'missing_link',
+    reason: crAmbiguous ? 'ambiguous_branch' : 'missing_link',
     url,
     log,
   });
@@ -438,6 +550,17 @@ export function buildDeliveryLinkArgs(event, workItemId) {
   const pr = event.pull_request ?? {};
   return {
     work_item_id: workItemId,
+    type: 'pull_request',
+    ref: `#${pr.number}`,
+    url: pr.html_url,
+    description: `GitHub pull request: ${pr.title ?? ''}`.trim(),
+  };
+}
+
+export function buildChangeRequestDeliveryLinkArgs(event, changeRequestId) {
+  const pr = event.pull_request ?? {};
+  return {
+    change_request_id: changeRequestId,
     type: 'pull_request',
     ref: `#${pr.number}`,
     url: pr.html_url,
@@ -492,26 +615,30 @@ export function mapDeploymentState(githubState) {
 }
 
 /**
- * Build the GitHub check-run payload for the work item attribution check.
- * A resolved work item passes; an unresolved one fails (blocking) or is
- * flagged neutral (advisory), with output naming the ways to fix it.
+ * Build the GitHub check-run payload for the attribution check.
+ * A resolved work item or change request passes; an unresolved one fails
+ * (blocking) or is flagged neutral (advisory), with output naming the ways
+ * to fix it.
  */
-export function buildAttributionCheckArgs({ headSha, workItemId, branch, advisory }) {
-  const resolved = workItemId !== null && workItemId !== undefined;
+export function buildAttributionCheckArgs({ headSha, target, workItemId, branch, advisory }) {
+  const normalizedTarget = target ?? (workItemId != null ? { kind: 'work_item', id: workItemId } : null);
+  const resolved = normalizedTarget !== null;
+  const targetLabel = normalizedTarget?.kind === 'change_request' ? 'change request' : 'work item';
   const output = resolved
     ? {
-        title: `Attributed to work item ${workItemId}`,
-        summary: `This pull request's commits are attributed to Growth work item ${workItemId}.`,
+        title: `Attributed to ${targetLabel} ${normalizedTarget.id}`,
+        summary: `This pull request's commits are attributed to Growth ${targetLabel} ${normalizedTarget.id}.`,
       }
     : {
-        title: 'No Growth work item resolved',
+        title: 'No Growth work item or change request resolved',
         summary: [
-          'growth-sync could not attribute this pull request to a Growth work item, ',
+          'growth-sync could not attribute this pull request to a Growth work item or change request, ',
           'so its delivery evidence will not be recorded.',
           '\n\nFix it one of three ways:\n',
-          '- Name the branch with a `WI-<number>` reference, e.g. `WI-42-short-description`, or\n',
+          '- Name the branch with a `WI-<number>` or `CR-<number>` reference, e.g. `WI-42-short-description`, or\n',
           `- Add a \`${TRAILER_KEY}: <id>\` trailer to a commit on \`${branch ?? 'this branch'}\`, or\n`,
-          '- Bind the branch to a work item with the `upsert-delivery-link` MCP tool (type `branch`).',
+          `- Add a \`${CHANGE_REQUEST_TRAILER_KEY}: <id-or-CR-number>\` trailer, or\n`,
+          '- Bind the branch with `upsert-delivery-link` or `upsert-change-request-delivery-link` (type `branch`).',
           '\n\nRe-run this workflow once the reference or link exists and the check will pass.',
         ].join(''),
       };
@@ -531,7 +658,7 @@ export function buildAttributionCheckArgs({ headSha, workItemId, branch, advisor
  * GITHUB_TOKEN is read-only, so the Checks API POST would 403). A failed
  * post is logged, not thrown, so it never fails the whole sync.
  */
-async function reportAttribution({ event, repository, workItemId, branch, postCheckRun, advisory, log }) {
+async function reportAttribution({ event, repository, target, branch, postCheckRun, advisory, log }) {
   if (!postCheckRun || event.action === 'closed') {
     return;
   }
@@ -546,7 +673,7 @@ async function reportAttribution({ event, repository, workItemId, branch, postCh
     return;
   }
 
-  const args = buildAttributionCheckArgs({ headSha, workItemId, branch, advisory });
+  const args = buildAttributionCheckArgs({ headSha, target, branch, advisory });
   try {
     await postCheckRun(args);
     log.info(`Posted "${ATTRIBUTION_CHECK_NAME}" check (${args.conclusion}) on ${headSha}.`);
@@ -586,7 +713,7 @@ async function runPullRequest({ event, repository, getCommitMessage, callTool, p
 
   const branch = resolveEventBranch('pull_request', event);
   const commitMessage = await getCommitMessage(sha);
-  const workItemId = await attributeWorkItem({
+  const target = await attributeDeliveryTarget({
     callTool,
     repository,
     eventName: 'pull_request',
@@ -601,24 +728,29 @@ async function runPullRequest({ event, repository, getCommitMessage, callTool, p
   await reportAttribution({
     event,
     repository,
-    workItemId,
+    target,
     branch,
     postCheckRun,
     advisory: attributionCheckAdvisory,
     log,
   });
 
-  if (workItemId === null) {
+  if (target === null) {
     return { skipped: true };
   }
 
-  const args = buildDeliveryLinkArgs(event, workItemId);
-  const result = await callTool('upsert-delivery-link', args);
+  const args = target.kind === 'work_item'
+    ? buildDeliveryLinkArgs(event, target.id)
+    : buildChangeRequestDeliveryLinkArgs(event, target.id);
+  const result = await callTool(
+    target.kind === 'work_item' ? 'upsert-delivery-link' : 'upsert-change-request-delivery-link',
+    args,
+  );
   if (result.isError) {
     throw new Error(`Growth rejected the delivery link: ${result.errorText}`);
   }
 
-  log.info(`Recorded delivery link ${args.ref} on work item ${workItemId}.`);
+  log.info(`Recorded delivery link ${args.ref} on ${target.kind === 'work_item' ? 'work item' : 'change request'} ${target.id}.`);
   return { skipped: false, structured: result.structured };
 }
 
@@ -643,7 +775,7 @@ async function runCheckRun({ event, repository, getCommitMessage, callTool, log 
   const branch = resolveEventBranch('check_run', event, pullRequest);
   const sha = event.check_run?.head_sha;
   const commitMessage = await getCommitMessage(sha);
-  const workItemId = await attributeWorkItem({
+  const target = await attributeDeliveryTarget({
     callTool,
     repository,
     eventName: 'check_run',
@@ -653,12 +785,16 @@ async function runCheckRun({ event, repository, getCommitMessage, callTool, log 
     url: event.check_run?.html_url,
     log,
   });
-  if (workItemId === null) {
+  if (target === null) {
+    return { skipped: true };
+  }
+  if (target.kind === 'change_request') {
+    log.info(`Check run resolved only to change request ${target.id}; check evidence is work-item scoped, so no check-run evidence was recorded.`);
     return { skipped: true };
   }
 
   const linkArgs = {
-    work_item_id: workItemId,
+    work_item_id: target.id,
     type: 'pull_request',
     ref: `#${pullRequest.number}`,
     url: `https://github.com/${repository}/pull/${pullRequest.number}`,
@@ -862,7 +998,7 @@ async function runWorkflowRun({
   const run = event.workflow_run ?? {};
   const branch = resolveEventBranch('workflow_run', event);
   const commitMessage = await getCommitMessage(run.head_sha, run.head_repository?.full_name);
-  const workItemId = await attributeWorkItem({
+  const target = await attributeDeliveryTarget({
     callTool,
     repository,
     eventName: 'workflow_run',
@@ -882,7 +1018,7 @@ async function runWorkflowRun({
       runId: run.id,
       repository,
       pullRequest,
-      workItemId,
+      workItemId: target?.kind === 'work_item' ? target.id : null,
       listRunArtifacts,
       downloadArtifact,
       uploadEvidence,
@@ -896,12 +1032,16 @@ async function runWorkflowRun({
     log.warn(`Could not ingest visual evidence: ${error.message}`);
   }
 
-  if (workItemId === null) {
+  if (target === null) {
+    return { skipped: true };
+  }
+  if (target.kind === 'change_request') {
+    log.info(`Workflow run resolved only to change request ${target.id}; check evidence is work-item scoped, so no check-run evidence was recorded.`);
     return { skipped: true };
   }
 
   const linkArgs = {
-    work_item_id: workItemId,
+    work_item_id: target.id,
     type: 'pull_request',
     ref: `#${pullRequest.number}`,
     url: `https://github.com/${repository}/pull/${pullRequest.number}`,
@@ -1064,7 +1204,7 @@ function makeGitHubClient({ apiUrl, repository, token, fetchFn }) {
 
 /**
  * Post a check run to a repository via the GitHub Checks API. Used to
- * surface the work item attribution result back onto the pull request.
+ * surface the Growth attribution result back onto the pull request.
  */
 function makeCheckRunPoster({ apiUrl, repository, token, fetchFn }) {
   return async function postCheckRun(args) {

@@ -5,10 +5,10 @@
 # with your Growth instance URL, or use ${{ vars.GROWTH_URL }} to keep it
 # out of the repo.
 #
-# Name feature branches with a leading "WI-<number>" reference (e.g.
-# WI-42-add-login) and growth-sync attributes the pull request to that work
-# item automatically — see the README "Attribution" section for the other
-# two conventions.
+# Name feature branches with a "WI-<number>" or "CR-<number>" reference
+# (e.g. WI-42-add-login or feature/cr-007) and growth-sync attributes the
+# pull request automatically. See the README "Attribution" section for
+# trailer and explicit branch-link conventions.
 name: Growth sync
 
 on:

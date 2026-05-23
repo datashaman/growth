@@ -9,6 +9,7 @@ use App\Models\ArtifactRelation;
 use App\Models\ChangeApprovalEvent;
 use App\Models\ChangeImpact;
 use App\Models\ChangeRequest;
+use App\Models\ChangeRequestDeliveryLink;
 use App\Models\CheckRunEvidence;
 use App\Models\Citation;
 use App\Models\Concern;
@@ -69,6 +70,7 @@ class AppServiceProvider extends ServiceProvider
         'requirement' => Requirement::class,
         'artifact_relation' => ArtifactRelation::class,
         'change_request' => ChangeRequest::class,
+        'change_request_delivery_link' => ChangeRequestDeliveryLink::class,
         'change_approval_event' => ChangeApprovalEvent::class,
         'decision_request' => DecisionRequest::class,
         'check_run_evidence' => CheckRunEvidence::class,
@@ -102,6 +104,7 @@ class AppServiceProvider extends ServiceProvider
         'owned_artifact_relation' => [ArtifactRelation::class, 'artifact_relations.id'],
         'owned_change_approval_event' => [ChangeApprovalEvent::class, 'change_approval_events.id'],
         'owned_change_request' => [ChangeRequest::class,   'change_requests.id'],
+        'owned_change_request_delivery_link' => [ChangeRequestDeliveryLink::class, 'change_request_delivery_links.id'],
         'owned_decision_request' => [DecisionRequest::class, 'decision_requests.id'],
         'owned_change_impact' => [ChangeImpact::class,    'change_impacts.id'],
         'owned_check_run_evidence' => [CheckRunEvidence::class, 'check_run_evidences.id'],

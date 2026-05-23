@@ -17,6 +17,8 @@ import {
   isForkPullRequest,
   mapDeploymentState,
   parseBranchReference,
+  parseChangeRequestBranchReference,
+  parseChangeRequestTrailer,
   parseTrailer,
   resolveCheckRunPullRequest,
   resolveCommitSha,
@@ -39,6 +41,11 @@ test('parseTrailer returns null when no trailer is present', () => {
 test('parseTrailer takes the last trailer when several are present', () => {
   const message = 'Squash\n\nGrowth-Work-Item: 01OLD\nGrowth-Work-Item: 01NEW';
   assert.equal(parseTrailer(message), '01NEW');
+});
+
+test('parseChangeRequestTrailer reads the last Growth-Change-Request trailer', () => {
+  const message = 'Squash\n\nGrowth-Change-Request: CR-1\nGrowth-Change-Request: 01CR';
+  assert.equal(parseChangeRequestTrailer(message), '01CR');
 });
 
 test('resolveCommitSha uses the head sha for opened and synchronize', () => {
@@ -112,6 +119,9 @@ test('run records an unattributed event when no trailer is present', async () =>
     getCommitMessage: async () => 'No trailer here',
     callTool: async (name, args) => {
       calls.push({ name, args });
+      if (name === 'resolve-work-item-by-branch' || name === 'resolve-change-request-by-branch') {
+        return { isError: false, structured: { found: false } };
+      }
       return { isError: false };
     },
     log: silentLog(),
@@ -731,6 +741,9 @@ test('run skips a trailer-less event whose branch is not bound', async () => {
       if (name === 'resolve-work-item-by-branch') {
         return { isError: false, structured: { found: false, work_item_id: null } };
       }
+      if (name === 'resolve-change-request-by-branch') {
+        return { isError: false, structured: { found: false, change_request_id: null } };
+      }
       if (name === 'record-unattributed-event') {
         return { isError: false };
       }
@@ -757,6 +770,13 @@ test('parseBranchReference returns null when no reference is present', () => {
   assert.equal(parseBranchReference(''), null);
   assert.equal(parseBranchReference(null), null);
   assert.equal(parseBranchReference(undefined), null);
+});
+
+test('parseChangeRequestBranchReference extracts a CR-NNN reference from any position', () => {
+  assert.equal(parseChangeRequestBranchReference('CR-42-adjust-scope'), 'CR-42');
+  assert.equal(parseChangeRequestBranchReference('feature/cr-003'), 'CR-3');
+  assert.equal(parseChangeRequestBranchReference('fixCR-42'), null);
+  assert.equal(parseChangeRequestBranchReference(''), null);
 });
 
 test('run attributes a trailer-less pull request via a WI-NNN branch reference', async () => {
@@ -898,6 +918,107 @@ test('an unresolved branch reference falls through to the branch binding', async
   assert.ok(calls.some((c) => c.name === 'resolve-work-item-by-branch'));
 });
 
+test('run attributes a pull request via a Growth-Change-Request CR reference trailer', async () => {
+  const calls = [];
+  const result = await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'synchronize',
+      pull_request: {
+        number: 14,
+        html_url: 'https://github.com/datashaman/growth/pull/14',
+        title: 'Telemetry adjustment',
+        head: { ref: 'feature/telemetry', sha: 'headsha', repo: { full_name: 'datashaman/growth' } },
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'Work\n\nGrowth-Change-Request: CR-7',
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      if (name === 'resolve-change-request-by-reference') {
+        return { isError: false, structured: { found: true, change_request_id: '01CR' } };
+      }
+      return { isError: false, structured: { id: 'link1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, false);
+  assert.ok(calls.some((c) => c.name === 'resolve-change-request-by-reference'
+    && c.args.reference === 'CR-7'));
+  assert.ok(calls.some((c) => c.name === 'upsert-change-request-delivery-link'
+    && c.args.type === 'branch' && c.args.change_request_id === '01CR'));
+  assert.ok(calls.some((c) => c.name === 'upsert-change-request-delivery-link'
+    && c.args.type === 'pull_request' && c.args.change_request_id === '01CR'));
+  assert.ok(!calls.some((c) => c.name === 'upsert-delivery-link'));
+});
+
+test('run attributes a trailer-less pull request via a CR-NNN branch reference', async () => {
+  const calls = [];
+  const result = await run({
+    eventName: 'pull_request',
+    event: {
+      action: 'synchronize',
+      pull_request: {
+        number: 15,
+        html_url: 'https://github.com/datashaman/growth/pull/15',
+        head: { ref: 'feature/cr-007-telemetry', sha: 'headsha', repo: { full_name: 'datashaman/growth' } },
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer here',
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      if (name === 'resolve-work-item-by-branch') {
+        return { isError: false, structured: { found: false, work_item_id: null } };
+      }
+      if (name === 'resolve-change-request-by-reference') {
+        return { isError: false, structured: { found: true, change_request_id: '01CR' } };
+      }
+      return { isError: false, structured: { id: 'link1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, false);
+  assert.ok(calls.some((c) => c.name === 'resolve-change-request-by-reference'
+    && c.args.reference === 'CR-7'));
+  assert.ok(calls.some((c) => c.name === 'upsert-change-request-delivery-link'
+    && c.args.type === 'pull_request' && c.args.change_request_id === '01CR'));
+  assert.ok(!calls.some((c) => c.name === 'resolve-change-request-by-branch'));
+});
+
+test('check_run resolved only to a change request does not record work-item check evidence', async () => {
+  const calls = [];
+  const result = await run({
+    eventName: 'check_run',
+    event: {
+      check_run: {
+        head_sha: 'shaX',
+        name: 'tests',
+        status: 'completed',
+        conclusion: 'success',
+        pull_requests: [{ number: 9, head: { ref: 'feature/cr-7' } }],
+      },
+    },
+    repository: 'datashaman/growth',
+    getCommitMessage: async () => 'No trailer',
+    callTool: async (name, args) => {
+      calls.push({ name, args });
+      if (name === 'resolve-change-request-by-reference') {
+        return { isError: false, structured: { found: true, change_request_id: '01CR' } };
+      }
+      return { isError: false, structured: { id: 'link1' } };
+    },
+    log: silentLog(),
+  });
+
+  assert.equal(result.skipped, true);
+  assert.ok(calls.some((c) => c.name === 'resolve-change-request-by-reference'));
+  assert.ok(!calls.some((c) => c.name === 'upsert-check-run'));
+  assert.ok(!calls.some((c) => c.name === 'record-unattributed-event'));
+});
+
 test('buildAttributionCheckArgs passes when a work item resolved', () => {
   const args = buildAttributionCheckArgs({ headSha: 'sha1', workItemId: '01WI', branch: 'feature/x' });
   assert.equal(args.name, 'Growth: work item attribution');
@@ -907,11 +1028,23 @@ test('buildAttributionCheckArgs passes when a work item resolved', () => {
   assert.match(args.output.title, /01WI/);
 });
 
+test('buildAttributionCheckArgs passes when a change request resolved', () => {
+  const args = buildAttributionCheckArgs({
+    headSha: 'sha1',
+    target: { kind: 'change_request', id: '01CR' },
+    branch: 'feature/x',
+  });
+  assert.equal(args.name, 'Growth: work item attribution');
+  assert.equal(args.conclusion, 'success');
+  assert.match(args.output.title, /change request 01CR/);
+});
+
 test('buildAttributionCheckArgs fails when no work item resolved', () => {
   const args = buildAttributionCheckArgs({ headSha: 'sha1', workItemId: null, branch: 'feature/x' });
   assert.equal(args.conclusion, 'failure');
   assert.match(args.output.title, /No Growth work item/);
   assert.match(args.output.summary, /Growth-Work-Item/);
+  assert.match(args.output.summary, /Growth-Change-Request/);
   assert.match(args.output.summary, /feature\/x/);
 });
 
@@ -959,6 +1092,9 @@ test('run posts a failing attribution check when a pull request cannot be attrib
     callTool: async (name) => {
       if (name === 'resolve-work-item-by-branch') {
         return { isError: false, structured: { found: false, work_item_id: null } };
+      }
+      if (name === 'resolve-change-request-by-branch') {
+        return { isError: false, structured: { found: false, change_request_id: null } };
       }
       if (name === 'record-unattributed-event') {
         return { isError: false };
