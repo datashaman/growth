@@ -54,6 +54,9 @@
                         <flux:sidebar.item icon="calendar-days" :href="route('plan')" :current="request()->routeIs('plan')" wire:navigate>
                             {{ __('Plan') }}
                         </flux:sidebar.item>
+                        <flux:sidebar.item icon="rectangle-stack" :href="route('mockups')" :current="request()->routeIs('mockups*')" wire:navigate>
+                            {{ __('Mockups') }}
+                        </flux:sidebar.item>
                     @endif
                     <flux:sidebar.item icon="users" :href="route('roles')" :current="request()->routeIs('roles')" wire:navigate>
                         {{ __('Roles') }}
