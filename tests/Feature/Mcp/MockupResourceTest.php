@@ -23,14 +23,19 @@ beforeEach(function () {
     ]);
 });
 
-it('serves a mockup current revision html', function () {
+it('inspects a mockup current revision', function () {
     $mockup = createMockup($this->workItem, 'Roomy layout', '<!doctype html><html><body>roomy</body></html>');
-    $mockup->appendRevision('<!doctype html><html><body>latest</body></html>');
+    $revision = $mockup->appendRevision('<!doctype html><html><body>latest</body></html>');
 
     readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}")
         ->assertOk()
+        ->assertSee('"type":"mockup_preview"')
+        ->assertSee('"revision_id":"'.$revision->id.'"')
         ->assertSee('latest')
-        ->assertDontSee('roomy');
+        ->assertDontSee('roomy')
+        ->assertSee("growth://mockups/{$mockup->id}/{$revision->id}/screenshot")
+        ->assertDontSee('"base64"')
+        ->assertDontSee('"blob"');
 });
 
 it('errors for an unknown mockup id', function () {

@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { writeFile } from 'node:fs/promises';
 
 const chunks = [];
 for await (const chunk of process.stdin) {
@@ -7,6 +8,8 @@ for await (const chunk of process.stdin) {
 
 const input = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
 const html = String(input.html || '');
+const includeScreenshot = input.include_screenshot === true;
+const screenshotPath = typeof input.screenshot_path === 'string' ? input.screenshot_path : '';
 
 const browser = await chromium.launch({ headless: true });
 try {
@@ -58,20 +61,30 @@ try {
     return values;
   });
 
-  const screenshot = await page.screenshot({ type: 'png', fullPage: true });
-  const dimensions = await page.evaluate(() => ({
-    width: Math.ceil(Math.max(document.documentElement.scrollWidth, document.body?.scrollWidth || 0, window.innerWidth)),
-    height: Math.ceil(Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight || 0, window.innerHeight)),
-  }));
-
-  process.stdout.write(JSON.stringify({
+  const output = {
     visible_text: visibleText,
-    screenshot: {
-      base64: screenshot.toString('base64'),
+  };
+
+  if (includeScreenshot) {
+    if (screenshotPath === '') {
+      throw new Error('screenshot_path is required when include_screenshot is true');
+    }
+
+    const screenshot = await page.screenshot({ type: 'png', fullPage: true });
+    const dimensions = await page.evaluate(() => ({
+      width: Math.ceil(Math.max(document.documentElement.scrollWidth, document.body?.scrollWidth || 0, window.innerWidth)),
+      height: Math.ceil(Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight || 0, window.innerHeight)),
+    }));
+
+    await writeFile(screenshotPath, screenshot);
+
+    output.screenshot = {
       width: dimensions.width,
       height: dimensions.height,
-    },
-  }));
+    };
+  }
+
+  process.stdout.write(JSON.stringify(output));
 } finally {
   await browser.close();
 }

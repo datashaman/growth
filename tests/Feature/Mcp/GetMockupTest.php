@@ -39,6 +39,9 @@ it("returns the default mockup's current html for a work item", function () {
                 ->where('name', 'default')
                 ->where('revision', 2)
                 ->where('html', '<!doctype html><html><body>v2</body></html>')
+                ->where('inspection.uri', "growth://mockups/{$mockup->id}")
+                ->where('inspection.revision_uri', "growth://mockups/{$mockup->id}/{$mockup->currentRevision->id}")
+                ->where('inspection.screenshot_uri', "growth://mockups/{$mockup->id}/{$mockup->currentRevision->id}/screenshot")
                 ->etc();
         });
 });

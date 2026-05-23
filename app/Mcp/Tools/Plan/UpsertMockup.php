@@ -76,7 +76,7 @@ class UpsertMockup extends Tool
             'created' => $schema->boolean()->description('Whether this call created the mockup')->required(),
             'warnings' => $schema->array()->description('Non-blocking quality warnings for HTML patterns that often make weak or brittle mockups')->required(),
             'design_brief' => $schema->object()->description('Brief resource to read before generating or refining this mockup')->required(),
-            'inspection' => $schema->object()->description('Rendered inspection resource for this revision')->required(),
+            'inspection' => $schema->object()->description('Preview resource for this revision')->required(),
         ];
     }
 
@@ -185,13 +185,15 @@ class UpsertMockup extends Tool
     }
 
     /**
-     * @return array{uri:string,guidance:string}
+     * @return array{uri:string,revision_uri:string,screenshot_uri:string,guidance:string}
      */
     private function inspectionResource(string $mockupId, string $revisionId): array
     {
         return [
-            'uri' => "growth://mockups/{$mockupId}/revisions/{$revisionId}/rendered-inspection/assigned",
-            'guidance' => 'Read this after upsert-mockup to inspect the browser-rendered artifact for visible workflow metadata, implementation notes, and debug/theme labels.',
+            'uri' => "growth://mockups/{$mockupId}",
+            'revision_uri' => "growth://mockups/{$mockupId}/{$revisionId}",
+            'screenshot_uri' => "growth://mockups/{$mockupId}/{$revisionId}/screenshot",
+            'guidance' => 'Read the preview URI after upsert-mockup for browser-visible text and metadata warnings. Read screenshot_uri only when visual pixels are needed. Append ?theme=none or ?theme={slug} to override the assigned theme.',
         ];
     }
 }

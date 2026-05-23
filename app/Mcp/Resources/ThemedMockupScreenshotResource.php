@@ -12,20 +12,20 @@ use Laravel\Mcp\Server\Contracts\HasUriTemplate;
 use Laravel\Mcp\Server\Resource;
 use Laravel\Mcp\Support\UriTemplate;
 
-#[Name('Mockup')]
-#[Description('Browser preview for a spec mockup current revision, including preview URL, theme context, visible text, warnings for visible Growth/internal metadata, and a screenshot resource URI. Pass ?theme=none or ?theme={slug} to override assigned theme.')]
-#[MimeType('application/json')]
-class MockupResource extends Resource implements HasUriTemplate
+#[Name('Themed Mockup Screenshot')]
+#[Description('PNG screenshot for a browser preview of a spec mockup revision with an explicit theme query, such as ?theme=none or ?theme={slug}.')]
+#[MimeType('image/png')]
+class ThemedMockupScreenshotResource extends Resource implements HasUriTemplate
 {
     use InspectsMockups;
 
     public function uriTemplate(): UriTemplate
     {
-        return new UriTemplate('growth://mockups/{mockup}');
+        return new UriTemplate('growth://mockups/{mockup}/{revision}/screenshot?theme={theme}');
     }
 
     public function handle(Request $request): Response
     {
-        return $this->inspectionResponse($request);
+        return $this->screenshotResponse($request);
     }
 }
