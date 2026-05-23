@@ -79,6 +79,7 @@ use App\Mcp\Tools\Plan\ListDeliveryLinks;
 use App\Mcp\Tools\Plan\ListDeployments;
 use App\Mcp\Tools\Plan\ListMilestones;
 use App\Mcp\Tools\Plan\ListPlanBaselines;
+use App\Mcp\Tools\Plan\ListProjectMockups;
 use App\Mcp\Tools\Plan\ListReleases;
 use App\Mcp\Tools\Plan\ListRisks;
 use App\Mcp\Tools\Plan\ListRoles;
@@ -145,6 +146,7 @@ class ReadonlyServer extends Server
         ListAgents::class,
         ListWorkItems::class,
         GetWorkItem::class,
+        ListProjectMockups::class,
         ListDeliveryLinks::class,
         ListChangeRequestDeliveryLinks::class,
         ResolveChangeRequestByBranch::class,

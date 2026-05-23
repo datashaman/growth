@@ -49,6 +49,64 @@ it('stores a mockup for a work item', function () {
         ->and($mockups->first()->currentRevision->html)->toContain('<h1>Checkout</h1>');
 });
 
+it('warns without rejecting mockups that reference external assets', function () {
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'name' => 'External asset layout',
+        'html' => '<!doctype html><html><head><link rel="stylesheet" href="https://cdn.example.com/app.css"></head><body><img src="//cdn.example.com/chart.png"></body></html>',
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('warnings.0.code', 'external_assets')
+                ->etc();
+        });
+
+    expect($this->workItem->mockups()->count())->toBe(1);
+});
+
+it('warns on whole-screen state picker patterns', function () {
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'name' => 'Screen picker',
+        'html' => <<<'HTML'
+<!doctype html><html><body>
+<select id="screen-state"><option>Empty</option><option>Error</option></select>
+<section id="empty-screen" class="screen">Empty screen</section>
+<section id="error-screen" class="screen" hidden>Error screen</section>
+<script>document.querySelectorAll('.screen').forEach((screen) => screen.hidden = true)</script>
+</body></html>
+HTML,
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('warnings.0.code', 'whole_screen_state_picker')
+                ->etc();
+        });
+});
+
+it('does not warn for valid local interactions inside one mockup', function () {
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'name' => 'Filter interaction',
+        'html' => <<<'HTML'
+<!doctype html><html><body>
+<label><input type="checkbox" id="show-done"> Show done</label>
+<ul><li data-status="todo">Collect intent</li><li data-status="done">Draft copy</li></ul>
+<form><input required><button>Submit</button><p role="status"></p></form>
+<script>document.querySelector('#show-done').addEventListener('change', () => document.querySelector('[role=status]').textContent = 'Filtered')</script>
+</body></html>
+HTML,
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('warnings', [])
+                ->etc();
+        });
+});
+
 it('returns architecture guidance when creating a mockup in a project with design context', function () {
     $view = DesignView::create([
         'project_id' => $this->project->id,

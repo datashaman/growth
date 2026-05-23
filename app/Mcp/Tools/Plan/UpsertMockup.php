@@ -44,6 +44,7 @@ class UpsertMockup extends Tool
             'name' => $mockup->name,
             'revision' => $revision->number,
             'created' => $created,
+            'warnings' => $this->qualityWarnings($data['html']),
             'design_brief' => $this->designBrief($owner->project_id, $data['owner_type'], $data['owner_id']),
         ]);
     }
@@ -54,7 +55,7 @@ class UpsertMockup extends Tool
             'owner_type' => $schema->string()->enum(['work_item', 'requirement'])->description('The spec entity the mockup belongs to')->required(),
             'owner_id' => $schema->string()->description('ULID of the work item or requirement that owns the mockup')->required(),
             'name' => $schema->string()->description('Optional label for the mockup. Omit to update the owner\'s single default mockup in place; pass a value to hold a named alternative alongside the default.'),
-            'html' => $schema->string()->description('A self-contained HTML document — the mockup. Inline the styles and scripts (CDN links are fine); it renders sandboxed, isolated from the Growth app. Read the owner\'s mockup design brief first; if the artifact diverges from that brief, make the mismatch visible in the mockup or its notes.')->required(),
+            'html' => $schema->string()->description('A self-contained HTML document — the mockup. Inline styles, scripts, and assets; external URLs are accepted but returned with quality warnings because durable mockups should not depend on outside resources. Read the owner\'s mockup design brief first; if the artifact diverges from that brief, make the mismatch visible in the mockup or its notes.')->required(),
         ];
     }
 
@@ -67,8 +68,54 @@ class UpsertMockup extends Tool
             'name' => $schema->string()->required(),
             'revision' => $schema->integer()->description('Number of the revision this call appended')->required(),
             'created' => $schema->boolean()->description('Whether this call created the mockup')->required(),
+            'warnings' => $schema->array()->description('Non-blocking quality warnings for HTML patterns that often make weak or brittle mockups')->required(),
             'design_brief' => $schema->object()->description('Brief resource to read before generating or refining this mockup')->required(),
         ];
+    }
+
+    /**
+     * @return list<array{code:string,message:string}>
+     */
+    private function qualityWarnings(string $html): array
+    {
+        $warnings = [];
+
+        if ($this->containsExternalAssets($html)) {
+            $warnings[] = [
+                'code' => 'external_assets',
+                'message' => 'Mockup HTML references external scripts, styles, or assets. Keep mockups self-contained with inline CSS/JS and embedded assets when possible.',
+            ];
+        }
+
+        if ($this->containsWholeScreenStatePicker($html)) {
+            $warnings[] = [
+                'code' => 'whole_screen_state_picker',
+                'message' => 'Mockup HTML appears to include a screen/state picker that swaps whole screens. Prefer separate named mockups for materially different states, and reserve local JavaScript for natural interactions.',
+            ];
+        }
+
+        return $warnings;
+    }
+
+    private function containsExternalAssets(string $html): bool
+    {
+        return preg_match('/<(?:script|link|img|iframe|video|audio|source)\b[^>]+\b(?:src|href)\s*=\s*["\'](?:https?:)?\/\//i', $html) === 1
+            || preg_match('/url\(\s*["\']?(?:https?:)?\/\//i', $html) === 1;
+    }
+
+    private function containsWholeScreenStatePicker(string $html): bool
+    {
+        $hasStateSelector = preg_match('/<(?:select|nav|fieldset|div|section)\b[^>]*(?:state|screen|view)[^>]*>.*?<option\b.*?<option\b/is', $html) === 1
+            || preg_match('/<(?:button|a)\b[^>]*(?:data-(?:state|screen|view)|aria-controls)\s*=\s*["\'][^"\']+["\'][^>]*>.*?<\/(?:button|a)>.*?<(?:button|a)\b[^>]*(?:data-(?:state|screen|view)|aria-controls)\s*=/is', $html) === 1;
+
+        if (! $hasStateSelector) {
+            return false;
+        }
+
+        $hasWholeScreenPanels = preg_match('/\b(?:class|id)\s*=\s*["\'][^"\']*(?:screen|state-panel|view-panel|mockup-state)[^"\']*["\']/i', $html) === 1;
+        $hasSwapScript = preg_match('/(?:querySelectorAll|getElementById|classList|style\.display|hidden\s*=|\.hidden)/i', $html) === 1;
+
+        return $hasWholeScreenPanels && $hasSwapScript;
     }
 
     /**
