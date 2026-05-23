@@ -17,6 +17,7 @@ use App\Models\Risk;
 use App\Models\Role;
 use App\Models\Stakeholder;
 use App\Models\TestPlan;
+use App\Models\Theme;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
@@ -45,6 +46,8 @@ class DemoProjectSeeder extends Seeder
                 ['workspace_id' => $user->active_workspace_id, 'name' => 'Demo: Orbit Telemetry'],
                 ['description' => 'Reference project showing a healthy delivery cadence.', 'rigor_level' => 2, 'created_by_user_id' => $user->id],
             );
+
+        $this->seedHealthyProjectThemes($project);
 
         if (! $project->wasRecentlyCreated && $project->workItems()->exists()) {
             $this->seedHealthyProjectMockups($project);
@@ -258,6 +261,105 @@ class DemoProjectSeeder extends Seeder
         $this->seedHealthyProjectMockups($project);
 
         return $project;
+    }
+
+    private function seedHealthyProjectThemes(Project $project): void
+    {
+        $missionControl = Theme::withoutGlobalScopes()->updateOrCreate(
+            ['project_id' => $project->id, 'slug' => 'mission-control'],
+            [
+                'name' => 'Mission Control',
+                'description' => 'Cool operational dashboard styling for telemetry reviews.',
+                'design_notes' => 'Use for default telemetry operations views: dark navy chrome, cyan telemetry accents, and high-contrast status surfaces.',
+                'css_tokens' => [
+                    'surface' => '#08111f',
+                    'surface-muted' => '#10233a',
+                    'panel' => '#f8fbff',
+                    'panel-muted' => '#dbeafe',
+                    'text' => '#0f172a',
+                    'accent' => '#06b6d4',
+                    'accent-strong' => '#0e7490',
+                    'warning' => '#f59e0b',
+                ],
+                'raw_css' => <<<'CSS'
+body {
+  background: linear-gradient(180deg, var(--surface), var(--surface-muted));
+  color: var(--text);
+}
+main {
+  background: var(--panel);
+}
+.panel, table {
+  background: white;
+  border-color: var(--panel-muted);
+}
+.bar {
+  background: linear-gradient(90deg, var(--accent-strong), var(--accent));
+}
+.status, button.active {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: white;
+}
+.warn {
+  color: #7c2d12;
+  background: #fef3c7;
+  border-color: var(--warning);
+}
+CSS,
+                'is_default' => true,
+            ],
+        );
+
+        Theme::withoutGlobalScopes()
+            ->where('project_id', $project->id)
+            ->whereKeyNot($missionControl->id)
+            ->update(['is_default' => false]);
+
+        Theme::withoutGlobalScopes()->updateOrCreate(
+            ['project_id' => $project->id, 'slug' => 'solar-flare'],
+            [
+                'name' => 'Solar Flare',
+                'description' => 'Warm high-alert styling for anomaly and burst-window previews.',
+                'design_notes' => 'Use to preview telemetry screens during high-attention mission events: amber backgrounds, red-orange accents, and strong control contrast.',
+                'css_tokens' => [
+                    'surface' => '#fff7ed',
+                    'surface-muted' => '#fed7aa',
+                    'panel' => '#ffffff',
+                    'panel-muted' => '#fdba74',
+                    'text' => '#431407',
+                    'accent' => '#ea580c',
+                    'accent-strong' => '#c2410c',
+                    'warning' => '#dc2626',
+                ],
+                'raw_css' => <<<'CSS'
+body {
+  background: linear-gradient(180deg, var(--surface), var(--surface-muted));
+  color: var(--text);
+}
+main {
+  background: transparent;
+}
+.panel, table {
+  background: color-mix(in srgb, var(--panel) 92%, var(--surface-muted));
+  border-color: var(--panel-muted);
+  box-shadow: 0 10px 24px rgba(194, 65, 12, .16);
+}
+.bar, .spark {
+  background: linear-gradient(90deg, var(--accent-strong), var(--accent), var(--warning));
+}
+.status, button.active {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: white;
+}
+th, .label {
+  color: var(--accent-strong);
+}
+CSS,
+                'is_default' => false,
+            ],
+        );
     }
 
     private function seedHealthyProjectMockups(Project $project): void
