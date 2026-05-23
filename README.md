@@ -12,7 +12,9 @@ Growth models a software project from intent through delivery:
 - architecture viewpoints, views, elements, and traceability
 - verification plans, cases, runs, anomalies, and evidence assets
 - project plans, milestones, roles, agents, RACI assignments, work items, dependencies, risks, releases, and deployments
+- spec mockups for work items and UI requirements, including named alternatives and coverage gaps
 - reviews, findings, decision events, change requests, impact analysis, and approval history
+- decision requests, notifications, feedback, and recorded MCP tool activity
 - GitHub delivery evidence from pull requests, checks, deployments, and releases
 
 The web app gives humans a project dashboard and artifact pages. The MCP surfaces expose the same model to trusted local and HTTP clients.
@@ -27,13 +29,16 @@ The authenticated web app includes:
 - architecture
 - verification
 - plan
+- mockups
 - evidence
 - changes
 - reviews
+- roles
 - feedback
 - notifications
+- tool invocations
 
-The MCP app resources include read-only project dashboards, gate status, trace graphs, and requirement exploration views that can be rendered by compatible MCP clients.
+The MCP app resources include read-only project dashboards, gate status, trace graphs, and requirement exploration views that can be rendered by compatible MCP clients. The data resources include project index, canonical project documents, manifests and manifest sections, playbooks, rigor levels, artifact briefs, mockups, and evidence/readiness resources.
 
 ## Local Development
 
@@ -75,7 +80,7 @@ Create a local user, then run a trusted stdio MCP capability-surface server as t
 
 ```bash
 php artisan user:create user@example.com --name="Example User"
-GROWTH_USER_EMAIL='user@example.com' php artisan mcp:start intake
+GROWTH_USER_EMAIL='user@example.com' php artisan mcp:start all
 ```
 
 `GROWTH_USER_ID` is also supported. `GROWTH_WORKSPACE_ID` can override the user's active workspace for local stdio MCP. HTTP MCP clients and GitHub sync use Passport bearer tokens instead.
@@ -83,20 +88,33 @@ GROWTH_USER_EMAIL='user@example.com' php artisan mcp:start intake
 Available MCP capability-surface handles:
 
 - `all` - complete power-user surface with every registered tool, resource, and prompt
+- `management` - project lifecycle, adoption, GitHub sync scaffolding, manifest import/export, and starter templates
 - `intake` - project intent, stakeholders, concerns, sources, citations, and requirements
 - `architecture` - architecture viewpoints, views, elements, and coverage
-- `planning` - delivery plans, roles, agents, milestones, work items, risks, releases, and deployments
+- `planning` - delivery plans, roles, agents, milestones, work items, mockups, risks, releases, and deployments
 - `verification` - verification plans, cases, runs, anomalies, check evidence, and readiness
 - `governance` - reviews, change control, release readiness, impact analysis, and evidence gaps
 - `readonly` - read-only project state, resources, summaries, traces, and lookup tools
 
-The matching HTTP endpoints are `/mcp/all`, `/mcp/intake`, `/mcp/architecture`, `/mcp/planning`, `/mcp/verification`, `/mcp/governance`, and `/mcp/readonly`.
+The matching HTTP endpoints are `/mcp/all`, `/mcp/management`, `/mcp/intake`, `/mcp/architecture`, `/mcp/planning`, `/mcp/verification`, `/mcp/governance`, and `/mcp/readonly`.
 
-The `readonly` and `all` surfaces also expose `show-project-dashboard`, an MCP app that renders a read-only project dashboard with readiness, implementation, schedule, capacity, and resource links.
+The `readonly` and `all` surfaces also expose MCP apps for the project dashboard, gate status, requirement explorer, and trace graph. These apps render project health, readiness, implementation state, trace context, and resource links without granting write tools.
+
+For project bootstrap and sync setup, connect to `management` or `all`. For broad local exploration, `all` is the most convenient starting surface; use role-scoped surfaces when a client should advertise a narrower tool set.
+
+Mockup generation is handled through the `planning` and `all` surfaces. Agents
+can read an owner-specific mockup design brief, upsert named mockup
+alternatives, list mockup coverage across a project, filter to owners missing
+coverage, and delete one owner's mockup set before regeneration. Mockup upserts
+return non-blocking quality warnings for brittle patterns such as external
+assets or whole-screen state pickers; materially different screens should
+usually be separate named mockups.
 
 ## GitHub Sync
 
 The `growth-sync` GitHub Action mirrors a repository's delivery activity into Growth: pull requests become delivery links, CI runs become check evidence, and deployments and published releases become deployment and release records on the bound project.
+
+If the repository uploads a `growth-evidence` artifact from browser tests, the sync can also post a visual evidence gallery and cite it on the resolved work item.
 
 ### Install in an adopter repository
 

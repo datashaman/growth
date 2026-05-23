@@ -1,6 +1,8 @@
 # apply-manifest Design — 2026-05-14
 
-Design doc for issue #34. Status: **decisions made on every open question (see below); ready to start slice A.**
+Design doc for issue #34. Status: **implemented as the management-surface
+`apply-manifest` and `export-manifest` tools, with manifest resources and
+rigor-level starter templates. Kept as the design record.**
 
 ## Goal
 
@@ -10,9 +12,9 @@ baselines, links — and `export-manifest` emits the inverse. The manifest
 becomes a `project.growth.yaml` (or `.json`) committed alongside the code
 it describes, turning Growth from "MCP-only" into "GitOps-compatible."
 
-Today a small project bootstraps via ~20+ individual `upsert-*` calls. The
+A small project can bootstrap via ~20+ individual `upsert-*` calls. The
 manifest collapses that to one call and lets project structure live in
-version control.
+version control when the adopter wants a GitOps-style projection.
 
 ## Non-goals
 
@@ -84,7 +86,6 @@ plan:
   milestones:
     - slug: m1-mvp
       name: "MVP"
-      target_date: 2026-06-01
   work_items:
     - slug: wi-1
       name: "Implement add-todo"
@@ -207,17 +208,13 @@ client's job. The MCP tool just takes the parsed JSON/YAML as input.
    that want stricter behavior can read the `drift` array and react
    client-side.
 
-5. **New `ManagementServer` role server.** The current servers
-   (`intake`, `planning`, `architecture`, `verification`,
-   `governance`, `readonly`) all operate _within_ a project. Project
-   lifecycle (create, update, archive, delete, manifest apply/export)
-   has no clear home — `Projects/CreateProject` and
-   `Projects/UpdateProject` are currently orphans only reachable
-   through `AllServer` auto-discovery. The new `ManagementServer`
-   registers: `create-project`, `update-project`, `upsert-project`,
-   `delete-project`, `apply-manifest`, `export-manifest`. Adds a
-   `/mcp/management` route and a `Mcp::local('management', …)`
-   binding. `AllServer` continues to auto-discover everything.
+5. **`ManagementServer` role server.** The management surface owns project
+   lifecycle and setup work that does not fit inside one project workflow:
+   create, adopt, update, move, archive, restore, delete, GitHub sync
+   scaffolding, manifest apply/export, and starter templates. It is exposed via
+   `/mcp/management` and `Mcp::local('management', …)`. `AllServer` is the
+   deduplicated union of the role servers, so management tools are also present
+   on the `all` surface.
 
 ## Slicing plan
 
