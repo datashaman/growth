@@ -14,6 +14,7 @@ use App\Mcp\Resources\RequirementVerificationBriefResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Resources\WorkItemImplementationBriefResource;
 use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
+use App\Mcp\Tools\Changes\GetChangeRequest;
 use App\Mcp\Tools\Changes\ListChangeRequestDeliveryLinks;
 use App\Mcp\Tools\Changes\ResolveChangeRequestByBranch;
 use App\Mcp\Tools\Changes\ResolveChangeRequestByReference;
@@ -65,6 +66,7 @@ use App\Mcp\Tools\Plan\DeleteRisk;
 use App\Mcp\Tools\Plan\DeleteRole;
 use App\Mcp\Tools\Plan\DeleteWorkItem;
 use App\Mcp\Tools\Plan\GetMockup;
+use App\Mcp\Tools\Plan\GetWorkItem;
 use App\Mcp\Tools\Plan\LinkWorkItemDependency;
 use App\Mcp\Tools\Plan\LinkWorkItemToMilestone;
 use App\Mcp\Tools\Plan\LinkWorkItemToRequirements;
@@ -172,6 +174,7 @@ class PlanningServer extends Server
         UnassignRole::class,
         UpsertWorkItems::class,
         ListWorkItems::class,
+        GetWorkItem::class,
         DeleteWorkItem::class,
         StartWorkItem::class,
         CompleteWorkItem::class,
@@ -190,6 +193,7 @@ class PlanningServer extends Server
         ResolveWorkItemByReference::class,
         ResolveChangeRequestByBranch::class,
         ResolveChangeRequestByReference::class,
+        GetChangeRequest::class,
         RecordUnattributedEvent::class,
         AssignWorkItemRaci::class,
         UnassignWorkItemRaci::class,
