@@ -101,6 +101,11 @@ class ChangeRequest extends Model
         return $this->hasMany(ChangeImpact::class);
     }
 
+    public function deliveryLinks(): HasMany
+    {
+        return $this->hasMany(ChangeRequestDeliveryLink::class);
+    }
+
     public function approvalEvents(): HasMany
     {
         return $this->hasMany(ChangeApprovalEvent::class);

@@ -41,7 +41,10 @@ use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
 use App\Mcp\Tools\Assurance\RecommendRigorLevel;
 use App\Mcp\Tools\Changes\ListArtifactRelations;
 use App\Mcp\Tools\Changes\ListChangeApprovalEvents;
+use App\Mcp\Tools\Changes\ListChangeRequestDeliveryLinks;
 use App\Mcp\Tools\Changes\ListChangeRequests;
+use App\Mcp\Tools\Changes\ResolveChangeRequestByBranch;
+use App\Mcp\Tools\Changes\ResolveChangeRequestByReference;
 use App\Mcp\Tools\Common\AdoptRole;
 use App\Mcp\Tools\Common\Doctor;
 use App\Mcp\Tools\Common\ListNotifications;
@@ -140,6 +143,9 @@ class ReadonlyServer extends Server
         ListAgents::class,
         ListWorkItems::class,
         ListDeliveryLinks::class,
+        ListChangeRequestDeliveryLinks::class,
+        ResolveChangeRequestByBranch::class,
+        ResolveChangeRequestByReference::class,
         ListCheckRuns::class,
         ListRisks::class,
         ListReleases::class,

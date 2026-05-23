@@ -14,6 +14,10 @@ use App\Mcp\Resources\RequirementVerificationBriefResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Resources\WorkItemImplementationBriefResource;
 use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
+use App\Mcp\Tools\Changes\ListChangeRequestDeliveryLinks;
+use App\Mcp\Tools\Changes\ResolveChangeRequestByBranch;
+use App\Mcp\Tools\Changes\ResolveChangeRequestByReference;
+use App\Mcp\Tools\Changes\UpsertChangeRequestDeliveryLink;
 use App\Mcp\Tools\Common\AdoptRole;
 use App\Mcp\Tools\Common\BulkLink;
 use App\Mcp\Tools\Common\Doctor;
@@ -184,10 +188,14 @@ class PlanningServer extends Server
         UnlinkWorkItemDependency::class,
         ResolveWorkItemByBranch::class,
         ResolveWorkItemByReference::class,
+        ResolveChangeRequestByBranch::class,
+        ResolveChangeRequestByReference::class,
         RecordUnattributedEvent::class,
         AssignWorkItemRaci::class,
         UnassignWorkItemRaci::class,
         UpsertDeliveryLink::class,
+        UpsertChangeRequestDeliveryLink::class,
+        ListChangeRequestDeliveryLinks::class,
         ListDeliveryLinks::class,
         UpsertMockup::class,
         GetMockup::class,

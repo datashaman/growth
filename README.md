@@ -122,13 +122,18 @@ Both resolve the PR from the event payload. Runs triggered by fork pull requests
 
 ### Attribution
 
-Pull request and CI sync attribute each event to a work item, trying three sources in order. The first that resolves wins:
+Pull request and CI sync attribute each event to either a work item or, for CR-only work, a change request. The first source that resolves wins:
 
-1. Branch name. A `WI-<number>` reference anywhere in the branch name, such as `WI-42-add-login` or `feature/wi-42`, resolves to the work item with that per-project number.
-2. Commit trailer. A `Growth-Work-Item: <work-item-id>` git trailer on the commit, where the value is a work item ULID. The last trailer wins if several are present. A resolved trailer also binds the branch, so later trailer-less events on it still attribute.
-3. Branch delivery link. A work item explicitly bound to the branch with the `upsert-delivery-link` tool using type `branch`.
+1. `Growth-Work-Item: <work-item-id>` commit trailer.
+2. `Growth-Change-Request: <change-request-id-or-CR-number>` commit trailer.
+3. `WI-<number>` branch reference, such as `WI-42-add-login` or `feature/wi-42`.
+4. `CR-<number>` branch reference, such as `CR-7-doc-fix` or `feature/cr-007`.
+5. Work item branch delivery link, bound with `upsert-delivery-link` using type `branch`.
+6. Change request branch delivery link, bound with `upsert-change-request-delivery-link` using type `branch`.
 
-An event that matches none of the three is recorded as an unattributed event and surfaces on the Evidence page. The sync is not errored.
+The last matching trailer wins if several of the same trailer are present. A resolved trailer also binds the same-repository branch, so later trailer-less events on it still attribute. Fork pull requests do not create or use branch bindings because the same head branch name can exist in several forks.
+
+Check-run evidence remains work-item scoped. If a CI event resolves only to a change request, growth-sync records no check-run evidence and does not create an unattributed-event exception. An event that matches no source is recorded as unattributed and surfaces on the Evidence page; the sync itself is not errored.
 
 ### Action inputs
 
