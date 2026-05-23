@@ -3,6 +3,7 @@
 use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\Theme;
+use App\Models\ThemeAssignment;
 use App\Models\User;
 use App\Models\WorkItem;
 use Livewire\Livewire;
@@ -46,12 +47,23 @@ it('renders the mockup inside a sandboxed iframe with no same-origin access', fu
         ->and($iframe[0])->toContain(route('mockups.raw', $this->mockup));
 });
 
-it('shows a localStorage-backed theme selector on the mockup detail page', function () {
-    Theme::create([
+it('uses assigned themes by default and supports non-persistent query preview overrides on the detail page', function () {
+    $defaultTheme = Theme::create([
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
         'slug' => 'mission-control',
         'is_default' => true,
+    ]);
+    $assignedTheme = Theme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Checkout Warmth',
+        'slug' => 'checkout-warmth',
+    ]);
+    ThemeAssignment::create([
+        'project_id' => $this->project->id,
+        'theme_id' => $assignedTheme->id,
+        'scope_type' => 'work_item',
+        'scope_key' => $this->workItem->reference(),
     ]);
 
     $this->actingAs($this->user)
@@ -59,8 +71,17 @@ it('shows a localStorage-backed theme selector on the mockup detail page', funct
         ->assertOk()
         ->assertSee('data-test="mockup-theme-selector"', false)
         ->assertSee('Mission Control')
-        ->assertSee('growth:project:${projectId}:mockup-theme', false)
+        ->assertSee('Checkout Warmth')
+        ->assertSee('data-assigned-theme="checkout-warmth"', false)
+        ->assertSee('theme=checkout-warmth', false)
+        ->assertDontSee('growth:project:${projectId}:mockup-theme', false)
         ->assertSee('data-src-base="'.route('mockups.raw', ['mockup' => $this->mockup, 'revision' => $this->mockup->currentRevision->id]).'"', false);
+
+    $this->actingAs($this->user)
+        ->get(route('mockups.show', ['mockup' => $this->mockup, 'theme' => $defaultTheme->slug]))
+        ->assertOk()
+        ->assertSee('data-current-theme="mission-control"', false)
+        ->assertSee('theme=mission-control', false);
 });
 
 it('serves the raw mockup HTML under a locked-down content security policy', function () {
@@ -198,7 +219,8 @@ it('shows a mockup revision history', function () {
         ->get(route('mockups.show', $this->mockup))
         ->assertOk()
         ->assertSee('Revision 1')
-        ->assertSee('Revision 2');
+        ->assertSee('Revision 2')
+        ->assertSee('Revisions');
 });
 
 it('lists sibling mockups and links between them', function () {
@@ -212,6 +234,9 @@ it('lists sibling mockups and links between them', function () {
         ->get(route('mockups.show', $this->mockup))
         ->assertOk()
         // The selected mockup renders; its sibling is offered as a switch.
+        ->assertDontSee('Named mockup')
+        ->assertDontSee('A named variant with its own revision history')
+        ->assertDontSee('Mockup variants')
         ->assertSee(route('mockups.raw', $this->mockup))
         ->assertSee('Compact layout')
         ->assertSee(route('mockups.show', $sibling));

@@ -147,6 +147,11 @@ class Project extends Model
         return $this->hasMany(Theme::class);
     }
 
+    public function themeAssignments(): HasMany
+    {
+        return $this->hasMany(ThemeAssignment::class);
+    }
+
     public function defaultTheme(): HasOne
     {
         return $this->hasOne(Theme::class)->where('is_default', true);

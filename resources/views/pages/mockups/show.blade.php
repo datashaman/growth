@@ -3,6 +3,8 @@
 use App\Models\Requirement;
 use App\Models\Theme;
 use App\Models\SpecMockup;
+use App\Models\ThemeAssignment;
+use App\Models\WorkItem;
 use Illuminate\Support\Str;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -26,6 +28,8 @@ new class extends Component {
     {
         $this->mockup = $mockup->load([
             'owner.mockups' => fn ($query) => $this->orderMockups($query),
+            'owner.project.themeAssignments.theme',
+            'owner.project.themes',
             'revisions',
         ]);
         $this->revisionId = (string) ($this->mockup->revisions->last()?->id ?? '');
@@ -65,6 +69,8 @@ new class extends Component {
     {
         $fresh = $this->mockup->fresh([
             'owner.mockups' => fn ($query) => $this->orderMockups($query),
+            'owner.project.themeAssignments.theme',
+            'owner.project.themes',
             'revisions',
         ]);
 
@@ -96,6 +102,65 @@ new class extends Component {
             ->orderByDesc('is_default')
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * @return Collection<int,ThemeAssignment>
+     */
+    #[Computed]
+    public function projectThemeAssignments(): Collection
+    {
+        return $this->mockup->owner?->project?->themeAssignments
+            ? $this->mockup->owner->project->themeAssignments->sortBy(['scope_type', 'scope_key'])->values()
+            : collect();
+    }
+
+    public function themePreviewOverride(): string
+    {
+        $theme = (string) request()->query('theme', '');
+
+        if ($theme === 'none') {
+            return 'none';
+        }
+
+        return $this->projectThemes->contains('slug', $theme) ? $theme : '';
+    }
+
+    public function assignedThemeSlug(): string
+    {
+        $owner = $this->mockup->owner;
+        $keys = match (true) {
+            $owner instanceof WorkItem => [
+                ['work_item', $owner->id],
+                ['work_item', $owner->reference()],
+            ],
+            $owner instanceof Requirement => [
+                ['requirement', $owner->id],
+                ['requirement', $owner->reference()],
+            ],
+            default => [],
+        };
+
+        $assignment = $this->projectThemeAssignments->first(
+            fn (ThemeAssignment $assignment): bool => in_array([$assignment->scope_type, $assignment->scope_key], $keys, true),
+        );
+
+        return (string) ($assignment?->theme?->slug ?? $this->projectThemes->firstWhere('is_default', true)?->slug ?? '');
+    }
+
+    public function mockupPreviewUrl(): string
+    {
+        $theme = $this->themePreviewOverride() === ''
+            ? $this->assignedThemeSlug()
+            : $this->themePreviewOverride();
+
+        $parameters = ['mockup' => $this->mockup, 'revision' => $this->revisionId];
+
+        if ($theme !== '' && $theme !== 'none') {
+            $parameters['theme'] = $theme;
+        }
+
+        return route('mockups.raw', $parameters);
     }
 
     /**
@@ -154,16 +219,17 @@ new class extends Component {
         </x-slot:description>
         <x-slot:actions>
             <label class="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-                <span>{{ __('Theme') }}</span>
+                <span>{{ __('Preview as') }}</span>
                 <select
                     class="rounded-md border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                     data-growth-theme-selector
                     data-project-id="{{ $mockup->owner->project_id }}"
-                    data-default-theme="{{ $this->projectThemes->firstWhere('is_default', true)?->slug ?? '' }}"
+                    data-current-theme="{{ $this->themePreviewOverride() }}"
                     data-test="mockup-theme-selector">
-                    <option value="">{{ __('No theme') }}</option>
+                    <option value="">{{ __('Assigned/default theme') }}</option>
+                    <option value="none" @selected($this->themePreviewOverride() === 'none')>{{ __('No theme') }}</option>
                     @foreach ($this->projectThemes as $theme)
-                        <option value="{{ $theme->slug }}">{{ $theme->name }}@if ($theme->is_default) {{ __('(default)') }}@endif</option>
+                        <option value="{{ $theme->slug }}" @selected($this->themePreviewOverride() === $theme->slug)>{{ $theme->name }}@if ($theme->is_default) {{ __('(default)') }}@endif</option>
                     @endforeach
                 </select>
             </label>
@@ -171,46 +237,52 @@ new class extends Component {
     </x-detail-page-header>
 
     <section class="flex flex-1 flex-col rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
-        <flux:heading size="lg" class="mb-1">{{ __('Mockup') }}</flux:heading>
-        <flux:text class="mb-3 text-sm text-zinc-500 dark:text-zinc-400">
-            {{ __('Agent-authored HTML, rendered in an isolated sandbox.') }}
-        </flux:text>
+        @if ($mockup->owner->mockups->count() > 1 || $mockup->revisions->count() > 1)
+            <div class="mb-3 flex flex-col gap-3">
+                @if ($mockup->owner->mockups->count() > 1)
+                    <div>
+                        <nav class="flex flex-wrap gap-2" aria-label="{{ __('Mockups') }}">
+                            @foreach ($mockup->owner->mockups as $alternative)
+                                @if ($alternative->is($mockup))
+                                    <span class="rounded-md bg-sky-600 px-2.5 py-1 text-sm font-medium text-white" aria-current="true">{{ $alternative->name === \App\Models\SpecMockup::DEFAULT_NAME ? __('Default') : $alternative->name }}</span>
+                                @else
+                                    <a href="{{ route('mockups.show', $alternative) }}" wire:navigate
+                                        class="rounded-md bg-zinc-100 px-2.5 py-1 text-sm text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">{{ $alternative->name === \App\Models\SpecMockup::DEFAULT_NAME ? __('Default') : $alternative->name }}</a>
+                                @endif
+                            @endforeach
+                        </nav>
+                    </div>
+                @endif
 
-        @if ($mockup->owner->mockups->count() > 1)
-            <nav class="mb-3 flex flex-wrap gap-2" aria-label="{{ __('Mockups') }}">
-                @foreach ($mockup->owner->mockups as $alternative)
-                    @if ($alternative->is($mockup))
-                        <span class="rounded-md bg-sky-600 px-2.5 py-1 text-sm font-medium text-white" aria-current="true">{{ $alternative->name === \App\Models\SpecMockup::DEFAULT_NAME ? __('Default') : $alternative->name }}</span>
-                    @else
-                        <a href="{{ route('mockups.show', $alternative) }}" wire:navigate
-                            class="rounded-md bg-zinc-100 px-2.5 py-1 text-sm text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">{{ $alternative->name === \App\Models\SpecMockup::DEFAULT_NAME ? __('Default') : $alternative->name }}</a>
-                    @endif
-                @endforeach
-            </nav>
-        @endif
-
-        @if ($mockup->revisions->count() > 1)
-            <nav class="mb-3 flex flex-wrap gap-2" aria-label="{{ __('Revisions') }}">
-                @foreach ($mockup->revisions->sortByDesc('number') as $revision)
-                    <button type="button" wire:click="selectRevision('{{ $revision->id }}')"
-                        @class([
-                            'rounded-md px-2.5 py-1 text-sm',
-                            'bg-sky-600 font-medium text-white' => $revision->id === $revisionId,
-                            'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700' => $revision->id !== $revisionId,
-                        ])
-                        @if ($revision->id === $revisionId) aria-current="true" @endif>
-                        {{ __('Revision :number', ['number' => $revision->number]) }}@if ($revision->is($mockup->revisions->last())) · {{ __('current') }}@endif
-                    </button>
-                @endforeach
-            </nav>
+                @if ($mockup->revisions->count() > 1)
+                    <div>
+                        <flux:text class="mb-1 text-xs font-medium uppercase text-zinc-500 dark:text-zinc-400">{{ __('Revisions') }}</flux:text>
+                        <nav class="flex flex-wrap gap-2" aria-label="{{ __('Revisions') }}">
+                            @foreach ($mockup->revisions->sortByDesc('number') as $revision)
+                                <button type="button" wire:click="selectRevision('{{ $revision->id }}')"
+                                    @class([
+                                        'rounded-md px-2.5 py-1 text-sm',
+                                        'bg-sky-600 font-medium text-white' => $revision->id === $revisionId,
+                                        'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700' => $revision->id !== $revisionId,
+                                    ])
+                                    @if ($revision->id === $revisionId) aria-current="true" @endif>
+                                    {{ __('Revision :number', ['number' => $revision->number]) }}@if ($revision->is($mockup->revisions->last())) · {{ __('current') }}@endif
+                                </button>
+                            @endforeach
+                        </nav>
+                    </div>
+                @endif
+            </div>
         @endif
 
         <iframe
             wire:key="revision-{{ $revisionId }}"
-            src="{{ route('mockups.raw', ['mockup' => $mockup, 'revision' => $revisionId]) }}"
+            src="{{ $this->mockupPreviewUrl() }}"
             data-themed-mockup-frame
             data-src-base="{{ route('mockups.raw', ['mockup' => $mockup, 'revision' => $revisionId]) }}"
+            data-assigned-theme="{{ $this->assignedThemeSlug() }}"
             sandbox="allow-scripts"
+            loading="lazy"
             title="{{ $mockup->name }}"
             class="h-[70vh] w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-700"></iframe>
     </section>
@@ -225,25 +297,14 @@ new class extends Component {
 
                     selector.dataset.growthThemeBound = 'true';
 
-                    const projectId = selector.dataset.projectId;
-                    const storageKey = `growth:project:${projectId}:mockup-theme`;
-                    const defaultTheme = selector.dataset.defaultTheme || '';
-                    let selectedTheme = localStorage.getItem(storageKey);
-
-                    if (selectedTheme === null) {
-                        selectedTheme = defaultTheme;
-                        if (selectedTheme !== '') {
-                            localStorage.setItem(storageKey, selectedTheme);
-                        }
-                    }
-
-                    selector.value = selectedTheme;
+                    selector.value = selector.dataset.currentTheme || '';
 
                     const applyTheme = () => {
                         document.querySelectorAll('[data-themed-mockup-frame]').forEach((frame) => {
                             const url = new URL(frame.dataset.srcBase, window.location.origin);
-                            if (selector.value) {
-                                url.searchParams.set('theme', selector.value);
+                            const theme = selector.value === '' ? (frame.dataset.assignedTheme || '') : selector.value;
+                            if (theme && theme !== 'none') {
+                                url.searchParams.set('theme', theme);
                             } else {
                                 url.searchParams.delete('theme');
                             }
@@ -252,7 +313,13 @@ new class extends Component {
                     };
 
                     selector.addEventListener('change', () => {
-                        localStorage.setItem(storageKey, selector.value);
+                        const url = new URL(window.location.href);
+                        if (selector.value === '') {
+                            url.searchParams.delete('theme');
+                        } else {
+                            url.searchParams.set('theme', selector.value);
+                        }
+                        window.history.replaceState({}, '', url.toString());
                         applyTheme();
                     });
 

@@ -2,6 +2,7 @@
 
 use App\Models\Project;
 use App\Models\Theme;
+use App\Models\ThemeAssignment;
 use App\Models\User;
 use App\Models\WorkItem;
 use Database\Seeders\DemoProjectSeeder;
@@ -53,12 +54,17 @@ it('renders work-item mockups grouped by work item as preview strips', function 
         ->assertSee('<iframe', false);
 });
 
-it('shows a localStorage-backed theme selector on the project mockups page', function () {
-    Theme::create([
+it('uses assigned themes by default and supports non-persistent query preview overrides', function () {
+    $defaultTheme = Theme::create([
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
         'slug' => 'mission-control',
         'is_default' => true,
+    ]);
+    $checkoutTheme = Theme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Checkout Warmth',
+        'slug' => 'checkout-warmth',
     ]);
 
     $workItem = WorkItem::create([
@@ -68,13 +74,27 @@ it('shows a localStorage-backed theme selector on the project mockups page', fun
         'needs_mockups' => true,
     ]);
     $mockup = createMockup($workItem, 'Checkout layout', '<!doctype html><html><body>checkout</body></html>');
+    ThemeAssignment::create([
+        'project_id' => $this->project->id,
+        'theme_id' => $checkoutTheme->id,
+        'scope_type' => 'work_item',
+        'scope_key' => $workItem->reference(),
+    ]);
 
     $this->get(route('mockups'))
         ->assertOk()
         ->assertSee('data-test="mockup-theme-selector"', false)
         ->assertSee('Mission Control')
-        ->assertSee('growth:project:${projectId}:mockup-theme', false)
+        ->assertSee('Checkout Warmth')
+        ->assertSee('data-assigned-theme="checkout-warmth"', false)
+        ->assertSee('theme=checkout-warmth', false)
+        ->assertDontSee('growth:project:${projectId}:mockup-theme', false)
         ->assertSee('data-src-base="'.route('mockups.raw', $mockup).'"', false);
+
+    $this->get(route('mockups', ['theme' => $defaultTheme->slug]))
+        ->assertOk()
+        ->assertSee('data-current-theme="mission-control"', false)
+        ->assertSee('theme=mission-control', false);
 });
 
 it('orders project mockup cards the same way as the mockup selector', function () {
