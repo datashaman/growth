@@ -6,6 +6,7 @@ use App\Models\Requirement;
 use App\Models\SpecMockup;
 use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -166,7 +167,7 @@ class MockupDesignBriefResource extends Resource implements HasUriTemplate
     }
 
     /**
-     * @param \Illuminate\Support\Collection<int, Requirement> $requirements
+     * @param  Collection<int, Requirement>  $requirements
      * @return array{intro:string,items:list<string>}
      */
     private function expectedScreenCoverage(Model $owner, $requirements): array

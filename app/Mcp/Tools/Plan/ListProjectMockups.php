@@ -85,7 +85,7 @@ class ListProjectMockups extends Tool
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return Collection<int, array<string, mixed>>
      */
     private function workItemRows(array $data): Collection
@@ -121,7 +121,7 @@ class ListProjectMockups extends Tool
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return Collection<int, array<string, mixed>>
      */
     private function requirementRows(array $data): Collection
@@ -154,7 +154,7 @@ class ListProjectMockups extends Tool
     }
 
     /**
-     * @param Collection<int, SpecMockup> $mockups
+     * @param  Collection<int, SpecMockup>  $mockups
      * @return list<array{id:string,name:string,updated_at:?string}>
      */
     private function mockupRows(Collection $mockups): array
