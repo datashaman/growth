@@ -86,6 +86,46 @@ HTML,
         });
 });
 
+it('warns on repeated local design system css', function () {
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'name' => 'Mini design system',
+        'html' => <<<'HTML'
+<!doctype html><html><head><style>
+:root { --surface: #101418; --panel: #ffffff; --accent: #22c55e; }
+.card { background: var(--panel); border: 1px solid #dbeafe; border-radius: 8px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+.panel { background: var(--panel); border: 1px solid #dbeafe; border-radius: 8px; padding: 16px; }
+.grid { display: grid; gap: 12px; margin: 16px 0; }
+.badge { background: var(--accent); color: white; border-radius: 999px; padding: 4px 10px; }
+button { background: var(--accent); color: white; border: 0; border-radius: 6px; padding: 8px 12px; }
+table { width: 100%; border-collapse: collapse; background: white; }
+th, td { border-bottom: 1px solid #dbeafe; padding: 8px; }
+</style></head><body><section class="panel"><div class="card">Preview</div></section></body></html>
+HTML,
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('warnings.0.code', 'local_design_system_css')
+                ->etc();
+        });
+});
+
+it('does not warn for light structural mockup css', function () {
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'name' => 'Structural layout',
+        'html' => <<<'HTML'
+<!doctype html><html><head><style>
+.layout { display: grid; grid-template-columns: 16rem 1fr; gap: 12px; }
+</style></head><body><main class="layout"><nav>Filters</nav><section>Results</section></main></body></html>
+HTML,
+    ])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->where('warnings', [])->etc());
+});
+
 it('does not warn for valid local interactions inside one mockup', function () {
     PlanningServer::tool(UpsertMockup::class, [
         'owner_type' => 'work_item',

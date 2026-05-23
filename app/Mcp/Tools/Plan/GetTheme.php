@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools\Plan;
 
 use App\Models\Theme;
+use App\Support\ThemePreviewSpecimen;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -33,6 +34,7 @@ class GetTheme extends Tool
             'css_tokens' => $theme->css_tokens ?? [],
             'raw_css' => $theme->raw_css,
             'compiled_css' => $theme->cssForInjection(),
+            'preview_specimen' => ThemePreviewSpecimen::contract(),
             'is_default' => $theme->is_default,
             'updated_at' => $theme->updated_at?->toIso8601String(),
         ]);
@@ -57,6 +59,7 @@ class GetTheme extends Tool
             'css_tokens' => $schema->object(),
             'raw_css' => $schema->string(),
             'compiled_css' => $schema->string()->required(),
+            'preview_specimen' => $schema->object()->required(),
             'is_default' => $schema->boolean()->required(),
             'updated_at' => $schema->string(),
         ];

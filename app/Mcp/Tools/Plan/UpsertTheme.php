@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools\Plan;
 
 use App\Models\Theme;
+use App\Support\ThemePreviewSpecimen;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -93,6 +94,7 @@ class UpsertTheme extends Tool
             'design_notes' => $theme->design_notes,
             'css_tokens' => $theme->css_tokens ?? [],
             'raw_css' => $theme->raw_css,
+            'warnings' => ThemePreviewSpecimen::qualityWarnings($theme->css_tokens, $theme->raw_css),
             'is_default' => $theme->is_default,
             'created' => $theme->wasRecentlyCreated,
         ]);
@@ -124,6 +126,7 @@ class UpsertTheme extends Tool
             'design_notes' => $schema->string(),
             'css_tokens' => $schema->object(),
             'raw_css' => $schema->string(),
+            'warnings' => $schema->array()->description('Non-blocking quality warnings for theme CSS patterns that may render poorly in Growth previews.')->required(),
             'is_default' => $schema->boolean()->required(),
             'created' => $schema->boolean()->required(),
         ];

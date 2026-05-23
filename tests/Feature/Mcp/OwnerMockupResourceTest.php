@@ -153,5 +153,11 @@ it('serves a mockup design brief for a work item', function () {
         ->assertSee('Checkout flow')
         ->assertSee('Use this theme for checkout mockups.')
         ->assertSee('surface')
+        ->assertSee('Mockup CSS Boundary')
+        ->assertSee('Treat assigned/default Growth themes as the reusable visual design-system layer.')
+        ->assertSee('Theme Preview Selector Contract')
+        ->assertSee('preview_title')
+        ->assertSee('data-preview-role="title"')
+        ->assertSee('warning_state')
         ->assertSee('Represent relevant architecture views/elements');
 });
