@@ -10,7 +10,7 @@ use InvalidArgumentException;
 class MockupScreenshotAsset
 {
     /**
-     * @return array{url:string,mime_type:string,theme:string}
+     * @return array{url:string,mcp_url:string,mime_type:string,theme:string}
      */
     public function reference(SpecMockup $mockup, SpecMockupRevision $revision, string $requestedTheme = 'assigned'): array
     {
@@ -18,6 +18,11 @@ class MockupScreenshotAsset
 
         return [
             'url' => URL::signedRoute('mockups.screenshot', [
+                'mockup' => $mockup->id,
+                'revision' => $revision->id,
+                'theme' => $requestedTheme,
+            ]),
+            'mcp_url' => route('api.mockup-shots.show', [
                 'mockup' => $mockup->id,
                 'revision' => $revision->id,
                 'theme' => $requestedTheme,
