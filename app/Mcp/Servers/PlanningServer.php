@@ -5,6 +5,8 @@ namespace App\Mcp\Servers;
 use App\Mcp\Prompts\PlanSlice;
 use App\Mcp\Resources\MockupDesignBriefResource;
 use App\Mcp\Resources\MockupResource;
+use App\Mcp\Resources\MockupRevisionHtmlResource;
+use App\Mcp\Resources\MockupRevisionPreviewResource;
 use App\Mcp\Resources\MockupRevisionResource;
 use App\Mcp\Resources\MockupScreenshotResource;
 use App\Mcp\Resources\OwnerMockupResource;
@@ -14,7 +16,10 @@ use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RequirementVerificationBriefResource;
 use App\Mcp\Resources\RigorLevelsResource;
+use App\Mcp\Resources\ThemeCssResource;
+use App\Mcp\Resources\ThemedMockupRevisionPreviewResource;
 use App\Mcp\Resources\ThemedMockupScreenshotResource;
+use App\Mcp\Resources\ThemeResource;
 use App\Mcp\Resources\WorkItemImplementationBriefResource;
 use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
 use App\Mcp\Tools\Changes\GetChangeRequest;
@@ -263,9 +268,14 @@ class PlanningServer extends Server
         MockupDesignBriefResource::class,
         MockupResource::class,
         MockupRevisionResource::class,
+        MockupRevisionHtmlResource::class,
+        MockupRevisionPreviewResource::class,
+        ThemedMockupRevisionPreviewResource::class,
         MockupScreenshotResource::class,
         ThemedMockupScreenshotResource::class,
         OwnerMockupResource::class,
+        ThemeResource::class,
+        ThemeCssResource::class,
         RequirementVerificationBriefResource::class,
         WorkItemImplementationBriefResource::class,
     ];

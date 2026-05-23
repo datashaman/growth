@@ -50,7 +50,7 @@ class UpsertMockup extends Tool
             'created' => $created,
             'warnings' => $this->qualityWarnings($html),
             'design_brief' => $this->designBrief($owner->project_id, $data['owner_type'], $data['owner_id']),
-            'inspection' => $this->inspectionResource($mockup->id, $revision->id),
+            'resources' => $this->resources($mockup->id, $revision->id),
         ]);
     }
 
@@ -76,7 +76,7 @@ class UpsertMockup extends Tool
             'created' => $schema->boolean()->description('Whether this call created the mockup')->required(),
             'warnings' => $schema->array()->description('Non-blocking quality warnings for HTML patterns that often make weak or brittle mockups')->required(),
             'design_brief' => $schema->object()->description('Brief resource to read before generating or refining this mockup')->required(),
-            'inspection' => $schema->object()->description('Preview resource for this revision')->required(),
+            'resources' => $schema->object()->description('Resource URIs for mockup metadata, revision metadata, raw HTML, preview HTML, and preview screenshot')->required(),
         ];
     }
 
@@ -185,15 +185,17 @@ class UpsertMockup extends Tool
     }
 
     /**
-     * @return array{uri:string,revision_uri:string,screenshot_uri:string,guidance:string}
+     * @return array{mockup_uri:string,revision_uri:string,html_uri:string,preview_uri:string,screenshot_uri:string,guidance:string}
      */
-    private function inspectionResource(string $mockupId, string $revisionId): array
+    private function resources(string $mockupId, string $revisionId): array
     {
         return [
-            'uri' => "growth://mockups/{$mockupId}",
+            'mockup_uri' => "growth://mockups/{$mockupId}",
             'revision_uri' => "growth://mockups/{$mockupId}/{$revisionId}",
+            'html_uri' => "growth://mockups/{$mockupId}/{$revisionId}/html",
+            'preview_uri' => "growth://mockups/{$mockupId}/{$revisionId}/preview",
             'screenshot_uri' => "growth://mockups/{$mockupId}/{$revisionId}/screenshot",
-            'guidance' => 'Read the preview URI after upsert-mockup for browser-visible text and metadata warnings. Read screenshot_uri only when visual pixels are needed. Append ?theme=none or ?theme={slug} to override the assigned theme.',
+            'guidance' => 'Read mockup_uri or revision_uri for JSON metadata. Read html_uri for raw HTML, preview_uri for theme-aware preview HTML, and screenshot_uri only when visual pixels are needed.',
         ];
     }
 }

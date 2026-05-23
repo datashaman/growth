@@ -59,12 +59,26 @@ it('creates lists fetches and deletes themes through MCP', function () {
 
     ReadonlyServer::tool(GetTheme::class, ['id' => $theme->id])
         ->assertOk()
-        ->assertStructuredContent(function ($json) {
-            $json->where('compiled_css', fn (string $css): bool => str_contains($css, '--surface: #101418;'))
+        ->assertStructuredContent(function ($json) use ($theme) {
+            $json->where('resources.theme_uri', "growth://themes/{$theme->id}")
+                ->where('resources.css_uri', "growth://themes/{$theme->id}/css")
                 ->where('preview_specimen.selectors.0.role', 'preview_chrome')
                 ->where('preview_specimen.sample_html', fn (string $html): bool => str_contains($html, 'data-preview-role="title"'))
+                ->missing('raw_css')
+                ->missing('compiled_css')
                 ->etc();
         });
+
+    readResource(ReadonlyServer::class, "growth://themes/{$theme->id}")
+        ->assertOk()
+        ->assertSee('"type":"theme"')
+        ->assertSee('"uri":"growth://themes/'.$theme->id.'/css"')
+        ->assertDontSee('body { background');
+
+    readResource(ReadonlyServer::class, "growth://themes/{$theme->id}/css")
+        ->assertOk()
+        ->assertSee('--surface: #101418;')
+        ->assertSee('body { background: var(--surface); color: white; }');
 
     PlanningServer::tool(DeleteTheme::class, ['id' => $theme->id])
         ->assertOk()
@@ -92,6 +106,19 @@ it('registers theme tools using the standard resource names', function () {
         ->and($readonlyTools->all())->toContain('list-themes', 'get-theme', 'list-theme-assignments')
         ->and($planningTools->all())->not->toContain('list-project-themes', 'get-project-theme', 'upsert-project-theme', 'delete-project-theme')
         ->and($readonlyTools->all())->not->toContain('list-project-themes', 'get-project-theme');
+});
+
+it('exposes theme resource templates', function () {
+    $resources = $this->postJson('/mcp/readonly', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'resources/templates/list',
+        'params' => ['per_page' => 300],
+    ])->assertOk()->json('result.resourceTemplates');
+
+    expect(collect($resources)->pluck('uriTemplate')->all())
+        ->toContain('growth://themes/{theme}')
+        ->toContain('growth://themes/{theme}/css');
 });
 
 it('creates and lists scoped theme assignments through MCP', function () {

@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description("Fetch a spec mockup's current HTML by its work item or requirement. Without `name` returns the owner's default mockup; pass `name` to fetch a named alternative.")]
+#[Description("Resolve a spec mockup by work item or requirement and return its metadata resource URIs. Without `name` returns the owner's default mockup; pass `name` to fetch a named alternative.")]
 class GetMockup extends Tool
 {
     use ResolvesMockupOwner;
@@ -50,13 +50,14 @@ class GetMockup extends Tool
             'name' => $mockup->name,
             'revision' => $mockup->currentRevision->number,
             'revision_id' => $mockup->currentRevision->id,
-            'html' => $mockup->currentRevision->html,
             'revision_created_at' => $mockup->currentRevision->created_at?->toIso8601String(),
-            'inspection' => [
-                'uri' => "growth://mockups/{$mockup->id}",
+            'resources' => [
+                'mockup_uri' => "growth://mockups/{$mockup->id}",
                 'revision_uri' => "growth://mockups/{$mockup->id}/{$mockup->currentRevision->id}",
+                'html_uri' => "growth://mockups/{$mockup->id}/{$mockup->currentRevision->id}/html",
+                'preview_uri' => "growth://mockups/{$mockup->id}/{$mockup->currentRevision->id}/preview",
                 'screenshot_uri' => "growth://mockups/{$mockup->id}/{$mockup->currentRevision->id}/screenshot",
-                'guidance' => 'Read the preview URI for browser-visible text and metadata warnings. Read screenshot_uri only when visual pixels are needed. Append ?theme=none or ?theme={slug} to override the assigned theme.',
+                'guidance' => 'Read mockup_uri or revision_uri for JSON metadata. Read html_uri for raw HTML, preview_uri for theme-aware preview HTML, and screenshot_uri only when visual pixels are needed.',
             ],
         ]);
     }
@@ -79,9 +80,8 @@ class GetMockup extends Tool
             'name' => $schema->string()->required(),
             'revision' => $schema->integer()->description('Number of the current revision')->required(),
             'revision_id' => $schema->string()->description('ULID of the current revision')->required(),
-            'html' => $schema->string()->description('HTML of the current revision')->required(),
             'revision_created_at' => $schema->string()->description('ISO 8601 timestamp the current revision was written')->required(),
-            'inspection' => $schema->object()->description('Preview resource for the current revision')->required(),
+            'resources' => $schema->object()->description('Resource URIs for mockup metadata, revision metadata, raw HTML, preview HTML, and preview screenshot')->required(),
         ];
     }
 }
