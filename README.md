@@ -176,4 +176,8 @@ Use the project vocabulary in `CONTEXT.md` when adding tools, resources, docs, o
 
 ## License
 
-Growth is currently a private Datashaman project. Add a public license here before distributing it outside the owning organization.
+Growth is open-sourced under the GNU Affero General Public License v3.0 or later. See [`LICENSE`](LICENSE).
+
+Forks, experiments, issues, and contributions are welcome.
+
+Commercial hosting, support, implementation, and consulting are available from Datashaman.
