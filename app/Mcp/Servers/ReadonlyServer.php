@@ -39,6 +39,7 @@ use App\Mcp\Tools\Architecture\ListArchitectureViews;
 use App\Mcp\Tools\Assurance\BuildEvidenceBundle;
 use App\Mcp\Tools\Assurance\EvaluateReadinessGates;
 use App\Mcp\Tools\Assurance\RecommendRigorLevel;
+use App\Mcp\Tools\Changes\GetChangeRequest;
 use App\Mcp\Tools\Changes\ListArtifactRelations;
 use App\Mcp\Tools\Changes\ListChangeApprovalEvents;
 use App\Mcp\Tools\Changes\ListChangeRequestDeliveryLinks;
@@ -71,6 +72,7 @@ use App\Mcp\Tools\Feedback\SearchFeedback;
 use App\Mcp\Tools\Feedback\SendFeedback;
 use App\Mcp\Tools\Glossary\LookupTerm;
 use App\Mcp\Tools\Lint\LintProject;
+use App\Mcp\Tools\Plan\GetWorkItem;
 use App\Mcp\Tools\Plan\ListAgents;
 use App\Mcp\Tools\Plan\ListCheckRuns;
 use App\Mcp\Tools\Plan\ListDeliveryLinks;
@@ -142,6 +144,7 @@ class ReadonlyServer extends Server
         ListRoles::class,
         ListAgents::class,
         ListWorkItems::class,
+        GetWorkItem::class,
         ListDeliveryLinks::class,
         ListChangeRequestDeliveryLinks::class,
         ResolveChangeRequestByBranch::class,
@@ -157,6 +160,7 @@ class ReadonlyServer extends Server
         ListReviewDecisionEvents::class,
         ListArtifactRelations::class,
         ListChangeRequests::class,
+        GetChangeRequest::class,
         ListChangeApprovalEvents::class,
         ListToolInvocations::class,
         SummarizeAgentOutcomes::class,
