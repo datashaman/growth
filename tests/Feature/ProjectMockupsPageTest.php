@@ -209,6 +209,9 @@ it('renders seeded demo mockups on the project mockups page', function () {
 
     $this->get(route('mockups'))
         ->assertOk()
+        ->assertSee('Mission Control')
+        ->assertSee('Solar Flare')
+        ->assertSee('theme=mission-control', false)
         ->assertSee('Telemetry ingest dashboard')
         ->assertSee('Packet latency drilldown')
         ->assertSee('Failover drill console')

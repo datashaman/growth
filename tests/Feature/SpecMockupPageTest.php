@@ -209,7 +209,28 @@ it('switches the iframe to a chosen revision', function () {
     Livewire::test('pages::mockups.show', ['mockup' => $this->mockup])
         ->call('selectRevision', $first->id)
         ->assertSet('revisionId', $first->id)
+        ->assertSee("wire:key=\"mockup-{$this->mockup->id}-revision-{$first->id}\"", false)
         ->assertSee('revision='.$first->id);
+});
+
+it('keys the preview iframe by mockup and revision when sibling mockups have histories', function () {
+    $this->mockup->appendRevision('<!doctype html><html><body><h1>First second cut</h1></body></html>');
+    $firstMockupRevision = $this->mockup->revisions()->orderBy('number')->first();
+
+    $sibling = createMockup(
+        $this->workItem,
+        'Compact layout',
+        '<!doctype html><html><body><h1>Compact first cut</h1></body></html>',
+    );
+    $sibling->appendRevision('<!doctype html><html><body><h1>Compact second cut</h1></body></html>');
+    $siblingFirstRevision = $sibling->revisions()->orderBy('number')->first();
+
+    Livewire::test('pages::mockups.show', ['mockup' => $sibling])
+        ->call('selectRevision', $siblingFirstRevision->id)
+        ->assertSet('revisionId', $siblingFirstRevision->id)
+        ->assertDontSee("wire:key=\"mockup-{$this->mockup->id}-revision-{$firstMockupRevision->id}\"", false)
+        ->assertSee("wire:key=\"mockup-{$sibling->id}-revision-{$siblingFirstRevision->id}\"", false)
+        ->assertSee(route('mockups.raw', ['mockup' => $sibling, 'revision' => $siblingFirstRevision->id]));
 });
 
 it('shows a mockup revision history', function () {

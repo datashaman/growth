@@ -276,7 +276,7 @@ new class extends Component {
         @endif
 
         <iframe
-            wire:key="revision-{{ $revisionId }}"
+            wire:key="mockup-{{ $mockup->id }}-revision-{{ $revisionId }}"
             src="{{ $this->mockupPreviewUrl() }}"
             data-themed-mockup-frame
             data-src-base="{{ route('mockups.raw', ['mockup' => $mockup, 'revision' => $revisionId]) }}"
@@ -289,43 +289,65 @@ new class extends Component {
 
     @once
         <script>
-            window.GrowthBindMockupThemeSelectors = () => {
-                document.querySelectorAll('[data-growth-theme-selector]').forEach((selector) => {
-                    if (selector.dataset.growthThemeBound === 'true') {
+            window.GrowthMockupThemeObserver = window.GrowthMockupThemeObserver || null;
+
+            window.GrowthApplyMockupTheme = () => {
+                const selector = document.querySelector('[data-growth-theme-selector]');
+
+                if (!selector) {
+                    return;
+                }
+
+                document.querySelectorAll('[data-themed-mockup-frame]').forEach((frame) => {
+                    if (!frame.dataset.srcBase) {
                         return;
                     }
 
-                    selector.dataset.growthThemeBound = 'true';
+                    const url = new URL(frame.dataset.srcBase, window.location.origin);
+                    const theme = selector.value === '' ? (frame.dataset.assignedTheme || '') : selector.value;
 
-                    selector.value = selector.dataset.currentTheme || '';
+                    if (theme && theme !== 'none') {
+                        url.searchParams.set('theme', theme);
+                    } else {
+                        url.searchParams.delete('theme');
+                    }
 
-                    const applyTheme = () => {
-                        document.querySelectorAll('[data-themed-mockup-frame]').forEach((frame) => {
-                            const url = new URL(frame.dataset.srcBase, window.location.origin);
-                            const theme = selector.value === '' ? (frame.dataset.assignedTheme || '') : selector.value;
-                            if (theme && theme !== 'none') {
-                                url.searchParams.set('theme', theme);
-                            } else {
-                                url.searchParams.delete('theme');
-                            }
-                            frame.src = url.toString();
-                        });
-                    };
+                    const nextSrc = url.toString();
 
-                    selector.addEventListener('change', () => {
-                        const url = new URL(window.location.href);
-                        if (selector.value === '') {
-                            url.searchParams.delete('theme');
-                        } else {
-                            url.searchParams.set('theme', selector.value);
-                        }
-                        window.history.replaceState({}, '', url.toString());
-                        applyTheme();
-                    });
-
-                    new MutationObserver(applyTheme).observe(document.body, { childList: true, subtree: true });
-                    applyTheme();
+                    if (frame.src !== nextSrc) {
+                        frame.src = nextSrc;
+                    }
                 });
+            };
+
+            window.GrowthBindMockupThemeSelectors = () => {
+                document.querySelectorAll('[data-growth-theme-selector]').forEach((selector) => {
+                    if (selector.dataset.growthThemeBound === 'true') {
+                        selector.value = selector.dataset.currentTheme || '';
+                    } else {
+                        selector.dataset.growthThemeBound = 'true';
+                        selector.value = selector.dataset.currentTheme || '';
+
+                        selector.addEventListener('change', () => {
+                            const url = new URL(window.location.href);
+                            if (selector.value === '') {
+                                url.searchParams.delete('theme');
+                            } else {
+                                url.searchParams.set('theme', selector.value);
+                            }
+                            window.history.replaceState({}, '', url.toString());
+                            window.GrowthApplyMockupTheme();
+                        });
+                    }
+                });
+
+                if (window.GrowthMockupThemeObserver) {
+                    window.GrowthMockupThemeObserver.disconnect();
+                }
+
+                window.GrowthMockupThemeObserver = new MutationObserver(window.GrowthApplyMockupTheme);
+                window.GrowthMockupThemeObserver.observe(document.body, { childList: true, subtree: true });
+                window.GrowthApplyMockupTheme();
             };
 
             document.addEventListener('livewire:navigated', window.GrowthBindMockupThemeSelectors);
