@@ -6,6 +6,7 @@ use App\Models\Requirement;
 use App\Models\SpecMockup;
 use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -147,11 +148,92 @@ class MockupDesignBriefResource extends Resource implements HasUriTemplate
             $md .= "\n";
         }
 
+        $md .= "## Expected Screen Coverage\n\n";
+        $coverage = $this->expectedScreenCoverage($owner, $requirements);
+        $md .= $coverage['intro']."\n";
+        foreach ($coverage['items'] as $item) {
+            $md .= "- {$item}\n";
+        }
+        $md .= "\n";
+
         $md .= "## Generation Guidance\n\n";
         $md .= "- Represent relevant architecture views/elements in the mockup when they affect layout, states, flows, or component boundaries.\n";
         $md .= "- Preserve linked requirement behavior and acceptance checks.\n";
+        $md .= "- Use separate named mockups for materially different screens or states, such as empty/loading states, validation failures, stale analytics, fulfillment confirmation, or mediation/exception handling.\n";
+        $md .= "- Keep local JavaScript inside one mockup for natural interactions that do not replace the whole screen, such as filtering, toggles, inline validation, submit feedback, and confirmation dialogs.\n";
         $md .= "- If the mockup intentionally diverges from architecture context, make the mismatch visible in the artifact or its notes.\n";
 
         return Response::text($md);
+    }
+
+    /**
+     * @param  Collection<int, Requirement>  $requirements
+     * @return array{intro:string,items:list<string>}
+     */
+    private function expectedScreenCoverage(Model $owner, $requirements): array
+    {
+        $items = [];
+
+        if ($owner instanceof WorkItem && $owner->needs_mockups) {
+            $items[] = "Create a primary named mockup for `{$owner->name}`.";
+        }
+
+        foreach ($requirements as $requirement) {
+            if ($requirement->renders_ui) {
+                $items[] = "Cover UI requirement {$requirement->reference()} with at least one named mockup.";
+            }
+
+            $text = strtolower(implode(' ', array_filter([
+                $requirement->text,
+                $requirement->rationale,
+                ...($requirement->acceptance_criteria ?? []),
+            ])));
+
+            foreach ($this->stateSuggestions($text) as $suggestion) {
+                $items[] = "{$suggestion} (derived from {$requirement->reference()}).";
+            }
+        }
+
+        $items = array_values(array_unique($items));
+
+        if ($items === []) {
+            return [
+                'intro' => 'No distinct extra screens are obvious from the captured owner context. Start with one clear default mockup, then add named alternatives only when the brief implies materially different UI states.',
+                'items' => [
+                    'Use `name` values such as `empty state`, `validation failure`, or `confirmation` when those distinct screens become relevant.',
+                ],
+            ];
+        }
+
+        return [
+            'intro' => 'Suggested named mockups or required state coverage, derived from this owner and its linked requirements:',
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function stateSuggestions(string $text): array
+    {
+        $suggestions = [];
+
+        foreach ([
+            ['terms' => ['empty', 'no data', 'no results'], 'copy' => 'Add an `empty state` named mockup'],
+            ['terms' => ['invalid', 'validation', 'error', 'reject', 'failure'], 'copy' => 'Add a `validation failure` named mockup'],
+            ['terms' => ['stale', 'outdated', 'expired'], 'copy' => 'Add a `stale data` named mockup'],
+            ['terms' => ['confirm', 'confirmation', 'success', 'submitted', 'fulfilled', 'complete'], 'copy' => 'Add a `confirmation` named mockup'],
+            ['terms' => ['exception', 'conflict', 'mediate', 'mediation', 'manual review'], 'copy' => 'Add an `exception handling` named mockup'],
+            ['terms' => ['loading', 'pending', 'processing'], 'copy' => 'Add a `loading or pending` named mockup'],
+        ] as $rule) {
+            foreach ($rule['terms'] as $term) {
+                if (str_contains($text, $term)) {
+                    $suggestions[] = $rule['copy'];
+                    break;
+                }
+            }
+        }
+
+        return $suggestions;
     }
 }

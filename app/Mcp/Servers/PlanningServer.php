@@ -60,6 +60,7 @@ use App\Mcp\Tools\Plan\DeleteAgent;
 use App\Mcp\Tools\Plan\DeleteDeployment;
 use App\Mcp\Tools\Plan\DeleteMilestone;
 use App\Mcp\Tools\Plan\DeleteMockup;
+use App\Mcp\Tools\Plan\DeleteOwnerMockups;
 use App\Mcp\Tools\Plan\DeletePlan;
 use App\Mcp\Tools\Plan\DeleteRelease;
 use App\Mcp\Tools\Plan\DeleteRisk;
@@ -77,6 +78,7 @@ use App\Mcp\Tools\Plan\ListMilestones;
 use App\Mcp\Tools\Plan\ListMockupRevisions;
 use App\Mcp\Tools\Plan\ListMockups;
 use App\Mcp\Tools\Plan\ListPlanBaselines;
+use App\Mcp\Tools\Plan\ListProjectMockups;
 use App\Mcp\Tools\Plan\ListProjectPlans;
 use App\Mcp\Tools\Plan\ListReleases;
 use App\Mcp\Tools\Plan\ListRisks;
@@ -204,9 +206,11 @@ class PlanningServer extends Server
         UpsertMockup::class,
         GetMockup::class,
         ListMockups::class,
+        ListProjectMockups::class,
         ListMockupRevisions::class,
         RevertMockup::class,
         DeleteMockup::class,
+        DeleteOwnerMockups::class,
         UpsertRisk::class,
         ListRisks::class,
         DeleteRisk::class,

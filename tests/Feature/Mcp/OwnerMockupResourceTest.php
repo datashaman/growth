@@ -86,9 +86,11 @@ it('serves a mockup design brief for a work item', function () {
         'project_id' => $this->project->id,
         'doc' => 'srs',
         'type' => 'functional',
-        'text' => 'The checkout must show payment status.',
-        'acceptance_criteria' => ['Payment status is visible before submit.'],
+        'text' => 'The checkout must show payment status and reject invalid cards.',
+        'acceptance_criteria' => ['Payment status is visible before submit.', 'Invalid cards show a validation error.'],
+        'renders_ui' => true,
     ]);
+    $this->workItem->forceFill(['needs_mockups' => true])->save();
     $this->workItem->requirements()->attach($requirement->id);
 
     $concern = Concern::create([
@@ -115,8 +117,13 @@ it('serves a mockup design brief for a work item', function () {
         ->assertOk()
         ->assertSee('Mockup Design Brief - Mockups')
         ->assertSee($this->workItem->reference())
-        ->assertSee('The checkout must show payment status.')
+        ->assertSee('The checkout must show payment status and reject invalid cards.')
         ->assertSee('Payment status is visible before submit.')
+        ->assertSee('Expected Screen Coverage')
+        ->assertSee('Cover UI requirement')
+        ->assertSee('validation failure')
+        ->assertSee('separate named mockups')
+        ->assertSee('filtering, toggles, inline validation')
         ->assertSee('Checkout interaction')
         ->assertSee('Users need clear payment feedback.')
         ->assertSee('Payment status panel')
