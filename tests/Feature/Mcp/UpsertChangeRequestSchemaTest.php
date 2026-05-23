@@ -97,6 +97,98 @@ it('creates and updates a change request with a non-mutating references impact',
         ->and($impact->description)->toBe('Replacement context reference.');
 });
 
+it('warns immediately when a change request has no impacted artifacts', function () {
+    $user = User::factory()->create();
+    Passport::actingAs($user, ['mcp:use']);
+
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'No impacts',
+        'rigor_level' => 2,
+    ]);
+
+    $created = $this->postJson('/mcp/governance', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'upsert-change-request',
+            'arguments' => [
+                'project_id' => $project->id,
+                'title' => 'Clarify telemetry scope',
+                'category' => 'scope',
+            ],
+        ],
+    ])->assertOk()->json('result.structuredContent');
+
+    expect($created['impacts'])->toBe(0)
+        ->and($created['warnings'])->toContain('change_control will remain unhealthy until at least one impacted artifact is recorded on this change request.');
+});
+
+it('preserves omitted optional fields and impacts when updating a change request', function () {
+    $user = User::factory()->create();
+    Passport::actingAs($user, ['mcp:use']);
+
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Merge updates',
+        'rigor_level' => 2,
+    ]);
+    $requirement = Requirement::create([
+        'project_id' => $project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The dashboard shall surface change-control health.',
+    ]);
+
+    $created = $this->postJson('/mcp/governance', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'upsert-change-request',
+            'arguments' => [
+                'project_id' => $project->id,
+                'title' => 'Record gate warning',
+                'description' => 'Initial description',
+                'rationale' => 'Initial rationale',
+                'category' => 'requirements',
+                'priority' => 'high',
+                'impacts' => [[
+                    'type' => 'requirement',
+                    'id' => $requirement->id,
+                    'impact_kind' => 'modifies',
+                    'description' => 'Dashboard copy changes.',
+                ]],
+            ],
+        ],
+    ])->assertOk()->json('result.structuredContent');
+
+    $updated = $this->postJson('/mcp/governance', [
+        'jsonrpc' => '2.0',
+        'id' => 2,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'upsert-change-request',
+            'arguments' => [
+                'id' => $created['id'],
+                'project_id' => $project->id,
+                'title' => 'Record gate warning precisely',
+                'category' => 'requirements',
+            ],
+        ],
+    ])->assertOk()->json('result.structuredContent');
+
+    $change = $project->changeRequests()->whereKey($created['id'])->firstOrFail();
+
+    expect($updated['impacts'])->toBe(1)
+        ->and($updated['warnings'])->toBe([])
+        ->and($change->description)->toBe('Initial description')
+        ->and($change->rationale)->toBe('Initial rationale')
+        ->and($change->priority)->toBe('high')
+        ->and($change->impacts()->count())->toBe(1);
+});
+
 it('omits transition-managed fields from the upsert-change-request tool schema', function () {
     Passport::actingAs(User::factory()->create(), ['mcp:use']);
 
@@ -115,6 +207,24 @@ it('omits transition-managed fields from the upsert-change-request tool schema',
     expect($properties)->not->toHaveKey('status')
         ->and($properties)->not->toHaveKey('decision')
         ->and($properties)->not->toHaveKey('decided_at');
+});
+
+it('documents merge behavior on the upsert-change-request tool schema', function () {
+    Passport::actingAs(User::factory()->create(), ['mcp:use']);
+
+    $tools = $this->postJson('/mcp/governance', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+    ])->assertOk()->json('result.tools');
+
+    $changeTool = collect($tools)->firstWhere('name', 'upsert-change-request');
+
+    expect($changeTool)->not->toBeNull()
+        ->and($changeTool['description'] ?? '')->toContain('Updates are merge-style')
+        ->and($changeTool['inputSchema']['properties']['description']['description'] ?? '')->toContain('omit to preserve')
+        ->and($changeTool['inputSchema']['properties']['impacts']['description'] ?? '')->toContain('omit impacts to preserve existing links')
+        ->and($changeTool['inputSchema']['properties']['impacts']['description'] ?? '')->toContain('pass [] to explicitly clear');
 });
 
 it('exposes decision_rationale on the upsert-change-request tool schema for backfill', function () {

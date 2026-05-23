@@ -19,9 +19,11 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive(false)]
-#[Description('Create or update a project change request, including optional impacted artifacts for impact analysis and review linkage. Before updating or deciding an existing change artifact, read its change impact brief (`growth://change-requests/{change_request}/change-impact-brief`); before creating one, inspect relevant requirements, work items, architecture context, reviews, risks, and trace-query/analyze-change-impact output so impacts and rationale reflect captured context.')]
+#[Description('Create or update a project change request, including optional impacted artifacts for impact analysis and review linkage. Updates are merge-style: omitted optional fields keep their current values, omitted impacts keep existing impact links, and impacts: [] explicitly clears them. Before updating or deciding an existing change artifact, read its change impact brief (`growth://change-requests/{change_request}/change-impact-brief`); before creating one, inspect relevant requirements, work items, architecture context, reviews, risks, and trace-query/analyze-change-impact output so impacts and rationale reflect captured context.')]
 class UpsertChangeRequest extends Tool
 {
+    private const EMPTY_IMPACTS_WARNING = 'change_control will remain unhealthy until at least one impacted artifact is recorded on this change request.';
+
     public function handle(Request $request): ResponseFactory
     {
         $data = $request->validate([
@@ -91,6 +93,7 @@ class UpsertChangeRequest extends Tool
             'priority' => $change->priority,
             'decision' => $change->decision,
             'impacts' => $change->impacts()->count(),
+            'warnings' => $this->warnings($change),
             'approval_events' => $change->approvalEvents()->count(),
             'consult_with' => $this->consultWith($change),
             'change_impact_brief' => "growth://change-requests/{$change->id}/change-impact-brief",
@@ -106,13 +109,13 @@ class UpsertChangeRequest extends Tool
             'requester_role_id' => $schema->string()->description('Role ULID requesting the change'),
             'review_id' => $schema->string()->description('Review ULID where this change was approved or raised'),
             'title' => $schema->string()->description('Change request title. Do not embed a "CR-NNN" prefix — a per-project reference is assigned automatically.')->required(),
-            'description' => $schema->string()->description('Change description grounded in the relevant captured artifacts and trace context'),
-            'rationale' => $schema->string()->description('Reason for the change, including the source context or decision pressure that makes it necessary'),
-            'decision_rationale' => $schema->string()->description('Decision rationale. Normally set via the reason argument to approve/reject/defer-change-request; settable here only to backfill a decision recorded without one.'),
+            'description' => $schema->string()->description('Change description grounded in the relevant captured artifacts and trace context. Merge update: omit to preserve the existing description; pass null to clear it.'),
+            'rationale' => $schema->string()->description('Reason for the change, including the source context or decision pressure that makes it necessary. Merge update: omit to preserve the existing rationale; pass null to clear it.'),
+            'decision_rationale' => $schema->string()->description('Decision rationale. Normally set via the reason argument to approve/reject/defer-change-request; settable here only to backfill a decision recorded without one. Merge update: omit to preserve the existing decision rationale; pass null to clear it.'),
             'category' => $schema->string()->description('Change category')->enum(ChangeRequest::CATEGORIES)->required(),
-            'priority' => $schema->string()->description('Change priority')->enum(ChangeRequest::PRIORITIES),
+            'priority' => $schema->string()->description('Change priority. Merge update: omit to preserve the existing priority; pass null to clear it.')->enum(ChangeRequest::PRIORITIES),
             'impacts' => $schema->array()
-                ->description('Impacted artifacts. Each entry: {type, id, impact_kind, description?}.')
+                ->description('Impacted artifacts. Each entry: {type, id, impact_kind, description?}. Merge update: omit impacts to preserve existing links, pass a full replacement list to replace them, or pass [] to explicitly clear all links. Change-control readiness remains unhealthy while this list is empty.')
                 ->items($schema->object(fn (JsonSchema $s) => [
                     'type' => $s->string()
                         ->description('Artifact type the change touches.')
@@ -143,11 +146,24 @@ class UpsertChangeRequest extends Tool
             'priority' => $schema->string()->required(),
             'decision' => $schema->string(),
             'impacts' => $schema->integer()->required(),
+            'warnings' => $schema->array()->description('Immediate change-control warnings for this write. Empty when the change request has impacted artifacts.')->required(),
             'approval_events' => $schema->integer()->required(),
             'consult_with' => $schema->array()->description('Consulted RACI roles from impacted work items, if any. These are candidates for input, not auto-routed assignees.')->required(),
             'change_impact_brief' => $schema->string()->description('Brief resource to read before refining, analyzing, deciding, or implementing this change request')->required(),
             'created' => $schema->boolean()->required(),
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function warnings(ChangeRequest $change): array
+    {
+        if ($change->impacts()->exists()) {
+            return [];
+        }
+
+        return [self::EMPTY_IMPACTS_WARNING];
     }
 
     private function syncImpacts(ChangeRequest $change, array $impacts): void
