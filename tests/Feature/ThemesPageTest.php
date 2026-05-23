@@ -34,7 +34,7 @@ it('displays themes without web crud controls', function () {
             'accent-strong' => '#15803d',
             'warning' => '#f59e0b',
         ],
-        'raw_css' => 'body { background: var(--surface); }',
+        'raw_css' => '.panel { box-shadow: 0 20px 40px rgba(21, 128, 61, .2); }',
         'is_default' => true,
     ]);
 
@@ -45,9 +45,11 @@ it('displays themes without web crud controls', function () {
         ->assertSee('default')
         ->assertSee('--surface')
         ->assertSee('data-test="theme-preview"', false)
-        ->assertSee('linear-gradient(135deg, #101418, #1f2937)', false)
-        ->assertSee('background-color: #22c55e', false)
-        ->assertSee('background-color: #f59e0b', false)
+        ->assertSee('data-growth-theme-preview', false)
+        ->assertSee('--surface: #101418;', false)
+        ->assertSee('.panel { box-shadow: 0 20px 40px rgba(21, 128, 61, .2); }', false)
+        ->assertSee('Interface sample')
+        ->assertDontSee('Festival Market')
         ->assertSee('Compact panels')
         ->assertDontSee('Save theme')
         ->assertDontSee('Delete theme');
