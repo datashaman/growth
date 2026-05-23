@@ -1,6 +1,8 @@
 # GitHub Integration — Discovery — 2026-05-15
 
-Design note for issue #82. Status: **discovery — recommendations only, no commitments.**
+Design note for issue #82. Status: **v1 implemented as the `growth-sync`
+GitHub Action and `scaffold-github-sync` MCP tool. Kept as the design record;
+the README documents current setup and attribution behavior.**
 
 ## Context
 
@@ -11,13 +13,20 @@ Growth's data model is already GitHub-shaped:
 - `work_item_delivery_links.type` is `commit | pull_request | branch` — GitHub's three primary delivery artefacts.
 - MCP tools `upsert-check-run`, `upsert-deployment`, `upsert-delivery-link` already accept payloads in that shape.
 
-So a v1 GitHub integration needs **no new domain tables** — only an ingress path that translates events into the existing tool surface.
+The v1 GitHub integration uses no new delivery-domain tables: the Action
+translates GitHub events into the existing MCP tool surface and stores provider
+data on the existing delivery, check, deployment, release, and unattributed
+event records.
 
-## Recommended first slice
+## Implemented first slice
 
 **Pull, not push: a GitHub Action that calls Growth's MCP server.**
 
-The repo being tracked installs `.github/workflows/growth-sync.yml`. The workflow fires on `pull_request`, `check_run`, `deployment_status`, and `release` events, then POSTs translated payloads to `https://growth.../mcp/all` using a Passport token stored as a repo secret (`GROWTH_MCP_TOKEN`) with `mcp:use` scope.
+The repo being tracked installs `.github/workflows/growth-sync.yml`. The
+workflow fires on `pull_request`, third-party `check_run`, GitHub Actions
+`workflow_run`, `deployment_status`, and `release` events, then POSTs
+translated payloads to `https://growth.../mcp/all` using a Passport token
+stored as a repo secret (`GROWTH_MCP_TOKEN`) with `mcp:use` scope.
 
 Why this over a webhook receiver:
 
@@ -37,7 +46,8 @@ Trigger events the v1 workflow handles:
 | GitHub event | Growth call | Maps to |
 |---|---|---|
 | `pull_request` (opened, synchronize, closed) | `upsert-delivery-link` | `WorkItemDeliveryLink` (type=`pull_request`) |
-| `check_run` (completed) | `upsert-check-run` | `CheckRunEvidence` |
+| `check_run` (completed) | `upsert-check-run` | `CheckRunEvidence` for third-party CI |
+| `workflow_run` (completed) | `upsert-check-run` | `CheckRunEvidence` for GitHub Actions CI |
 | `deployment_status` | `upsert-deployment` | `Deployment` |
 | `release` (published) | `upsert-release` | `Release` |
 
@@ -49,13 +59,14 @@ Trigger events the v1 workflow handles:
 
 ## Mapping rules: how a PR finds its work item
 
-This is the hard open question. Three viable conventions, in order of preference:
+Implemented conventions, in resolution order:
 
-1. **Commit trailer.** `Growth-Work-Item: WI-01H...` in the commit message or PR body. Explicit, machine-parseable, survives squash-merge. Recommended.
-2. **Branch prefix.** `wi/01H.../short-slug`. Cheap to enforce, but breaks on rebase and renames.
-3. **PR title slug.** `[WI-01H...] Short title`. Easy to type, easy to forget.
+1. **Commit trailer.** `Growth-Work-Item: <work-item-id>` or `Growth-Change-Request: <change-request-id-or-CR-number>`.
+2. **Branch reference.** `WI-<number>` or `CR-<number>` in the branch name.
+3. **Explicit branch delivery link.** A work-item or change-request branch link previously recorded in Growth.
 
-If no work item is found, the workflow logs a warning and skips — it does not error. **Drift is preferred over noise.**
+If no work item or change request is found, the workflow records an
+unattributed event and reports the configured attribution check result.
 
 Project ↔ repo binding needs a new field. Smallest change: add `github_repo` (e.g. `owner/repo`) to `projects`. Many repos per project is plausible later; defer to v2.
 

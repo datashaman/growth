@@ -14,6 +14,8 @@ Current:
 - stakeholders and concerns
 - sources and artifact citations
 - design views, viewpoints, and design elements
+- spec mockups for UI work items and requirements, including named alternatives
+- mockup design briefs with expected screen/state coverage guidance
 - test plans, test cases, test runs, and anomalies
 - traceability across requirements, design, tests, and sources
 - acceptance criteria on requirements with SRS rendering and lint checks
@@ -32,9 +34,9 @@ Current:
 - roles, agents, RACI assignments, and dependencies
 - plan baselines
 - project risks and risk assessment prompts
-- numeric capacity, effort, and cost planning rollups
-- schedule health and dependency risk summaries
 - baseline comparison reports with per-field before/after values
+- project-level mockup coverage discovery and missing-coverage filters
+- owner-scoped mockup cleanup for regeneration workflows
 
 ## 3. Review
 
@@ -64,6 +66,8 @@ Current:
 - CI/check run evidence can be attached to delivery links and traced back to work items
 - release and deployment records link shipped versions, environments, work items, and delivery evidence
 - implementation status rollups combine work item status, delivery evidence, checks, and deployments
+- GitHub Actions sync scaffolding for adopter repositories
+- visual evidence galleries from uploaded CI artifacts
 
 ## 5. Control Change
 
@@ -80,6 +84,7 @@ Current:
 - change impact analysis expands impacted artifacts into trace context
 - append-only change approval events record decision/status transitions
 - explicit artifact relations record supersession and replacement links
+- standalone decision requests with options, routing, deadlines, and auditable transitions
 
 ## 6. Assure
 
@@ -96,3 +101,6 @@ Current:
 - traceability audit prompts
 - risk posture checks
 - public guidance and public guidance catalog
+- MCP app dashboards for project status, readiness gates, requirement exploration, and trace graphs
+- manifest import/export and rigor-level starter templates
+- non-blocking mockup quality warnings for external assets and whole-screen state pickers

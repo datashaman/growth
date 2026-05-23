@@ -6,15 +6,12 @@ verification findings from the codebase.
 
 ## Cross-cutting context
 
-The repo is mid-migration from a flat `app/Mcp/Tools/*.php` surface to
-role-organized subdirectories (`Tools/Projects/`, `Tools/Lint/`, `Tools/Plan/`,
-etc.) exposed via six role servers (`intake`, `architecture`, `planning`,
-`verification`, `governance`, `readonly`). The reporter was talking to
-`AllServer`, which auto-discovers everything under `app/Mcp/Tools/` — so it
-sees both the old flat tools and the new role-scoped ones simultaneously,
-roughly double-counting the real surface. Several items below are partly
-"finish the role-server migration and stop registering the legacy tools in
-`AllServer`."
+The repo now exposes seven role-scoped capability surfaces (`management`,
+`intake`, `architecture`, `planning`, `verification`, `governance`, and
+`readonly`) plus `all`. `AllServer` is a deduplicated union of the role servers,
+not filesystem auto-discovery, so it is the intended power-user surface rather
+than a migration artifact. Older notes below that mention double-registration or
+six role servers should be read as historical context.
 
 Status legend: **accept** = file an issue; **defer** = file an issue but
 de-prioritize; **already-planned** = covered by in-flight work; **reject** =
@@ -26,9 +23,9 @@ won't act on, with rationale.
 |---|------|--------|--------|-------|-------|
 | 1 | Document rigor semantics in `upsert-project` description, not just the range | S | **accept** | [#30](https://github.com/datashaman/growth/issues/30) | First slice. |
 | 2 | Pick one name: `rigor_level` vs `integrity_level` | S | **accept** | [#31](https://github.com/datashaman/growth/issues/31) | Verified: `UpsertProject` exposes `rigor_level` (maps to `integrity_level` internally); `Projects/CreateProject` and `Projects/UpdateProject` expose `integrity_level` directly. Storage column is `integrity_level`. |
-| 3 | Ship public-guidance bodies, or drop the search tool | M | **already-planned** | [#32](https://github.com/datashaman/growth/issues/32) | Per `docs/architecture/public-guidance-corpus.md`, intentionally unregistered on role servers but leaks back via `AllServer` auto-discovery. |
-| 4 | Collapse the CRUD-per-entity sprawl | L | **defer** | [#33](https://github.com/datashaman/growth/issues/33) | Headline ~180 inflated by double-registration. Per-role counts: 19–53. Finish migration first. |
-| 5 | Declarative bulk-import (`apply-manifest` / `export-manifest`) | L | **accept** | [#34](https://github.com/datashaman/growth/issues/34) | Design doc before sub-tasks. |
+| 3 | Ship public-guidance bodies, or drop the search tool | M | **already-planned** | [#32](https://github.com/datashaman/growth/issues/32) | Per `docs/architecture/public-guidance-corpus.md`, public guidance extraction is intentionally not MCP-facing. Re-add only through an explicit role-server registration. |
+| 4 | Collapse the CRUD-per-entity sprawl | L | **defer** | [#33](https://github.com/datashaman/growth/issues/33) | The surface is now role-organized and `AllServer` is deduplicated, but the entity-level CRUD shape remains broad. Consolidate around concrete workflow pressure rather than migration cleanup. |
+| 5 | Declarative bulk-import (`apply-manifest` / `export-manifest`) | L | **shipped** | [#34](https://github.com/datashaman/growth/issues/34) | Exposed on `management` and `all`; manifest resources are also available. |
 
 ## Medium impact
 
@@ -44,8 +41,8 @@ won't act on, with rationale.
 
 | # | Item | Effort | Status | Issue | Notes |
 |---|------|--------|--------|-------|-------|
-| 11 | Starter manifests as resources (`growth://template/rigor-N`) | M | **accept** | [#40](https://github.com/datashaman/growth/issues/40) | Blocked by #5. |
-| 12 | More embeddable MCP-app dashboards | L | **defer** | [#41](https://github.com/datashaman/growth/issues/41) | Add on concrete demand. |
+| 11 | Starter manifests as resources (`growth://template/rigor-N`) | M | **shipped** | [#40](https://github.com/datashaman/growth/issues/40) | Rigor-level starter templates are exposed on the management surface. |
+| 12 | More embeddable MCP-app dashboards | L | **partly shipped** | [#41](https://github.com/datashaman/growth/issues/41) | Project dashboard, gate status, requirement explorer, and trace graph apps exist; add more on concrete demand. |
 | 13 | Subscriptions / watches on `check_run.failed` etc. | L | **defer** | [#42](https://github.com/datashaman/growth/issues/42) | Blocked by MCP SDK. |
 | 14 | Make `trace-query` the recommended entry point | S | **accept** | [#43](https://github.com/datashaman/growth/issues/43) | Docs only. |
 | 15 | Document cascade behavior on `delete-*` tools | S | **accept** | [#44](https://github.com/datashaman/growth/issues/44) | Pairs with #7. |
