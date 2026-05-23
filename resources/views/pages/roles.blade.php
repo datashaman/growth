@@ -95,7 +95,7 @@ new #[Title('Roles')] class extends Component {
             :count-label="__('defined')"
             :empty="$this->roles->isEmpty()"
             :empty-message="__('No roles defined.')">
-            <flux:table class="[&_td]:align-top">
+            <flux:table class="[&_td]:align-top [&_table]:table-fixed [&_th:first-child]:w-[20%] [&_th:nth-child(2)]:w-[16%] [&_th:nth-child(3)]:w-[24%] [&_th:nth-child(4)]:w-[40%]">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Role') }}</flux:table.column>
                     <flux:table.column>{{ __('Users') }}</flux:table.column>
@@ -105,12 +105,17 @@ new #[Title('Roles')] class extends Component {
                 <flux:table.rows>
                     @foreach ($this->roles as $role)
                         <flux:table.row>
-                            <flux:table.cell class="font-medium">{{ $role->name }}</flux:table.cell>
-                            <flux:table.cell>{{ $role->users->pluck('name')->join(', ') ?: '—' }}</flux:table.cell>
+                            <flux:table.cell class="font-medium">
+                                <div class="truncate whitespace-nowrap" title="{{ $role->name }}">{{ $role->name }}</div>
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                @php($users = $role->users->pluck('name')->join(', ') ?: '—')
+                                <div class="truncate whitespace-nowrap" title="{{ $users }}">{{ $users }}</div>
+                            </flux:table.cell>
                             <flux:table.cell>{{ $role->responsibilities ?? '—' }}</flux:table.cell>
                             <flux:table.cell>
                                 @if ($this->canManageRoleCapabilities)
-                                    <div class="grid gap-2 sm:grid-cols-2" data-test="role-capabilities-{{ $role->id }}">
+                                    <div class="grid gap-x-5 gap-y-2 xl:grid-cols-2" data-test="role-capabilities-{{ $role->id }}">
                                         @foreach ($this->capabilities() as $capability)
                                             @php($checked = $role->capabilities()->contains(fn (Capability $assigned): bool => $assigned === $capability))
                                             <label class="flex min-w-0 items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
@@ -121,7 +126,7 @@ new #[Title('Roles')] class extends Component {
                                                     wire:click="toggleRoleCapability('{{ $role->id }}', '{{ $capability->value }}')"
                                                     data-test="role-capability-{{ $role->id }}-{{ $capability->value }}"
                                                 >
-                                                <span class="min-w-0 truncate">{{ $capability->label() }}</span>
+                                                <span class="min-w-0">{{ $capability->label() }}</span>
                                             </label>
                                         @endforeach
                                     </div>
