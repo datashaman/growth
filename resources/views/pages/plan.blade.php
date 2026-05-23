@@ -135,8 +135,7 @@ new #[Title('Plan')] class extends Component {
             ->workItems()
             ->with('responsibleRole')
             ->withCount('children')
-            ->orderByRaw("case status when 'in_progress' then 0 when 'blocked' then 1 when 'todo' then 2 when 'done' then 3 when 'cancelled' then 4 else 9 end")
-            ->orderBy('name')
+            ->inWbsOrder()
             ->get();
 
         $byId = $items->keyBy('id');
@@ -264,8 +263,7 @@ new #[Title('Plan')] class extends Component {
                 fn (Builder $query) => $query->whereNull('parent_id'),
                 fn (Builder $query) => $query->where('parent_id', $parentId),
             )
-            ->orderByRaw("case status when 'in_progress' then 0 when 'blocked' then 1 when 'todo' then 2 when 'done' then 3 when 'cancelled' then 4 else 9 end")
-            ->orderBy('name')
+            ->inWbsOrder()
             ->limit(self::WORK_ITEM_BRANCH_LIMIT + 1)
             ->get();
     }

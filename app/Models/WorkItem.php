@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BroadcastsProjectChanges;
 use App\Models\Concerns\ScopedByOwner;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -74,6 +75,18 @@ class WorkItem extends Model
     public function reference(): string
     {
         return 'WI-'.str_pad((string) $this->number, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Stable WBS reading order. The per-project WI number is the only ordering
+     * signal Growth currently stores, so status must not reorder the plan tree.
+     *
+     * @param  Builder<WorkItem>  $query
+     * @return Builder<WorkItem>
+     */
+    public function scopeInWbsOrder(Builder $query): Builder
+    {
+        return $query->orderBy('number')->orderBy('name');
     }
 
     /**

@@ -65,8 +65,7 @@ class ProjectPlan extends Model
                 'budget_summary' => $this->budget_summary,
             ],
             'work_items' => $this->project->workItems()
-                ->orderBy('kind')
-                ->orderBy('name')
+                ->inWbsOrder()
                 ->orderBy('id')
                 ->get(['id', 'parent_id', 'responsible_role_id', 'kind', 'name', 'status'])
                 ->map(fn ($w) => [

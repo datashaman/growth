@@ -108,6 +108,29 @@ it('matches work items by reference in the text query', function (string $query)
     'bare number' => '1',
 ]);
 
+it('returns work items in WI reference order instead of kind, name, or status order', function () {
+    $first = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'task',
+        'name' => 'Zulu done task',
+        'status' => 'done',
+    ]);
+    $second = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'deliverable',
+        'name' => 'Alpha todo deliverable',
+        'status' => 'todo',
+    ]);
+
+    PlanningServer::tool(ListWorkItems::class, [
+        'project_id' => $this->project->id,
+    ])->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('results.0.id', $first->id)
+            ->where('results.1.id', $second->id)
+            ->etc());
+});
+
 it('keeps existing pagination bounded with the new filters', function () {
     foreach (range(1, 3) as $index) {
         WorkItem::create([

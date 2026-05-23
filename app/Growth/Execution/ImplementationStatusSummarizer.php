@@ -15,8 +15,7 @@ class ImplementationStatusSummarizer
     {
         $items = $project->workItems()
             ->with(['deliveryLinks.checkRuns', 'deliveryLinks.deployments', 'responsibleRole'])
-            ->orderBy('kind')
-            ->orderBy('name')
+            ->inWbsOrder()
             ->get();
 
         $rows = $items->map(fn (WorkItem $item): array => $this->summarizeItem($item))->all();
