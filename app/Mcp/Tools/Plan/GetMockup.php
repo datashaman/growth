@@ -49,8 +49,13 @@ class GetMockup extends Tool
             'owner_id' => $mockup->owner_id,
             'name' => $mockup->name,
             'revision' => $mockup->currentRevision->number,
+            'revision_id' => $mockup->currentRevision->id,
             'html' => $mockup->currentRevision->html,
             'revision_created_at' => $mockup->currentRevision->created_at?->toIso8601String(),
+            'inspection' => [
+                'uri' => "growth://mockups/{$mockup->id}/revisions/{$mockup->currentRevision->id}/rendered-inspection/assigned",
+                'guidance' => 'Read this resource to inspect the browser-rendered mockup for visible workflow metadata.',
+            ],
         ]);
     }
 
@@ -71,8 +76,10 @@ class GetMockup extends Tool
             'owner_id' => $schema->string()->required(),
             'name' => $schema->string()->required(),
             'revision' => $schema->integer()->description('Number of the current revision')->required(),
+            'revision_id' => $schema->string()->description('ULID of the current revision')->required(),
             'html' => $schema->string()->description('HTML of the current revision')->required(),
             'revision_created_at' => $schema->string()->description('ISO 8601 timestamp the current revision was written')->required(),
+            'inspection' => $schema->object()->description('Rendered inspection resource for the current revision')->required(),
         ];
     }
 }

@@ -34,6 +34,7 @@ class ListMockupRevisions extends Tool
                 'id' => $revision->id,
                 'number' => $revision->number,
                 'created_at' => $revision->created_at?->toIso8601String(),
+                'inspection_uri' => "growth://mockups/{$mockup->id}/revisions/{$revision->id}/rendered-inspection/assigned",
             ])->all(),
         ]);
     }

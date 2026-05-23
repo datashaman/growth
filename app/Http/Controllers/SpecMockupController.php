@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SpecMockup;
-use App\Models\Theme;
-use App\Support\MockupHtml;
+use App\Support\MockupPreview;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response as BaseResponse;
 
@@ -44,7 +43,7 @@ class SpecMockupController extends Controller
      * resource load can still leak via its URL, an accepted cost of that
      * flexibility.
      */
-    public function raw(Request $request, SpecMockup $mockup): BaseResponse
+    public function raw(Request $request, SpecMockup $mockup, MockupPreview $preview): BaseResponse
     {
         if ($request->header('Sec-Fetch-Dest') !== 'iframe') {
             return redirect()->route('mockups.show', $mockup);
@@ -59,98 +58,9 @@ class SpecMockupController extends Controller
 
         abort_if($revision === null, 404);
 
-        $html = $this->makePreviewInert(
-            MockupHtml::withoutOwnerReference(
-                $this->applyTheme((string) $revision->html, $mockup, (string) $request->query('theme', '')),
-                $mockup->owner,
-            ),
-        );
-
-        return response($html)
+        return response($preview->html($mockup, $revision, (string) $request->query('theme', '')))
             ->header('Content-Type', 'text/html; charset=UTF-8')
-            ->header('Content-Security-Policy', implode('; ', [
-                "default-src 'none'",
-                "script-src 'unsafe-inline' 'unsafe-eval' https:",
-                "style-src 'unsafe-inline' https:",
-                'img-src data: https:',
-                'font-src data: https:',
-                "connect-src 'none'",
-                "form-action 'none'",
-                "navigate-to 'none'",
-                "frame-ancestors 'self'",
-                "base-uri 'none'",
-                'sandbox allow-scripts',
-            ]))
+            ->header('Content-Security-Policy', $preview->contentSecurityPolicy())
             ->header('X-Content-Type-Options', 'nosniff');
-    }
-
-    private function applyTheme(string $html, SpecMockup $mockup, string $themeSlug): string
-    {
-        $themeSlug = trim($themeSlug);
-
-        if ($themeSlug === '') {
-            return $html;
-        }
-
-        $owner = $mockup->owner;
-        $projectId = $owner?->project_id;
-
-        if (! is_string($projectId)) {
-            return $html;
-        }
-
-        $theme = Theme::query()
-            ->where('project_id', $projectId)
-            ->where('slug', $themeSlug)
-            ->first();
-
-        if (! $theme) {
-            return $html;
-        }
-
-        $style = $theme->styleElement();
-
-        if ($style === '') {
-            return $html;
-        }
-
-        if (preg_match('/<\/head>/i', $html) === 1) {
-            return preg_replace('/<\/head>/i', $style."\n".'$0', $html, 1) ?? $html;
-        }
-
-        if (preg_match('/<html\b[^>]*>/i', $html) === 1) {
-            return preg_replace('/<html\b[^>]*>/i', '$0'."\n<head>\n".$style."\n</head>", $html, 1) ?? $html;
-        }
-
-        return $style."\n".$html;
-    }
-
-    private function makePreviewInert(string $html): string
-    {
-        $script = <<<'HTML'
-<script data-growth-preview-inert>
-(() => {
-  document.addEventListener('click', (event) => {
-    if (event.target && event.target.closest('a[href]')) {
-      event.preventDefault();
-    }
-  }, true);
-
-  document.addEventListener('submit', (event) => {
-    event.preventDefault();
-  }, true);
-})();
-</script>
-HTML;
-
-        if (str_contains($html, 'data-growth-preview-inert')) {
-            return $html;
-        }
-
-        if (preg_match('/<\/body>/i', $html) === 1) {
-            return preg_replace('/<\/body>/i', $script."\n".'$0', $html, 1) ?? $html;
-        }
-
-        return $html."\n".$script;
     }
 }
