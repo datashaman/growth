@@ -40,6 +40,8 @@ it('stores a mockup for a work item', function () {
             $json->where('name', 'Checkout layout')
                 ->where('owner_type', 'work_item')
                 ->where('revision', 1)
+                ->whereType('revision_id', 'string')
+                ->where('inspection.uri', fn (string $uri): bool => str_contains($uri, '/rendered-inspection/assigned'))
                 ->where('created', true)
                 ->etc();
         });

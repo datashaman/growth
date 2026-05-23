@@ -10,6 +10,7 @@ use App\Mcp\Resources\IntentResource;
 use App\Mcp\Resources\ManifestResource;
 use App\Mcp\Resources\ManifestSectionResource;
 use App\Mcp\Resources\MockupDesignBriefResource;
+use App\Mcp\Resources\MockupRenderedInspectionResource;
 use App\Mcp\Resources\MockupResource;
 use App\Mcp\Resources\OwnerMockupResource;
 use App\Mcp\Resources\PlanResource;
@@ -211,6 +212,7 @@ class ReadonlyServer extends Server
         ReviewBriefResource::class,
         ChangeImpactBriefResource::class,
         MockupDesignBriefResource::class,
+        MockupRenderedInspectionResource::class,
         MockupResource::class,
         OwnerMockupResource::class,
         RequirementVerificationBriefResource::class,

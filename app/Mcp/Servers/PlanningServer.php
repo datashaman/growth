@@ -4,6 +4,7 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Prompts\PlanSlice;
 use App\Mcp\Resources\MockupDesignBriefResource;
+use App\Mcp\Resources\MockupRenderedInspectionResource;
 use App\Mcp\Resources\MockupResource;
 use App\Mcp\Resources\OwnerMockupResource;
 use App\Mcp\Resources\PlanResource;
@@ -258,6 +259,7 @@ class PlanningServer extends Server
         RequirementsResource::class,
         PlanResource::class,
         MockupDesignBriefResource::class,
+        MockupRenderedInspectionResource::class,
         MockupResource::class,
         OwnerMockupResource::class,
         RequirementVerificationBriefResource::class,

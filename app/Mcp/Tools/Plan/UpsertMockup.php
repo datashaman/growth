@@ -46,9 +46,11 @@ class UpsertMockup extends Tool
             'owner_id' => $mockup->owner_id,
             'name' => $mockup->name,
             'revision' => $revision->number,
+            'revision_id' => $revision->id,
             'created' => $created,
             'warnings' => $this->qualityWarnings($html),
             'design_brief' => $this->designBrief($owner->project_id, $data['owner_type'], $data['owner_id']),
+            'inspection' => $this->inspectionResource($mockup->id, $revision->id),
         ]);
     }
 
@@ -70,9 +72,11 @@ class UpsertMockup extends Tool
             'owner_id' => $schema->string()->required(),
             'name' => $schema->string()->required(),
             'revision' => $schema->integer()->description('Number of the revision this call appended')->required(),
+            'revision_id' => $schema->string()->description('ULID of the revision this call appended')->required(),
             'created' => $schema->boolean()->description('Whether this call created the mockup')->required(),
             'warnings' => $schema->array()->description('Non-blocking quality warnings for HTML patterns that often make weak or brittle mockups')->required(),
             'design_brief' => $schema->object()->description('Brief resource to read before generating or refining this mockup')->required(),
+            'inspection' => $schema->object()->description('Rendered inspection resource for this revision')->required(),
         ];
     }
 
@@ -177,6 +181,17 @@ class UpsertMockup extends Tool
                 'name' => $view->name,
                 'elements_count' => $view->elements_count,
             ])->all(),
+        ];
+    }
+
+    /**
+     * @return array{uri:string,guidance:string}
+     */
+    private function inspectionResource(string $mockupId, string $revisionId): array
+    {
+        return [
+            'uri' => "growth://mockups/{$mockupId}/revisions/{$revisionId}/rendered-inspection/assigned",
+            'guidance' => 'Read this after upsert-mockup to inspect the browser-rendered artifact for visible workflow metadata, implementation notes, and debug/theme labels.',
         ];
     }
 }
