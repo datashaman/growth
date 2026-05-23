@@ -138,9 +138,25 @@ it('serves the raw mockup HTML under a locked-down content security policy', fun
     // directive sandboxes the document from the response itself.
     expect($csp)->toContain("connect-src 'none'")
         ->and($csp)->toContain("form-action 'none'")
+        ->and($csp)->toContain("navigate-to 'none'")
         ->and($csp)->toContain("frame-ancestors 'self'")
         ->and($csp)->toContain('sandbox allow-scripts')
         ->and($response->headers->get('X-Content-Type-Options'))->toBe('nosniff');
+});
+
+it('prevents raw mockup links and forms from navigating the preview frame', function () {
+    $this->mockup->currentRevision->forceFill([
+        'html' => '<!doctype html><html><body><a href="/login">Menu</a><form action="/login"><button>Submit</button></form></body></html>',
+    ])->save();
+
+    $this->actingAs($this->user)
+        ->withHeader('Sec-Fetch-Dest', 'iframe')
+        ->get(route('mockups.raw', $this->mockup))
+        ->assertOk()
+        ->assertSee('href="/login"', false)
+        ->assertSee('data-growth-preview-inert', false)
+        ->assertSee("target.closest('a[href]')", false)
+        ->assertSee('event.preventDefault();', false);
 });
 
 it('injects selected theme css into raw mockup html without changing stored html', function () {
