@@ -107,8 +107,8 @@ class SpecMockupController extends Controller
             return $html;
         }
 
-        if (preg_match('/<head\b[^>]*>/i', $html) === 1) {
-            return preg_replace('/<head\b[^>]*>/i', '$0'."\n".$style, $html, 1) ?? $html;
+        if (preg_match('/<\/head>/i', $html) === 1) {
+            return preg_replace('/<\/head>/i', $style."\n".'$0', $html, 1) ?? $html;
         }
 
         if (preg_match('/<html\b[^>]*>/i', $html) === 1) {
