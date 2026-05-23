@@ -2,6 +2,7 @@
 
 use App\Models\ChangeImpact;
 use App\Models\Project;
+use App\Models\Requirement;
 use App\Models\User;
 use Laravel\Passport\Passport;
 
@@ -22,6 +23,78 @@ it('exposes impact_kind enum values in the upsert-change-request tool schema', f
 
     expect($impactKindSchema)->not->toBeNull()
         ->and($impactKindSchema['enum'] ?? null)->toBe(ChangeImpact::KINDS);
+});
+
+it('creates and updates a change request with a non-mutating references impact', function () {
+    $user = User::factory()->create();
+    Passport::actingAs($user, ['mcp:use']);
+
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'References',
+        'rigor_level' => 2,
+    ]);
+    $firstRequirement = Requirement::create([
+        'project_id' => $project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The register shall cite supporting evidence.',
+    ]);
+    $secondRequirement = Requirement::create([
+        'project_id' => $project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The dashboard shall summarize change context.',
+    ]);
+
+    $created = $this->postJson('/mcp/governance', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'upsert-change-request',
+            'arguments' => [
+                'project_id' => $project->id,
+                'title' => 'Document telemetry context',
+                'category' => 'requirements',
+                'impacts' => [[
+                    'type' => 'requirement',
+                    'id' => $firstRequirement->id,
+                    'impact_kind' => 'references',
+                    'description' => 'Context only; this requirement is not being changed.',
+                ]],
+            ],
+        ],
+    ])->assertOk()->json('result.structuredContent');
+
+    expect($created['impacts'])->toBe(1)
+        ->and(ChangeImpact::where('change_request_id', $created['id'])->sole()->impact_kind)->toBe('references');
+
+    $this->postJson('/mcp/governance', [
+        'jsonrpc' => '2.0',
+        'id' => 2,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => 'upsert-change-request',
+            'arguments' => [
+                'id' => $created['id'],
+                'project_id' => $project->id,
+                'title' => 'Document telemetry context',
+                'category' => 'requirements',
+                'impacts' => [[
+                    'type' => 'requirement',
+                    'id' => $secondRequirement->id,
+                    'impact_kind' => 'references',
+                    'description' => 'Replacement context reference.',
+                ]],
+            ],
+        ],
+    ])->assertOk();
+
+    $impact = ChangeImpact::where('change_request_id', $created['id'])->sole();
+    expect($impact->impact_kind)->toBe('references')
+        ->and($impact->impactable_id)->toBe($secondRequirement->id)
+        ->and($impact->description)->toBe('Replacement context reference.');
 });
 
 it('omits transition-managed fields from the upsert-change-request tool schema', function () {

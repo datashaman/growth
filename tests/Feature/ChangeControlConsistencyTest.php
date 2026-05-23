@@ -2,9 +2,11 @@
 
 use App\Growth\Assurance\ReadinessGateEvaluator;
 use App\Growth\Lint\BaselineLinter;
+use App\Models\ChangeRequest;
 use App\Models\Project;
 use App\Models\ProjectPlan;
 use App\Models\ProjectPlanBaseline;
+use App\Models\Requirement;
 use App\Models\User;
 use App\Models\WorkItem;
 
@@ -64,4 +66,40 @@ it('reports identical baseline drift through the linter and the readiness gate',
     expect($drift($lintFindings))->toBe([$item->id])
         ->and($drift($changeControl['findings']))->toBe([$item->id])
         ->and($changeControl['status'])->toBe('fail');
+});
+
+it('treats reference-only change impacts as sufficient for change-control readiness', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Reference-only',
+        'rigor_level' => 2,
+    ]);
+    $requirement = Requirement::create([
+        'project_id' => $project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The system shall keep telemetry evidence discoverable.',
+    ]);
+    $change = ChangeRequest::create([
+        'project_id' => $project->id,
+        'title' => 'Document telemetry evidence',
+        'category' => 'requirements',
+        'status' => 'approved',
+        'priority' => 'medium',
+        'decision' => 'approved',
+        'decision_rationale' => 'Documentation-only change with explicit supporting context.',
+    ]);
+    $change->impacts()->create([
+        'impactable_type' => 'requirement',
+        'impactable_id' => $requirement->id,
+        'impact_kind' => 'references',
+        'description' => 'Referenced as context; not modified.',
+    ]);
+
+    $changeControl = collect(app(ReadinessGateEvaluator::class)->evaluate($project->fresh())['gates'])
+        ->firstWhere('id', 'change_control');
+
+    expect($changeControl['status'])->toBe('pass')
+        ->and(collect($changeControl['findings'])->pluck('rule'))->not->toContain('change.impacts.empty');
 });

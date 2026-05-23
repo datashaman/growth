@@ -15,7 +15,7 @@ class ChangeImpact extends Model
 
     public const OWNER_SCOPE_RELATION = 'changeRequest.project';
 
-    public const KINDS = ['creates', 'modifies', 'replaces', 'deprecates', 'removes', 'needs_analysis'];
+    public const KINDS = ['creates', 'modifies', 'replaces', 'deprecates', 'removes', 'needs_analysis', 'references'];
 
     protected $fillable = [
         'change_request_id', 'impactable_type', 'impactable_id',
