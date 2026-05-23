@@ -29,25 +29,26 @@ _Avoid_: "personality", "mode"; a Capability Surface has no Persona
 **Lens**:
 The webapp face of a Persona — a coarse nav-and-panel filter that hides
 sections of the dashboard and Project sidebar irrelevant to the Role currently
-in focus. Named `ViewLens` in code. Not a security boundary: deep links to a
-hidden section still work.
+in focus. Implemented as `Lens` derived from a Role's Capabilities. Not a
+security boundary: deep links to a hidden section still work.
 _Avoid_: "view mode", "perspective"; a Lens belongs to a Role's Capability set,
 not to a Capability Surface or a free-floating User preference
 
 **Capability**:
-A named, curated bundle of MCP tools expressing a single intent —
-`manage_intent`, `manage_requirements`, `manage_architecture`. Closed set,
-defined in code; one Capability expands to N tools. A Role's accountabilities
-are stored as a set of Capabilities, and both the served Persona text and the
-webapp Lens are derived from that set. Capabilities are intent-named
-("`manage_requirements`"), not implementation-named ("`upsert-requirements`").
+A named, typed accountability expressing a single intent — `manage_intent`,
+`manage_requirements`, `manage_architecture`. Closed set, defined in code. A
+Role's accountabilities are stored as a set of Capabilities, and both the
+served Persona text and the webapp Lens are derived from that set. Capabilities
+are intent-named ("`manage_requirements`"), not implementation-named
+("`upsert-requirements`"). They do not currently own MCP server tool lists; the
+server surface remains a `CapabilitySurface` concern.
 _Avoid_: confusing with a single MCP tool or with a Capability Surface
 
 **Capability Surface**:
-A structural and semantic grouping of Capabilities exposed as one role-scoped
-MCP server. A session connects to one. It is *not* a Role. Named
-`CapabilitySurface` in code; a session's binding is resolved by
-`SurfaceContext`.
+A structural and semantic grouping of MCP tools exposed as one role-scoped MCP
+server. A session connects to one. It is *not* a Role and does not derive its
+advertised tools from Role Capabilities today. Named `CapabilitySurface` in
+code; a session's binding is resolved by `SurfaceContext`.
 _Avoid_: "operating role", "role" (for this concept), conflating with an
 individual Capability
 
@@ -89,7 +90,7 @@ _Avoid_: "installed workflow", "local workflow store"
 - A **Workspace** contains **Projects**; a **Project** defines its own **Roles**.
 - A **Role** is held by zero or more **Users** and/or **Agents** and carries a set of **Capabilities** plus a **Persona**.
 - The **Lens** (webapp) and the served **Persona** text (MCP) both derive from the **Role**'s Capability set.
-- A **Capability Surface** exposes a grouping of **Capabilities** as one MCP server; a **Session** connects to one.
+- A **Capability Surface** exposes a grouping of MCP tools as one MCP server; a **Session** connects to one.
 - A **Session** adopts at most one **Role**; the **Role**, not the **Surface**, carries the **Persona**.
 - A **Session** may enter one **Workflow Mode**; the **Role** names the accountability, while the **Workflow Mode** names the kind of work underway.
 - Growth **serves** Personas, tools, and tool annotations, and **records**

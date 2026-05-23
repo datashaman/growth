@@ -167,12 +167,6 @@ new #[Title('Plan')] class extends Component {
     }
 
     #[Computed]
-    public function roles()
-    {
-        return $this->selectedProject?->roles()->with('users')->orderBy('name')->get() ?? collect();
-    }
-
-    #[Computed]
     public function baselines()
     {
         $plan = $this->selectedProject?->projectPlan;
@@ -187,7 +181,7 @@ new #[Title('Plan')] class extends Component {
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-project-page-header
         :title="__('Plan')"
-        :description="__('Milestones, work items, and roles delivering the project.')">
+        :description="__('Milestones, work items, and baselines for delivery control.')">
         @if ($this->selectedProject !== null && $this->projectPlan)
             <x-slot:actions>
                 <flux:badge :color="BadgeVariant::planStatus($this->projectPlan->status)" size="sm">{{ EnumLabel::lower($this->projectPlan->status) }}</flux:badge>
@@ -302,30 +296,6 @@ new #[Title('Plan')] class extends Component {
                         @break
                     @endif
                 @endforeach
-                </flux:table.rows>
-            </flux:table>
-        </x-data-table>
-
-        <x-data-table
-            :title="__('Roles')"
-            :count="$this->roles->count()"
-            :count-label="__('defined')"
-            :empty="$this->roles->isEmpty()"
-            :empty-message="__('No roles defined.')">
-            <flux:table class="[&_td]:align-top">
-                <flux:table.columns>
-                    <flux:table.column>{{ __('Role') }}</flux:table.column>
-                    <flux:table.column>{{ __('Users') }}</flux:table.column>
-                    <flux:table.column>{{ __('Responsibilities') }}</flux:table.column>
-                </flux:table.columns>
-                <flux:table.rows>
-                    @foreach ($this->roles as $role)
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">{{ $role->name }}</flux:table.cell>
-                            <flux:table.cell>{{ $role->users->pluck('name')->join(', ') ?: '—' }}</flux:table.cell>
-                            <flux:table.cell>{{ $role->responsibilities ?? '—' }}</flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
