@@ -21,7 +21,10 @@ new class extends Component {
 
     public function mount(SpecMockup $mockup): void
     {
-        $this->mockup = $mockup->load('owner.mockups', 'revisions');
+        $this->mockup = $mockup->load([
+            'owner.mockups' => fn ($query) => $this->orderMockups($query),
+            'revisions',
+        ]);
         $this->revisionId = (string) ($this->mockup->revisions->last()?->id ?? '');
     }
 
@@ -57,7 +60,10 @@ new class extends Component {
      */
     public function onWorkspaceDataChanged(): void
     {
-        $fresh = $this->mockup->fresh(['owner.mockups', 'revisions']);
+        $fresh = $this->mockup->fresh([
+            'owner.mockups' => fn ($query) => $this->orderMockups($query),
+            'revisions',
+        ]);
 
         if ($fresh === null) {
             return;
@@ -105,6 +111,13 @@ new class extends Component {
         return $this->mockup->owner instanceof Requirement
             ? __('Back to requirement')
             : __('Back to work item');
+    }
+
+    private function orderMockups($query): void
+    {
+        $query
+            ->orderByRaw('case when name = ? then 0 else 1 end', [SpecMockup::DEFAULT_NAME])
+            ->orderBy('name');
     }
 }; ?>
 

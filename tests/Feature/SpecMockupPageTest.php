@@ -154,6 +154,29 @@ it('lists sibling mockups and links between them', function () {
         ->assertSee(route('mockups.show', $sibling));
 });
 
+it('orders the mockup selector with default first then named mockups', function () {
+    createMockup(
+        $this->workItem,
+        'Zebra layout',
+        '<!doctype html><html><body><h1>Zebra mockup</h1></body></html>',
+    );
+    createMockup(
+        $this->workItem,
+        'default',
+        '<!doctype html><html><body><h1>Default mockup</h1></body></html>',
+    );
+    createMockup(
+        $this->workItem,
+        'Alpha layout',
+        '<!doctype html><html><body><h1>Alpha mockup</h1></body></html>',
+    );
+
+    $component = Livewire::test('pages::mockups.show', ['mockup' => $this->mockup]);
+
+    expect($component->get('mockup')->owner->mockups->pluck('name')->all())
+        ->toBe(['default', 'Alpha layout', 'Checkout layout', 'Zebra layout']);
+});
+
 it('links to every mockup from the work item page', function () {
     $sibling = createMockup(
         $this->workItem,
