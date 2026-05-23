@@ -53,8 +53,10 @@ class GetMockup extends Tool
             'html' => $mockup->currentRevision->html,
             'revision_created_at' => $mockup->currentRevision->created_at?->toIso8601String(),
             'inspection' => [
-                'uri' => "growth://mockups/{$mockup->id}/revisions/{$mockup->currentRevision->id}/rendered-inspection/assigned",
-                'guidance' => 'Read this resource to inspect the browser-rendered mockup for visible workflow metadata.',
+                'uri' => "growth://mockups/{$mockup->id}",
+                'revision_uri' => "growth://mockups/{$mockup->id}/{$mockup->currentRevision->id}",
+                'screenshot_uri' => "growth://mockups/{$mockup->id}/{$mockup->currentRevision->id}/screenshot",
+                'guidance' => 'Read the preview URI for browser-visible text and metadata warnings. Read screenshot_uri only when visual pixels are needed. Append ?theme=none or ?theme={slug} to override the assigned theme.',
             ],
         ]);
     }
@@ -79,7 +81,7 @@ class GetMockup extends Tool
             'revision_id' => $schema->string()->description('ULID of the current revision')->required(),
             'html' => $schema->string()->description('HTML of the current revision')->required(),
             'revision_created_at' => $schema->string()->description('ISO 8601 timestamp the current revision was written')->required(),
-            'inspection' => $schema->object()->description('Rendered inspection resource for the current revision')->required(),
+            'inspection' => $schema->object()->description('Preview resource for the current revision')->required(),
         ];
     }
 }

@@ -4,8 +4,9 @@ namespace App\Mcp\Servers;
 
 use App\Mcp\Prompts\PlanSlice;
 use App\Mcp\Resources\MockupDesignBriefResource;
-use App\Mcp\Resources\MockupRenderedInspectionResource;
 use App\Mcp\Resources\MockupResource;
+use App\Mcp\Resources\MockupRevisionResource;
+use App\Mcp\Resources\MockupScreenshotResource;
 use App\Mcp\Resources\OwnerMockupResource;
 use App\Mcp\Resources\PlanResource;
 use App\Mcp\Resources\PlaybookResource;
@@ -13,6 +14,7 @@ use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RequirementVerificationBriefResource;
 use App\Mcp\Resources\RigorLevelsResource;
+use App\Mcp\Resources\ThemedMockupScreenshotResource;
 use App\Mcp\Resources\WorkItemImplementationBriefResource;
 use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
 use App\Mcp\Tools\Changes\GetChangeRequest;
@@ -259,8 +261,10 @@ class PlanningServer extends Server
         RequirementsResource::class,
         PlanResource::class,
         MockupDesignBriefResource::class,
-        MockupRenderedInspectionResource::class,
         MockupResource::class,
+        MockupRevisionResource::class,
+        MockupScreenshotResource::class,
+        ThemedMockupScreenshotResource::class,
         OwnerMockupResource::class,
         RequirementVerificationBriefResource::class,
         WorkItemImplementationBriefResource::class,

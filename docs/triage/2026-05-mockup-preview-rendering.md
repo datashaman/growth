@@ -14,3 +14,16 @@ Default preview theme selection now comes from scoped theme assignments when a
 mockup owner matches one, then falls back to the project default theme. A
 temporary `theme=<slug>` query parameter previews another theme, and
 `theme=none` disables theme overlay for that view.
+
+MCP agents can inspect stored mockups through preview resources without pulling
+screenshot bytes into the JSON response:
+
+- `growth://mockups/{mockup}` previews the current revision.
+- `growth://mockups/{mockup}/{revision}` previews a specific revision.
+- `growth://mockups/{mockup}/{revision}/screenshot` returns PNG pixels when
+  pixel-level evidence is needed.
+
+The preview response includes the screenshot URI and MIME type, visible text,
+metadata warnings, and theme metadata. Agents should read the preview resource
+after creating or refining mockups; screenshots are a separate resource so
+clients can request pixels deliberately.

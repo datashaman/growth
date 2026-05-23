@@ -41,7 +41,9 @@ it('stores a mockup for a work item', function () {
                 ->where('owner_type', 'work_item')
                 ->where('revision', 1)
                 ->whereType('revision_id', 'string')
-                ->where('inspection.uri', fn (string $uri): bool => str_contains($uri, '/rendered-inspection/assigned'))
+                ->where('inspection.uri', fn (string $uri): bool => str_starts_with($uri, 'growth://mockups/'))
+                ->where('inspection.revision_uri', fn (string $uri): bool => preg_match('#^growth://mockups/[^/]+/[^/]+$#', $uri) === 1)
+                ->where('inspection.screenshot_uri', fn (string $uri): bool => str_ends_with($uri, '/screenshot'))
                 ->where('created', true)
                 ->etc();
         });

@@ -752,32 +752,36 @@ class GetLogChunk extends Tool
 
 ### Binary Resource Serving
 
-Deliver images and binary content through MCP resources using `Response::blob()`:
+Deliver images and binary content through MCP resources, and return only the
+resource URI from tools. Avoid embedding base64 bytes in tool responses; clients
+can fetch the resource deliberately when pixels or binary content are needed:
 
 ```php
-#[RendersApp(resource: GalleryApp::class, visibility: [Visibility::App])]
-class GetImage extends Tool
+#[Name('Gallery Image')]
+#[MimeType('image/png')]
+class GalleryImageResource extends Resource implements HasUriTemplate
 {
-    protected string $description = 'Fetch an image by ID';
+    public function uriTemplate(): UriTemplate
+    {
+        return new UriTemplate('growth://gallery/images/{image}');
+    }
 
     public function handle(Request $request): Response
     {
-        $request->validate(['id' => 'required|integer']);
+        $image = Image::findOrFail($request->get('image'));
 
-        $image = Image::findOrFail($request->get('id'));
-        $data = base64_encode(Storage::get($image->path));
-
-        return Response::blob($data);
+        return Response::image(Storage::get($image->path), 'image/png');
     }
 }
 ```
 
-In the client, convert the base64 blob to a data URI for rendering:
+Tools that create or locate the binary should point at the resource:
 
-```js
-const result = await app.callServerTool('get-image', { id: 42 });
-const blob = result.content[0];
-img.src = `data:${blob.mimeType};base64,${blob.data}`;
+```php
+return Response::structured([
+    'image_uri' => "growth://gallery/images/{$image->id}",
+    'mime_type' => 'image/png',
+]);
 ```
 
 ### Streaming Argument Previews

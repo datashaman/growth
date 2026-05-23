@@ -37,6 +37,8 @@ it('lists a mockup revisions', function () {
                 ->where('current_revision', 2)
                 ->where('results.0.number', 1)
                 ->where('results.1.number', 2)
+                ->where('results.0.inspection_uri', fn (string $uri): bool => preg_match('#^growth://mockups/[^/]+/[^/]+$#', $uri) === 1)
+                ->where('results.0.screenshot_uri', fn (string $uri): bool => str_ends_with($uri, '/screenshot'))
                 ->etc();
         });
 });

@@ -10,8 +10,9 @@ use App\Mcp\Resources\IntentResource;
 use App\Mcp\Resources\ManifestResource;
 use App\Mcp\Resources\ManifestSectionResource;
 use App\Mcp\Resources\MockupDesignBriefResource;
-use App\Mcp\Resources\MockupRenderedInspectionResource;
 use App\Mcp\Resources\MockupResource;
+use App\Mcp\Resources\MockupRevisionResource;
+use App\Mcp\Resources\MockupScreenshotResource;
 use App\Mcp\Resources\OwnerMockupResource;
 use App\Mcp\Resources\PlanResource;
 use App\Mcp\Resources\PlaybookResource;
@@ -30,6 +31,7 @@ use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RequirementVerificationBriefResource;
 use App\Mcp\Resources\ReviewBriefResource;
 use App\Mcp\Resources\RigorLevelsResource;
+use App\Mcp\Resources\ThemedMockupScreenshotResource;
 use App\Mcp\Resources\TraceGraphApp;
 use App\Mcp\Resources\VerificationResource;
 use App\Mcp\Resources\WorkItemImplementationBriefResource;
@@ -212,8 +214,10 @@ class ReadonlyServer extends Server
         ReviewBriefResource::class,
         ChangeImpactBriefResource::class,
         MockupDesignBriefResource::class,
-        MockupRenderedInspectionResource::class,
         MockupResource::class,
+        MockupRevisionResource::class,
+        MockupScreenshotResource::class,
+        ThemedMockupScreenshotResource::class,
         OwnerMockupResource::class,
         RequirementVerificationBriefResource::class,
         WorkItemImplementationBriefResource::class,
