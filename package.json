@@ -5,6 +5,8 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
+        "install:playwright": "playwright install chromium",
+        "postinstall": "playwright install chromium",
         "test:sync": "node --test 'actions/growth-sync/*.test.mjs'"
     },
     "devDependencies": {
