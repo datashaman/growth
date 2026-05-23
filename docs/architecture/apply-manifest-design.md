@@ -86,7 +86,6 @@ plan:
   milestones:
     - slug: m1-mvp
       name: "MVP"
-      target_date: 2026-06-01
   work_items:
     - slug: wi-1
       name: "Implement add-todo"

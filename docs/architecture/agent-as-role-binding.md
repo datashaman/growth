@@ -15,8 +15,9 @@ selects the MCP server (its tool subset), supplies the persona via the server's
 `instructions`, and drives the webapp view lens.
 
 Do **not** bind to the `Role` model. That model is project-scoped planning data
-(RACI, capacity, rates); a session binding to it would drag in a project binding
-Growth does not otherwise require. The operating-role taxonomy is new.
+(responsibilities, persona, capabilities, and RACI assignments); a session
+binding to it would drag in a project binding Growth does not otherwise require.
+The operating-role taxonomy is new.
 
 ## The three "roles" Growth already has
 
@@ -27,7 +28,7 @@ spike's first job is to separate them:
 |---|---|---|---|
 | **Role servers** | The 7 role-scoped MCP servers — `IntakeServer`, `ArchitectureServer`, `PlanningServer`, `VerificationServer`, `GovernanceServer`, `ManagementServer`, `ReadonlyServer`. Each curates a tool subset. | 7, fixed in code | `app/Mcp/Servers/` |
 | **View lenses** | `ViewLens` enum (#172) — personas that filter the webapp's sidebar and dashboard panels. | 4, fixed in code (`All`, `SpecWriter`, `SpecImplementer`, `Reviewer`) | `app/Support/ViewLens.php` |
-| **`Role` records** | Eloquent `Role` model — project-scoped planning artifact with responsibilities, weekly capacity, hourly rate, RACI assignments. | N, user-authored data | `app/Models/Role.php` |
+| **`Role` records** | Eloquent `Role` model — project-scoped planning artifact with responsibilities, persona text, capability assignments, and RACI assignments. | N, user-authored data | `app/Models/Role.php` |
 
 The role servers and the view lenses are *almost* the same idea — a curated slice
 of the surface, per working context — expressed twice, in two taxonomies that do
