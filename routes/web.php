@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\EvidenceAssetController;
+use App\Http\Controllers\MockupScreenshotController;
 use App\Http\Controllers\SpecMockupController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +14,10 @@ Route::livewire('invitations/{token}', 'pages::invitations.show')->name('invitat
 // proxy fetches it without credentials, and a plain PNG cannot script.
 Route::get('evidence-assets/{evidenceAsset}', [EvidenceAssetController::class, 'show'])
     ->name('evidence-assets.show');
+
+Route::get('mockups/{mockup}/revisions/{revision}/screenshot.png', [MockupScreenshotController::class, 'show'])
+    ->middleware('signed')
+    ->name('mockups.screenshot');
 
 Route::middleware('auth')->group(function () {
     Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');

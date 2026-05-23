@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\Theme;
 use App\Models\User;
 use App\Models\WorkItem;
+use Illuminate\Support\Facades\URL;
 use Laravel\Passport\Passport;
 
 beforeEach(function () {
@@ -39,11 +40,11 @@ it('exposes mockup preview resources as mcp resource templates', function () {
         ->toContain('growth://mockups/{mockup}/{revision}/html')
         ->toContain('growth://mockups/{mockup}/{revision}/preview')
         ->toContain('growth://mockups/{mockup}/{revision}/preview?theme={theme}')
-        ->toContain('growth://mockups/{mockup}/{revision}/screenshot')
-        ->toContain('growth://mockups/{mockup}/{revision}/screenshot?theme={theme}');
+        ->not->toContain('growth://mockups/{mockup}/{revision}/screenshot')
+        ->not->toContain('growth://mockups/{mockup}/{revision}/screenshot?theme={theme}');
 });
 
-it('returns current mockup metadata with preview and screenshot resource uris', function () {
+it('returns current mockup metadata with preview uri and screenshot asset url', function () {
     $theme = Theme::create([
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
@@ -68,6 +69,11 @@ it('returns current mockup metadata with preview and screenshot resource uris', 
 HTML);
 
     $revision = $mockup->currentRevision;
+    $screenshotUrl = URL::signedRoute('mockups.screenshot', [
+        'mockup' => $mockup->id,
+        'revision' => $revision->id,
+        'theme' => 'assigned',
+    ]);
 
     readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}")
         ->assertOk()
@@ -76,12 +82,17 @@ HTML);
         ->assertSee('"id":"'.$revision->id.'"')
         ->assertSee('"uri":"growth://mockups/'.$mockup->id.'/'.$revision->id.'/html"')
         ->assertSee('"uri":"growth://mockups/'.$mockup->id.'/'.$revision->id.'/preview"')
-        ->assertSee('"uri":"growth://mockups/'.$mockup->id.'/'.$revision->id.'/screenshot"')
+        ->assertSee('"asset":{"url":"'.$screenshotUrl.'"')
         ->assertSee('"mime_type":"image/png"')
         ->assertDontSee('Customer dashboard')
         ->assertDontSee('WI-003 implementation note')
         ->assertDontSee('"base64"')
-        ->assertDontSee('"blob"');
+        ->assertDontSee('"blob"')
+        ->assertDontSee("growth://mockups/{$mockup->id}/{$revision->id}/screenshot");
+
+    $this->get($screenshotUrl)
+        ->assertOk()
+        ->assertHeader('Content-Type', 'image/png');
 
     readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$revision->id}/preview")
         ->assertOk()
@@ -101,7 +112,7 @@ it('returns specific mockup revision metadata', function () {
         ->assertSee('"id":"'.$first->id.'"')
         ->assertSee("growth://mockups/{$mockup->id}/{$first->id}/html")
         ->assertSee("growth://mockups/{$mockup->id}/{$first->id}/preview")
-        ->assertSee("growth://mockups/{$mockup->id}/{$first->id}/screenshot")
+        ->assertSee('/mockups/'.$mockup->id.'/revisions/'.$first->id.'/screenshot.png')
         ->assertDontSee('First draft')
         ->assertDontSee('Second draft');
 
@@ -110,6 +121,7 @@ it('returns specific mockup revision metadata', function () {
         ->assertSee('"id":"'.$second->id.'"')
         ->assertSee("growth://mockups/{$mockup->id}/{$second->id}/html")
         ->assertSee("growth://mockups/{$mockup->id}/{$second->id}/preview")
+        ->assertSee('/mockups/'.$mockup->id.'/revisions/'.$second->id.'/screenshot.png')
         ->assertDontSee('Second draft')
         ->assertDontSee('First draft');
 
@@ -119,13 +131,18 @@ it('returns specific mockup revision metadata', function () {
         ->assertDontSee('Second draft');
 });
 
-it('returns screenshot pixels only through the screenshot resource', function () {
+it('returns screenshot pixels through the inspectable asset url', function () {
     $mockup = createMockup($this->workItem, 'default', '<!doctype html><html><body>Screenshot me</body></html>');
     $revision = $mockup->currentRevision;
+    $screenshotUrl = URL::signedRoute('mockups.screenshot', [
+        'mockup' => $mockup->id,
+        'revision' => $revision->id,
+        'theme' => 'assigned',
+    ]);
 
-    readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$revision->id}/screenshot")
+    $this->get($screenshotUrl)
         ->assertOk()
-        ->assertSee('iVBOR');
+        ->assertHeader('Content-Type', 'image/png');
 });
 
 it('supports disabling theme rendering for preview resources', function () {
@@ -144,9 +161,20 @@ it('supports disabling theme rendering for preview resources', function () {
         ->assertSee('No theme labels')
         ->assertDontSee('data-growth-theme="mission-control"', false);
 
-    readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$revision->id}/screenshot?theme=none")
+    $screenshotUrl = URL::signedRoute('mockups.screenshot', [
+        'mockup' => $mockup->id,
+        'revision' => $revision->id,
+        'theme' => 'none',
+    ]);
+
+    readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$revision->id}?theme=none")
         ->assertOk()
-        ->assertSee('iVBOR');
+        ->assertSee('"theme":"none"')
+        ->assertSee($screenshotUrl);
+
+    $this->get($screenshotUrl)
+        ->assertOk()
+        ->assertHeader('Content-Type', 'image/png');
 });
 
 it('errors for revisions that do not belong to the mockup', function () {

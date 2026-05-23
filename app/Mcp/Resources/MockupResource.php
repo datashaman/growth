@@ -4,6 +4,7 @@ namespace App\Mcp\Resources;
 
 use App\Mcp\Resources\Concerns\ReturnsStructuredJson;
 use App\Models\SpecMockup;
+use App\Support\MockupScreenshotAsset;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -14,7 +15,7 @@ use Laravel\Mcp\Server\Resource;
 use Laravel\Mcp\Support\UriTemplate;
 
 #[Name('Mockup')]
-#[Description('JSON metadata for a spec mockup current revision, including raw HTML, preview HTML, and preview screenshot resource URIs.')]
+#[Description('JSON metadata for a spec mockup current revision, including raw HTML, preview HTML, and an inspectable preview screenshot asset.')]
 #[MimeType('application/json')]
 class MockupResource extends Resource implements HasUriTemplate
 {
@@ -27,7 +28,8 @@ class MockupResource extends Resource implements HasUriTemplate
 
     public function handle(Request $request): Response
     {
-        $id = $request->get('mockup');
+        $id = $this->pathValue((string) $request->get('mockup'));
+        $requestedTheme = $this->query($request)['theme'] ?? 'assigned';
 
         $mockup = SpecMockup::with('currentRevision')->find($id);
 
@@ -61,9 +63,32 @@ class MockupResource extends Resource implements HasUriTemplate
                 'mime_type' => 'text/html',
             ],
             'screenshot' => [
-                'uri' => "growth://mockups/{$mockup->id}/{$revision->id}/screenshot",
-                'mime_type' => 'image/png',
+                'asset' => app(MockupScreenshotAsset::class)->reference($mockup, $revision, $requestedTheme),
             ],
         ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function query(Request $request): array
+    {
+        $query = parse_url((string) $request->uri(), PHP_URL_QUERY);
+
+        if (! is_string($query) || $query === '') {
+            return [];
+        }
+
+        parse_str($query, $params);
+
+        return array_filter(
+            $params,
+            fn (mixed $value): bool => is_string($value),
+        );
+    }
+
+    private function pathValue(string $value): string
+    {
+        return explode('?', $value, 2)[0];
     }
 }

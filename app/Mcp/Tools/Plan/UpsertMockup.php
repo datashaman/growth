@@ -5,6 +5,7 @@ namespace App\Mcp\Tools\Plan;
 use App\Models\DesignView;
 use App\Models\SpecMockup;
 use App\Support\MockupHtml;
+use App\Support\MockupScreenshotAsset;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -76,7 +77,7 @@ class UpsertMockup extends Tool
             'created' => $schema->boolean()->description('Whether this call created the mockup')->required(),
             'warnings' => $schema->array()->description('Non-blocking quality warnings for HTML patterns that often make weak or brittle mockups')->required(),
             'design_brief' => $schema->object()->description('Brief resource to read before generating or refining this mockup')->required(),
-            'resources' => $schema->object()->description('Resource URIs for mockup metadata, revision metadata, raw HTML, preview HTML, and preview screenshot')->required(),
+            'resources' => $schema->object()->description('Resource URIs for mockup metadata, revision metadata, raw HTML, preview HTML, and an inspectable preview screenshot asset')->required(),
         ];
     }
 
@@ -185,17 +186,20 @@ class UpsertMockup extends Tool
     }
 
     /**
-     * @return array{mockup_uri:string,revision_uri:string,html_uri:string,preview_uri:string,screenshot_uri:string,guidance:string}
+     * @return array{mockup_uri:string,revision_uri:string,html_uri:string,preview_uri:string,screenshot_asset:array{url:string,mime_type:string,theme:string},guidance:string}
      */
     private function resources(string $mockupId, string $revisionId): array
     {
+        $mockup = SpecMockup::with('revisions')->findOrFail($mockupId);
+        $revision = $mockup->revisions->firstWhere('id', $revisionId);
+
         return [
             'mockup_uri' => "growth://mockups/{$mockupId}",
             'revision_uri' => "growth://mockups/{$mockupId}/{$revisionId}",
             'html_uri' => "growth://mockups/{$mockupId}/{$revisionId}/html",
             'preview_uri' => "growth://mockups/{$mockupId}/{$revisionId}/preview",
-            'screenshot_uri' => "growth://mockups/{$mockupId}/{$revisionId}/screenshot",
-            'guidance' => 'Read mockup_uri or revision_uri for JSON metadata. Read html_uri for raw HTML, preview_uri for theme-aware preview HTML, and screenshot_uri only when visual pixels are needed.',
+            'screenshot_asset' => app(MockupScreenshotAsset::class)->reference($mockup, $revision),
+            'guidance' => 'Read mockup_uri or revision_uri for JSON metadata. Read html_uri for raw HTML, preview_uri for theme-aware preview HTML, and screenshot_asset when visual pixels are needed.',
         ];
     }
 }
