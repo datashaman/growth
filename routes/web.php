@@ -22,6 +22,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('architecture/elements/{element}', 'pages::architecture-elements.show')->name('architecture-elements.show');
     Route::livewire('verification', 'pages::verification')->name('verification');
     Route::livewire('plan', 'pages::plan')->name('plan');
+    Route::livewire('roles', 'pages::roles')->name('roles');
     Route::livewire('evidence', 'pages::evidence')->name('evidence');
     Route::livewire('changes', 'pages::changes')->name('changes');
     Route::livewire('change-requests/{changeRequest}', 'pages::change-requests.show')->name('change-requests.show');

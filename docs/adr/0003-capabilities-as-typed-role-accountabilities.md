@@ -2,18 +2,17 @@
 
 A `Role` (project-defined RACI accountability — `Engineering Lead`,
 `Product Lead`, `Developer`) carries a typed set of **Capabilities**. A
-Capability is a
-curated, intent-named bundle of MCP tools — `manage_intent`,
+Capability is a curated, intent-named accountability — `manage_intent`,
 `manage_requirements`, `manage_changes` — closed-set, defined in code. The
-existing `Capability Surface` is reframed as a *grouping of Capabilities*
-exposed as one MCP server; its `$tools` array becomes derived from the
-Capabilities the surface exposes, not hand-maintained alongside.
+existing `Capability Surface` remains the MCP server/tool grouping a session
+connects to; Capabilities do not currently derive or replace server `$tools`
+lists.
 
 Two projections of a Role's Capability set:
 
 - The **Lens** — the webapp's nav-and-panel filter — is computed from the
-  union of sections each Capability declares. `ViewLens` enum demoted to a
-  set of preset templates a project owner can apply when defining a Role.
+  union of sections each Capability declares. The runtime `ViewLens` enum is
+  gone; project owners assign concrete Capabilities directly to Roles.
 - The **served Persona text** — the advisory instruction set served to a
   Client Agent when a session adopts a Role — lists the Capability names
   alongside the freeform persona prose stored on the Role.
@@ -35,8 +34,8 @@ Client Agent from calling a tool that the connected surface exposes.
 
 The cutover lands in one PR — no transition shims. `User::$view_lens` is
 dropped; the `lens-switcher` Livewire component is deleted; `CapabilitySurface`
-servers derive their tool list from the Capabilities they expose; the per-Role
-Capability set is persisted authoritatively, not denormalised onto the User.
+servers keep owning their advertised tool lists; the per-Role Capability set is
+persisted authoritatively, not denormalised onto the User.
 
 ## Consequences
 
@@ -45,27 +44,23 @@ Capability set is persisted authoritatively, not denormalised onto the User.
   have no Role on are not blocked. This is a deliberate fallback, not the empty
   case. A non-admin project participant with no Role should not get this
   fallback merely because no one has assigned them yet.
-- A user assigned to a Role with **no Capabilities** sees an empty Lens —
-  no sections in the Project sidebar, no panels on the dashboard. The Lens
-  is advisory: deep links to a hidden section still work.
-- Every domain MCP tool is assigned to **exactly one** Capability — no orphans,
-  no duplicates. Cross-cutting session or communication tools such as
-  `adopt-role`, feedback, search, and queue summaries belong to an explicit
-  common Capability exposed by every surface that needs them. The constraint is
-  global; how it is enforced is implementation.
-- A Capability declares both `tools(): array` (class strings) and
-  `sections(): array` (sidebar section keys). Both are closed sets in code.
-  Renaming a section is a code change, not a data migration.
+- A non-mutator user assigned to a Role with **no Capabilities** sees an empty
+  Lens — no sections in the Project sidebar, no panels on the dashboard. The
+  Lens is advisory: deep links to a hidden section still work. Workspace
+  owners/admins keep the see-all fallback when they have no effective
+  Capabilities so they are not trapped by legacy or incomplete Role setup.
+- A Capability declares webapp `sections()` and dashboard `panels()`. It does
+  not declare MCP tool class lists in the shipped model. Deriving MCP server
+  tool lists from Capabilities is deferred until the read/write shape for
+  surfaces such as `ReadonlyServer` is decided.
 - Multiple Roles per User on one project union their Capability sets — no UX
   for "which Role am I viewing as." The assign-role surface is the only knob.
-- `ViewLens` as a runtime enum is gone. The four legacy cases survive only as
-  named *presets* a project owner applies during Role definition; the
-  preset's Capability set becomes the persisted truth, and renaming or
-  retiring a preset has no migration consequence because no row references it.
+- `ViewLens` as a runtime enum is gone. Legacy lens names are not persisted
+  runtime state; if presets are introduced later, applying one must copy
+  concrete Capability slugs onto the Role.
 - This does not soften ADR-0001. Capabilities are advisory — Growth still
-  cannot gate a Client Agent. A Capability's tool list is what the *served
-  Persona* enumerates, not a server-side ACL. The server-side MCP tool boundary
-  remains the connected `CapabilitySurface`.
+  cannot gate a Client Agent. The server-side MCP tool boundary remains the
+  connected `CapabilitySurface`.
 - This does not soften ADR-0002. A session adopts a project Role mid-session via
   `adopt-role`; the per-Role Persona and Capability names are returned through
   that adoption path, not through static server `instructions`.

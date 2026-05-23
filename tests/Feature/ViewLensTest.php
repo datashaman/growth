@@ -152,6 +152,7 @@ it('shows only assigned capability sections in the sidebar', function () {
         ->assertSee(route('intent'))
         ->assertSee(route('requirements'))
         ->assertSee(route('architecture'))
+        ->assertSee(route('roles'))
         ->assertDontSee(route('plan'))
         ->assertDontSee(route('verification'))
         ->assertDontSee(route('evidence'))
@@ -196,7 +197,8 @@ it('explains the empty Project nav to a non-owner whose role has no capabilities
     $this->actingAs($viewer)
         ->get('/dashboard?project='.$project->id)
         ->assertOk()
-        ->assertSee('No project sections are visible for you here')
+        ->assertSee('No role sections are visible yet')
+        ->assertSee(route('roles'))
         ->assertDontSee(route('plan'))
         ->assertDontSee(route('requirements'));
 });
@@ -209,7 +211,8 @@ it('shows the full Project nav and no hint to an owner whose role has no capabil
     $this->actingAs($user)
         ->get('/dashboard?project='.$project->id)
         ->assertOk()
-        ->assertDontSee('No project sections are visible for you here')
+        ->assertDontSee('No role sections are visible yet')
         ->assertSee(route('dashboard'))
-        ->assertSee(route('plan'));
+        ->assertSee(route('plan'))
+        ->assertSee(route('roles'));
 });

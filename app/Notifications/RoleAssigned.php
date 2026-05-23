@@ -32,7 +32,7 @@ class RoleAssigned extends WorkspaceNotification
 
     public function url(): ?string
     {
-        return route('plan', ['project' => $this->role->project_id], false);
+        return route('roles', ['project' => $this->role->project_id], false);
     }
 
     public function subject(): array

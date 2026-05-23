@@ -55,6 +55,9 @@
                             {{ __('Plan') }}
                         </flux:sidebar.item>
                     @endif
+                    <flux:sidebar.item icon="users" :href="route('roles')" :current="request()->routeIs('roles')" wire:navigate>
+                        {{ __('Roles') }}
+                    </flux:sidebar.item>
                     @if ($lens->reveals('evidence'))
                         <flux:sidebar.item icon="archive-box" :href="route('evidence')" :current="request()->routeIs('evidence')" wire:navigate>
                             {{ __('Evidence') }}
@@ -72,7 +75,7 @@
                     @endif
                     @if ($lens->revealsNothing())
                         <flux:text class="px-2 py-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-                            {{ __('No project sections are visible for you here. Ask a workspace admin to grant your project role some capabilities to populate this navigation.') }}
+                            {{ __('No role sections are visible yet. Use Roles to assign capabilities, or ask a workspace admin to update your role.') }}
                         </flux:text>
                     @endif
                 </flux:sidebar.group>
@@ -163,5 +166,28 @@
         @endpersist
 
         @fluxScripts
+
+        @once
+            <script>
+                window.GrowthBindRoleCapabilitiesNavigation = () => {
+                    if (window.GrowthRoleCapabilitiesNavigationBound) {
+                        return;
+                    }
+
+                    if (! window.Livewire) {
+                        return;
+                    }
+
+                    window.GrowthRoleCapabilitiesNavigationBound = true;
+
+                    Livewire.on('role-capabilities-updated', () => {
+                        Livewire.navigate(window.location.pathname + window.location.search);
+                    });
+                };
+
+                document.addEventListener('livewire:init', window.GrowthBindRoleCapabilitiesNavigation);
+                window.GrowthBindRoleCapabilitiesNavigation();
+            </script>
+        @endonce
     </body>
 </html>
