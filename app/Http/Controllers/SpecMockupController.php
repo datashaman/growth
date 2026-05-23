@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SpecMockup;
 use App\Models\Theme;
+use App\Support\MockupHtml;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response as BaseResponse;
 
@@ -59,7 +60,10 @@ class SpecMockupController extends Controller
         abort_if($revision === null, 404);
 
         $html = $this->makePreviewInert(
-            $this->applyTheme((string) $revision->html, $mockup, (string) $request->query('theme', '')),
+            MockupHtml::withoutOwnerReference(
+                $this->applyTheme((string) $revision->html, $mockup, (string) $request->query('theme', '')),
+                $mockup->owner,
+            ),
         );
 
         return response($html)

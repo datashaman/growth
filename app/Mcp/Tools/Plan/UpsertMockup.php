@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Plan;
 
 use App\Models\DesignView;
 use App\Models\SpecMockup;
+use App\Support\MockupHtml;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -27,6 +28,9 @@ class UpsertMockup extends Tool
             'html' => 'required|string',
         ]);
 
+        $owner = self::OWNER_MODELS[$data['owner_type']]::findOrFail($data['owner_id']);
+        $html = MockupHtml::withoutOwnerReference($data['html'], $owner);
+
         $mockup = SpecMockup::firstOrCreate([
             'owner_type' => $data['owner_type'],
             'owner_id' => $data['owner_id'],
@@ -34,8 +38,7 @@ class UpsertMockup extends Tool
         ]);
         $created = $mockup->wasRecentlyCreated;
 
-        $revision = $mockup->appendRevision($data['html']);
-        $owner = self::OWNER_MODELS[$data['owner_type']]::findOrFail($data['owner_id']);
+        $revision = $mockup->appendRevision($html);
 
         return Response::structured([
             'id' => $mockup->id,
@@ -44,7 +47,7 @@ class UpsertMockup extends Tool
             'name' => $mockup->name,
             'revision' => $revision->number,
             'created' => $created,
-            'warnings' => $this->qualityWarnings($data['html']),
+            'warnings' => $this->qualityWarnings($html),
             'design_brief' => $this->designBrief($owner->project_id, $data['owner_type'], $data['owner_id']),
         ]);
     }

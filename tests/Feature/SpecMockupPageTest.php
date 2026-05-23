@@ -144,6 +144,19 @@ it('serves the raw mockup HTML under a locked-down content security policy', fun
         ->and($response->headers->get('X-Content-Type-Options'))->toBe('nosniff');
 });
 
+it('does not render the owner reference inside the mockup preview', function () {
+    $this->mockup->currentRevision->forceFill([
+        'html' => '<!doctype html><html><body><p>'.$this->workItem->reference().' · Checkout</p><h1>Checkout mockup</h1></body></html>',
+    ])->save();
+
+    $this->actingAs($this->user)
+        ->withHeader('Sec-Fetch-Dest', 'iframe')
+        ->get(route('mockups.raw', $this->mockup))
+        ->assertOk()
+        ->assertDontSee($this->workItem->reference(), false)
+        ->assertSee('<p>Checkout</p>', false);
+});
+
 it('prevents raw mockup links and forms from navigating the preview frame', function () {
     $this->mockup->currentRevision->forceFill([
         'html' => '<!doctype html><html><body><a href="/login">Menu</a><form action="/login"><button>Submit</button></form></body></html>',
