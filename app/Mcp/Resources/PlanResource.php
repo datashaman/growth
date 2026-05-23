@@ -31,7 +31,7 @@ class PlanResource extends Resource implements HasUriTemplate
             'projectPlan',
             'milestones' => fn ($q) => $q->orderBy('name'),
             'roles' => fn ($q) => $q->orderBy('name'),
-            'workItems' => fn ($q) => $q->orderBy('kind')->orderBy('name'),
+            'workItems' => fn ($q) => $q->inWbsOrder(),
             'workItems.requirements:id,type,text',
             'workItems.responsibleRole:id,name',
             'releases' => fn ($q) => $q->withCount(['workItems', 'deployments'])->orderByDesc('created_at'),

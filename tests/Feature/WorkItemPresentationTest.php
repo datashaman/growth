@@ -71,6 +71,38 @@ test('the Plan work-items table nests children under their work package in WBS o
         ->assertDontSee('h-1.5 w-1.5', false);
 });
 
+test('the Plan work-items tree orders roots and children by WI reference instead of status', function () {
+    $this->project->workItems()->delete();
+
+    $phaseZero = $this->project->workItems()->create([
+        'kind' => 'work_package',
+        'name' => 'Phase 0 — Foundation',
+        'status' => 'done',
+    ]);
+    $childOne = $this->project->workItems()->create([
+        'kind' => 'deliverable',
+        'name' => 'First foundation child',
+        'status' => 'done',
+        'parent_id' => $phaseZero->id,
+    ]);
+    $childTwo = $this->project->workItems()->create([
+        'kind' => 'deliverable',
+        'name' => 'Second foundation child',
+        'status' => 'todo',
+        'parent_id' => $phaseZero->id,
+    ]);
+    $phaseOne = $this->project->workItems()->create([
+        'kind' => 'work_package',
+        'name' => 'Phase 1 — MVP',
+        'status' => 'todo',
+    ]);
+
+    Livewire::test('pages::plan')
+        ->assertSeeInOrder([$phaseZero->reference(), $phaseOne->reference()])
+        ->call('toggleWorkItem', $phaseZero->id)
+        ->assertSeeInOrder([$phaseZero->reference(), $childOne->reference(), $childTwo->reference(), $phaseOne->reference()]);
+});
+
 test('the Plan work-items tree caps each rendered level instead of rendering every item', function () {
     $this->project->workItems()->delete();
 

@@ -76,8 +76,7 @@ class ListWorkItems extends Tool
 
         $rows = $query
             ->withCount('mockups')
-            ->orderBy('kind')
-            ->orderBy('name')
+            ->inWbsOrder()
             ->limit($limit)
             ->offset($offset)
             ->get([

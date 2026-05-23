@@ -34,7 +34,7 @@ class ProjectPmpResource extends Resource implements HasUriTemplate
             'roles.citations.source',
             'roles.users:id,name,email',
             'roles.agents:id,name,kind',
-            'workItems' => fn ($q) => $q->orderBy('kind')->orderBy('name'),
+            'workItems' => fn ($q) => $q->inWbsOrder(),
             'workItems.requirements:id,doc,type,text',
             'workItems.milestones:id,name',
             'workItems.responsibleRole:id,name',
@@ -164,7 +164,7 @@ class ProjectPmpResource extends Resource implements HasUriTemplate
             $renderChildren = function ($parentId, int $depth) use (&$renderChildren, $byParent) {
                 $kids = $byParent[$parentId] ?? collect();
                 $out = '';
-                foreach ($kids->sortBy('name') as $w) {
+                foreach ($kids->sortBy('number') as $w) {
                     $indent = str_repeat('  ', $depth);
                     $out .= "{$indent}- **[{$w->kind}]** {$w->name}";
                     $bits = [];
