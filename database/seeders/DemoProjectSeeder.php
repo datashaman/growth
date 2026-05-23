@@ -276,7 +276,7 @@ class DemoProjectSeeder extends Seeder
                     'surface-muted' => '#10233a',
                     'panel' => '#f8fbff',
                     'panel-muted' => '#dbeafe',
-                    'text' => '#0f172a',
+                    'text' => '#e0f2fe',
                     'accent' => '#06b6d4',
                     'accent-strong' => '#0e7490',
                     'warning' => '#f59e0b',
@@ -292,6 +292,7 @@ main {
 .panel, table {
   background: white;
   border-color: var(--panel-muted);
+  color: #0f172a;
 }
 .bar {
   background: linear-gradient(90deg, var(--accent-strong), var(--accent));

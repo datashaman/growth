@@ -24,7 +24,16 @@ it('displays themes without web crud controls', function () {
         'slug' => 'mission-control',
         'description' => 'Dense operational console.',
         'design_notes' => 'Compact panels, status-first colour.',
-        'css_tokens' => ['surface' => '#101418'],
+        'css_tokens' => [
+            'surface' => '#101418',
+            'surface-muted' => '#1f2937',
+            'panel' => '#f8fbff',
+            'panel-muted' => '#dbeafe',
+            'text' => '#0f172a',
+            'accent' => '#22c55e',
+            'accent-strong' => '#15803d',
+            'warning' => '#f59e0b',
+        ],
         'raw_css' => 'body { background: var(--surface); }',
         'is_default' => true,
     ]);
@@ -35,6 +44,10 @@ it('displays themes without web crud controls', function () {
         ->assertSee('mission-control')
         ->assertSee('default')
         ->assertSee('--surface')
+        ->assertSee('data-test="theme-preview"', false)
+        ->assertSee('linear-gradient(135deg, #101418, #1f2937)', false)
+        ->assertSee('background-color: #22c55e', false)
+        ->assertSee('background-color: #f59e0b', false)
         ->assertSee('Compact panels')
         ->assertDontSee('Save theme')
         ->assertDontSee('Delete theme');
