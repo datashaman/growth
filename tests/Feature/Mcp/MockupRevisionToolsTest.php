@@ -42,7 +42,7 @@ it('lists a mockup revisions', function () {
                 ->where('results.0.preview_uri', fn (string $uri): bool => str_ends_with($uri, '/preview'))
                 ->where('results.0.screenshot_asset.mime_type', 'image/png')
                 ->where('results.0.screenshot_asset.url', fn (string $url): bool => str_contains($url, '/screenshot.png'))
-                ->where('results.0.screenshot_asset.mcp_url', fn (string $url): bool => str_contains($url, '/api/mockup-shots/') && ! str_contains($url, 'signature='))
+                ->where('results.0.screenshot_asset.resource_uri', fn (string $uri): bool => str_starts_with($uri, 'growth://mockups/') && str_ends_with($uri, '/screenshot?theme=assigned'))
                 ->etc();
         });
 });

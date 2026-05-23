@@ -186,7 +186,7 @@ class UpsertMockup extends Tool
     }
 
     /**
-     * @return array{mockup_uri:string,revision_uri:string,html_uri:string,preview_uri:string,screenshot_asset:array{url:string,mcp_url:string,mime_type:string,theme:string},guidance:string}
+     * @return array{mockup_uri:string,revision_uri:string,html_uri:string,preview_uri:string,screenshot_asset:array{url:string,resource_uri:string,mime_type:string,theme:string},guidance:string}
      */
     private function resources(string $mockupId, string $revisionId): array
     {
