@@ -233,7 +233,7 @@ class MockupDesignBriefResource extends Resource implements HasUriTemplate
         $md .= "- Do not render Growth artifact metadata such as work item or requirement references (`WI-001`, `SRS-001`) inside the mockup UI; use the human-facing screen title and domain labels instead.\n";
         $md .= "- Use separate named mockups for materially different screens or states, such as empty/loading states, validation failures, stale analytics, fulfillment confirmation, or mediation/exception handling.\n";
         $md .= "- Keep local JavaScript inside one mockup for natural interactions that do not replace the whole screen, such as filtering, toggles, inline validation, submit feedback, and confirmation dialogs.\n";
-        $md .= "- After creating or refining a mockup, read its metadata resource (`growth://mockups/{mockup}` or `growth://mockups/{mockup}/{revision}`) for the raw HTML, preview HTML, and screenshot resource URIs.\n";
+        $md .= "- After creating or refining a mockup, read its metadata resource (`growth://mockups/{mockup}` or `growth://mockups/{mockup}/{revision}`) for the raw HTML URI, preview HTML URI, and screenshot asset URL.\n";
         $md .= "- If the mockup intentionally diverges from architecture context, make the mismatch visible in the artifact or its notes.\n";
 
         return Response::text($md);

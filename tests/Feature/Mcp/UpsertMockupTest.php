@@ -45,7 +45,9 @@ it('stores a mockup for a work item', function () {
                 ->where('resources.revision_uri', fn (string $uri): bool => preg_match('#^growth://mockups/[^/]+/[^/]+$#', $uri) === 1)
                 ->where('resources.html_uri', fn (string $uri): bool => str_ends_with($uri, '/html'))
                 ->where('resources.preview_uri', fn (string $uri): bool => str_ends_with($uri, '/preview'))
-                ->where('resources.screenshot_uri', fn (string $uri): bool => str_ends_with($uri, '/screenshot'))
+                ->where('resources.screenshot_asset.mime_type', 'image/png')
+                ->where('resources.screenshot_asset.theme', 'assigned')
+                ->where('resources.screenshot_asset.url', fn (string $url): bool => str_contains($url, '/screenshot.png'))
                 ->where('created', true)
                 ->etc();
         });

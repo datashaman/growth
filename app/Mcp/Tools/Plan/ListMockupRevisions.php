@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Plan;
 
 use App\Models\SpecMockup;
 use App\Models\SpecMockupRevision;
+use App\Support\MockupScreenshotAsset;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -37,7 +38,7 @@ class ListMockupRevisions extends Tool
                 'uri' => "growth://mockups/{$mockup->id}/{$revision->id}",
                 'html_uri' => "growth://mockups/{$mockup->id}/{$revision->id}/html",
                 'preview_uri' => "growth://mockups/{$mockup->id}/{$revision->id}/preview",
-                'screenshot_uri' => "growth://mockups/{$mockup->id}/{$revision->id}/screenshot",
+                'screenshot_asset' => app(MockupScreenshotAsset::class)->reference($mockup, $revision),
             ])->all(),
         ]);
     }

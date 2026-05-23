@@ -40,7 +40,8 @@ it('lists a mockup revisions', function () {
                 ->where('results.0.uri', fn (string $uri): bool => preg_match('#^growth://mockups/[^/]+/[^/]+$#', $uri) === 1)
                 ->where('results.0.html_uri', fn (string $uri): bool => str_ends_with($uri, '/html'))
                 ->where('results.0.preview_uri', fn (string $uri): bool => str_ends_with($uri, '/preview'))
-                ->where('results.0.screenshot_uri', fn (string $uri): bool => str_ends_with($uri, '/screenshot'))
+                ->where('results.0.screenshot_asset.mime_type', 'image/png')
+                ->where('results.0.screenshot_asset.url', fn (string $url): bool => str_contains($url, '/screenshot.png'))
                 ->etc();
         });
 });

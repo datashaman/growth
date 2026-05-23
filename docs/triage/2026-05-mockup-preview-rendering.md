@@ -15,15 +15,15 @@ mockup owner matches one, then falls back to the project default theme. A
 temporary `theme=<slug>` query parameter previews another theme, and
 `theme=none` disables theme overlay for that view.
 
-MCP agents can inspect stored mockups through preview resources without pulling
-screenshot bytes into the JSON response:
+MCP agents can inspect stored mockups through metadata and preview resources
+without pulling screenshot bytes into JSON responses:
 
-- `growth://mockups/{mockup}` previews the current revision.
-- `growth://mockups/{mockup}/{revision}` previews a specific revision.
-- `growth://mockups/{mockup}/{revision}/screenshot` returns PNG pixels when
+- `growth://mockups/{mockup}` returns metadata for the current revision.
+- `growth://mockups/{mockup}/{revision}` returns metadata for a specific revision.
+- `growth://mockups/{mockup}/{revision}/preview` returns the preview HTML.
+- Mockup metadata exposes `screenshot.asset.url` for PNG pixels when
   pixel-level evidence is needed.
 
-The preview response includes the screenshot URI and MIME type, visible text,
-metadata warnings, and theme metadata. Agents should read the preview resource
-after creating or refining mockups; screenshots are a separate resource so
-clients can request pixels deliberately.
+Metadata includes artifact references only. Agents should read metadata after
+creating or refining mockups, inspect preview HTML for ordinary review, and use
+the screenshot asset URL only when pixel-level evidence is needed.
