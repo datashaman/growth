@@ -6,6 +6,7 @@ use App\Support\BadgeVariant;
 use App\Support\EnumLabel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -22,6 +23,8 @@ new #[Title('Plan')] class extends Component {
      */
     public array $expandedWorkItemIds = [];
 
+    public string $workItemFilter = '';
+
     /**
      * @return array<string,string>
      */
@@ -33,6 +36,18 @@ new #[Title('Plan')] class extends Component {
     public function onProjectDataChanged(): void
     {
         unset($this->workItemRows, $this->workItemCount, $this->milestones, $this->projectPlan);
+    }
+
+    public function updatedWorkItemFilter(): void
+    {
+        unset($this->workItemRows);
+    }
+
+    public function clearWorkItemFilter(): void
+    {
+        $this->workItemFilter = '';
+
+        unset($this->workItemRows);
     }
 
     #[Computed]
@@ -74,6 +89,10 @@ new #[Title('Plan')] class extends Component {
             return collect();
         }
 
+        if ($this->isWorkItemFiltered()) {
+            return $this->filteredWorkItemRows();
+        }
+
         $ordered = collect();
         $this->appendWorkItemRows($ordered, null, 0);
 
@@ -94,6 +113,103 @@ new #[Title('Plan')] class extends Component {
     public function workItemBranchLimit(): int
     {
         return self::WORK_ITEM_BRANCH_LIMIT;
+    }
+
+    public function isWorkItemFiltered(): bool
+    {
+        return $this->normalizedWorkItemFilter() !== '';
+    }
+
+    private function normalizedWorkItemFilter(): string
+    {
+        return Str::of($this->workItemFilter)->squish()->lower()->toString();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int,array{item:WorkItem,depth:int,has_more_siblings:bool,hidden_siblings:int,limit_reached:bool}>
+     */
+    private function filteredWorkItemRows(): Collection
+    {
+        $filter = $this->normalizedWorkItemFilter();
+        $items = $this->selectedProject
+            ->workItems()
+            ->with('responsibleRole')
+            ->withCount('children')
+            ->orderByRaw("case status when 'in_progress' then 0 when 'blocked' then 1 when 'todo' then 2 when 'done' then 3 when 'cancelled' then 4 else 9 end")
+            ->orderBy('name')
+            ->get();
+
+        $byId = $items->keyBy('id');
+        $includedIds = [];
+
+        foreach ($items as $item) {
+            if (! $this->workItemMatchesFilter($item, $filter)) {
+                continue;
+            }
+
+            $cursor = $item;
+            while ($cursor) {
+                $includedIds[$cursor->id] = true;
+                $cursor = $cursor->parent_id ? $byId->get($cursor->parent_id) : null;
+            }
+        }
+
+        $childrenByParent = $items->groupBy(fn (WorkItem $item): string => $item->parent_id ?? '__root__');
+        $ordered = collect();
+        $visited = [];
+
+        $this->appendFilteredWorkItemRows($ordered, $childrenByParent, null, 0, $includedIds, $visited);
+
+        return $ordered;
+    }
+
+    private function workItemMatchesFilter(WorkItem $item, string $filter): bool
+    {
+        return str_contains(Str::lower($item->name), $filter)
+            || str_contains(Str::lower($item->reference()), $filter);
+    }
+
+    /**
+     * @param  Collection<string,Collection<int,WorkItem>>  $childrenByParent
+     * @param  array<string,bool>  $includedIds
+     * @param  array<string,bool>  $visited
+     */
+    private function appendFilteredWorkItemRows(Collection $ordered, Collection $childrenByParent, ?string $parentId, int $depth, array $includedIds, array &$visited): bool
+    {
+        $parentKey = $parentId ?? '__root__';
+
+        foreach ($childrenByParent->get($parentKey, collect()) as $item) {
+            if (! isset($includedIds[$item->id]) || isset($visited[$item->id])) {
+                continue;
+            }
+
+            if ($ordered->count() >= self::WORK_ITEM_VISIBLE_LIMIT) {
+                $ordered->push([
+                    'item' => $item,
+                    'depth' => $depth,
+                    'has_more_siblings' => false,
+                    'hidden_siblings' => 0,
+                    'limit_reached' => true,
+                ]);
+
+                return false;
+            }
+
+            $visited[$item->id] = true;
+            $ordered->push([
+                'item' => $item,
+                'depth' => $depth,
+                'has_more_siblings' => false,
+                'hidden_siblings' => 0,
+                'limit_reached' => false,
+            ]);
+
+            if (! $this->appendFilteredWorkItemRows($ordered, $childrenByParent, $item->id, $depth + 1, $includedIds, $visited)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function appendWorkItemRows(Collection $ordered, ?string $parentId, int $depth): void
@@ -222,11 +338,34 @@ new #[Title('Plan')] class extends Component {
         </x-data-table>
 
         <x-data-table
-            :title="__('Work items')"
             :count="$this->workItemCount"
             :count-label="__('items')"
             :empty="$this->workItemCount === 0"
             :empty-message="__('No work items defined.')">
+            <x-slot:header>
+                <div class="flex w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex min-w-0 items-baseline gap-3">
+                        <flux:heading size="lg">{{ __('Work items') }}</flux:heading>
+                        <flux:text class="data-table-count whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">
+                            {{ $this->workItemCount }} {{ __('items') }}
+                        </flux:text>
+                    </div>
+                    <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                        <flux:input
+                            wire:model.live.debounce.200ms="workItemFilter"
+                            size="sm"
+                            icon="magnifying-glass"
+                            :placeholder="__('Filter work items')"
+                            class="w-full sm:w-72"
+                            data-test="work-item-tree-filter" />
+                        @if ($this->isWorkItemFiltered())
+                            <flux:button wire:click="clearWorkItemFilter" size="sm" variant="subtle" data-test="work-item-tree-clear-filter">
+                                {{ __('Clear') }}
+                            </flux:button>
+                        @endif
+                    </div>
+                </div>
+            </x-slot:header>
             <flux:table class="[&_td]:align-middle [&_table]:table-fixed [&_th:first-child]:w-[52%] [&_th:nth-child(2)]:w-[16%] [&_th:nth-child(3)]:w-[14%] [&_th:nth-child(4)]:w-[18%]" data-test="work-item-tree-list">
                 <flux:table.columns>
                     <flux:table.column data-test="work-item-tree-header">{{ __('Work item') }}</flux:table.column>
@@ -235,12 +374,24 @@ new #[Title('Plan')] class extends Component {
                     <flux:table.column>{{ __('Role') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
+                @if ($this->isWorkItemFiltered() && $this->workItemRows->isEmpty())
+                    <flux:table.row>
+                        <flux:table.cell>
+                            <span class="text-sm text-zinc-500 dark:text-zinc-400">
+                                {{ __('No work items match the current filter.') }}
+                            </span>
+                        </flux:table.cell>
+                        <flux:table.cell></flux:table.cell>
+                        <flux:table.cell></flux:table.cell>
+                        <flux:table.cell></flux:table.cell>
+                    </flux:table.row>
+                @endif
                 @foreach ($this->workItemRows as $row)
                     @php($item = $row['item'])
                     <flux:table.row>
                         <flux:table.cell>
                             <div class="grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-2" @style(['padding-left: '.($row['depth'] * 1.5).'rem' => $row['depth'] > 0])>
-                                @if ($item->children_count > 0)
+                                @if ($item->children_count > 0 && ! $this->isWorkItemFiltered())
                                     <button type="button" wire:click="toggleWorkItem('{{ $item->id }}')" class="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-zinc-200 text-xs text-zinc-500 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100" aria-label="{{ in_array($item->id, $expandedWorkItemIds, true) ? __('Collapse :name', ['name' => $item->name]) : __('Expand :name', ['name' => $item->name]) }}" data-test="work-item-tree-toggle">
                                         {{ in_array($item->id, $expandedWorkItemIds, true) ? '−' : '+' }}
                                     </button>
