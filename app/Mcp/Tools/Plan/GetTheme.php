@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('Fetch a theme/design language, including CSS tokens and raw self-contained CSS.')]
+#[Description('Resolve a theme/design language and return its metadata and CSS resource URIs.')]
 class GetTheme extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -32,8 +32,11 @@ class GetTheme extends Tool
             'description' => $theme->description,
             'design_notes' => $theme->design_notes,
             'css_tokens' => $theme->css_tokens ?? [],
-            'raw_css' => $theme->raw_css,
-            'compiled_css' => $theme->cssForInjection(),
+            'resources' => [
+                'theme_uri' => "growth://themes/{$theme->id}",
+                'css_uri' => "growth://themes/{$theme->id}/css",
+                'guidance' => 'Read theme_uri for JSON metadata. Read css_uri for compiled self-contained CSS.',
+            ],
             'preview_specimen' => ThemePreviewSpecimen::contract(),
             'is_default' => $theme->is_default,
             'updated_at' => $theme->updated_at?->toIso8601String(),
@@ -57,8 +60,7 @@ class GetTheme extends Tool
             'description' => $schema->string(),
             'design_notes' => $schema->string(),
             'css_tokens' => $schema->object(),
-            'raw_css' => $schema->string(),
-            'compiled_css' => $schema->string()->required(),
+            'resources' => $schema->object()->description('Resource URIs for theme metadata and compiled self-contained CSS')->required(),
             'preview_specimen' => $schema->object()->required(),
             'is_default' => $schema->boolean()->required(),
             'updated_at' => $schema->string(),

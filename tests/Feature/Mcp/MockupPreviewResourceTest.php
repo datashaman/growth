@@ -36,10 +36,14 @@ it('exposes mockup preview resources as mcp resource templates', function () {
     expect(collect($resources)->pluck('uriTemplate')->all())
         ->toContain('growth://mockups/{mockup}')
         ->toContain('growth://mockups/{mockup}/{revision}')
-        ->toContain('growth://mockups/{mockup}/{revision}/screenshot');
+        ->toContain('growth://mockups/{mockup}/{revision}/html')
+        ->toContain('growth://mockups/{mockup}/{revision}/preview')
+        ->toContain('growth://mockups/{mockup}/{revision}/preview?theme={theme}')
+        ->toContain('growth://mockups/{mockup}/{revision}/screenshot')
+        ->toContain('growth://mockups/{mockup}/{revision}/screenshot?theme={theme}');
 });
 
-it('previews the current mockup revision through a browser without inline screenshot data', function () {
+it('returns current mockup metadata with preview and screenshot resource uris', function () {
     $theme = Theme::create([
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
@@ -67,39 +71,52 @@ HTML);
 
     readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}")
         ->assertOk()
-        ->assertSee('"type":"mockup_preview"')
-        ->assertSee('"mockup_id":"'.$mockup->id.'"')
-        ->assertSee('"revision_id":"'.$revision->id.'"')
-        ->assertSee('"revision_number":1')
-        ->assertSee(route('mockups.raw', ['mockup' => $mockup, 'revision' => $revision->id, 'theme' => $theme->slug]))
-        ->assertSee('"requested":"assigned"')
-        ->assertSee('"slug":"mission-control"')
-        ->assertSee('Customer dashboard')
-        ->assertSee('WI-003 implementation note')
-        ->assertSee('"code":"work_item_reference"')
-        ->assertSee('"code":"implementation_note"')
+        ->assertSee('"type":"mockup"')
+        ->assertSee('"id":"'.$mockup->id.'"')
+        ->assertSee('"id":"'.$revision->id.'"')
+        ->assertSee('"uri":"growth://mockups/'.$mockup->id.'/'.$revision->id.'/html"')
+        ->assertSee('"uri":"growth://mockups/'.$mockup->id.'/'.$revision->id.'/preview"')
         ->assertSee('"uri":"growth://mockups/'.$mockup->id.'/'.$revision->id.'/screenshot"')
         ->assertSee('"mime_type":"image/png"')
+        ->assertDontSee('Customer dashboard')
+        ->assertDontSee('WI-003 implementation note')
         ->assertDontSee('"base64"')
         ->assertDontSee('"blob"');
+
+    readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$revision->id}/preview")
+        ->assertOk()
+        ->assertSee('Customer dashboard')
+        ->assertSee('Ready for review')
+        ->assertSee('data-growth-theme="mission-control"', false);
 });
 
-it('inspects a specific mockup revision', function () {
+it('returns specific mockup revision metadata', function () {
     $mockup = createMockup($this->workItem, 'default', '<!doctype html><html><body>First draft</body></html>');
     $first = $mockup->currentRevision;
     $second = $mockup->appendRevision('<!doctype html><html><body>Second draft</body></html>');
 
     readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$first->id}")
         ->assertOk()
-        ->assertSee('"revision_id":"'.$first->id.'"')
-        ->assertSee('First draft')
+        ->assertSee('"type":"mockup_revision"')
+        ->assertSee('"id":"'.$first->id.'"')
+        ->assertSee("growth://mockups/{$mockup->id}/{$first->id}/html")
+        ->assertSee("growth://mockups/{$mockup->id}/{$first->id}/preview")
+        ->assertSee("growth://mockups/{$mockup->id}/{$first->id}/screenshot")
+        ->assertDontSee('First draft')
         ->assertDontSee('Second draft');
 
     readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$second->id}")
         ->assertOk()
-        ->assertSee('"revision_id":"'.$second->id.'"')
-        ->assertSee('Second draft')
+        ->assertSee('"id":"'.$second->id.'"')
+        ->assertSee("growth://mockups/{$mockup->id}/{$second->id}/html")
+        ->assertSee("growth://mockups/{$mockup->id}/{$second->id}/preview")
+        ->assertDontSee('Second draft')
         ->assertDontSee('First draft');
+
+    readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$first->id}/preview")
+        ->assertOk()
+        ->assertSee('First draft')
+        ->assertDontSee('Second draft');
 });
 
 it('returns screenshot pixels only through the screenshot resource', function () {
@@ -111,7 +128,7 @@ it('returns screenshot pixels only through the screenshot resource', function ()
         ->assertSee('iVBOR');
 });
 
-it('supports disabling theme rendering for inspection', function () {
+it('supports disabling theme rendering for preview resources', function () {
     Theme::create([
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
@@ -122,12 +139,10 @@ it('supports disabling theme rendering for inspection', function () {
     $mockup = createMockup($this->workItem, 'default', '<!doctype html><html><body>No theme labels</body></html>');
     $revision = $mockup->currentRevision;
 
-    readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$revision->id}?theme=none")
+    readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$revision->id}/preview?theme=none")
         ->assertOk()
-        ->assertSee('"requested":"none"')
-        ->assertSee('"resolved":"none"')
-        ->assertSee(route('mockups.raw', ['mockup' => $mockup, 'revision' => $revision->id]))
-        ->assertDontSee('theme=mission-control');
+        ->assertSee('No theme labels')
+        ->assertDontSee('data-growth-theme="mission-control"', false);
 
     readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$revision->id}/screenshot?theme=none")
         ->assertOk()
@@ -142,7 +157,7 @@ it('errors for revisions that do not belong to the mockup', function () {
         ->assertHasErrors(['not found on mockup']);
 });
 
-it('does not inspect a mockup from another workspace', function () {
+it('does not serve a mockup from another workspace', function () {
     $other = User::factory()->create();
     $otherProject = Project::create([
         'workspace_id' => $other->active_workspace_id,
@@ -165,7 +180,7 @@ it('is available on the planning server too', function () {
     $mockup = createMockup($this->workItem, 'default', '<!doctype html><html><body>Planning visible</body></html>');
     $revision = $mockup->currentRevision;
 
-    readResource(PlanningServer::class, "growth://mockups/{$mockup->id}/{$revision->id}")
+    readResource(PlanningServer::class, "growth://mockups/{$mockup->id}/{$revision->id}/preview")
         ->assertOk()
         ->assertSee('Planning visible');
 });

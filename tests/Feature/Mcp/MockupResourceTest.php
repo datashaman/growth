@@ -23,19 +23,68 @@ beforeEach(function () {
     ]);
 });
 
-it('inspects a mockup current revision', function () {
+it('exposes mockup metadata html and preview resource templates', function () {
+    $resources = $this->postJson('/mcp/readonly', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'resources/templates/list',
+        'params' => ['per_page' => 300],
+    ])->assertOk()->json('result.resourceTemplates');
+
+    expect(collect($resources)->pluck('uriTemplate')->all())
+        ->toContain('growth://mockups/{mockup}')
+        ->toContain('growth://mockups/{mockup}/{revision}')
+        ->toContain('growth://mockups/{mockup}/{revision}/html')
+        ->toContain('growth://mockups/{mockup}/{revision}/preview')
+        ->toContain('growth://mockups/{mockup}/{revision}/preview?theme={theme}')
+        ->toContain('growth://mockups/{mockup}/{revision}/screenshot')
+        ->toContain('growth://mockups/{mockup}/{revision}/screenshot?theme={theme}');
+});
+
+it('serves mockup current revision metadata with html and preview resources', function () {
     $mockup = createMockup($this->workItem, 'Roomy layout', '<!doctype html><html><body>roomy</body></html>');
-    $revision = $mockup->appendRevision('<!doctype html><html><body>latest</body></html>');
+    $mockup->appendRevision('<!doctype html><html><body>latest</body></html>');
+    $revision = $mockup->fresh('currentRevision')->currentRevision;
 
     readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}")
         ->assertOk()
-        ->assertSee('"type":"mockup_preview"')
-        ->assertSee('"revision_id":"'.$revision->id.'"')
-        ->assertSee('latest')
-        ->assertDontSee('roomy')
+        ->assertSee('"type":"mockup"')
+        ->assertSee('"id":"'.$mockup->id.'"')
+        ->assertSee('"number":2')
+        ->assertSee("growth://mockups/{$mockup->id}/{$revision->id}/html")
+        ->assertSee("growth://mockups/{$mockup->id}/{$revision->id}/preview")
         ->assertSee("growth://mockups/{$mockup->id}/{$revision->id}/screenshot")
-        ->assertDontSee('"base64"')
-        ->assertDontSee('"blob"');
+        ->assertDontSee('latest')
+        ->assertDontSee('roomy');
+});
+
+it('serves specific mockup revision metadata with html and preview resources', function () {
+    $mockup = createMockup($this->workItem, 'Roomy layout', '<!doctype html><html><body>roomy</body></html>');
+    $mockup->appendRevision('<!doctype html><html><body>latest</body></html>');
+    $first = $mockup->revisions()->where('number', 1)->firstOrFail();
+
+    readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$first->id}")
+        ->assertOk()
+        ->assertSee('"type":"mockup_revision"')
+        ->assertSee('"number":1')
+        ->assertSee("growth://mockups/{$mockup->id}/{$first->id}/html")
+        ->assertSee("growth://mockups/{$mockup->id}/{$first->id}/preview")
+        ->assertSee("growth://mockups/{$mockup->id}/{$first->id}/screenshot")
+        ->assertDontSee('roomy');
+});
+
+it('serves raw html and preview html as separate resources', function () {
+    $mockup = createMockup($this->workItem, 'Roomy layout', '<!doctype html><html><body><a href="/next">roomy</a></body></html>');
+    $revision = $mockup->currentRevision;
+
+    readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$revision->id}/html")
+        ->assertOk()
+        ->assertSee('<a href="/next">roomy</a>', false);
+
+    readResource(ReadonlyServer::class, "growth://mockups/{$mockup->id}/{$revision->id}/preview")
+        ->assertOk()
+        ->assertSee('roomy')
+        ->assertSee('data-growth-preview-inert');
 });
 
 it('errors for an unknown mockup id', function () {

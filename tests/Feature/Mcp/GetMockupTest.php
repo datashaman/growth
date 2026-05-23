@@ -25,23 +25,26 @@ beforeEach(function () {
     ]);
 });
 
-it("returns the default mockup's current html for a work item", function () {
+it("returns the default mockup's raw html resource uris for a work item", function () {
     $mockup = createMockup($this->workItem, 'default', '<!doctype html><html><body>v1</body></html>');
     $mockup->appendRevision('<!doctype html><html><body>v2</body></html>');
+    $revision = $mockup->fresh('currentRevision')->currentRevision;
 
     PlanningServer::tool(GetMockup::class, [
         'owner_type' => 'work_item',
         'owner_id' => $this->workItem->id,
     ])
         ->assertOk()
-        ->assertStructuredContent(function ($json) use ($mockup) {
+        ->assertStructuredContent(function ($json) use ($mockup, $revision) {
             $json->where('id', $mockup->id)
                 ->where('name', 'default')
                 ->where('revision', 2)
-                ->where('html', '<!doctype html><html><body>v2</body></html>')
-                ->where('inspection.uri', "growth://mockups/{$mockup->id}")
-                ->where('inspection.revision_uri', "growth://mockups/{$mockup->id}/{$mockup->currentRevision->id}")
-                ->where('inspection.screenshot_uri', "growth://mockups/{$mockup->id}/{$mockup->currentRevision->id}/screenshot")
+                ->where('resources.mockup_uri', "growth://mockups/{$mockup->id}")
+                ->where('resources.revision_uri', "growth://mockups/{$mockup->id}/{$revision->id}")
+                ->where('resources.html_uri', "growth://mockups/{$mockup->id}/{$revision->id}/html")
+                ->where('resources.preview_uri', "growth://mockups/{$mockup->id}/{$revision->id}/preview")
+                ->where('resources.screenshot_uri', "growth://mockups/{$mockup->id}/{$revision->id}/screenshot")
+                ->missing('html')
                 ->etc();
         });
 });
@@ -59,7 +62,11 @@ it('returns a named alternative when name is supplied', function () {
         ->assertStructuredContent(function ($json) use ($compact) {
             $json->where('id', $compact->id)
                 ->where('name', 'Compact layout')
-                ->where('html', '<!doctype html><html><body>compact</body></html>')
+                ->where('resources.mockup_uri', "growth://mockups/{$compact->id}")
+                ->where('resources.html_uri', "growth://mockups/{$compact->id}/{$compact->currentRevision->id}/html")
+                ->where('resources.preview_uri', "growth://mockups/{$compact->id}/{$compact->currentRevision->id}/preview")
+                ->where('resources.screenshot_uri', "growth://mockups/{$compact->id}/{$compact->currentRevision->id}/screenshot")
+                ->missing('html')
                 ->etc();
         });
 });
@@ -98,7 +105,11 @@ it("returns a requirement's default mockup", function () {
         ->assertStructuredContent(function ($json) use ($requirement) {
             $json->where('owner_type', 'requirement')
                 ->where('owner_id', $requirement->id)
-                ->where('html', '<!doctype html><html><body>one</body></html>')
+                ->where('resources.mockup_uri', fn (string $uri): bool => str_starts_with($uri, 'growth://mockups/'))
+                ->where('resources.html_uri', fn (string $uri): bool => str_ends_with($uri, '/html'))
+                ->where('resources.preview_uri', fn (string $uri): bool => str_ends_with($uri, '/preview'))
+                ->where('resources.screenshot_uri', fn (string $uri): bool => str_ends_with($uri, '/screenshot'))
+                ->missing('html')
                 ->etc();
         });
 });
