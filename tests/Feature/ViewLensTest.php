@@ -216,3 +216,25 @@ it('shows the full Project nav and no hint to an owner whose role has no capabil
         ->assertSee(route('plan'))
         ->assertSee(route('roles'));
 });
+
+it('orders project navigation by project workflow', function () {
+    $user = User::factory()->create();
+    $project = projectForLens($user);
+
+    $this->actingAs($user)
+        ->get('/dashboard?project='.$project->id)
+        ->assertOk()
+        ->assertSeeInOrder([
+            route('dashboard'),
+            route('intent'),
+            route('requirements'),
+            route('architecture'),
+            route('roles'),
+            route('plan'),
+            route('mockups'),
+            route('verification'),
+            route('evidence'),
+            route('changes'),
+            route('reviews'),
+        ]);
+});
