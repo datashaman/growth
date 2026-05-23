@@ -2,6 +2,7 @@
 
 use App\Concerns\ProjectScoped;
 use App\Models\Theme;
+use App\Support\ThemePreviewSpecimen;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -42,83 +43,7 @@ new #[Title('Themes')] class extends Component {
 
     public function themePreviewHtml(Theme $theme): string
     {
-        return <<<'HTML'
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-* { box-sizing: border-box; }
-html, body { margin: 0; min-height: 100%; overflow: hidden; }
-body {
-  background: linear-gradient(180deg, #111827, #1f2937);
-  color: #f8fafc;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-main { min-height: 100vh; padding: 18px; }
-.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
-.label { font-size: 11px; font-weight: 700; letter-spacing: .08em; opacity: .72; text-transform: uppercase; }
-h1 { margin: 3px 0 0; font-size: 20px; line-height: 1.1; }
-.status, button.active {
-  border: 1px solid #2563eb;
-  border-radius: 999px;
-  background: #2563eb;
-  color: white;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 7px 11px;
-}
-.panel {
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: white;
-  color: #0f172a;
-  padding: 14px;
-}
-.bar { height: 10px; border-radius: 999px; background: linear-gradient(90deg, #1d4ed8, #38bdf8); margin-bottom: 14px; }
-.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.metric { min-height: 52px; border-radius: 6px; background: #e2e8f0; padding: 9px; }
-.metric strong { display: block; font-size: 20px; line-height: 1; }
-.metric span { display: block; margin-top: 7px; font-size: 10px; opacity: .68; text-transform: uppercase; }
-.spark { height: 7px; border-radius: 999px; background: #38bdf8; margin-top: 10px; }
-.warn { margin-top: 12px; border: 1px solid #f59e0b; border-radius: 6px; background: #fef3c7; color: #7c2d12; padding: 8px 10px; font-size: 12px; font-weight: 650; }
-table { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 11px; }
-th { text-align: left; opacity: .7; }
-td, th { padding: 5px 0; border-bottom: 1px solid rgba(100, 116, 139, .22); }
-</style>
-<style data-growth-theme-preview>
-HTML
-            ."\n".$theme->cssForInjection()."\n"
-            . <<<'HTML'
-</style>
-</head>
-<body>
-<main>
-  <div class="topbar">
-    <div>
-      <div class="label">Preview</div>
-      <h1>Interface sample</h1>
-    </div>
-    <button class="active">Live</button>
-  </div>
-  <section class="panel">
-    <div class="bar"></div>
-    <div class="metrics">
-      <div class="metric"><strong>42</strong><span>primary</span></div>
-      <div class="metric"><strong>18</strong><span>secondary</span></div>
-      <div class="metric"><strong>7</strong><span>warning</span></div>
-    </div>
-    <div class="spark"></div>
-    <div class="warn">Attention state</div>
-    <table>
-      <thead><tr><th>Element</th><th>State</th></tr></thead>
-      <tbody><tr><td>Sample row</td><td>Active</td></tr></tbody>
-    </table>
-  </section>
-</main>
-</body>
-</html>
-HTML;
+        return ThemePreviewSpecimen::html($theme);
     }
 }; ?>
 

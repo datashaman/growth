@@ -6,6 +6,7 @@ use App\Models\Requirement;
 use App\Models\SpecMockup;
 use App\Models\ThemeAssignment;
 use App\Models\WorkItem;
+use App\Support\ThemePreviewSpecimen;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Laravel\Mcp\Request;
@@ -181,6 +182,13 @@ class MockupDesignBriefResource extends Resource implements HasUriTemplate
                     : "- **CSS tokens:** none captured\n";
                 $md .= '- **Raw CSS:** '.(filled($theme->raw_css) ? 'present' : 'none')."\n\n";
             }
+
+            $md .= "### Mockup CSS Boundary\n\n";
+            $md .= "- Treat assigned/default Growth themes as the reusable visual design-system layer.\n";
+            $md .= "- Keep local mockup CSS focused on semantic structure, one-off layout, and state-specific affordances.\n";
+            $md .= "- Do not duplicate broad component styling for cards, panels, buttons, tables, grids, badges, or theme-like color tokens across mockups; put reusable visual differentiation in theme `raw_css`, CSS tokens, and design notes instead.\n\n";
+
+            $md .= ThemePreviewSpecimen::contractMarkdown();
 
             $md .= "### Scoped Theme Assignments\n\n";
             if ($project->themeAssignments->isEmpty()) {

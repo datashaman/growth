@@ -60,6 +60,8 @@ it('creates lists fetches and deletes themes through MCP', function () {
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('compiled_css', fn (string $css): bool => str_contains($css, '--surface: #101418;'))
+                ->where('preview_specimen.selectors.0.role', 'preview_chrome')
+                ->where('preview_specimen.sample_html', fn (string $html): bool => str_contains($html, 'data-preview-role="title"'))
                 ->etc();
         });
 
@@ -176,6 +178,40 @@ it('rejects remote theme css', function () {
         'slug' => 'remote',
         'raw_css' => '@import url("https://example.com/theme.css");',
     ])->assertHasErrors(['Theme CSS must be self-contained']);
+});
+
+it('warns without rejecting themes with low contrast preview text', function () {
+    PlanningServer::tool(UpsertTheme::class, [
+        'project_id' => $this->project->id,
+        'name' => 'Low Contrast',
+        'slug' => 'low-contrast',
+        'css_tokens' => [
+            'surface' => '#111111',
+            'text' => '#181818',
+        ],
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('warnings.0.code', 'preview_text_contrast')
+                ->where('created', true)
+                ->etc();
+        });
+
+    expect(Theme::where('project_id', $this->project->id)->where('slug', 'low-contrast')->exists())->toBeTrue();
+});
+
+it('does not warn for readable theme preview text', function () {
+    PlanningServer::tool(UpsertTheme::class, [
+        'project_id' => $this->project->id,
+        'name' => 'Readable',
+        'slug' => 'readable',
+        'css_tokens' => [
+            'surface' => '#111111',
+            'text' => '#f8fafc',
+        ],
+    ])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json->where('warnings', [])->etc());
 });
 
 it('does not expose themes from another workspace', function () {

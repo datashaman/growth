@@ -1,0 +1,283 @@
+<?php
+
+namespace App\Support;
+
+use App\Models\Theme;
+
+class ThemePreviewSpecimen
+{
+    /**
+     * @return array{description:string,guidance:list<string>,selectors:list<array{role:string,selector:string,purpose:string}>,sample_html:string}
+     */
+    public static function contract(): array
+    {
+        return [
+            'description' => 'Stable selector contract for the theme preview specimen used by the Themes page and MCP theme debugging.',
+            'guidance' => [
+                'Theme CSS should style these semantic selectors rather than guessing private page markup.',
+                'Use body/main for preview chrome defaults, then reset panel/table content when the panel surface is light.',
+                'Reusable visual language belongs in theme raw_css, tokens, and design notes; mockup HTML should stay mostly semantic.',
+            ],
+            'selectors' => [
+                ['role' => 'preview_chrome', 'selector' => 'body, main, [data-preview-role="chrome"]', 'purpose' => 'Overall preview canvas and top-level text defaults.'],
+                ['role' => 'preview_kicker', 'selector' => '.label, [data-preview-role="kicker"]', 'purpose' => 'Small uppercase label above the preview title.'],
+                ['role' => 'preview_title', 'selector' => 'h1, [data-preview-role="title"]', 'purpose' => 'Primary preview heading.'],
+                ['role' => 'active_status', 'selector' => '.status, button.active, [data-preview-role="active-status"]', 'purpose' => 'Active/live status control.'],
+                ['role' => 'panel_surface', 'selector' => '.panel, [data-preview-role="panel"]', 'purpose' => 'Main sample content surface.'],
+                ['role' => 'accent_bar', 'selector' => '.bar, [data-preview-role="bar"]', 'purpose' => 'Prominent accent bar in the panel.'],
+                ['role' => 'metric_blocks', 'selector' => '.metric, [data-preview-role="metric"]', 'purpose' => 'Repeated metric tiles.'],
+                ['role' => 'sparkline', 'selector' => '.spark, [data-preview-role="spark"]', 'purpose' => 'Secondary accent strip.'],
+                ['role' => 'warning_state', 'selector' => '.warn, [data-preview-role="warning"]', 'purpose' => 'Warning/attention state.'],
+                ['role' => 'table_content', 'selector' => 'table, th, td, [data-preview-role="table"]', 'purpose' => 'Compact tabular sample content.'],
+            ],
+            'sample_html' => self::html(),
+        ];
+    }
+
+    public static function html(?Theme $theme = null): string
+    {
+        return self::htmlForCss($theme?->cssForInjection() ?? '');
+    }
+
+    public static function htmlForCss(string $themeCss): string
+    {
+        return <<<'HTML'
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; overflow: hidden; }
+body {
+  background: linear-gradient(180deg, #111827, #1f2937);
+  color: #f8fafc;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+main { min-height: 100vh; padding: 18px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.label { font-size: 11px; font-weight: 700; letter-spacing: .08em; opacity: .72; text-transform: uppercase; }
+h1 { margin: 3px 0 0; font-size: 20px; line-height: 1.1; }
+.status, button.active {
+  border: 1px solid #2563eb;
+  border-radius: 999px;
+  background: #2563eb;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 11px;
+}
+.panel {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  color: #0f172a;
+  padding: 14px;
+}
+.bar { height: 10px; border-radius: 999px; background: linear-gradient(90deg, #1d4ed8, #38bdf8); margin-bottom: 14px; }
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.metric { min-height: 52px; border-radius: 6px; background: #e2e8f0; padding: 9px; }
+.metric strong { display: block; font-size: 20px; line-height: 1; }
+.metric span { display: block; margin-top: 7px; font-size: 10px; opacity: .68; text-transform: uppercase; }
+.spark { height: 7px; border-radius: 999px; background: #38bdf8; margin-top: 10px; }
+.warn { margin-top: 12px; border: 1px solid #f59e0b; border-radius: 6px; background: #fef3c7; color: #7c2d12; padding: 8px 10px; font-size: 12px; font-weight: 650; }
+table { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 11px; }
+th { text-align: left; opacity: .7; }
+td, th { padding: 5px 0; border-bottom: 1px solid rgba(100, 116, 139, .22); }
+</style>
+<style data-growth-theme-preview>
+HTML
+            ."\n".$themeCss."\n"
+            .<<<'HTML'
+</style>
+</head>
+<body data-preview-role="chrome">
+<main data-preview-role="chrome">
+  <div class="topbar">
+    <div>
+      <div class="label" data-preview-role="kicker">Preview</div>
+      <h1 data-preview-role="title">Interface sample</h1>
+    </div>
+    <button class="active" data-preview-role="active-status">Live</button>
+  </div>
+  <section class="panel" data-preview-role="panel">
+    <div class="bar" data-preview-role="bar"></div>
+    <div class="metrics">
+      <div class="metric" data-preview-role="metric"><strong>42</strong><span>primary</span></div>
+      <div class="metric" data-preview-role="metric"><strong>18</strong><span>secondary</span></div>
+      <div class="metric" data-preview-role="metric"><strong>7</strong><span>warning</span></div>
+    </div>
+    <div class="spark" data-preview-role="spark"></div>
+    <div class="warn" data-preview-role="warning">Attention state</div>
+    <table data-preview-role="table">
+      <thead><tr><th>Element</th><th>State</th></tr></thead>
+      <tbody><tr><td>Sample row</td><td>Active</td></tr></tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>
+HTML;
+    }
+
+    public static function contractMarkdown(): string
+    {
+        $contract = self::contract();
+        $markdown = "### Theme Preview Selector Contract\n\n";
+
+        foreach ($contract['guidance'] as $item) {
+            $markdown .= "- {$item}\n";
+        }
+
+        $markdown .= "\nStable selectors:\n";
+        foreach ($contract['selectors'] as $selector) {
+            $markdown .= "- **{$selector['role']}**: `{$selector['selector']}` - {$selector['purpose']}\n";
+        }
+
+        return $markdown."\n";
+    }
+
+    /**
+     * @param  array<string,mixed>|null  $tokens
+     * @return list<array{code:string,message:string}>
+     */
+    public static function qualityWarnings(?array $tokens, ?string $rawCss): array
+    {
+        $warnings = [];
+        $normalizedTokens = self::normalizeTokenMap($tokens);
+        $text = self::firstColor([
+            $normalizedTokens['text'] ?? null,
+            self::cssDeclaration($rawCss, 'body', 'color'),
+            self::cssDeclaration($rawCss, 'main', 'color'),
+        ]);
+        $background = self::firstColor([
+            $normalizedTokens['surface'] ?? null,
+            self::cssDeclaration($rawCss, 'body', 'background-color'),
+            self::cssDeclaration($rawCss, 'body', 'background'),
+            self::cssDeclaration($rawCss, 'main', 'background-color'),
+            self::cssDeclaration($rawCss, 'main', 'background'),
+        ]);
+
+        if ($text !== null && $background !== null && self::contrastRatio($text, $background) < 4.5) {
+            $warnings[] = [
+                'code' => 'preview_text_contrast',
+                'message' => 'Theme preview title/kicker text may have low contrast against the preview chrome. Adjust the text and surface/chrome color relationship, or target h1/.label/[data-preview-role="title"] explicitly.',
+            ];
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * @param  array<string,mixed>|null  $tokens
+     * @return array<string,string>
+     */
+    private static function normalizeTokenMap(?array $tokens): array
+    {
+        $normalized = [];
+
+        foreach ($tokens ?? [] as $name => $value) {
+            if (! is_scalar($value) && $value !== null) {
+                continue;
+            }
+
+            $token = strtolower(trim((string) $name));
+            $token = preg_replace('/^--/', '', $token) ?? $token;
+            $normalized[$token] = trim((string) $value);
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @param  list<string|null>  $values
+     */
+    private static function firstColor(array $values): ?string
+    {
+        foreach ($values as $value) {
+            $color = self::parseColor($value);
+
+            if ($color !== null) {
+                return $color;
+            }
+        }
+
+        return null;
+    }
+
+    private static function cssDeclaration(?string $css, string $selector, string $property): ?string
+    {
+        if (! is_string($css) || trim($css) === '') {
+            return null;
+        }
+
+        if (preg_match('/'.preg_quote($selector, '/').'\s*\{(?P<body>[^}]*)\}/i', $css, $match) !== 1) {
+            return null;
+        }
+
+        if (preg_match('/'.preg_quote($property, '/').'\s*:\s*(?P<value>[^;]+);?/i', $match['body'], $declaration) !== 1) {
+            return null;
+        }
+
+        return trim($declaration['value']);
+    }
+
+    private static function contrastRatio(string $foreground, string $background): float
+    {
+        $foregroundLuminance = self::relativeLuminance($foreground);
+        $backgroundLuminance = self::relativeLuminance($background);
+        $lighter = max($foregroundLuminance, $backgroundLuminance);
+        $darker = min($foregroundLuminance, $backgroundLuminance);
+
+        return ($lighter + 0.05) / ($darker + 0.05);
+    }
+
+    private static function relativeLuminance(string $hex): float
+    {
+        [$r, $g, $b] = self::rgb($hex);
+        $channels = array_map(function (int $channel): float {
+            $value = $channel / 255;
+
+            return $value <= 0.03928
+                ? $value / 12.92
+                : (($value + 0.055) / 1.055) ** 2.4;
+        }, [$r, $g, $b]);
+
+        return 0.2126 * $channels[0] + 0.7152 * $channels[1] + 0.0722 * $channels[2];
+    }
+
+    /**
+     * @return array{0:int,1:int,2:int}
+     */
+    private static function rgb(string $hex): array
+    {
+        $hex = ltrim($hex, '#');
+
+        if (strlen($hex) === 3) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+
+        return [
+            hexdec(substr($hex, 0, 2)),
+            hexdec(substr($hex, 2, 2)),
+            hexdec(substr($hex, 4, 2)),
+        ];
+    }
+
+    private static function parseColor(?string $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        if (preg_match('/#[0-9a-fA-F]{6}\b/', $value, $match) === 1) {
+            return $match[0];
+        }
+
+        if (preg_match('/#[0-9a-fA-F]{3}\b/', $value, $match) === 1) {
+            return $match[0];
+        }
+
+        return null;
+    }
+}

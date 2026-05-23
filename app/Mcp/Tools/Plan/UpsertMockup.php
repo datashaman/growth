@@ -94,6 +94,13 @@ class UpsertMockup extends Tool
             ];
         }
 
+        if ($this->containsLocalDesignSystemCss($html)) {
+            $warnings[] = [
+                'code' => 'local_design_system_css',
+                'message' => 'Mockup HTML appears to embed a reusable mini design system. Keep mockup CSS structural and move repeated visual styling, theme tokens, and component chrome into Growth theme raw_css, CSS tokens, and design notes.',
+            ];
+        }
+
         return $warnings;
     }
 
@@ -116,6 +123,30 @@ class UpsertMockup extends Tool
         $hasSwapScript = preg_match('/(?:querySelectorAll|getElementById|classList|style\.display|hidden\s*=|\.hidden)/i', $html) === 1;
 
         return $hasWholeScreenPanels && $hasSwapScript;
+    }
+
+    private function containsLocalDesignSystemCss(string $html): bool
+    {
+        preg_match_all('/<style\b[^>]*>(?P<css>.*?)<\/style>/is', $html, $matches);
+        $css = trim(implode("\n", $matches['css'] ?? []));
+
+        if ($css === '') {
+            return false;
+        }
+
+        $selectorHits = 0;
+        foreach (['.card', '.panel', '.grid', '.badge', '.button', '.btn', 'button', 'table', 'th', 'td', 'header', 'nav'] as $selector) {
+            if (preg_match('/(^|[,{]\s*)'.preg_quote($selector, '/').'(?:\s|[,{:#.\[])/im', $css) === 1) {
+                $selectorHits++;
+            }
+        }
+
+        $tokenLikeDeclarations = preg_match_all('/--[a-z0-9_-]+\s*:/i', $css);
+        $visualDeclarations = preg_match_all('/\b(?:background|color|border|box-shadow|font|border-radius|padding|margin|gap)\s*:/i', $css);
+
+        return $selectorHits >= 5
+            || ($selectorHits >= 3 && $tokenLikeDeclarations >= 3)
+            || ($selectorHits >= 3 && $visualDeclarations >= 14);
     }
 
     /**
