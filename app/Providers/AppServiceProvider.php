@@ -23,6 +23,7 @@ use App\Models\Milestone;
 use App\Models\Project;
 use App\Models\ProjectPlan;
 use App\Models\ProjectPlanBaseline;
+use App\Models\ProjectTheme;
 use App\Models\Release;
 use App\Models\Requirement;
 use App\Models\Review;
@@ -84,6 +85,7 @@ class AppServiceProvider extends ServiceProvider
         'test_run' => TestRun::class,
         'anomaly' => Anomaly::class,
         'project_plan' => ProjectPlan::class,
+        'project_theme' => ProjectTheme::class,
         'release' => Release::class,
         'milestone' => Milestone::class,
         'role' => Role::class,
@@ -123,6 +125,7 @@ class AppServiceProvider extends ServiceProvider
         'owned_citation' => [Citation::class,        'citations.id'],
         'owned_project_plan' => [ProjectPlan::class,     'project_plans.id'],
         'owned_project_plan_baseline' => [ProjectPlanBaseline::class, 'project_plan_baselines.id'],
+        'owned_project_theme' => [ProjectTheme::class,    'project_themes.id'],
         'owned_release' => [Release::class,         'releases.id'],
         'owned_milestone' => [Milestone::class,       'milestones.id'],
         'owned_mockup' => [SpecMockup::class,        'spec_mockups.id'],

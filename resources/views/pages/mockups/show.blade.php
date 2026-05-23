@@ -1,9 +1,12 @@
 <?php
 
 use App\Models\Requirement;
+use App\Models\ProjectTheme;
 use App\Models\SpecMockup;
 use Illuminate\Support\Str;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 new class extends Component {
@@ -77,6 +80,25 @@ new class extends Component {
     }
 
     /**
+     * @return Collection<int,ProjectTheme>
+     */
+    #[Computed]
+    public function projectThemes(): Collection
+    {
+        $projectId = $this->mockup->owner?->project_id;
+
+        if (! is_string($projectId)) {
+            return collect();
+        }
+
+        return ProjectTheme::query()
+            ->where('project_id', $projectId)
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /**
      * Switch the iframe to a past revision — only if it belongs to this
      * mockup. A hand-picked revision takes the iframe off the latest.
      */
@@ -130,6 +152,22 @@ new class extends Component {
             {{ __('Spec mockup for') }}
             <a href="{{ $this->ownerHref() }}" wire:navigate class="underline">{{ $this->ownerLabel() }}</a>
         </x-slot:description>
+        <x-slot:actions>
+            <label class="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+                <span>{{ __('Theme') }}</span>
+                <select
+                    class="rounded-md border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                    data-growth-theme-selector
+                    data-project-id="{{ $mockup->owner->project_id }}"
+                    data-default-theme="{{ $this->projectThemes->firstWhere('is_default', true)?->slug ?? '' }}"
+                    data-test="mockup-theme-selector">
+                    <option value="">{{ __('No theme') }}</option>
+                    @foreach ($this->projectThemes as $theme)
+                        <option value="{{ $theme->slug }}">{{ $theme->name }}@if ($theme->is_default) {{ __('(default)') }}@endif</option>
+                    @endforeach
+                </select>
+            </label>
+        </x-slot:actions>
     </x-detail-page-header>
 
     <section class="flex flex-1 flex-col rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
@@ -170,8 +208,62 @@ new class extends Component {
         <iframe
             wire:key="revision-{{ $revisionId }}"
             src="{{ route('mockups.raw', ['mockup' => $mockup, 'revision' => $revisionId]) }}"
+            data-themed-mockup-frame
+            data-src-base="{{ route('mockups.raw', ['mockup' => $mockup, 'revision' => $revisionId]) }}"
             sandbox="allow-scripts"
             title="{{ $mockup->name }}"
             class="h-[70vh] w-full rounded-lg border border-zinc-200 bg-white dark:border-zinc-700"></iframe>
     </section>
+
+    @once
+        <script>
+            window.GrowthBindMockupThemeSelectors = () => {
+                document.querySelectorAll('[data-growth-theme-selector]').forEach((selector) => {
+                    if (selector.dataset.growthThemeBound === 'true') {
+                        return;
+                    }
+
+                    selector.dataset.growthThemeBound = 'true';
+
+                    const projectId = selector.dataset.projectId;
+                    const storageKey = `growth:project:${projectId}:mockup-theme`;
+                    const defaultTheme = selector.dataset.defaultTheme || '';
+                    let selectedTheme = localStorage.getItem(storageKey);
+
+                    if (selectedTheme === null) {
+                        selectedTheme = defaultTheme;
+                        if (selectedTheme !== '') {
+                            localStorage.setItem(storageKey, selectedTheme);
+                        }
+                    }
+
+                    selector.value = selectedTheme;
+
+                    const applyTheme = () => {
+                        document.querySelectorAll('[data-themed-mockup-frame]').forEach((frame) => {
+                            const url = new URL(frame.dataset.srcBase, window.location.origin);
+                            if (selector.value) {
+                                url.searchParams.set('theme', selector.value);
+                            } else {
+                                url.searchParams.delete('theme');
+                            }
+                            frame.src = url.toString();
+                        });
+                    };
+
+                    selector.addEventListener('change', () => {
+                        localStorage.setItem(storageKey, selector.value);
+                        applyTheme();
+                    });
+
+                    new MutationObserver(applyTheme).observe(document.body, { childList: true, subtree: true });
+                    applyTheme();
+                });
+            };
+
+            document.addEventListener('livewire:navigated', window.GrowthBindMockupThemeSelectors);
+            document.addEventListener('DOMContentLoaded', window.GrowthBindMockupThemeSelectors);
+            window.GrowthBindMockupThemeSelectors();
+        </script>
+    @endonce
 </div>

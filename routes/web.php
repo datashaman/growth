@@ -24,6 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('plan', 'pages::plan')->name('plan');
     Route::livewire('roles', 'pages::roles')->name('roles');
     Route::livewire('mockups', 'pages::mockups.index')->name('mockups');
+    Route::livewire('themes', 'pages::themes')->name('themes');
     Route::livewire('evidence', 'pages::evidence')->name('evidence');
     Route::livewire('changes', 'pages::changes')->name('changes');
     Route::livewire('change-requests/{changeRequest}', 'pages::change-requests.show')->name('change-requests.show');

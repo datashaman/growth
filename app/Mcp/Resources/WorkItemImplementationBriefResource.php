@@ -28,6 +28,7 @@ class WorkItemImplementationBriefResource extends Resource implements HasUriTemp
         $workItem = WorkItem::with([
             'project.designViews.concerns',
             'project.designViews.elements' => fn ($query) => $query->orderBy('kind')->orderBy('name'),
+            'project.themes' => fn ($query) => $query->orderByDesc('is_default')->orderBy('name'),
             'requirements',
             'dependencies',
             'dependents',
@@ -132,6 +133,28 @@ class WorkItemImplementationBriefResource extends Resource implements HasUriTemp
             $md .= "\n";
         }
 
+        $md .= "## Project Themes\n\n";
+        if ($project->themes->isEmpty()) {
+            $md .= "_No project themes are captured yet._\n\n";
+        } else {
+            $default = $project->themes->firstWhere('is_default', true);
+            if ($default) {
+                $md .= "- **Default theme:** {$default->name} (`{$default->slug}`)\n";
+            }
+            $md .= "- Use the default theme unless the implementation request names another theme slug.\n";
+            foreach ($project->themes as $theme) {
+                $md .= "- **{$theme->name}** (`{$theme->slug}`)";
+                if ($theme->is_default) {
+                    $md .= ' - default';
+                }
+                if ($theme->description) {
+                    $md .= " - {$theme->description}";
+                }
+                $md .= "\n";
+            }
+            $md .= "\n";
+        }
+
         $md .= "## Delivery Evidence\n\n";
         if ($workItem->deliveryLinks->isEmpty()) {
             $md .= "_No delivery evidence is linked yet._\n\n";
@@ -156,6 +179,7 @@ class WorkItemImplementationBriefResource extends Resource implements HasUriTemp
         $md .= "## Implementation Guidance\n\n";
         $md .= "- Preserve linked requirement behavior and acceptance checks.\n";
         $md .= "- Respect architecture context where it affects component boundaries, data flow, or user-facing behavior.\n";
+        $md .= "- Apply project theme guidance when changing user-facing UI; browser-local preview selection is not server state, so use the project default or an explicitly requested theme slug.\n";
         $md .= "- Consider dependencies, RACI, mockups, and existing delivery evidence before changing code.\n";
 
         return Response::text($md);

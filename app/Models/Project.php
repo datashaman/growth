@@ -142,6 +142,16 @@ class Project extends Model
         return $this->hasOne(ProjectPlan::class);
     }
 
+    public function themes(): HasMany
+    {
+        return $this->hasMany(ProjectTheme::class);
+    }
+
+    public function defaultTheme(): HasOne
+    {
+        return $this->hasOne(ProjectTheme::class)->where('is_default', true);
+    }
+
     public function milestones(): HasMany
     {
         return $this->hasMany(Milestone::class);

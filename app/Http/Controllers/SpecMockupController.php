@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ProjectTheme;
 use App\Models\SpecMockup;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response as BaseResponse;
@@ -57,7 +58,9 @@ class SpecMockupController extends Controller
 
         abort_if($revision === null, 404);
 
-        return response($revision->html)
+        $html = $this->applyTheme((string) $revision->html, $mockup, (string) $request->query('theme', ''));
+
+        return response($html)
             ->header('Content-Type', 'text/html; charset=UTF-8')
             ->header('Content-Security-Policy', implode('; ', [
                 "default-src 'none'",
@@ -72,5 +75,46 @@ class SpecMockupController extends Controller
                 'sandbox allow-scripts',
             ]))
             ->header('X-Content-Type-Options', 'nosniff');
+    }
+
+    private function applyTheme(string $html, SpecMockup $mockup, string $themeSlug): string
+    {
+        $themeSlug = trim($themeSlug);
+
+        if ($themeSlug === '') {
+            return $html;
+        }
+
+        $owner = $mockup->owner;
+        $projectId = $owner?->project_id;
+
+        if (! is_string($projectId)) {
+            return $html;
+        }
+
+        $theme = ProjectTheme::query()
+            ->where('project_id', $projectId)
+            ->where('slug', $themeSlug)
+            ->first();
+
+        if (! $theme) {
+            return $html;
+        }
+
+        $style = $theme->styleElement();
+
+        if ($style === '') {
+            return $html;
+        }
+
+        if (preg_match('/<head\b[^>]*>/i', $html) === 1) {
+            return preg_replace('/<head\b[^>]*>/i', '$0'."\n".$style, $html, 1) ?? $html;
+        }
+
+        if (preg_match('/<html\b[^>]*>/i', $html) === 1) {
+            return preg_replace('/<html\b[^>]*>/i', '$0'."\n<head>\n".$style."\n</head>", $html, 1) ?? $html;
+        }
+
+        return $style."\n".$html;
     }
 }
