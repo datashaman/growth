@@ -55,6 +55,9 @@
                         <flux:sidebar.item icon="photo" :href="route('mockups')" :current="request()->routeIs('mockups*')" wire:navigate>
                             {{ __('Mockups') }}
                         </flux:sidebar.item>
+                        <flux:sidebar.item icon="swatch" :href="route('themes')" :current="request()->routeIs('themes')" wire:navigate>
+                            {{ __('Themes') }}
+                        </flux:sidebar.item>
                     @endif
                     @if ($lens->reveals('verification'))
                         <flux:sidebar.item icon="check-badge" :href="route('verification')" :current="request()->routeIs('verification')" wire:navigate>

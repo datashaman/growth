@@ -1,6 +1,7 @@
 <?php
 
 use App\Concerns\ProjectScoped;
+use App\Models\ProjectTheme;
 use App\Models\SpecMockup;
 use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,7 +23,7 @@ new #[Title('Mockups')] class extends Component {
 
     public function onProjectDataChanged(): void
     {
-        unset($this->workItemsWithMockups, $this->missingMockupWorkItems, $this->mockupCount);
+        unset($this->workItemsWithMockups, $this->missingMockupWorkItems, $this->mockupCount, $this->projectThemes);
     }
 
     #[Computed]
@@ -80,6 +81,23 @@ new #[Title('Mockups')] class extends Component {
             ->orderBy('number')
             ->get(['id', 'number', 'kind', 'name', 'status', 'project_id', 'needs_mockups']);
     }
+
+    /**
+     * @return Collection<int,ProjectTheme>
+     */
+    #[Computed]
+    public function projectThemes(): Collection
+    {
+        if ($this->selectedProject === null) {
+            return collect();
+        }
+
+        return $this->selectedProject
+            ->themes()
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->get();
+    }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -88,6 +106,20 @@ new #[Title('Mockups')] class extends Component {
         :description="__('Project-level review of work-item mockups and missing mockup coverage.')">
         @if ($this->selectedProject !== null)
             <x-slot:actions>
+                <label class="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+                    <span>{{ __('Theme') }}</span>
+                    <select
+                        class="rounded-md border border-zinc-200 bg-white px-2 py-1 text-sm text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                        data-growth-theme-selector
+                        data-project-id="{{ $this->selectedProject->id }}"
+                        data-default-theme="{{ $this->projectThemes->firstWhere('is_default', true)?->slug ?? '' }}"
+                        data-test="mockup-theme-selector">
+                        <option value="">{{ __('No theme') }}</option>
+                        @foreach ($this->projectThemes as $theme)
+                            <option value="{{ $theme->slug }}">{{ $theme->name }}@if ($theme->is_default) {{ __('(default)') }}@endif</option>
+                        @endforeach
+                    </select>
+                </label>
                 <flux:badge color="zinc" size="sm">{{ $this->mockupCount }} {{ __('mockups') }}</flux:badge>
             </x-slot:actions>
         @endif
@@ -141,6 +173,8 @@ new #[Title('Mockups')] class extends Component {
                                     <div class="h-40 overflow-hidden rounded-md border border-zinc-200 bg-white dark:border-zinc-700">
                                         <iframe
                                             src="{{ route('mockups.raw', $mockup) }}"
+                                            data-themed-mockup-frame
+                                            data-src-base="{{ route('mockups.raw', $mockup) }}"
                                             sandbox="allow-scripts"
                                             tabindex="-1"
                                             aria-hidden="true"
@@ -163,4 +197,56 @@ new #[Title('Mockups')] class extends Component {
             </div>
         </x-data-table>
     @endif
+
+    @once
+        <script>
+            window.GrowthBindMockupThemeSelectors = () => {
+                document.querySelectorAll('[data-growth-theme-selector]').forEach((selector) => {
+                    if (selector.dataset.growthThemeBound === 'true') {
+                        return;
+                    }
+
+                    selector.dataset.growthThemeBound = 'true';
+
+                    const projectId = selector.dataset.projectId;
+                    const storageKey = `growth:project:${projectId}:mockup-theme`;
+                    const defaultTheme = selector.dataset.defaultTheme || '';
+                    let selectedTheme = localStorage.getItem(storageKey);
+
+                    if (selectedTheme === null) {
+                        selectedTheme = defaultTheme;
+                        if (selectedTheme !== '') {
+                            localStorage.setItem(storageKey, selectedTheme);
+                        }
+                    }
+
+                    selector.value = selectedTheme;
+
+                    const applyTheme = () => {
+                        document.querySelectorAll('[data-themed-mockup-frame]').forEach((frame) => {
+                            const url = new URL(frame.dataset.srcBase, window.location.origin);
+                            if (selector.value) {
+                                url.searchParams.set('theme', selector.value);
+                            } else {
+                                url.searchParams.delete('theme');
+                            }
+                            frame.src = url.toString();
+                        });
+                    };
+
+                    selector.addEventListener('change', () => {
+                        localStorage.setItem(storageKey, selector.value);
+                        applyTheme();
+                    });
+
+                    new MutationObserver(applyTheme).observe(document.body, { childList: true, subtree: true });
+                    applyTheme();
+                });
+            };
+
+            document.addEventListener('livewire:navigated', window.GrowthBindMockupThemeSelectors);
+            document.addEventListener('DOMContentLoaded', window.GrowthBindMockupThemeSelectors);
+            window.GrowthBindMockupThemeSelectors();
+        </script>
+    @endonce
 </div>

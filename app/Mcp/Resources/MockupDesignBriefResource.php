@@ -51,6 +51,7 @@ class MockupDesignBriefResource extends Resource implements HasUriTemplate
             ->with([
                 'designViews.concerns',
                 'designViews.elements' => fn ($query) => $query->orderBy('kind')->orderBy('name'),
+                'themes' => fn ($query) => $query->orderByDesc('is_default')->orderBy('name'),
             ])
             ->firstOrFail();
 
@@ -146,6 +147,38 @@ class MockupDesignBriefResource extends Resource implements HasUriTemplate
                 $md .= "- {$mockup->name} (`growth://mockups/{$mockup->id}`)\n";
             }
             $md .= "\n";
+        }
+
+        $md .= "## Project Themes\n\n";
+        if ($project->themes->isEmpty()) {
+            $md .= "_No project themes exist yet. Generate mockups as self-contained HTML and avoid inventing remote stylesheet dependencies._\n\n";
+        } else {
+            $default = $project->themes->firstWhere('is_default', true);
+            if ($default) {
+                $md .= "- **Default theme:** {$default->name} (`{$default->slug}`)\n";
+            }
+            $md .= "- Apply reusable visual language through project themes rather than embedding a whole theme picker inside the mockup artifact.\n";
+            $md .= "- Keep mockup HTML self-contained; theme CSS is overlaid by Growth during preview.\n\n";
+
+            foreach ($project->themes as $theme) {
+                $tokenNames = implode(', ', array_keys($theme->normalizedCssTokens()));
+                $md .= "### {$theme->name}";
+                if ($theme->is_default) {
+                    $md .= ' (default)';
+                }
+                $md .= "\n\n";
+                $md .= "- **Slug:** `{$theme->slug}`\n";
+                if ($theme->description) {
+                    $md .= "- **Description:** {$theme->description}\n";
+                }
+                if ($theme->design_notes) {
+                    $md .= "- **Design notes:** {$theme->design_notes}\n";
+                }
+                $md .= $tokenNames !== ''
+                    ? "- **CSS tokens:** {$tokenNames}\n"
+                    : "- **CSS tokens:** none captured\n";
+                $md .= '- **Raw CSS:** '.(filled($theme->raw_css) ? 'present' : 'none')."\n\n";
+            }
         }
 
         $md .= "## Expected Screen Coverage\n\n";

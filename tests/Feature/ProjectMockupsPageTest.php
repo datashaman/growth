@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Project;
+use App\Models\ProjectTheme;
 use App\Models\User;
 use App\Models\WorkItem;
 use Database\Seeders\DemoProjectSeeder;
@@ -50,6 +51,30 @@ it('renders work-item mockups grouped by work item as preview strips', function 
         ->assertSee('data-test="project-mockup-groups"', false)
         ->assertSee('data-test="project-mockup-strip"', false)
         ->assertSee('<iframe', false);
+});
+
+it('shows a localStorage-backed theme selector on the project mockups page', function () {
+    ProjectTheme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Mission Control',
+        'slug' => 'mission-control',
+        'is_default' => true,
+    ]);
+
+    $workItem = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'deliverable',
+        'name' => 'Checkout',
+        'needs_mockups' => true,
+    ]);
+    $mockup = createMockup($workItem, 'Checkout layout', '<!doctype html><html><body>checkout</body></html>');
+
+    $this->get(route('mockups'))
+        ->assertOk()
+        ->assertSee('data-test="mockup-theme-selector"', false)
+        ->assertSee('Mission Control')
+        ->assertSee('growth:project:${projectId}:mockup-theme', false)
+        ->assertSee('data-src-base="'.route('mockups.raw', $mockup).'"', false);
 });
 
 it('orders project mockup cards the same way as the mockup selector', function () {

@@ -9,6 +9,7 @@ use App\Models\DesignElement;
 use App\Models\DesignView;
 use App\Models\Milestone;
 use App\Models\Project;
+use App\Models\ProjectTheme;
 use App\Models\Requirement;
 use App\Models\Review;
 use App\Models\ReviewDecisionEvent;
@@ -57,6 +58,13 @@ it('serves a work item implementation brief', function () {
     ]);
     $workItem->requirements()->attach($requirement->id);
     $workItem->raciRoles()->attach($role->id, ['raci' => 'r']);
+    ProjectTheme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Mission Control',
+        'slug' => 'mission-control',
+        'description' => 'Dense operational UI.',
+        'is_default' => true,
+    ]);
     $milestone = Milestone::create([
         'project_id' => $this->project->id,
         'name' => 'Beta',
@@ -102,6 +110,9 @@ it('serves a work item implementation brief', function () {
         ->assertSee('Approval state is visible on every item.')
         ->assertSee('Approval interaction')
         ->assertSee('Approval badge')
+        ->assertSee('Mission Control')
+        ->assertSee('mission-control')
+        ->assertSee('Use the default theme')
         ->assertSee('Developer')
         ->assertSee('Beta')
         ->assertSee('growth://mockups/')

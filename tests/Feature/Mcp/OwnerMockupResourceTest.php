@@ -5,6 +5,7 @@ use App\Models\Concern;
 use App\Models\DesignElement;
 use App\Models\DesignView;
 use App\Models\Project;
+use App\Models\ProjectTheme;
 use App\Models\Requirement;
 use App\Models\User;
 use App\Models\WorkItem;
@@ -112,6 +113,14 @@ it('serves a mockup design brief for a work item', function () {
         'purpose' => 'Shows whether payment is pending, accepted, or failed.',
     ]);
     $mockup = createMockup($this->workItem, 'default', '<!doctype html><html><body>v1</body></html>');
+    ProjectTheme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Mission Control',
+        'slug' => 'mission-control',
+        'description' => 'Dense operational UI.',
+        'css_tokens' => ['surface' => '#101418'],
+        'is_default' => true,
+    ]);
 
     readResource(ReadonlyServer::class, "growth://owners/work_item/{$this->workItem->id}/mockup-design-brief")
         ->assertOk()
@@ -128,5 +137,9 @@ it('serves a mockup design brief for a work item', function () {
         ->assertSee('Users need clear payment feedback.')
         ->assertSee('Payment status panel')
         ->assertSee("growth://mockups/{$mockup->id}")
+        ->assertSee('Project Themes')
+        ->assertSee('Mission Control')
+        ->assertSee('mission-control')
+        ->assertSee('surface')
         ->assertSee('Represent relevant architecture views/elements');
 });

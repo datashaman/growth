@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Project;
+use App\Models\ProjectTheme;
 use App\Models\Requirement;
 use App\Models\User;
 use App\Models\WorkItem;
@@ -45,6 +46,23 @@ it('renders the mockup inside a sandboxed iframe with no same-origin access', fu
         ->and($iframe[0])->toContain(route('mockups.raw', $this->mockup));
 });
 
+it('shows a localStorage-backed theme selector on the mockup detail page', function () {
+    ProjectTheme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Mission Control',
+        'slug' => 'mission-control',
+        'is_default' => true,
+    ]);
+
+    $this->actingAs($this->user)
+        ->get(route('mockups.show', $this->mockup))
+        ->assertOk()
+        ->assertSee('data-test="mockup-theme-selector"', false)
+        ->assertSee('Mission Control')
+        ->assertSee('growth:project:${projectId}:mockup-theme', false)
+        ->assertSee('data-src-base="'.route('mockups.raw', ['mockup' => $this->mockup, 'revision' => $this->mockup->currentRevision->id]).'"', false);
+});
+
 it('serves the raw mockup HTML under a locked-down content security policy', function () {
     $response = $this->actingAs($this->user)
         ->withHeader('Sec-Fetch-Dest', 'iframe')
@@ -62,6 +80,51 @@ it('serves the raw mockup HTML under a locked-down content security policy', fun
         ->and($csp)->toContain("frame-ancestors 'self'")
         ->and($csp)->toContain('sandbox allow-scripts')
         ->and($response->headers->get('X-Content-Type-Options'))->toBe('nosniff');
+});
+
+it('injects selected project theme css into raw mockup html without changing stored html', function () {
+    ProjectTheme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Mission Control',
+        'slug' => 'mission-control',
+        'css_tokens' => ['surface' => '#101418'],
+        'raw_css' => 'body { background: var(--surface); }',
+    ]);
+
+    $this->actingAs($this->user)
+        ->withHeader('Sec-Fetch-Dest', 'iframe')
+        ->get(route('mockups.raw', ['mockup' => $this->mockup, 'theme' => 'mission-control']))
+        ->assertOk()
+        ->assertSee('data-growth-project-theme="mission-control"', false)
+        ->assertSee('--surface: #101418;', false)
+        ->assertSee('body { background: var(--surface); }', false)
+        ->assertSee('Checkout mockup', false);
+
+    expect($this->mockup->currentRevision->fresh()->html)
+        ->not->toContain('data-growth-project-theme')
+        ->and($this->mockup->currentRevision->fresh()->html)->toContain('Checkout mockup');
+});
+
+it('ignores a theme slug from another project when serving raw mockup html', function () {
+    $other = User::factory()->create();
+    $otherProject = Project::create([
+        'workspace_id' => $other->active_workspace_id,
+        'name' => 'Other',
+        'rigor_level' => 2,
+    ]);
+    ProjectTheme::create([
+        'project_id' => $otherProject->id,
+        'name' => 'Secret',
+        'slug' => 'secret',
+        'raw_css' => 'body { color: red; }',
+    ]);
+
+    $this->actingAs($this->user)
+        ->withHeader('Sec-Fetch-Dest', 'iframe')
+        ->get(route('mockups.raw', ['mockup' => $this->mockup, 'theme' => 'secret']))
+        ->assertOk()
+        ->assertDontSee('data-growth-project-theme', false)
+        ->assertDontSee('color: red', false);
 });
 
 it('bounces a top-level navigation to the raw route back to the wrapper page', function () {
