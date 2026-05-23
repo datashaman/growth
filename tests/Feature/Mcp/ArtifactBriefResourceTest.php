@@ -389,3 +389,41 @@ it('serves a change impact brief', function () {
         ->assertSee('Rationale column')
         ->assertSee('Ready for CCB.');
 });
+
+it('serves non-mutating reference impacts in change MCP resources', function () {
+    $requirement = Requirement::create([
+        'project_id' => $this->project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The telemetry dashboard shall expose evidence links.',
+    ]);
+    $change = ChangeRequest::create([
+        'project_id' => $this->project->id,
+        'title' => 'Document telemetry evidence',
+        'description' => 'Adds documentation around captured evidence.',
+        'category' => 'requirements',
+        'priority' => 'medium',
+        'status' => 'approved',
+        'decision' => 'approved',
+        'decision_rationale' => 'Documentation-only change.',
+    ]);
+    ChangeImpact::create([
+        'change_request_id' => $change->id,
+        'impactable_type' => 'requirement',
+        'impactable_id' => $requirement->id,
+        'impact_kind' => 'references',
+        'description' => 'Context only; no requirement text changes.',
+    ]);
+
+    readResource(ReadonlyServer::class, "growth://change-requests/{$change->id}/change-impact-brief")
+        ->assertOk()
+        ->assertSee('references')
+        ->assertSee('The telemetry dashboard shall expose evidence links.')
+        ->assertSee('Context only; no requirement text changes.');
+
+    readResource(ReadonlyServer::class, "growth://projects/{$this->project->id}/changes")
+        ->assertOk()
+        ->assertSee('references')
+        ->assertSee('Document telemetry evidence')
+        ->assertSee('Context only; no requirement text changes.');
+});

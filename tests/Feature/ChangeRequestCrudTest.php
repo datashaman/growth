@@ -82,6 +82,31 @@ test('impacts render named, linked artifacts instead of type:ULID', function () 
         ->assertDontSee('work_item:'.$workItem->id);
 });
 
+test('non-mutating reference impacts render on the change request detail page', function () {
+    $cr = $this->project->changeRequests()->create([
+        'title' => 'Document supporting telemetry', 'category' => 'requirements',
+        'status' => 'approved', 'priority' => 'medium',
+    ]);
+    $requirement = $this->project->requirements()->create([
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The dashboard shall summarize telemetry health.',
+    ]);
+    $cr->impacts()->create([
+        'impactable_type' => 'requirement',
+        'impactable_id' => $requirement->id,
+        'impact_kind' => 'references',
+        'description' => 'Context for documentation only.',
+    ]);
+
+    $this->actingAs($this->user)
+        ->get('/change-requests/'.$cr->id)
+        ->assertOk()
+        ->assertSee('references')
+        ->assertSee('The dashboard shall summarize telemetry health.')
+        ->assertSee('Context for documentation only.');
+});
+
 test('an impact on a type without a detail page shows a name but no link', function () {
     $cr = $this->project->changeRequests()->create([
         'title' => 'Shift the launch gate', 'category' => 'scope',
