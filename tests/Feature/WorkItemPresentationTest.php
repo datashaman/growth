@@ -90,6 +90,70 @@ test('the Plan work-items tree caps each rendered level instead of rendering eve
         ->assertSee('Showing first 100 at this level; 5 more are not rendered.');
 });
 
+test('the Plan work-items tree can be filtered by nested work item name', function () {
+    $package = $this->project->workItems()->create([
+        'kind' => 'work_package',
+        'name' => 'Descent phase',
+        'status' => 'in_progress',
+    ]);
+    $child = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Calibrate throttle',
+        'status' => 'todo',
+        'parent_id' => $package->id,
+    ]);
+
+    Livewire::test('pages::plan')
+        ->assertSeeHtml('data-test="work-item-tree-filter"')
+        ->assertDontSee($child->reference())
+        ->set('workItemFilter', 'throttle')
+        ->assertSeeInOrder([$package->reference(), $child->reference()])
+        ->assertSee('Calibrate throttle')
+        ->assertDontSee('Wire the descent engine');
+});
+
+test('the Plan work-items tree can be filtered by work item reference', function () {
+    $package = $this->project->workItems()->create([
+        'kind' => 'work_package',
+        'name' => 'Descent phase',
+        'status' => 'in_progress',
+    ]);
+    $child = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Calibrate throttle',
+        'status' => 'todo',
+        'parent_id' => $package->id,
+    ]);
+
+    Livewire::test('pages::plan')
+        ->set('workItemFilter', $child->reference())
+        ->assertSeeInOrder([$package->reference(), $child->reference()])
+        ->assertSee('Calibrate throttle')
+        ->assertDontSee('Wire the descent engine');
+});
+
+test('clearing the Plan work-items tree filter restores the collapsed tree', function () {
+    $package = $this->project->workItems()->create([
+        'kind' => 'work_package',
+        'name' => 'Descent phase',
+        'status' => 'in_progress',
+    ]);
+    $child = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Calibrate throttle',
+        'status' => 'todo',
+        'parent_id' => $package->id,
+    ]);
+
+    Livewire::test('pages::plan')
+        ->set('workItemFilter', 'throttle')
+        ->assertSee($child->reference())
+        ->call('clearWorkItemFilter')
+        ->assertDontSee($child->reference())
+        ->assertSee($package->reference())
+        ->assertSee('Wire the descent engine');
+});
+
 test('the work item detail children table shows child references with a labeled count', function () {
     $package = $this->project->workItems()->create([
         'kind' => 'work_package',
