@@ -8,6 +8,7 @@ use App\Mcp\Resources\MockupResource;
 use App\Mcp\Resources\MockupRevisionHtmlResource;
 use App\Mcp\Resources\MockupRevisionPreviewResource;
 use App\Mcp\Resources\MockupRevisionResource;
+use App\Mcp\Resources\MockupRevisionScreenshotResource;
 use App\Mcp\Resources\OwnerMockupResource;
 use App\Mcp\Resources\PlanResource;
 use App\Mcp\Resources\PlaybookResource;
@@ -17,6 +18,7 @@ use App\Mcp\Resources\RequirementVerificationBriefResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Resources\ThemeCssResource;
 use App\Mcp\Resources\ThemedMockupRevisionPreviewResource;
+use App\Mcp\Resources\ThemedMockupRevisionScreenshotResource;
 use App\Mcp\Resources\ThemeResource;
 use App\Mcp\Resources\WorkItemImplementationBriefResource;
 use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
@@ -269,6 +271,8 @@ class PlanningServer extends Server
         MockupRevisionHtmlResource::class,
         MockupRevisionPreviewResource::class,
         ThemedMockupRevisionPreviewResource::class,
+        MockupRevisionScreenshotResource::class,
+        ThemedMockupRevisionScreenshotResource::class,
         OwnerMockupResource::class,
         ThemeResource::class,
         ThemeCssResource::class,

@@ -21,10 +21,13 @@ without pulling screenshot bytes into JSON responses:
 - `growth://mockups/{mockup}` returns metadata for the current revision.
 - `growth://mockups/{mockup}/{revision}` returns metadata for a specific revision.
 - `growth://mockups/{mockup}/{revision}/preview` returns the preview HTML.
+- `growth://mockups/{mockup}/{revision}/screenshot` returns PNG screenshot pixels
+  as an MCP binary resource.
 - Mockup metadata exposes `screenshot.asset.url` for signed browser access and
-  `screenshot.asset.mcp_url` for OAuth-protected MCP/client access to PNG pixels
-  when pixel-level evidence is needed.
+  `screenshot.asset.resource_uri` for MCP/client access to PNG pixels when
+  pixel-level evidence is needed.
 
 Metadata includes artifact references only. Agents should read metadata after
 creating or refining mockups, inspect preview HTML for ordinary review, and use
-the screenshot asset URL or MCP URL only when pixel-level evidence is needed.
+the screenshot asset URL or MCP resource URI only when pixel-level evidence is
+needed.

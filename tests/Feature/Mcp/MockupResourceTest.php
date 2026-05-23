@@ -37,8 +37,8 @@ it('exposes mockup metadata html and preview resource templates', function () {
         ->toContain('growth://mockups/{mockup}/{revision}/html')
         ->toContain('growth://mockups/{mockup}/{revision}/preview')
         ->toContain('growth://mockups/{mockup}/{revision}/preview?theme={theme}')
-        ->not->toContain('growth://mockups/{mockup}/{revision}/screenshot')
-        ->not->toContain('growth://mockups/{mockup}/{revision}/screenshot?theme={theme}');
+        ->toContain('growth://mockups/{mockup}/{revision}/screenshot')
+        ->toContain('growth://mockups/{mockup}/{revision}/screenshot?theme={theme}');
 });
 
 it('serves mockup current revision metadata with html and preview resources', function () {
@@ -53,6 +53,7 @@ it('serves mockup current revision metadata with html and preview resources', fu
         ->assertSee('"number":2')
         ->assertSee("growth://mockups/{$mockup->id}/{$revision->id}/html")
         ->assertSee("growth://mockups/{$mockup->id}/{$revision->id}/preview")
+        ->assertSee("growth://mockups/{$mockup->id}/{$revision->id}/screenshot?theme=assigned")
         ->assertSee('/mockups/'.$mockup->id.'/revisions/'.$revision->id.'/screenshot.png')
         ->assertDontSee('latest')
         ->assertDontSee('roomy');
@@ -69,6 +70,7 @@ it('serves specific mockup revision metadata with html and preview resources', f
         ->assertSee('"number":1')
         ->assertSee("growth://mockups/{$mockup->id}/{$first->id}/html")
         ->assertSee("growth://mockups/{$mockup->id}/{$first->id}/preview")
+        ->assertSee("growth://mockups/{$mockup->id}/{$first->id}/screenshot?theme=assigned")
         ->assertSee('/mockups/'.$mockup->id.'/revisions/'.$first->id.'/screenshot.png')
         ->assertDontSee('roomy');
 });

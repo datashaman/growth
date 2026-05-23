@@ -48,7 +48,7 @@ it('stores a mockup for a work item', function () {
                 ->where('resources.screenshot_asset.mime_type', 'image/png')
                 ->where('resources.screenshot_asset.theme', 'assigned')
                 ->where('resources.screenshot_asset.url', fn (string $url): bool => str_contains($url, '/screenshot.png'))
-                ->where('resources.screenshot_asset.mcp_url', fn (string $url): bool => str_contains($url, '/api/mockup-shots/') && ! str_contains($url, 'signature='))
+                ->where('resources.screenshot_asset.resource_uri', fn (string $uri): bool => str_starts_with($uri, 'growth://mockups/') && str_ends_with($uri, '/screenshot?theme=assigned'))
                 ->where('created', true)
                 ->etc();
         });
