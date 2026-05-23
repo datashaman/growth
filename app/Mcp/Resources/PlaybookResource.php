@@ -53,6 +53,14 @@ When a project is adopted rather than greenfield — `adopt-project` has bound t
 5. Attach implementation and check evidence.
 6. Review decisions, changes, and release readiness before shipping.
 
+## Post-baseline change management
+
+After a plan baseline exists, treat changes to scope, requirements, design, verification, risk posture, or delivery plan as controlled changes. Use an anomaly for an observed defect, failure, drift, or unexpected condition that still needs investigation; use a change request when the team is proposing or recording an intentional alteration to a controlled artifact. If an anomaly leads to an intentional alteration, link the follow-up work through a change request rather than hiding the decision in the anomaly record.
+
+Every change request needs impacted artifacts. Record the concrete requirements, work items, architecture views/elements, risks, reviews, plans, verification artifacts, or other project artifacts touched by the change. A change request with no impacts leaves the `change_control` readiness gate unhealthy because reviewers cannot see what is being changed, referenced, or retired.
+
+Decision rationale is part of the control record. Approve, reject, or defer a change with the transition tools and include the reason that made the decision acceptable. The approve-to-implement flow is: create the proposed change request with impacts, submit it for review, approve/reject/defer it with rationale, implement only approved changes, attach delivery evidence, then mark the approved change request implemented.
+
 ## Quality Rules
 
 - Requirements are clear, singular, testable, and grounded in sources.

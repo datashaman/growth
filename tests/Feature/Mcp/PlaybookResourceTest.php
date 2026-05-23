@@ -45,3 +45,19 @@ it('documents the brownfield backfill procedure', function () {
         ->toContain('upsert-review-finding')
         ->toContain('close-review');
 });
+
+it('documents post-baseline change management', function () {
+    $body = playbookBody();
+
+    expect($body)->not->toBeNull()
+        ->toContain('Post-baseline change management')
+        ->toContain('Use an anomaly for an observed defect')
+        ->toContain('use a change request when the team is proposing or recording an intentional alteration')
+        ->toContain('Every change request needs impacted artifacts')
+        ->toContain('`change_control` readiness gate unhealthy')
+        ->toContain('Decision rationale is part of the control record')
+        ->toContain('create the proposed change request with impacts')
+        ->toContain('submit it for review')
+        ->toContain('approve/reject/defer it with rationale')
+        ->toContain('mark the approved change request implemented');
+});
