@@ -45,22 +45,22 @@
                             {{ __('Architecture') }}
                         </flux:sidebar.item>
                     @endif
+                    <flux:sidebar.item icon="users" :href="route('roles')" :current="request()->routeIs('roles')" wire:navigate>
+                        {{ __('Roles') }}
+                    </flux:sidebar.item>
+                    @if ($lens->reveals('plan'))
+                        <flux:sidebar.item icon="calendar-days" :href="route('plan')" :current="request()->routeIs('plan')" wire:navigate>
+                            {{ __('Plan') }}
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="photo" :href="route('mockups')" :current="request()->routeIs('mockups*')" wire:navigate>
+                            {{ __('Mockups') }}
+                        </flux:sidebar.item>
+                    @endif
                     @if ($lens->reveals('verification'))
                         <flux:sidebar.item icon="check-badge" :href="route('verification')" :current="request()->routeIs('verification')" wire:navigate>
                             {{ __('Verification') }}
                         </flux:sidebar.item>
                     @endif
-                    @if ($lens->reveals('plan'))
-                        <flux:sidebar.item icon="calendar-days" :href="route('plan')" :current="request()->routeIs('plan')" wire:navigate>
-                            {{ __('Plan') }}
-                        </flux:sidebar.item>
-                        <flux:sidebar.item icon="rectangle-stack" :href="route('mockups')" :current="request()->routeIs('mockups*')" wire:navigate>
-                            {{ __('Mockups') }}
-                        </flux:sidebar.item>
-                    @endif
-                    <flux:sidebar.item icon="users" :href="route('roles')" :current="request()->routeIs('roles')" wire:navigate>
-                        {{ __('Roles') }}
-                    </flux:sidebar.item>
                     @if ($lens->reveals('evidence'))
                         <flux:sidebar.item icon="archive-box" :href="route('evidence')" :current="request()->routeIs('evidence')" wire:navigate>
                             {{ __('Evidence') }}
