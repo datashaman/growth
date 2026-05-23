@@ -76,6 +76,47 @@ it('returns a named alternative when name is supplied', function () {
         });
 });
 
+it('returns the only named mockup when name is omitted and no default exists', function () {
+    $compact = createMockup($this->workItem, 'Compact layout', '<!doctype html><html><body>compact</body></html>');
+
+    PlanningServer::tool(GetMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use ($compact) {
+            $json->where('id', $compact->id)
+                ->where('name', 'Compact layout')
+                ->where('resources.mockup_uri', "growth://mockups/{$compact->id}")
+                ->where('resources.html_uri', "growth://mockups/{$compact->id}/{$compact->currentRevision->id}/html")
+                ->missing('html')
+                ->etc();
+        });
+});
+
+it('returns available names when name is omitted and no default exists among multiple mockups', function () {
+    createMockup($this->workItem, 'Roomy layout', '<!doctype html><html><body>roomy</body></html>');
+    createMockup($this->workItem, 'Compact layout', '<!doctype html><html><body>compact</body></html>');
+
+    PlanningServer::tool(GetMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+    ])->assertHasErrors([
+        'No default mockup found',
+        'Available mockups: [Compact layout], [Roomy layout]',
+    ]);
+});
+
+it('keeps explicit name lookup strict when one differently named mockup exists', function () {
+    createMockup($this->workItem, 'Compact layout', '<!doctype html><html><body>compact</body></html>');
+
+    PlanningServer::tool(GetMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'name' => 'default',
+    ])->assertHasErrors(['No mockup named [default]']);
+});
+
 it('returns an error when no mockup matches the requested name', function () {
     createMockup($this->workItem, 'default', '<!doctype html><html><body>default</body></html>');
 

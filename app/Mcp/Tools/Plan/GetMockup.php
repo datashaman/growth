@@ -26,6 +26,7 @@ class GetMockup extends Tool
             'name' => 'sometimes|string|max:255',
         ]);
 
+        $hasExplicitName = array_key_exists('name', $data);
         $name = $data['name'] ?? SpecMockup::DEFAULT_NAME;
 
         $mockup = SpecMockup::with('currentRevision')
@@ -33,6 +34,24 @@ class GetMockup extends Tool
             ->where('owner_id', $data['owner_id'])
             ->where('name', $name)
             ->first();
+
+        if (! $mockup && ! $hasExplicitName) {
+            $mockups = SpecMockup::with('currentRevision')
+                ->where('owner_type', $data['owner_type'])
+                ->where('owner_id', $data['owner_id'])
+                ->orderBy('name')
+                ->get();
+
+            if ($mockups->count() === 1) {
+                $mockup = $mockups->first();
+            } elseif ($mockups->count() > 1) {
+                return new ResponseFactory(Response::error(sprintf(
+                    'No default mockup found on this %s. Available mockups: %s.',
+                    $data['owner_type'],
+                    $mockups->pluck('name')->map(fn (string $name): string => "[{$name}]")->implode(', ')
+                )));
+            }
+        }
 
         if (! $mockup) {
             return new ResponseFactory(Response::error(
