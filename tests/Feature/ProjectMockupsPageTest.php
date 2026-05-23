@@ -97,6 +97,44 @@ it('uses assigned themes by default and supports non-persistent query preview ov
         ->assertSee('theme=mission-control', false);
 });
 
+it('prefers mockup scoped theme assignments on the project mockups page', function () {
+    $workItemTheme = Theme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Checkout Warmth',
+        'slug' => 'checkout-warmth',
+    ]);
+    $mockupTheme = Theme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Buyer Market',
+        'slug' => 'buyer-market',
+    ]);
+    $workItem = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'deliverable',
+        'name' => 'Checkout',
+        'needs_mockups' => true,
+    ]);
+    $mockup = createMockup($workItem, 'Checkout layout', '<!doctype html><html><body>checkout</body></html>');
+    ThemeAssignment::create([
+        'project_id' => $this->project->id,
+        'theme_id' => $workItemTheme->id,
+        'scope_type' => 'work_item',
+        'scope_key' => $workItem->reference(),
+    ]);
+    ThemeAssignment::create([
+        'project_id' => $this->project->id,
+        'theme_id' => $mockupTheme->id,
+        'scope_type' => 'mockup',
+        'scope_key' => $mockup->id,
+    ]);
+
+    $this->get(route('mockups'))
+        ->assertOk()
+        ->assertSee('data-assigned-theme="buyer-market"', false)
+        ->assertSee('theme=buyer-market', false)
+        ->assertDontSee('theme=checkout-warmth', false);
+});
+
 it('orders project mockup cards the same way as the mockup selector', function () {
     $workItem = WorkItem::create([
         'project_id' => $this->project->id,

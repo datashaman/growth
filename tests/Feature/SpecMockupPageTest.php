@@ -84,6 +84,46 @@ it('uses assigned themes by default and supports non-persistent query preview ov
         ->assertSee('theme=mission-control', false);
 });
 
+it('prefers mockup scoped theme assignments on the detail page', function () {
+    $workItemTheme = Theme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Checkout Warmth',
+        'slug' => 'checkout-warmth',
+    ]);
+    $mockupTheme = Theme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Buyer Market',
+        'slug' => 'buyer-market',
+        'raw_css' => '.hero { color: #123456; }',
+    ]);
+    ThemeAssignment::create([
+        'project_id' => $this->project->id,
+        'theme_id' => $workItemTheme->id,
+        'scope_type' => 'work_item',
+        'scope_key' => $this->workItem->reference(),
+    ]);
+    ThemeAssignment::create([
+        'project_id' => $this->project->id,
+        'theme_id' => $mockupTheme->id,
+        'scope_type' => 'mockup',
+        'scope_key' => $this->mockup->id,
+    ]);
+
+    $this->actingAs($this->user)
+        ->get(route('mockups.show', $this->mockup))
+        ->assertOk()
+        ->assertSee('data-assigned-theme="buyer-market"', false)
+        ->assertSee('theme=buyer-market', false)
+        ->assertDontSee('theme=checkout-warmth', false);
+
+    $this->actingAs($this->user)
+        ->withHeader('Sec-Fetch-Dest', 'iframe')
+        ->get(route('mockups.raw', ['mockup' => $this->mockup, 'theme' => 'buyer-market']))
+        ->assertOk()
+        ->assertSee('data-growth-theme="buyer-market"', false)
+        ->assertSee('.hero { color: #123456; }', false);
+});
+
 it('serves the raw mockup HTML under a locked-down content security policy', function () {
     $response = $this->actingAs($this->user)
         ->withHeader('Sec-Fetch-Dest', 'iframe')

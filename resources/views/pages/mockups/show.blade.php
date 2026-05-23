@@ -131,14 +131,18 @@ new class extends Component {
         $owner = $this->mockup->owner;
         $keys = match (true) {
             $owner instanceof WorkItem => [
+                ['mockup', $this->mockup->id],
                 ['work_item', $owner->id],
                 ['work_item', $owner->reference()],
             ],
             $owner instanceof Requirement => [
+                ['mockup', $this->mockup->id],
                 ['requirement', $owner->id],
                 ['requirement', $owner->reference()],
             ],
-            default => [],
+            default => [
+                ['mockup', $this->mockup->id],
+            ],
         };
 
         $assignment = $this->projectThemeAssignments->first(
