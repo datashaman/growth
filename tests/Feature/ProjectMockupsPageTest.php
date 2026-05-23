@@ -52,6 +52,26 @@ it('renders work-item mockups grouped by work item as preview strips', function 
         ->assertSee('<iframe', false);
 });
 
+it('orders project mockup cards the same way as the mockup selector', function () {
+    $workItem = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'deliverable',
+        'name' => 'Checkout',
+        'needs_mockups' => true,
+    ]);
+    $zebra = createMockup($workItem, 'Zebra layout', '<!doctype html><html><body>zebra</body></html>');
+    $default = createMockup($workItem, 'default', '<!doctype html><html><body>default</body></html>');
+    $alpha = createMockup($workItem, 'Alpha layout', '<!doctype html><html><body>alpha</body></html>');
+
+    $this->get(route('mockups'))
+        ->assertOk()
+        ->assertSeeInOrder([
+            route('mockups.show', $default),
+            route('mockups.show', $alpha),
+            route('mockups.show', $zebra),
+        ]);
+});
+
 it('surfaces work items that need mockups but have none', function () {
     $missing = WorkItem::create([
         'project_id' => $this->project->id,

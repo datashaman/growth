@@ -52,7 +52,10 @@ new #[Title('Mockups')] class extends Component {
         return $this->selectedProject
             ->workItems()
             ->with([
-                'mockups.currentRevision',
+                'mockups' => fn ($query) => $query
+                    ->orderByRaw('case when name = ? then 0 else 1 end', [SpecMockup::DEFAULT_NAME])
+                    ->orderBy('name')
+                    ->with('currentRevision'),
             ])
             ->withCount('mockups')
             ->has('mockups')
