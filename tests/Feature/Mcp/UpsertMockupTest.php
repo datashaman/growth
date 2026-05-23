@@ -49,6 +49,22 @@ it('stores a mockup for a work item', function () {
         ->and($mockups->first()->currentRevision->html)->toContain('<h1>Checkout</h1>');
 });
 
+it('does not store owner references in mockup html', function () {
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'name' => 'Publish layout',
+        'html' => '<!doctype html><html><body><p>'.$this->workItem->reference().' · Ship it</p><h1>Ready to publish</h1></body></html>',
+    ])
+        ->assertOk();
+
+    $html = SpecMockup::where('owner_id', $this->workItem->id)->sole()->currentRevision->html;
+
+    expect($html)
+        ->not->toContain($this->workItem->reference())
+        ->and($html)->toContain('<p>Ship it</p>');
+});
+
 it('warns without rejecting mockups that reference external assets', function () {
     PlanningServer::tool(UpsertMockup::class, [
         'owner_type' => 'work_item',
