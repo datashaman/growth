@@ -149,15 +149,15 @@ class MockupDesignBriefResource extends Resource implements HasUriTemplate
             $md .= "\n";
         }
 
-        $md .= "## Project Themes\n\n";
+        $md .= "## Themes\n\n";
         if ($project->themes->isEmpty()) {
-            $md .= "_No project themes exist yet. Generate mockups as self-contained HTML and avoid inventing remote stylesheet dependencies._\n\n";
+            $md .= "_No themes exist yet. Generate mockups as self-contained HTML and avoid inventing remote stylesheet dependencies._\n\n";
         } else {
             $default = $project->themes->firstWhere('is_default', true);
             if ($default) {
                 $md .= "- **Default theme:** {$default->name} (`{$default->slug}`)\n";
             }
-            $md .= "- Apply reusable visual language through project themes rather than embedding a whole theme picker inside the mockup artifact.\n";
+            $md .= "- Apply reusable visual language through themes rather than embedding a whole theme picker inside the mockup artifact.\n";
             $md .= "- Keep mockup HTML self-contained; theme CSS is overlaid by Growth during preview.\n\n";
 
             foreach ($project->themes as $theme) {

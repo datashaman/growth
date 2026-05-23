@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Project;
-use App\Models\ProjectTheme;
+use App\Models\Theme;
 use App\Models\User;
 use App\Models\WorkItem;
 use Database\Seeders\DemoProjectSeeder;
@@ -54,7 +54,7 @@ it('renders work-item mockups grouped by work item as preview strips', function 
 });
 
 it('shows a localStorage-backed theme selector on the project mockups page', function () {
-    ProjectTheme::create([
+    Theme::create([
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
         'slug' => 'mission-control',

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-class ProjectTheme extends Model
+class Theme extends Model
 {
     use BroadcastsProjectChanges;
     use HasUlids;
@@ -74,7 +74,7 @@ class ProjectTheme extends Model
             return '';
         }
 
-        return "<style data-growth-project-theme=\"{$this->slug}\">\n{$css}\n</style>";
+        return "<style data-growth-theme=\"{$this->slug}\">\n{$css}\n</style>";
     }
 
     public function cssForInjection(): string

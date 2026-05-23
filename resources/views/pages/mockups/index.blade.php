@@ -1,7 +1,7 @@
 <?php
 
 use App\Concerns\ProjectScoped;
-use App\Models\ProjectTheme;
+use App\Models\Theme;
 use App\Models\SpecMockup;
 use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Builder;
@@ -83,7 +83,7 @@ new #[Title('Mockups')] class extends Component {
     }
 
     /**
-     * @return Collection<int,ProjectTheme>
+     * @return Collection<int,Theme>
      */
     #[Computed]
     public function projectThemes(): Collection

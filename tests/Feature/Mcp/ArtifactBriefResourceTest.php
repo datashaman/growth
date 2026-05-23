@@ -9,7 +9,6 @@ use App\Models\DesignElement;
 use App\Models\DesignView;
 use App\Models\Milestone;
 use App\Models\Project;
-use App\Models\ProjectTheme;
 use App\Models\Requirement;
 use App\Models\Review;
 use App\Models\ReviewDecisionEvent;
@@ -21,6 +20,7 @@ use App\Models\Role;
 use App\Models\TestCase;
 use App\Models\TestPlan;
 use App\Models\TestRun;
+use App\Models\Theme;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
@@ -58,7 +58,7 @@ it('serves a work item implementation brief', function () {
     ]);
     $workItem->requirements()->attach($requirement->id);
     $workItem->raciRoles()->attach($role->id, ['raci' => 'r']);
-    ProjectTheme::create([
+    Theme::create([
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
         'slug' => 'mission-control',

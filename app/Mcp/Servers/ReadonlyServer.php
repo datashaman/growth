@@ -72,7 +72,7 @@ use App\Mcp\Tools\Feedback\SearchFeedback;
 use App\Mcp\Tools\Feedback\SendFeedback;
 use App\Mcp\Tools\Glossary\LookupTerm;
 use App\Mcp\Tools\Lint\LintProject;
-use App\Mcp\Tools\Plan\GetProjectTheme;
+use App\Mcp\Tools\Plan\GetTheme;
 use App\Mcp\Tools\Plan\GetWorkItem;
 use App\Mcp\Tools\Plan\ListAgents;
 use App\Mcp\Tools\Plan\ListCheckRuns;
@@ -81,10 +81,10 @@ use App\Mcp\Tools\Plan\ListDeployments;
 use App\Mcp\Tools\Plan\ListMilestones;
 use App\Mcp\Tools\Plan\ListPlanBaselines;
 use App\Mcp\Tools\Plan\ListProjectMockups;
-use App\Mcp\Tools\Plan\ListProjectThemes;
 use App\Mcp\Tools\Plan\ListReleases;
 use App\Mcp\Tools\Plan\ListRisks;
 use App\Mcp\Tools\Plan\ListRoles;
+use App\Mcp\Tools\Plan\ListThemes;
 use App\Mcp\Tools\Plan\ListWorkItems;
 use App\Mcp\Tools\Plan\SummarizeImplementationStatus;
 use App\Mcp\Tools\Projects\ListProjects;
@@ -149,8 +149,8 @@ class ReadonlyServer extends Server
         ListWorkItems::class,
         GetWorkItem::class,
         ListProjectMockups::class,
-        ListProjectThemes::class,
-        GetProjectTheme::class,
+        ListThemes::class,
+        GetTheme::class,
         ListDeliveryLinks::class,
         ListChangeRequestDeliveryLinks::class,
         ResolveChangeRequestByBranch::class,

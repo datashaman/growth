@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('project_themes', function (Blueprint $table) {
+        Schema::create('themes', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('project_id')->constrained()->cascadeOnDelete();
             $table->string('name');
@@ -27,6 +27,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('project_themes');
+        Schema::dropIfExists('themes');
     }
 };
