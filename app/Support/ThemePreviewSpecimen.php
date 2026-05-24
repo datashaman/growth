@@ -7,10 +7,12 @@ use App\Models\Theme;
 class ThemePreviewSpecimen
 {
     /**
-     * @return array{description:string,guidance:list<string>,selectors:list<array{role:string,selector:string,purpose:string}>,sample_html:string}
+     * @return array{description:string,guidance:list<string>,selectors:list<array{role:string,selector:string,purpose:string}>,sample_html:string,resolution_example:array{context:array<string,string>,tokens:array<string,array{value:string,reason:string,source:string}>}}
      */
     public static function contract(): array
     {
+        $exampleContext = ['density' => 'compact', 'surface' => 'form', 'state' => 'disabled'];
+
         return [
             'description' => 'Stable selector contract for the theme preview specimen used by the Themes page and MCP theme debugging.',
             'guidance' => [
@@ -37,17 +39,21 @@ class ThemePreviewSpecimen
                 ['role' => 'table_content', 'selector' => 'table, th, td, [data-preview-role="table"]', 'purpose' => 'Compact tabular sample content.'],
             ],
             'sample_html' => self::html(),
+            'resolution_example' => [
+                'context' => $exampleContext,
+                'tokens' => app(DesignTokenResolver::class)->resolve($exampleContext),
+            ],
         ];
     }
 
-    public static function html(?Theme $theme = null): string
+    public static function html(?Theme $theme = null, ?array $context = null): string
     {
-        return self::htmlForCss($theme?->cssForInjection() ?? '');
+        return self::htmlForCss($theme?->cssForInjection() ?? '', $context);
     }
 
-    public static function htmlForCss(string $themeCss): string
+    public static function htmlForCss(string $themeCss, ?array $context = null): string
     {
-        return <<<'HTML'
+        $html = <<<'HTML'
 <!doctype html>
 <html>
 <head>
@@ -226,6 +232,37 @@ HTML
 </main>
 </body>
 </html>
+HTML;
+
+        if ($context !== null) {
+            $html = str_replace('</main>', self::buildResolutionPanel($context).'</main>', $html);
+        }
+
+        return $html;
+    }
+
+    /**
+     * @param  array<string,string>  $context
+     */
+    private static function buildResolutionPanel(array $context): string
+    {
+        $tokens = app(DesignTokenResolver::class)->resolve($context);
+        $contextJson = htmlspecialchars(json_encode($context, JSON_PRETTY_PRINT) ?: '{}', ENT_QUOTES);
+        $rows = '';
+
+        foreach ($tokens as $token => $data) {
+            $rows .= '<tr><td>'.htmlspecialchars($token, ENT_QUOTES).'</td>'
+                .'<td><code>'.htmlspecialchars($data['value'], ENT_QUOTES).'</code></td>'
+                .'<td>'.htmlspecialchars($data['source'], ENT_QUOTES).'</td>'
+                .'<td>'.htmlspecialchars($data['reason'], ENT_QUOTES).'</td></tr>';
+        }
+
+        return <<<HTML
+<section class="panel" style="margin-top:14px" data-preview-role="token-resolution-panel">
+  <div class="label">Resolved design tokens</div>
+  <details style="margin-bottom:8px;font-size:11px"><summary>Context</summary><pre>{$contextJson}</pre></details>
+  <table><thead><tr><th>Token</th><th>Value</th><th>Source</th><th>Reason</th></tr></thead><tbody>{$rows}</tbody></table>
+</section>
 HTML;
     }
 
