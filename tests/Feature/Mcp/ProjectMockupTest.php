@@ -188,3 +188,39 @@ it('applies a theme to a project-owned design system mockup', function () {
 
     expect($preview)->toContain('--fm-bg');
 });
+
+it('injects resolved context variables when context is passed to MockupPreview', function () {
+    Theme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Festival Ops',
+        'slug' => 'festival-ops',
+        'is_default' => true,
+        'css_tokens' => [
+            '--fm-surface-inset' => '#eee7da',
+            '--surface-muted' => 'var(--fm-surface-inset)',
+            '--elevation-0' => 'none',
+            '--radius-tight' => '4px',
+            '--spacing-inner-tight' => '10px',
+        ],
+    ]);
+
+    $mockup = Mockup::firstOrCreate([
+        'owner_type' => 'project',
+        'owner_id' => $this->project->id,
+        'name' => 'form-specimen',
+    ]);
+    $revision = $mockup->appendRevision('<!doctype html><html><head></head><body><form></form></body></html>');
+
+    $preview = app(MockupPreview::class)->html(
+        $mockup, $revision, 'festival-ops',
+        ['state' => 'disabled', 'density' => 'compact'],
+    );
+
+    // state:disabled wins surface + elevation; density:compact wins radius + spacing_inner
+    expect($preview)
+        ->toContain('data-growth-context')
+        ->toContain('--surface: var(--surface-muted)')
+        ->toContain('--elevation: var(--elevation-0)')
+        ->toContain('--radius: var(--radius-tight)')
+        ->toContain('--spacing-inner: var(--spacing-inner-tight)');
+});
