@@ -9,13 +9,13 @@ use App\Models\Theme;
 
 class MockupPreview
 {
-    public function html(Mockup $mockup, MockupRevision $revision, string $themeSlug = ''): string
+    public function html(Mockup $mockup, MockupRevision $revision, string $themeSlug = '', ?array $context = null): string
     {
         $html = $this->applyLayout((string) $revision->html, $mockup);
 
         return $this->makePreviewInert(
             MockupHtml::withoutOwnerReference(
-                $this->applyTheme($html, $mockup, $themeSlug),
+                $this->applyTheme($html, $mockup, $themeSlug, $context),
                 $mockup->owner,
             ),
         );
@@ -86,7 +86,7 @@ class MockupPreview
         return $html;
     }
 
-    private function applyTheme(string $html, Mockup $mockup, string $themeSlug): string
+    private function applyTheme(string $html, Mockup $mockup, string $themeSlug, ?array $context): string
     {
         $themeSlug = trim($themeSlug);
 
@@ -110,7 +110,9 @@ class MockupPreview
             return $html;
         }
 
-        $style = $theme->styleElement();
+        $themeStyle = $theme->styleElement();
+        $contextStyle = $context !== null ? $this->buildContextStyle($context) : '';
+        $style = implode("\n", array_filter([$themeStyle, $contextStyle]));
 
         if ($style === '') {
             return $html;
@@ -125,6 +127,32 @@ class MockupPreview
         }
 
         return $style."\n".$html;
+    }
+
+    /**
+     * Builds a <style> block that sets --surface, --elevation, --radius, --spacing-inner
+     * to the resolved semantic value variables for the given context.
+     */
+    private function buildContextStyle(array $context): string
+    {
+        $resolved = app(DesignTokenResolver::class)->resolve($context);
+
+        $map = [
+            'surface' => ['--surface',       'surface'],
+            'elevation' => ['--elevation',     'elevation'],
+            'radius' => ['--radius',         'radius'],
+            'spacing_inner' => ['--spacing-inner', 'spacing-inner'],
+        ];
+
+        $props = [];
+        foreach ($map as $token => [$activeVar, $cssPrefix]) {
+            $value = $resolved[$token]['value'] ?? null;
+            if ($value !== null) {
+                $props[] = "  {$activeVar}: var(--{$cssPrefix}-{$value});";
+            }
+        }
+
+        return "<style data-growth-context>\n:root {\n".implode("\n", $props)."\n}\n</style>";
     }
 
     private function makePreviewInert(string $html): string
