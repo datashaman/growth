@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\Theme;
 use App\Models\Mockup;
@@ -26,12 +27,7 @@ new class extends Component {
 
     public function mount(Mockup $mockup): void
     {
-        $this->mockup = $mockup->load([
-            'owner.mockups' => fn ($query) => $this->orderMockups($query),
-            'owner.project.themeAssignments.theme',
-            'owner.project.themes',
-            'revisions',
-        ]);
+        $this->mockup = $this->loadRelations($mockup);
         $this->revisionId = (string) ($this->mockup->revisions->last()?->id ?? '');
     }
 
@@ -67,16 +63,13 @@ new class extends Component {
      */
     public function onWorkspaceDataChanged(): void
     {
-        $fresh = $this->mockup->fresh([
-            'owner.mockups' => fn ($query) => $this->orderMockups($query),
-            'owner.project.themeAssignments.theme',
-            'owner.project.themes',
-            'revisions',
-        ]);
+        $fresh = $this->mockup->fresh();
 
         if ($fresh === null) {
             return;
         }
+
+        $fresh = $this->loadRelations($fresh);
 
         $this->mockup = $fresh;
 
@@ -91,14 +84,14 @@ new class extends Component {
     #[Computed]
     public function projectThemes(): Collection
     {
-        $projectId = $this->mockup->owner?->project_id;
+        $project = $this->owningProject();
 
-        if (! is_string($projectId)) {
+        if ($project === null) {
             return collect();
         }
 
         return Theme::query()
-            ->where('project_id', $projectId)
+            ->where('project_id', $project->id)
             ->orderByDesc('is_default')
             ->orderBy('name')
             ->get();
@@ -110,8 +103,10 @@ new class extends Component {
     #[Computed]
     public function projectThemeAssignments(): Collection
     {
-        return $this->mockup->owner?->project?->themeAssignments
-            ? $this->mockup->owner->project->themeAssignments->sortBy(['scope_type', 'scope_key'])->values()
+        $project = $this->owningProject();
+
+        return $project?->themeAssignments
+            ? $project->themeAssignments->sortBy(['scope_type', 'scope_key'])->values()
             : collect();
     }
 
@@ -182,9 +177,13 @@ new class extends Component {
     /** Route to the owning spec entity's detail page. */
     public function ownerHref(): string
     {
-        return $this->mockup->owner instanceof Requirement
-            ? route('requirements.show', $this->mockup->owner)
-            : route('work-items.show', $this->mockup->owner);
+        $owner = $this->mockup->owner;
+
+        return match (true) {
+            $owner instanceof Project => route('mockups'),
+            $owner instanceof Requirement => route('requirements.show', $owner),
+            default => route('work-items.show', $owner),
+        };
     }
 
     /** Human label for the owning spec entity. */
@@ -192,16 +191,49 @@ new class extends Component {
     {
         $owner = $this->mockup->owner;
 
-        return $owner instanceof Requirement
-            ? Str::limit($owner->text, 80)
-            : $owner->reference().' — '.$owner->name;
+        return match (true) {
+            $owner instanceof Project => $owner->name,
+            $owner instanceof Requirement => Str::limit($owner->text, 80),
+            default => $owner->reference().' — '.$owner->name,
+        };
     }
 
     public function ownerBackLabel(): string
     {
-        return $this->mockup->owner instanceof Requirement
-            ? __('Back to requirement')
-            : __('Back to work item');
+        return match (true) {
+            $this->mockup->owner instanceof Project => __('Back to mockups'),
+            $this->mockup->owner instanceof Requirement => __('Back to requirement'),
+            default => __('Back to work item'),
+        };
+    }
+
+    private function owningProject(): ?Project
+    {
+        $owner = $this->mockup->owner;
+
+        if ($owner instanceof Project) {
+            return $owner;
+        }
+
+        return $owner?->project ?? null;
+    }
+
+    private function loadRelations(Mockup $mockup): Mockup
+    {
+        $mockup->load([
+            'owner.mockups' => fn ($query) => $this->orderMockups($query),
+            'revisions',
+        ]);
+
+        // Work directly on the already-loaded owner so we don't replace it on
+        // the mockup (which would discard the ordered mockups subrelation above).
+        if ($mockup->owner_type === 'project') {
+            $mockup->owner?->load(['themeAssignments.theme', 'themes']);
+        } else {
+            $mockup->owner?->load(['project.themeAssignments.theme', 'project.themes']);
+        }
+
+        return $mockup;
     }
 
     private function orderMockups($query): void

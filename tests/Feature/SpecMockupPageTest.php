@@ -430,3 +430,19 @@ it('does not serve a mockup from another workspace', function () {
         ->get(route('mockups.raw', $otherMockup))
         ->assertNotFound();
 });
+
+it('renders the show page for a project-owned design system mockup without crashing', function () {
+    $mockup = createMockup(
+        $this->project,
+        'layout',
+        '<!doctype html><html><body><div id="growth-content"></div></body></html>',
+    );
+
+    $this->actingAs($this->user)
+        ->get(route('mockups.show', $mockup))
+        ->assertOk()
+        ->assertSee('layout')
+        ->assertSee(route('mockups.raw', $mockup))
+        ->assertSee(route('mockups'))   // back link points to mockups index
+        ->assertSee('Back to mockups');
+});
