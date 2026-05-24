@@ -4,10 +4,11 @@
         @include('partials.head')
     </head>
     <body class="min-h-screen bg-white dark:bg-zinc-800">
-        <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+        <flux:sidebar sticky collapsible class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
+                <flux:sidebar.collapse class="hidden lg:flex" />
             </flux:sidebar.header>
 
             @auth
@@ -175,6 +176,33 @@
 
         @once
             <script>
+                (function () {
+                    var KEY = 'growth:sidebar:collapsed';
+
+                    function restoreSidebarState() {
+                        var el = document.querySelector('[data-flux-sidebar]');
+                        if (!el) return;
+
+                        if (localStorage.getItem(KEY) === '1') {
+                            el.setAttribute('data-flux-sidebar-collapsed-desktop', '');
+                        }
+
+                        if (el._growthSidebarObserved) return;
+                        el._growthSidebarObserved = true;
+
+                        new MutationObserver(function () {
+                            if (el.hasAttribute('data-flux-sidebar-collapsed-desktop')) {
+                                localStorage.setItem(KEY, '1');
+                            } else {
+                                localStorage.removeItem(KEY);
+                            }
+                        }).observe(el, { attributes: true, attributeFilter: ['data-flux-sidebar-collapsed-desktop'] });
+                    }
+
+                    document.addEventListener('DOMContentLoaded', restoreSidebarState);
+                    document.addEventListener('livewire:navigated', restoreSidebarState);
+                })();
+
                 window.GrowthBindRoleCapabilitiesNavigation = () => {
                     if (window.GrowthRoleCapabilitiesNavigationBound) {
                         return;
