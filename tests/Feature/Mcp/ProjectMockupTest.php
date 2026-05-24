@@ -4,6 +4,7 @@ use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Tools\Plan\UpsertProjectMockup;
 use App\Models\Mockup;
 use App\Models\Project;
+use App\Models\Theme;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Support\MockupPreview;
@@ -165,4 +166,25 @@ it('skips layout injection for project-owned mockups', function () {
     expect($preview)->toContain('growth-content')->toContain('<nav>Nav</nav>');
     // The layout itself is not wrapped in another layout
     expect(substr_count($preview, 'growth-content'))->toBe(1);
+});
+
+it('applies a theme to a project-owned design system mockup', function () {
+    $theme = Theme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Festival Ops',
+        'slug' => 'festival-ops',
+        'is_default' => true,
+        'css_tokens' => ['--fm-bg' => '#f9f6f1'],
+    ]);
+
+    $mockup = Mockup::firstOrCreate([
+        'owner_type' => 'project',
+        'owner_id' => $this->project->id,
+        'name' => 'typography',
+    ]);
+    $revision = $mockup->appendRevision('<!doctype html><html><head></head><body><h1>Type</h1></body></html>');
+
+    $preview = app(MockupPreview::class)->html($mockup, $revision, 'festival-ops');
+
+    expect($preview)->toContain('--fm-bg');
 });

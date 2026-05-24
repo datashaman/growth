@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Mockup;
+use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\Theme;
 use App\Models\WorkItem;
@@ -26,7 +27,8 @@ class MockupThemeResolver
             ];
         }
 
-        $project = $mockup->owner?->project;
+        $owner = $mockup->owner;
+        $project = $owner instanceof Project ? $owner : $owner?->project;
 
         if (! $project) {
             return [
@@ -67,7 +69,7 @@ class MockupThemeResolver
     private function assignedTheme(Mockup $mockup): ?Theme
     {
         $owner = $mockup->owner;
-        $project = $owner?->project;
+        $project = $owner instanceof Project ? $owner : $owner?->project;
 
         if (! $project) {
             return null;
