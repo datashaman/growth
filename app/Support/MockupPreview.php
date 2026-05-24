@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Mockup;
 use App\Models\MockupRevision;
+use App\Models\Project;
 use App\Models\Theme;
 
 class MockupPreview
@@ -94,7 +95,7 @@ class MockupPreview
         }
 
         $owner = $mockup->owner;
-        $projectId = $owner?->project_id;
+        $projectId = $owner instanceof Project ? $owner->id : $owner?->project_id;
 
         if (! is_string($projectId)) {
             return $html;
