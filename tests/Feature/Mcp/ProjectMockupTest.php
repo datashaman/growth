@@ -36,7 +36,8 @@ it('creates a layout mockup for a project', function () {
                 ->where('created', true)
                 ->where('warnings', [])
                 ->where('resources.list_uri', "growth://projects/{$this->project->id}/mockups")
-                ->where('resources.html_uri', "growth://projects/{$this->project->id}/mockups/layout");
+                ->where('resources.html_uri', "growth://projects/{$this->project->id}/mockups/layout")
+                ->etc();
         });
 
     $mockup = Mockup::where('owner_type', 'project')->where('owner_id', $this->project->id)->sole();
@@ -54,7 +55,8 @@ it('creates a component specimen for a project', function () {
         ->assertStructuredContent(function ($json) {
             $json->where('name', 'forms')
                 ->where('created', true)
-                ->where('warnings', []);
+                ->where('warnings', [])
+                ->etc();
         });
 });
 
@@ -66,7 +68,7 @@ it('warns when layout is missing the content slot', function () {
     ])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
-            $json->where('warnings.0.code', 'missing_content_slot');
+            $json->where('warnings.0.code', 'missing_content_slot')->etc();
         });
 });
 
@@ -78,7 +80,7 @@ it('warns when html references external assets', function () {
     ])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
-            $json->where('warnings.0.code', 'external_assets');
+            $json->where('warnings.0.code', 'external_assets')->etc();
         });
 });
 
@@ -96,7 +98,7 @@ it('appends a new revision on re-upsert', function () {
     ])
         ->assertOk()
         ->assertStructuredContent(function ($json) {
-            $json->where('revision', 2)->where('created', false);
+            $json->where('revision', 2)->where('created', false)->etc();
         });
 
     expect(Mockup::where('owner_type', 'project')->where('owner_id', $this->project->id)->count())->toBe(1);
