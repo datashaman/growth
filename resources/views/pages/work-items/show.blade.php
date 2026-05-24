@@ -345,7 +345,7 @@ new class extends Component {
                 @foreach ($workItem->mockups as $mockup)
                     <li>
                         <flux:link :href="route('mockups.show', $mockup)" wire:navigate class="underline">
-                            {{ $mockup->name === \App\Models\SpecMockup::DEFAULT_NAME ? __('Default') : $mockup->name }}
+                            {{ $mockup->name === \App\Models\Mockup::DEFAULT_NAME ? __('Default') : $mockup->name }}
                         </flux:link>
                     </li>
                 @endforeach

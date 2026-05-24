@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\EvidenceAssetController;
 use App\Http\Controllers\MockupScreenshotController;
-use App\Http\Controllers\SpecMockupController;
+use App\Http\Controllers\MockupController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', 'dashboard')->name('home');
@@ -37,7 +37,7 @@ Route::middleware('auth')->group(function () {
     Route::livewire('risks/{risk}', 'pages::risks.show')->name('risks.show');
     Route::livewire('work-items/{workItem}', 'pages::work-items.show')->name('work-items.show');
     Route::livewire('mockups/{mockup}', 'pages::mockups.show')->name('mockups.show');
-    Route::get('mockups/{mockup}/raw', [SpecMockupController::class, 'raw'])->name('mockups.raw');
+    Route::get('mockups/{mockup}/raw', [MockupController::class, 'raw'])->name('mockups.raw');
     Route::livewire('requirements/{requirement}', 'pages::requirements.show')->name('requirements.show');
     Route::livewire('anomalies/{anomaly}', 'pages::anomalies.show')->name('anomalies.show');
     Route::livewire('reviews', 'pages::reviews.index')->name('reviews');

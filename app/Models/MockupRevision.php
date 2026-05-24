@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * One round of a {@see SpecMockup}'s HTML. Revisions are append-only and
+ * One round of a {@see Mockup}'s HTML. Revisions are append-only and
  * ordered by `number` within their mockup; the mockup's current state is its
  * highest-numbered revision.
  */
-class SpecMockupRevision extends Model
+class MockupRevision extends Model
 {
     use HasUlids;
     use ScopedByOwner;
@@ -20,7 +20,7 @@ class SpecMockupRevision extends Model
     public const OWNER_SCOPE_RELATION = 'mockup.owner';
 
     protected $fillable = [
-        'spec_mockup_id', 'number', 'html',
+        'mockup_id', 'number', 'html',
     ];
 
     protected $casts = [
@@ -29,6 +29,6 @@ class SpecMockupRevision extends Model
 
     public function mockup(): BelongsTo
     {
-        return $this->belongsTo(SpecMockup::class, 'spec_mockup_id');
+        return $this->belongsTo(Mockup::class, 'mockup_id');
     }
 }

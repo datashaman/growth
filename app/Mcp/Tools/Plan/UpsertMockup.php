@@ -3,7 +3,7 @@
 namespace App\Mcp\Tools\Plan;
 
 use App\Models\DesignView;
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Support\MockupHtml;
 use App\Support\MockupScreenshotAsset;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -32,10 +32,10 @@ class UpsertMockup extends Tool
         $owner = self::OWNER_MODELS[$data['owner_type']]::findOrFail($data['owner_id']);
         $html = MockupHtml::withoutOwnerReference($data['html'], $owner);
 
-        $mockup = SpecMockup::firstOrCreate([
+        $mockup = Mockup::firstOrCreate([
             'owner_type' => $data['owner_type'],
             'owner_id' => $data['owner_id'],
-            'name' => $data['name'] ?? SpecMockup::DEFAULT_NAME,
+            'name' => $data['name'] ?? Mockup::DEFAULT_NAME,
         ]);
         $created = $mockup->wasRecentlyCreated;
 
@@ -190,7 +190,7 @@ class UpsertMockup extends Tool
      */
     private function resources(string $mockupId, string $revisionId): array
     {
-        $mockup = SpecMockup::with('revisions')->findOrFail($mockupId);
+        $mockup = Mockup::with('revisions')->findOrFail($mockupId);
         $revision = $mockup->revisions->firstWhere('id', $revisionId);
 
         return [

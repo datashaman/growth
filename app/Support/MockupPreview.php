@@ -2,13 +2,13 @@
 
 namespace App\Support;
 
-use App\Models\SpecMockup;
-use App\Models\SpecMockupRevision;
+use App\Models\Mockup;
+use App\Models\MockupRevision;
 use App\Models\Theme;
 
 class MockupPreview
 {
-    public function html(SpecMockup $mockup, SpecMockupRevision $revision, string $themeSlug = ''): string
+    public function html(Mockup $mockup, MockupRevision $revision, string $themeSlug = ''): string
     {
         return $this->makePreviewInert(
             MockupHtml::withoutOwnerReference(
@@ -35,7 +35,7 @@ class MockupPreview
         ]);
     }
 
-    private function applyTheme(string $html, SpecMockup $mockup, string $themeSlug): string
+    private function applyTheme(string $html, Mockup $mockup, string $themeSlug): string
     {
         $themeSlug = trim($themeSlug);
 

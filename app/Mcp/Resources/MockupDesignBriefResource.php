@@ -3,7 +3,7 @@
 namespace App\Mcp\Resources;
 
 use App\Models\Requirement;
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Models\ThemeAssignment;
 use App\Models\WorkItem;
 use App\Support\ThemePreviewSpecimen;
@@ -62,7 +62,7 @@ class MockupDesignBriefResource extends Resource implements HasUriTemplate
             ? $owner->requirements()->orderBy('doc')->orderBy('number')->get()
             : collect([$owner]);
 
-        $mockups = SpecMockup::query()
+        $mockups = Mockup::query()
             ->where('owner_type', $ownerType)
             ->where('owner_id', $ownerId)
             ->orderBy('name')

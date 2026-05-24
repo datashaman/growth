@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Resources;
 
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -27,12 +27,12 @@ class OwnerMockupResource extends Resource implements HasUriTemplate
         $ownerType = $request->get('owner_type');
         $ownerId = $request->get('owner_id');
 
-        // SpecMockup is scoped by owner workspace, so a cross-workspace or
+        // Mockup is scoped by owner workspace, so a cross-workspace or
         // unknown owner simply finds nothing.
-        $mockup = SpecMockup::with('currentRevision')
+        $mockup = Mockup::with('currentRevision')
             ->where('owner_type', $ownerType)
             ->where('owner_id', $ownerId)
-            ->where('name', SpecMockup::DEFAULT_NAME)
+            ->where('name', Mockup::DEFAULT_NAME)
             ->first();
 
         if (! $mockup) {

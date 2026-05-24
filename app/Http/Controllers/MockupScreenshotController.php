@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Support\MockupScreenshotAsset;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class MockupScreenshotController extends Controller
 {
-    public function show(Request $request, SpecMockup $mockup, string $revision, MockupScreenshotAsset $asset): Response
+    public function show(Request $request, Mockup $mockup, string $revision, MockupScreenshotAsset $asset): Response
     {
         $revision = $mockup->revisions()->find($revision);
 

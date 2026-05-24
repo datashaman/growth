@@ -6,7 +6,7 @@ use App\Models\DesignElement;
 use App\Models\DesignView;
 use App\Models\Project;
 use App\Models\Requirement;
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Models\User;
 use App\Models\WorkItem;
 use Laravel\Passport\Passport;
@@ -53,7 +53,7 @@ it('stores a mockup for a work item', function () {
                 ->etc();
         });
 
-    $mockups = SpecMockup::where('owner_id', $this->workItem->id)->get();
+    $mockups = Mockup::where('owner_id', $this->workItem->id)->get();
     expect($mockups)->toHaveCount(1)
         ->and($mockups->first()->currentRevision->html)->toContain('<h1>Checkout</h1>');
 });
@@ -67,7 +67,7 @@ it('does not store owner references in mockup html', function () {
     ])
         ->assertOk();
 
-    $html = SpecMockup::where('owner_id', $this->workItem->id)->sole()->currentRevision->html;
+    $html = Mockup::where('owner_id', $this->workItem->id)->sole()->currentRevision->html;
 
     expect($html)
         ->not->toContain($this->workItem->reference())
@@ -315,7 +315,7 @@ it('updates the default mockup in place when no name is supplied', function () {
                 ->etc();
         });
 
-    $firstId = SpecMockup::sole()->id;
+    $firstId = Mockup::sole()->id;
 
     PlanningServer::tool(UpsertMockup::class, [
         ...$args,
@@ -344,7 +344,7 @@ it('treats an explicit name=default the same as omitting name', function () {
     ];
 
     PlanningServer::tool(UpsertMockup::class, $args)->assertOk();
-    $implicitId = SpecMockup::sole()->id;
+    $implicitId = Mockup::sole()->id;
 
     PlanningServer::tool(UpsertMockup::class, [
         ...$args,

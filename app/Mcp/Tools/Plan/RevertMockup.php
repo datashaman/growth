@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -22,7 +22,7 @@ class RevertMockup extends Tool
             'revision' => 'required|integer|min:1',
         ]);
 
-        $mockup = SpecMockup::findOrFail($data['mockup_id']);
+        $mockup = Mockup::findOrFail($data['mockup_id']);
 
         $target = $mockup->revisions()->where('number', $data['revision'])->first();
 

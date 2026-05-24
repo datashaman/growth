@@ -7,7 +7,7 @@ use App\Mcp\Tools\Plan\ListMockups;
 use App\Mcp\Tools\Plan\ListProjectMockups;
 use App\Models\Project;
 use App\Models\Requirement;
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Models\User;
 use App\Models\WorkItem;
 use Laravel\Passport\Passport;
@@ -97,7 +97,7 @@ it('deletes a mockup', function () {
                 ->etc();
         });
 
-    expect(SpecMockup::find($mockup->id))->toBeNull();
+    expect(Mockup::find($mockup->id))->toBeNull();
 });
 
 it('does not delete a mockup from another workspace', function () {
@@ -117,7 +117,7 @@ it('does not delete a mockup from another workspace', function () {
     PlanningServer::tool(DeleteMockup::class, ['id' => $otherMockup->id])
         ->assertHasErrors();
 
-    expect(SpecMockup::withoutGlobalScopes()->find($otherMockup->id))->not->toBeNull();
+    expect(Mockup::withoutGlobalScopes()->find($otherMockup->id))->not->toBeNull();
 });
 
 it('lists mockup coverage across a project with filters', function () {
@@ -213,7 +213,7 @@ it('deletes all mockups for one owner and reports removed revisions', function (
         });
 
     expect($this->workItem->mockups()->count())->toBe(0)
-        ->and(SpecMockup::find($otherMockup->id))->not->toBeNull();
+        ->and(Mockup::find($otherMockup->id))->not->toBeNull();
 });
 
 it('rejects owner mockup cleanup for a missing owner', function () {
@@ -242,5 +242,5 @@ it('does not cleanup owner mockups from another workspace', function () {
         'owner_id' => $otherItem->id,
     ])->assertHasErrors();
 
-    expect(SpecMockup::withoutGlobalScopes()->find($otherMockup->id))->not->toBeNull();
+    expect(Mockup::withoutGlobalScopes()->find($otherMockup->id))->not->toBeNull();
 });

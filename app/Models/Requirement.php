@@ -136,7 +136,7 @@ class Requirement extends Model
 
     public function mockups(): MorphMany
     {
-        return $this->morphMany(SpecMockup::class, 'owner');
+        return $this->morphMany(Mockup::class, 'owner');
     }
 
     public function reviewTargets(): MorphMany
