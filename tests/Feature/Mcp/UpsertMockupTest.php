@@ -406,3 +406,37 @@ it('appends a revision when upserted under an existing name', function () {
         ->and($mockups->first()->revisions)->toHaveCount(2)
         ->and($mockups->first()->currentRevision->html)->toContain('v2');
 });
+
+it('returns an empty design system when no project mockups exist', function () {
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'html' => '<!doctype html><html><body><h1>Page</h1></body></html>',
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('design_brief.design_system.has_layout', false)
+                ->where('design_brief.design_system.specimens', [])
+                ->where('design_brief.design_system.uri', "growth://projects/{$this->project->id}/mockups")
+                ->etc();
+        });
+});
+
+it('returns design system layout and specimen info when project mockups exist', function () {
+    Mockup::create(['owner_type' => 'project', 'owner_id' => $this->project->id, 'name' => 'layout'])
+        ->appendRevision('<html><body><nav></nav><div id="growth-content"></div></body></html>');
+    Mockup::create(['owner_type' => 'project', 'owner_id' => $this->project->id, 'name' => 'forms'])
+        ->appendRevision('<html><body><form></form></body></html>');
+
+    PlanningServer::tool(UpsertMockup::class, [
+        'owner_type' => 'work_item',
+        'owner_id' => $this->workItem->id,
+        'html' => '<h1>Content only</h1>',
+    ])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('design_brief.design_system.has_layout', true)
+                ->where('design_brief.design_system.specimens', ['forms'])
+                ->etc();
+        });
+});

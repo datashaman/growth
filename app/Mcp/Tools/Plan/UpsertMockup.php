@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive(false)]
-#[Description('Add or refine a spec mockup on a work item or a requirement — a self-contained HTML page expressing a UI idea. Before generating the HTML, read the owner\'s mockup design brief (`growth://owners/{owner_type}/{owner_id}/mockup-design-brief`) so the artifact reflects requirements, existing mockups, and architecture context. Without `name` the owner\'s default mockup is updated in place; pass `name` to hold a named layout alternative alongside the default.')]
+#[Description('Add or refine a page mockup on a work item or a requirement. Before generating HTML: (1) read the owner\'s mockup design brief (`growth://owners/{owner_type}/{owner_id}/mockup-design-brief`) for requirements and architecture context; (2) check the design system returned in `design_brief.design_system` — if `has_layout` is true, generate only the page content area (body content for the `<div id="growth-content">` slot, not a full HTML document), and read any relevant `specimens` before generating to match the project\'s component patterns. Without `name` the owner\'s default mockup is updated in place; pass `name` to hold a named alternative alongside the default.')]
 class UpsertMockup extends Tool
 {
     use ResolvesMockupOwner;
@@ -61,7 +61,7 @@ class UpsertMockup extends Tool
             'owner_type' => $schema->string()->enum(['work_item', 'requirement'])->description('The spec entity the mockup belongs to')->required(),
             'owner_id' => $schema->string()->description('ULID of the work item or requirement that owns the mockup')->required(),
             'name' => $schema->string()->description('Optional label for the mockup. Omit to update the owner\'s single default mockup in place; pass a value to hold a named alternative alongside the default.'),
-            'html' => $schema->string()->description('A self-contained HTML document — the mockup. Inline styles, scripts, and assets; external URLs are accepted but returned with quality warnings because durable mockups should not depend on outside resources. Read the owner\'s mockup design brief first; if the artifact diverges from that brief, make the mismatch visible in the mockup or its notes.')->required(),
+            'html' => $schema->string()->description('The mockup HTML. If the project has a layout template (`design_brief.design_system.has_layout` is true), generate only the content for the `<div id="growth-content">` slot — the layout provides nav, sidebar, and chrome, so a full HTML document would produce double chrome at preview time. If no layout exists, generate a full self-contained HTML document. Read any relevant specimens from `design_brief.design_system.specimens` before generating to match the project\'s component patterns. External URLs are accepted but flagged as quality warnings.')->required(),
         ];
     }
 
@@ -76,7 +76,7 @@ class UpsertMockup extends Tool
             'revision_id' => $schema->string()->description('ULID of the revision this call appended')->required(),
             'created' => $schema->boolean()->description('Whether this call created the mockup')->required(),
             'warnings' => $schema->array()->description('Non-blocking quality warnings for HTML patterns that often make weak or brittle mockups')->required(),
-            'design_brief' => $schema->object()->description('Brief resource to read before generating or refining this mockup')->required(),
+            'design_brief' => $schema->object()->description('Context to read before generating: owner design brief URI, architecture views, and design_system (layout presence + available specimen names)')->required(),
             'resources' => $schema->object()->description('Resource URIs for mockup metadata, revision metadata, raw HTML, preview HTML, and an inspectable preview screenshot asset')->required(),
         ];
     }
@@ -105,7 +105,7 @@ class UpsertMockup extends Tool
         if ($this->containsLocalDesignSystemCss($html)) {
             $warnings[] = [
                 'code' => 'local_design_system_css',
-                'message' => 'Mockup HTML appears to embed a reusable mini design system. Keep mockup CSS structural and move repeated visual styling, theme tokens, and component chrome into Growth theme raw_css, CSS tokens, and design notes.',
+                'message' => 'Mockup HTML appears to embed a reusable mini design system. Keep page mockup CSS structural — move repeated visual styling and component chrome into project design system specimens (`upsert-project-mockup`) and theme tokens/raw_css.',
             ];
         }
 
@@ -158,7 +158,7 @@ class UpsertMockup extends Tool
     }
 
     /**
-     * @return array{uri:string,guidance:string,architecture_available:bool,architecture_views:list<array{id:string,viewpoint:string,name:string,elements_count:int}>}
+     * @return array{uri:string,guidance:string,architecture_available:bool,architecture_views:list<array{id:string,viewpoint:string,name:string,elements_count:int}>,design_system:array{uri:string,has_layout:bool,specimens:list<string>}}
      */
     private function designBrief(string $projectId, string $ownerType, string $ownerId): array
     {
@@ -169,6 +169,14 @@ class UpsertMockup extends Tool
             ->orderBy('name')
             ->limit(5)
             ->get(['id', 'project_id', 'viewpoint', 'name']);
+
+        $projectMockups = Mockup::where('owner_type', 'project')
+            ->where('owner_id', $projectId)
+            ->orderBy('name')
+            ->pluck('name');
+
+        $hasLayout = $projectMockups->contains('layout');
+        $specimens = $projectMockups->reject(fn (string $name): bool => $name === 'layout')->values()->all();
 
         return [
             'uri' => "growth://owners/{$ownerType}/{$ownerId}/mockup-design-brief",
@@ -182,6 +190,14 @@ class UpsertMockup extends Tool
                 'name' => $view->name,
                 'elements_count' => $view->elements_count,
             ])->all(),
+            'design_system' => [
+                'uri' => "growth://projects/{$projectId}/mockups",
+                'has_layout' => $hasLayout,
+                'specimens' => $specimens,
+                'guidance' => $hasLayout
+                    ? 'A layout template exists — generate only the content for the `<div id="growth-content">` slot, not a full HTML document. Read relevant specimens from `growth://projects/{project}/mockups/{name}` before generating.'
+                    : 'No layout template yet. Generate a full self-contained HTML document. Read relevant specimens if any exist.',
+            ],
         ];
     }
 
