@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description("Resolve a spec mockup by work item or requirement and return its metadata resource URIs. Without `name` returns the owner's default mockup; pass `name` to fetch a named alternative.")]
+#[Description("Resolve a mockup by owner and return its metadata resource URIs. Without `name` returns the owner's default mockup; pass `name` to fetch a named alternative. Supports work_item, requirement, and project owners.")]
 class GetMockup extends Tool
 {
     use ResolvesMockupOwner;
@@ -21,7 +21,7 @@ class GetMockup extends Tool
     public function handle(Request $request): ResponseFactory
     {
         $data = $request->validate([
-            'owner_type' => 'required|string|in:work_item,requirement',
+            'owner_type' => 'required|string|in:project,work_item,requirement',
             'owner_id' => ['required', 'string', $this->ownerExistsRule($request->get('owner_type'))],
             'name' => 'sometimes|string|max:255',
         ]);
@@ -85,8 +85,8 @@ class GetMockup extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'owner_type' => $schema->string()->enum(['work_item', 'requirement'])->description('The spec entity that owns the mockup')->required(),
-            'owner_id' => $schema->string()->description('ULID of the work item or requirement that owns the mockup')->required(),
+            'owner_type' => $schema->string()->enum(['project', 'work_item', 'requirement'])->description('The owner type')->required(),
+            'owner_id' => $schema->string()->description('ULID of the owner')->required(),
             'name' => $schema->string()->description('Optional mockup label. Omit to fetch the owner\'s default mockup.'),
         ];
     }

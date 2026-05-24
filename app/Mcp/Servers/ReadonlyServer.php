@@ -17,6 +17,8 @@ use App\Mcp\Resources\MockupRevisionResource;
 use App\Mcp\Resources\MockupRevisionScreenshotResource;
 use App\Mcp\Resources\OwnerMockupResource;
 use App\Mcp\Resources\PlanResource;
+use App\Mcp\Resources\ProjectMockupHtmlResource;
+use App\Mcp\Resources\ProjectMockupsResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\Project\ProjectChangesResource;
 use App\Mcp\Resources\Project\ProjectMtpResource;
@@ -227,6 +229,8 @@ class ReadonlyServer extends Server
         MockupRevisionScreenshotResource::class,
         ThemedMockupRevisionScreenshotResource::class,
         OwnerMockupResource::class,
+        ProjectMockupsResource::class,
+        ProjectMockupHtmlResource::class,
         ThemeResource::class,
         ThemeCssResource::class,
         RequirementVerificationBriefResource::class,

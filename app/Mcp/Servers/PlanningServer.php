@@ -11,6 +11,8 @@ use App\Mcp\Resources\MockupRevisionResource;
 use App\Mcp\Resources\MockupRevisionScreenshotResource;
 use App\Mcp\Resources\OwnerMockupResource;
 use App\Mcp\Resources\PlanResource;
+use App\Mcp\Resources\ProjectMockupHtmlResource;
+use App\Mcp\Resources\ProjectMockupsResource;
 use App\Mcp\Resources\PlaybookResource;
 use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\RequirementsResource;
@@ -123,6 +125,7 @@ use App\Mcp\Tools\Plan\UpsertDeliveryLink;
 use App\Mcp\Tools\Plan\UpsertDeployment;
 use App\Mcp\Tools\Plan\UpsertMilestone;
 use App\Mcp\Tools\Plan\UpsertMockup;
+use App\Mcp\Tools\Plan\UpsertProjectMockup;
 use App\Mcp\Tools\Plan\UpsertPlan;
 use App\Mcp\Tools\Plan\UpsertRelease;
 use App\Mcp\Tools\Plan\UpsertRisk;
@@ -218,6 +221,7 @@ class PlanningServer extends Server
         ListChangeRequestDeliveryLinks::class,
         ListDeliveryLinks::class,
         UpsertMockup::class,
+        UpsertProjectMockup::class,
         GetMockup::class,
         ListMockups::class,
         ListProjectMockups::class,
@@ -274,6 +278,8 @@ class PlanningServer extends Server
         MockupRevisionScreenshotResource::class,
         ThemedMockupRevisionScreenshotResource::class,
         OwnerMockupResource::class,
+        ProjectMockupsResource::class,
+        ProjectMockupHtmlResource::class,
         ThemeResource::class,
         ThemeCssResource::class,
         RequirementVerificationBriefResource::class,

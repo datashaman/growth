@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('List the spec mockups on a work item or a requirement — the default mockup and any named alternatives held against it. The HTML is omitted; fetch a single mockup to see it.')]
+#[Description('List the mockups on a work item, requirement, or project — the default mockup and any named alternatives held against it. The HTML is omitted; fetch a single mockup to see it.')]
 class ListMockups extends Tool
 {
     use ResolvesMockupOwner;
@@ -20,7 +20,7 @@ class ListMockups extends Tool
     public function handle(Request $request): ResponseFactory
     {
         $data = $request->validate([
-            'owner_type' => 'required|string|in:work_item,requirement',
+            'owner_type' => 'required|string|in:project,work_item,requirement',
             'owner_id' => ['required', 'string', $this->ownerExistsRule($request->get('owner_type'))],
         ]);
 
@@ -44,8 +44,8 @@ class ListMockups extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'owner_type' => $schema->string()->enum(['work_item', 'requirement'])->description('The spec entity whose mockups to list')->required(),
-            'owner_id' => $schema->string()->description('ULID of the work item or requirement whose mockups to list')->required(),
+            'owner_type' => $schema->string()->enum(['project', 'work_item', 'requirement'])->description('The owner type whose mockups to list')->required(),
+            'owner_id' => $schema->string()->description('ULID of the owner')->required(),
         ];
     }
 

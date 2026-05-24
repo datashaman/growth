@@ -10,9 +10,11 @@ class MockupPreview
 {
     public function html(Mockup $mockup, MockupRevision $revision, string $themeSlug = ''): string
     {
+        $html = $this->applyLayout((string) $revision->html, $mockup);
+
         return $this->makePreviewInert(
             MockupHtml::withoutOwnerReference(
-                $this->applyTheme((string) $revision->html, $mockup, $themeSlug),
+                $this->applyTheme($html, $mockup, $themeSlug),
                 $mockup->owner,
             ),
         );
@@ -33,6 +35,54 @@ class MockupPreview
             "base-uri 'none'",
             'sandbox allow-scripts',
         ]);
+    }
+
+    private function applyLayout(string $html, Mockup $mockup): string
+    {
+        if ($mockup->owner_type === 'project') {
+            return $html;
+        }
+
+        $owner = $mockup->owner;
+        $projectId = $owner?->project_id;
+
+        if (! is_string($projectId)) {
+            return $html;
+        }
+
+        $layout = Mockup::where('owner_type', 'project')
+            ->where('owner_id', $projectId)
+            ->where('name', 'layout')
+            ->with('currentRevision')
+            ->first();
+
+        if (! $layout?->currentRevision) {
+            return $html;
+        }
+
+        $layoutHtml = (string) $layout->currentRevision->html;
+
+        if (! str_contains($layoutHtml, 'id="growth-content"')) {
+            return $html;
+        }
+
+        $content = $this->extractBodyContent($html);
+
+        return preg_replace(
+            '/<div\b[^>]*\bid="growth-content"[^>]*>.*?<\/div>/si',
+            '<div id="growth-content">'.$content.'</div>',
+            $layoutHtml,
+            1,
+        ) ?? $html;
+    }
+
+    private function extractBodyContent(string $html): string
+    {
+        if (preg_match('/<body\b[^>]*>(.*?)<\/body>/si', $html, $matches) === 1) {
+            return trim($matches[1]);
+        }
+
+        return $html;
     }
 
     private function applyTheme(string $html, Mockup $mockup, string $themeSlug): string
