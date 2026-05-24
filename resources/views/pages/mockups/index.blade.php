@@ -24,7 +24,26 @@ new #[Title('Mockups')] class extends Component {
 
     public function onProjectDataChanged(): void
     {
-        unset($this->workItemsWithMockups, $this->missingMockupWorkItems, $this->mockupCount, $this->projectThemes, $this->projectThemeAssignments);
+        unset($this->workItemsWithMockups, $this->missingMockupWorkItems, $this->mockupCount, $this->projectThemes, $this->projectThemeAssignments, $this->designSystemMockups);
+    }
+
+    /**
+     * @return Collection<int,Mockup>
+     */
+    #[Computed]
+    public function designSystemMockups(): Collection
+    {
+        if ($this->selectedProject === null) {
+            return collect();
+        }
+
+        return Mockup::query()
+            ->where('owner_type', 'project')
+            ->where('owner_id', $this->selectedProject->id)
+            ->orderByRaw('case when name = ? then 0 else 1 end', ['layout'])
+            ->orderBy('name')
+            ->with('currentRevision')
+            ->get();
     }
 
     #[Computed]
@@ -208,6 +227,38 @@ new #[Title('Mockups')] class extends Component {
                         <a href="{{ route('work-items.show', $workItem) }}" wire:navigate class="inline-flex max-w-full items-center gap-2 rounded-md border border-amber-300 bg-white px-2.5 py-1.5 text-sm text-amber-950 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/70 dark:text-amber-100 dark:hover:bg-amber-900/70">
                             <span class="shrink-0 font-mono text-xs font-semibold">{{ $workItem->reference() }}</span>
                             <span class="min-w-0 truncate">{{ $workItem->name }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        @if ($this->designSystemMockups->isNotEmpty())
+            <section>
+                <div class="mb-3 flex items-center gap-3">
+                    <flux:heading size="lg">{{ __('Design system') }}</flux:heading>
+                    <flux:badge color="zinc" size="sm">{{ $this->designSystemMockups->count() }} {{ __('mockups') }}</flux:badge>
+                </div>
+                <div class="flex gap-3 overflow-x-auto pb-1">
+                    @foreach ($this->designSystemMockups as $mockup)
+                        <a href="{{ route('mockups.show', $mockup) }}" wire:navigate class="group block w-72 shrink-0 rounded-lg border border-zinc-200 bg-white p-2 transition hover:border-sky-300 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-sky-700">
+                            <div class="h-40 overflow-hidden rounded-md border border-zinc-200 bg-white dark:border-zinc-700">
+                                <iframe
+                                    src="{{ $this->mockupPreviewUrl($mockup) }}"
+                                    data-themed-mockup-frame
+                                    data-src-base="{{ route('mockups.raw', $mockup) }}"
+                                    data-assigned-theme="{{ $this->assignedThemeSlug($mockup) }}"
+                                    sandbox="allow-scripts"
+                                    loading="lazy"
+                                    tabindex="-1"
+                                    aria-hidden="true"
+                                    title="{{ $mockup->name }}"
+                                    class="h-[320px] w-[576px] origin-top-left scale-50 pointer-events-none bg-white"></iframe>
+                            </div>
+                            <div class="mt-2 min-w-0">
+                                <div class="truncate text-sm font-medium text-zinc-900 group-hover:underline dark:text-zinc-100">{{ $mockup->name }}</div>
+                                <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('Revision :number', ['number' => $mockup->currentRevision?->number ?? 0]) }}</div>
+                            </div>
                         </a>
                     @endforeach
                 </div>
