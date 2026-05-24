@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Mockup;
 use App\Models\Project;
 use App\Models\Theme;
 use App\Models\ThemeAssignment;
@@ -234,6 +235,42 @@ it('refreshes project mockups when project data changes', function () {
     $component->call('onProjectDataChanged')
         ->assertSee('Checkout layout')
         ->assertDontSee('Missing mockup coverage');
+});
+
+it('renders project design system mockups in a dedicated section with layout first', function () {
+    $forms = Mockup::create(['owner_type' => 'project', 'owner_id' => $this->project->id, 'name' => 'forms']);
+    $forms->appendRevision('<!doctype html><html><body>forms specimen</body></html>');
+    $layout = Mockup::create(['owner_type' => 'project', 'owner_id' => $this->project->id, 'name' => 'layout']);
+    $layout->appendRevision('<!doctype html><html><body><div id="growth-content"></div></body></html>');
+    $typography = Mockup::create(['owner_type' => 'project', 'owner_id' => $this->project->id, 'name' => 'typography']);
+    $typography->appendRevision('<!doctype html><html><body>typography specimen</body></html>');
+
+    $this->get(route('mockups'))
+        ->assertOk()
+        ->assertSee('Design system')
+        ->assertSee(route('mockups.show', $layout))
+        ->assertSee(route('mockups.show', $forms))
+        ->assertSee(route('mockups.show', $typography))
+        ->assertSeeInOrder([
+            route('mockups.show', $layout),
+            route('mockups.show', $forms),
+            route('mockups.show', $typography),
+        ]);
+});
+
+it('omits the design system section when the project has no project-level mockups', function () {
+    $workItem = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'deliverable',
+        'name' => 'Checkout',
+        'needs_mockups' => true,
+    ]);
+    createMockup($workItem, 'Checkout layout', '<!doctype html><html><body>checkout</body></html>');
+
+    $this->get(route('mockups'))
+        ->assertOk()
+        ->assertDontSee('Design system')
+        ->assertSee('Work-item mockups');
 });
 
 it('renders seeded demo mockups on the project mockups page', function () {

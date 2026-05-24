@@ -207,6 +207,11 @@ class Project extends Model
         return $this->hasMany(Deployment::class);
     }
 
+    public function mockups(): MorphMany
+    {
+        return $this->morphMany(Mockup::class, 'owner');
+    }
+
     public function statusTransitions(): MorphMany
     {
         return $this->morphMany(StatusTransition::class, 'transitionable');
