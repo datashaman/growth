@@ -2,19 +2,21 @@
 
 namespace App\Mcp\Tools\Plan;
 
+use App\Models\Project;
 use App\Models\Requirement;
 use App\Models\WorkItem;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Validates the polymorphic owner of a spec mockup — a work item or a
- * requirement — against the active workspace.
+ * Validates the polymorphic owner of a mockup — a work item, requirement,
+ * or project — against the active workspace.
  */
 trait ResolvesMockupOwner
 {
     /** @var array<string, class-string<Model>> */
     private const OWNER_MODELS = [
+        'project' => Project::class,
         'work_item' => WorkItem::class,
         'requirement' => Requirement::class,
     ];
