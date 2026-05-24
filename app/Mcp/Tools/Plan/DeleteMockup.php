@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -21,7 +21,7 @@ class DeleteMockup extends Tool
             'id' => 'required|string|owned_mockup',
         ]);
 
-        SpecMockup::findOrFail($data['id'])->delete();
+        Mockup::findOrFail($data['id'])->delete();
 
         return Response::structured([
             'id' => $data['id'],

@@ -2,7 +2,7 @@
 
 use App\Models\Requirement;
 use App\Models\Theme;
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Models\ThemeAssignment;
 use App\Models\WorkItem;
 use Illuminate\Support\Str;
@@ -12,7 +12,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 new class extends Component {
-    public SpecMockup $mockup;
+    public Mockup $mockup;
 
     /** ULID of the revision currently shown in the iframe. */
     public string $revisionId = '';
@@ -24,7 +24,7 @@ new class extends Component {
      */
     public bool $followLatest = true;
 
-    public function mount(SpecMockup $mockup): void
+    public function mount(Mockup $mockup): void
     {
         $this->mockup = $mockup->load([
             'owner.mockups' => fn ($query) => $this->orderMockups($query),
@@ -37,7 +37,7 @@ new class extends Component {
 
     public function rendering(View $view): void
     {
-        $view->title($this->mockup->name === SpecMockup::DEFAULT_NAME ? __('Default') : $this->mockup->name);
+        $view->title($this->mockup->name === Mockup::DEFAULT_NAME ? __('Default') : $this->mockup->name);
     }
 
     /**
@@ -207,14 +207,14 @@ new class extends Component {
     private function orderMockups($query): void
     {
         $query
-            ->orderByRaw('case when name = ? then 0 else 1 end', [SpecMockup::DEFAULT_NAME])
+            ->orderByRaw('case when name = ? then 0 else 1 end', [Mockup::DEFAULT_NAME])
             ->orderBy('name');
     }
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
     <x-detail-page-header
-        :title="$mockup->name === \App\Models\SpecMockup::DEFAULT_NAME ? __('Default') : $mockup->name"
+        :title="$mockup->name === \App\Models\Mockup::DEFAULT_NAME ? __('Default') : $mockup->name"
         :back-href="$this->ownerHref()"
         :back-label="$this->ownerBackLabel()">
         <x-slot:description>
@@ -248,10 +248,10 @@ new class extends Component {
                         <nav class="flex flex-wrap gap-2" aria-label="{{ __('Mockups') }}">
                             @foreach ($mockup->owner->mockups as $alternative)
                                 @if ($alternative->is($mockup))
-                                    <span class="rounded-md bg-sky-600 px-2.5 py-1 text-sm font-medium text-white" aria-current="true">{{ $alternative->name === \App\Models\SpecMockup::DEFAULT_NAME ? __('Default') : $alternative->name }}</span>
+                                    <span class="rounded-md bg-sky-600 px-2.5 py-1 text-sm font-medium text-white" aria-current="true">{{ $alternative->name === \App\Models\Mockup::DEFAULT_NAME ? __('Default') : $alternative->name }}</span>
                                 @else
                                     <a href="{{ route('mockups.show', $alternative) }}" wire:navigate
-                                        class="rounded-md bg-zinc-100 px-2.5 py-1 text-sm text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">{{ $alternative->name === \App\Models\SpecMockup::DEFAULT_NAME ? __('Default') : $alternative->name }}</a>
+                                        class="rounded-md bg-zinc-100 px-2.5 py-1 text-sm text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">{{ $alternative->name === \App\Models\Mockup::DEFAULT_NAME ? __('Default') : $alternative->name }}</a>
                                 @endif
                             @endforeach
                         </nav>

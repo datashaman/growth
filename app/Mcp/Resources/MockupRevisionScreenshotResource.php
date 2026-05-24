@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Resources;
 
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Support\MockupScreenshotAsset;
 use InvalidArgumentException;
 use Laravel\Mcp\Request;
@@ -30,7 +30,7 @@ class MockupRevisionScreenshotResource extends Resource implements HasUriTemplat
         $revisionId = $this->pathValue($request->get('revision'));
         $requestedTheme = $this->pathValue($request->get('theme', $this->query($request)['theme'] ?? 'assigned'));
 
-        $mockup = SpecMockup::with([
+        $mockup = Mockup::with([
             'owner.project.themes',
             'owner.project.themeAssignments.theme',
             'revisions',

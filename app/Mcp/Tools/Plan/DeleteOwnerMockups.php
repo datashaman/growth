@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -24,7 +24,7 @@ class DeleteOwnerMockups extends Tool
             'owner_id' => ['required', 'string', $this->ownerExistsRule($request->get('owner_type'))],
         ]);
 
-        $mockups = SpecMockup::where('owner_type', $data['owner_type'])
+        $mockups = Mockup::where('owner_type', $data['owner_type'])
             ->where('owner_id', $data['owner_id'])
             ->withCount('revisions')
             ->get();

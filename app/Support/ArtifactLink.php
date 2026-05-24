@@ -7,7 +7,7 @@ use App\Models\ChangeRequest;
 use App\Models\Requirement;
 use App\Models\Review;
 use App\Models\Risk;
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -35,7 +35,7 @@ class ArtifactLink
             $artifact instanceof Anomaly => route('anomalies.show', $artifact),
             $artifact instanceof Risk => route('risks.show', $artifact),
             $artifact instanceof ChangeRequest => route('change-requests.show', $artifact),
-            $artifact instanceof SpecMockup => route('mockups.show', $artifact),
+            $artifact instanceof Mockup => route('mockups.show', $artifact),
             default => null,
         };
     }

@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Models\Theme;
 use App\Models\ThemeAssignment;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
@@ -132,7 +132,7 @@ class UpsertThemeAssignment extends Tool
             return;
         }
 
-        $mockup = SpecMockup::with('owner')->find($assignment->scope_key);
+        $mockup = Mockup::with('owner')->find($assignment->scope_key);
 
         if (! $mockup) {
             throw ValidationException::withMessages([
@@ -156,7 +156,7 @@ class UpsertThemeAssignment extends Tool
             return null;
         }
 
-        $mockup = SpecMockup::find($assignment->scope_key);
+        $mockup = Mockup::find($assignment->scope_key);
 
         if (! $mockup) {
             return null;

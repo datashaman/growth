@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Support\MockupScreenshotAsset;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -27,16 +27,16 @@ class GetMockup extends Tool
         ]);
 
         $hasExplicitName = array_key_exists('name', $data);
-        $name = $data['name'] ?? SpecMockup::DEFAULT_NAME;
+        $name = $data['name'] ?? Mockup::DEFAULT_NAME;
 
-        $mockup = SpecMockup::with('currentRevision')
+        $mockup = Mockup::with('currentRevision')
             ->where('owner_type', $data['owner_type'])
             ->where('owner_id', $data['owner_id'])
             ->where('name', $name)
             ->first();
 
         if (! $mockup && ! $hasExplicitName) {
-            $mockups = SpecMockup::with('currentRevision')
+            $mockups = Mockup::with('currentRevision')
                 ->where('owner_type', $data['owner_type'])
                 ->where('owner_id', $data['owner_id'])
                 ->orderBy('name')

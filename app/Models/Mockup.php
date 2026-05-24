@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-class SpecMockup extends Model
+class Mockup extends Model
 {
     use HasUlids;
     use ScopedByOwner;
@@ -38,7 +38,7 @@ class SpecMockup extends Model
 
     public function revisions(): HasMany
     {
-        return $this->hasMany(SpecMockupRevision::class)->orderBy('number');
+        return $this->hasMany(MockupRevision::class)->orderBy('number');
     }
 
     /**
@@ -46,13 +46,13 @@ class SpecMockup extends Model
      */
     public function currentRevision(): HasOne
     {
-        return $this->hasOne(SpecMockupRevision::class)->latestOfMany('number');
+        return $this->hasOne(MockupRevision::class)->latestOfMany('number');
     }
 
     /**
      * Append a new round of HTML as the next revision and return it.
      */
-    public function appendRevision(string $html): SpecMockupRevision
+    public function appendRevision(string $html): MockupRevision
     {
         return $this->revisions()->create([
             'number' => ($this->revisions()->max('number') ?? 0) + 1,

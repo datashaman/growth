@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Resources;
 
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -27,7 +27,7 @@ class MockupRevisionHtmlResource extends Resource implements HasUriTemplate
         $mockupId = $request->get('mockup');
         $revisionId = $request->get('revision');
 
-        $mockup = SpecMockup::with('revisions')->find($mockupId);
+        $mockup = Mockup::with('revisions')->find($mockupId);
 
         if (! $mockup) {
             return Response::error("Mockup [{$mockupId}] not found.");

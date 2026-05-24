@@ -3,7 +3,7 @@
 namespace App\Support;
 
 use App\Models\Requirement;
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Models\Theme;
 use App\Models\WorkItem;
 
@@ -12,7 +12,7 @@ class MockupThemeResolver
     /**
      * @return array{requested:string,resolved:string,slug:?string,id:?string,name:?string}
      */
-    public function resolve(SpecMockup $mockup, string $requestedTheme): array
+    public function resolve(Mockup $mockup, string $requestedTheme): array
     {
         $requestedTheme = trim($requestedTheme) === '' ? 'assigned' : trim($requestedTheme);
 
@@ -64,7 +64,7 @@ class MockupThemeResolver
         ];
     }
 
-    private function assignedTheme(SpecMockup $mockup): ?Theme
+    private function assignedTheme(Mockup $mockup): ?Theme
     {
         $owner = $mockup->owner;
         $project = $owner?->project;

@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Support\MockupPreview;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response as BaseResponse;
 
-class SpecMockupController extends Controller
+class MockupController extends Controller
 {
     /**
-     * Serve a spec mockup revision's raw, agent-authored HTML.
+     * Serve a mockup revision's raw, agent-authored HTML.
      *
      * The `revision` query parameter selects a revision by ULID; without it
      * the mockup's current (latest) revision is served. A revision id that
@@ -43,7 +43,7 @@ class SpecMockupController extends Controller
      * resource load can still leak via its URL, an accepted cost of that
      * flexibility.
      */
-    public function raw(Request $request, SpecMockup $mockup, MockupPreview $preview): BaseResponse
+    public function raw(Request $request, Mockup $mockup, MockupPreview $preview): BaseResponse
     {
         if ($request->header('Sec-Fetch-Dest') !== 'iframe') {
             return redirect()->route('mockups.show', $mockup);

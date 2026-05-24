@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -24,7 +24,7 @@ class ListMockups extends Tool
             'owner_id' => ['required', 'string', $this->ownerExistsRule($request->get('owner_type'))],
         ]);
 
-        $mockups = SpecMockup::where('owner_type', $data['owner_type'])
+        $mockups = Mockup::where('owner_type', $data['owner_type'])
             ->where('owner_id', $data['owner_id'])
             ->orderBy('name')
             ->get();
@@ -33,7 +33,7 @@ class ListMockups extends Tool
             'owner_type' => $data['owner_type'],
             'owner_id' => $data['owner_id'],
             'total' => $mockups->count(),
-            'results' => $mockups->map(fn (SpecMockup $mockup): array => [
+            'results' => $mockups->map(fn (Mockup $mockup): array => [
                 'id' => $mockup->id,
                 'name' => $mockup->name,
                 'updated_at' => $mockup->updated_at?->toIso8601String(),

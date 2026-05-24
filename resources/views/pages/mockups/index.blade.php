@@ -2,7 +2,7 @@
 
 use App\Concerns\ProjectScoped;
 use App\Models\Theme;
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Models\ThemeAssignment;
 use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Builder;
@@ -34,7 +34,7 @@ new #[Title('Mockups')] class extends Component {
             return 0;
         }
 
-        return SpecMockup::query()
+        return Mockup::query()
             ->whereHasMorph('owner', [WorkItem::class], function (Builder $query): void {
                 $query->where('project_id', $this->selectedProject->id);
             })
@@ -55,7 +55,7 @@ new #[Title('Mockups')] class extends Component {
             ->workItems()
             ->with([
                 'mockups' => fn ($query) => $query
-                    ->orderByRaw('case when name = ? then 0 else 1 end', [SpecMockup::DEFAULT_NAME])
+                    ->orderByRaw('case when name = ? then 0 else 1 end', [Mockup::DEFAULT_NAME])
                     ->orderBy('name')
                     ->with('currentRevision'),
             ])
@@ -129,7 +129,7 @@ new #[Title('Mockups')] class extends Component {
         return $this->projectThemes->contains('slug', $theme) ? $theme : '';
     }
 
-    public function assignedThemeSlug(SpecMockup $mockup): string
+    public function assignedThemeSlug(Mockup $mockup): string
     {
         $owner = $mockup->owner;
         $keys = $owner instanceof WorkItem
@@ -149,7 +149,7 @@ new #[Title('Mockups')] class extends Component {
         return (string) ($assignment?->theme?->slug ?? $this->projectThemes->firstWhere('is_default', true)?->slug ?? '');
     }
 
-    public function mockupPreviewUrl(SpecMockup $mockup): string
+    public function mockupPreviewUrl(Mockup $mockup): string
     {
         $theme = $this->themePreviewOverride() === ''
             ? $this->assignedThemeSlug($mockup)
@@ -251,7 +251,7 @@ new #[Title('Mockups')] class extends Component {
                                     </div>
                                     <div class="mt-2 min-w-0">
                                         <div class="truncate text-sm font-medium text-zinc-900 group-hover:underline dark:text-zinc-100">
-                                            {{ $mockup->name === \App\Models\SpecMockup::DEFAULT_NAME ? __('Default') : $mockup->name }}
+                                            {{ $mockup->name === \App\Models\Mockup::DEFAULT_NAME ? __('Default') : $mockup->name }}
                                         </div>
                                         <div class="text-xs text-zinc-500 dark:text-zinc-400">
                                             {{ __('Revision :number', ['number' => $mockup->currentRevision?->number ?? 0]) }}

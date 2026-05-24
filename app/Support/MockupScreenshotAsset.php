@@ -2,8 +2,8 @@
 
 namespace App\Support;
 
-use App\Models\SpecMockup;
-use App\Models\SpecMockupRevision;
+use App\Models\Mockup;
+use App\Models\MockupRevision;
 use Illuminate\Support\Facades\URL;
 use InvalidArgumentException;
 
@@ -12,7 +12,7 @@ class MockupScreenshotAsset
     /**
      * @return array{url:string,resource_uri:string,mime_type:string,theme:string}
      */
-    public function reference(SpecMockup $mockup, SpecMockupRevision $revision, string $requestedTheme = 'assigned'): array
+    public function reference(Mockup $mockup, MockupRevision $revision, string $requestedTheme = 'assigned'): array
     {
         $requestedTheme = $this->requestedTheme($requestedTheme);
 
@@ -31,7 +31,7 @@ class MockupScreenshotAsset
     /**
      * @return array{content:string,width:int,height:int}
      */
-    public function render(SpecMockup $mockup, SpecMockupRevision $revision, string $requestedTheme = 'assigned'): array
+    public function render(Mockup $mockup, MockupRevision $revision, string $requestedTheme = 'assigned'): array
     {
         $theme = $this->theme($mockup, $requestedTheme);
 
@@ -43,7 +43,7 @@ class MockupScreenshotAsset
     /**
      * @return array{requested:string,resolved:string,slug:?string,id:?string,name:?string}
      */
-    public function theme(SpecMockup $mockup, string $requestedTheme = 'assigned'): array
+    public function theme(Mockup $mockup, string $requestedTheme = 'assigned'): array
     {
         $requestedTheme = $this->requestedTheme($requestedTheme);
         $theme = app(MockupThemeResolver::class)->resolve($mockup, $requestedTheme);

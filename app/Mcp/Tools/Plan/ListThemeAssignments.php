@@ -2,7 +2,7 @@
 
 namespace App\Mcp\Tools\Plan;
 
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Models\ThemeAssignment;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -81,7 +81,7 @@ class ListThemeAssignments extends Tool
             return null;
         }
 
-        $mockup = SpecMockup::find($assignment->scope_key);
+        $mockup = Mockup::find($assignment->scope_key);
 
         if (! $mockup) {
             return [

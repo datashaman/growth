@@ -2,8 +2,8 @@
 
 namespace App\Mcp\Tools\Plan;
 
-use App\Models\SpecMockup;
-use App\Models\SpecMockupRevision;
+use App\Models\Mockup;
+use App\Models\MockupRevision;
 use App\Support\MockupScreenshotAsset;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -23,7 +23,7 @@ class ListMockupRevisions extends Tool
             'mockup_id' => 'required|string|owned_mockup',
         ]);
 
-        $mockup = SpecMockup::findOrFail($data['mockup_id']);
+        $mockup = Mockup::findOrFail($data['mockup_id']);
         $revisions = $mockup->revisions()->get();
 
         return Response::structured([
@@ -31,7 +31,7 @@ class ListMockupRevisions extends Tool
             'name' => $mockup->name,
             'total' => $revisions->count(),
             'current_revision' => $revisions->max('number'),
-            'results' => $revisions->map(fn (SpecMockupRevision $revision): array => [
+            'results' => $revisions->map(fn (MockupRevision $revision): array => [
                 'id' => $revision->id,
                 'number' => $revision->number,
                 'created_at' => $revision->created_at?->toIso8601String(),

@@ -3,7 +3,7 @@
 namespace App\Mcp\Resources;
 
 use App\Mcp\Resources\Concerns\ReturnsStructuredJson;
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Support\MockupScreenshotAsset;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -31,7 +31,7 @@ class MockupResource extends Resource implements HasUriTemplate
         $id = $this->pathValue((string) $request->get('mockup'));
         $requestedTheme = $this->query($request)['theme'] ?? 'assigned';
 
-        $mockup = SpecMockup::with('currentRevision')->find($id);
+        $mockup = Mockup::with('currentRevision')->find($id);
 
         if (! $mockup) {
             return Response::error("Mockup [{$id}] not found.");

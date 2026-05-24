@@ -4,7 +4,7 @@ namespace App\Mcp\Tools\Plan;
 
 use App\Models\Project;
 use App\Models\Requirement;
-use App\Models\SpecMockup;
+use App\Models\Mockup;
 use App\Models\WorkItem;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Collection;
@@ -154,12 +154,12 @@ class ListProjectMockups extends Tool
     }
 
     /**
-     * @param  Collection<int, SpecMockup>  $mockups
+     * @param  Collection<int, Mockup>  $mockups
      * @return list<array{id:string,name:string,updated_at:?string}>
      */
     private function mockupRows(Collection $mockups): array
     {
-        return $mockups->map(fn (SpecMockup $mockup): array => [
+        return $mockups->map(fn (Mockup $mockup): array => [
             'id' => $mockup->id,
             'name' => $mockup->name,
             'updated_at' => $mockup->updated_at?->toIso8601String(),
