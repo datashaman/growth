@@ -2,9 +2,9 @@
 
 namespace App\Mcp\Tools\Plan;
 
+use App\Models\Mockup;
 use App\Models\Project;
 use App\Models\Requirement;
-use App\Models\Mockup;
 use App\Models\WorkItem;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Collection;

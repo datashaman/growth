@@ -1,8 +1,8 @@
 <?php
 
 use App\Http\Controllers\EvidenceAssetController;
-use App\Http\Controllers\MockupScreenshotController;
 use App\Http\Controllers\MockupController;
+use App\Http\Controllers\MockupScreenshotController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', 'dashboard')->name('home');

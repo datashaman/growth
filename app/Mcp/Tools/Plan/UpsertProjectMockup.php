@@ -4,7 +4,6 @@ namespace App\Mcp\Tools\Plan;
 
 use App\Models\Mockup;
 use App\Models\Project;
-use App\Support\MockupScreenshotAsset;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
