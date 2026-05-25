@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools\Plan;
 
 use App\Models\Theme;
+use App\Support\ComponentLibrarySpecimen;
 use App\Support\ThemePreviewSpecimen;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -38,6 +39,7 @@ class GetTheme extends Tool
                 'guidance' => 'Read theme_uri for JSON metadata. Read css_uri for compiled self-contained CSS.',
             ],
             'preview_specimen' => ThemePreviewSpecimen::contract(),
+            'component_library' => ComponentLibrarySpecimen::contract(),
             'is_default' => $theme->is_default,
             'updated_at' => $theme->updated_at?->toIso8601String(),
         ]);
@@ -62,6 +64,7 @@ class GetTheme extends Tool
             'css_tokens' => $schema->object(),
             'resources' => $schema->object()->description('Resource URIs for theme metadata and compiled self-contained CSS')->required(),
             'preview_specimen' => $schema->object()->required(),
+            'component_library' => $schema->object()->required(),
             'is_default' => $schema->boolean()->required(),
             'updated_at' => $schema->string(),
         ];
