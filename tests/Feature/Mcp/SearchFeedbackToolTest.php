@@ -47,6 +47,24 @@ it('filters by category, tool_name, and status', function () {
         ->assertStructuredContent(fn ($json) => $json->where('total', 1)->etc());
 });
 
+it('normalizes underscore tool name filters to canonical kebab names', function () {
+    ($this->makeFeedback)(['tool_name' => 'get_mockup']);
+
+    ReadonlyServer::tool(SearchFeedback::class, ['tool_name' => 'get_mockup'])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('total', 1)
+                ->where('results.0.tool_name', 'get-mockup')
+                ->etc();
+        });
+});
+
+it('normalizes tool names assigned directly on feedback records', function () {
+    $feedback = ($this->makeFeedback)(['tool_name' => 'delete_work_items']);
+
+    expect($feedback->tool_name)->toBe('delete-work-items');
+});
+
 it('reports pagination metadata', function () {
     ($this->makeFeedback)();
     ($this->makeFeedback)();
