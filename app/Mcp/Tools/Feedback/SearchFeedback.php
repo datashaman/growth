@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools\Feedback;
 
 use App\Models\ToolFeedback;
+use App\Support\McpToolName;
 use App\Support\WorkspaceContext;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Database\Eloquent\Builder;
@@ -46,7 +47,7 @@ class SearchFeedback extends Tool
             $query->where('category', $data['category']);
         }
         if (isset($data['tool_name'])) {
-            $query->where('tool_name', $data['tool_name']);
+            $query->where('tool_name', McpToolName::normalize($data['tool_name']));
         }
         if (isset($data['status'])) {
             $query->where('status', $data['status']);

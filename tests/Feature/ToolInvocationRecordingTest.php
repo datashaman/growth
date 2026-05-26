@@ -98,6 +98,30 @@ it('exposes recorded rows via list-tool-invocations', function () {
     expect(ToolInvocation::count())->toBe(2);
 });
 
+it('normalizes underscore tool names on invocation records and filters', function () {
+    ToolInvocation::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'user_id' => $this->user->id,
+        'tool_name' => 'delete_work_items',
+        'transport' => 'http',
+        'success' => true,
+        'duration_ms' => 1,
+        'args_shape' => [],
+        'started_at' => now(),
+        'completed_at' => now(),
+    ]);
+
+    expect(ToolInvocation::sole()->tool_name)->toBe('delete-work-items');
+
+    ReadonlyServer::tool(ListToolInvocations::class, ['tool_name' => 'delete_work_items'])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) {
+            $json->where('total', 1)
+                ->where('results.0.tool_name', 'delete-work-items')
+                ->etc();
+        });
+});
+
 it('prune command removes old rows', function () {
     ToolInvocation::create([
         'workspace_id' => $this->user->active_workspace_id,

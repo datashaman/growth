@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools\Feedback;
 
 use App\Models\ToolInvocation;
+use App\Support\McpToolName;
 use App\Support\WorkspaceContext;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
@@ -33,7 +34,7 @@ class ListToolInvocations extends Tool
 
         $query = ToolInvocation::query()->where('workspace_id', $workspaceId);
         if (isset($data['tool_name'])) {
-            $query->where('tool_name', $data['tool_name']);
+            $query->where('tool_name', McpToolName::normalize($data['tool_name']));
         }
         if (isset($data['agent_id'])) {
             $query->where('agent_id', $data['agent_id']);

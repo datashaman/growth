@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BroadcastsWorkspaceChanges;
+use App\Support\McpToolName;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\MassPrunable;
@@ -51,6 +52,11 @@ class ToolInvocation extends Model
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
     ];
+
+    public function setToolNameAttribute(?string $value): void
+    {
+        $this->attributes['tool_name'] = McpToolName::normalize($value) ?? 'unknown';
+    }
 
     public function workspace(): BelongsTo
     {

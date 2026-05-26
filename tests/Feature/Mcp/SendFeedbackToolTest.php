@@ -85,3 +85,14 @@ it('links an owned project when one is given', function () {
 
     expect(ToolFeedback::sole()->project_id)->toBe($project->id);
 });
+
+it('normalizes underscore tool names to kebab names', function () {
+    ReadonlyServer::tool(SendFeedback::class, [
+        'category' => 'suggestion',
+        'summary' => 'Tool names should be consistent',
+        'body' => 'The feedback queue should use the canonical MCP tool name.',
+        'tool_name' => 'get_mockup',
+    ])->assertOk();
+
+    expect(ToolFeedback::sole()->tool_name)->toBe('get-mockup');
+});

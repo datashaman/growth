@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BroadcastsWorkspaceChanges;
+use App\Support\McpToolName;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +26,11 @@ class ToolFeedback extends Model
         'workspace_id', 'user_id', 'agent_id', 'project_id',
         'category', 'status', 'tool_name', 'summary', 'body',
     ];
+
+    public function setToolNameAttribute(?string $value): void
+    {
+        $this->attributes['tool_name'] = McpToolName::normalize($value);
+    }
 
     public function workspace(): BelongsTo
     {
