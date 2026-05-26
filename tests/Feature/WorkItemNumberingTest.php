@@ -74,7 +74,7 @@ test('a project cannot have two work items with the same number', function () {
 test('the upsert-work-items tool returns the assigned number and reference', function () {
     PlanningServer::tool(UpsertWorkItems::class, [
         'items' => [
-            ['project_id' => $this->project->id, 'kind' => 'task', 'name' => 'Notification matrix'],
+            ['project_id' => $this->project->id, 'kind' => 'task', 'name' => 'Notification matrix', 'sort_order' => 50],
         ],
     ])
         ->assertOk()
@@ -82,8 +82,38 @@ test('the upsert-work-items tool returns the assigned number and reference', fun
             $json->where('items.0.ok', true)
                 ->where('items.0.number', 1)
                 ->where('items.0.reference', 'WI-001')
+                ->where('items.0.sort_order', 50)
                 ->etc();
         });
+});
+
+test('upsert-work-items can reorder existing items without changing WI references', function () {
+    $first = makeWorkItem($this->project, 'First');
+    $second = makeWorkItem($this->project, 'Second');
+
+    PlanningServer::tool(UpsertWorkItems::class, [
+        'items' => [
+            [
+                'id' => $second->id,
+                'project_id' => $this->project->id,
+                'kind' => $second->kind,
+                'name' => $second->name,
+                'sort_order' => 0,
+            ],
+        ],
+    ])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('items.0.ok', true)
+            ->where('items.0.id', $second->id)
+            ->where('items.0.reference', 'WI-002')
+            ->where('items.0.sort_order', 0)
+            ->etc());
+
+    expect($first->fresh()->reference())->toBe('WI-001')
+        ->and($second->fresh()->reference())->toBe('WI-002')
+        ->and(WorkItem::query()->where('project_id', $this->project->id)->inWbsOrder()->pluck('id')->all())
+        ->toBe([$second->id, $first->id]);
 });
 
 test('a work item cannot be moved to another project', function () {

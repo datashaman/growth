@@ -67,13 +67,14 @@ class ProjectPlan extends Model
             'work_items' => $this->project->workItems()
                 ->inWbsOrder()
                 ->orderBy('id')
-                ->get(['id', 'parent_id', 'responsible_role_id', 'kind', 'name', 'status'])
+                ->get(['id', 'parent_id', 'responsible_role_id', 'kind', 'name', 'sort_order', 'status'])
                 ->map(fn ($w) => [
                     'id' => $w->id,
                     'parent_id' => $w->parent_id,
                     'responsible_role_id' => $w->responsible_role_id,
                     'kind' => $w->kind,
                     'name' => $w->name,
+                    'sort_order' => $w->sort_order,
                     'status' => $w->status,
                 ])->all(),
         ];
