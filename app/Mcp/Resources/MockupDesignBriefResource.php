@@ -185,6 +185,9 @@ class MockupDesignBriefResource extends Resource implements HasUriTemplate
 
             $md .= "### Mockup CSS Boundary\n\n";
             $md .= "- Treat assigned/default Growth themes as the reusable visual design-system layer.\n";
+            $md .= "- Growth overlays the selected theme at preview time. Theme `css_tokens` are emitted as normalized `:root` custom properties, so mockup HTML may reference them with `var(--token-name)` when the owner has an assigned/default theme or an explicit preview theme is selected.\n";
+            $md .= "- Theme `raw_css` is injected into the preview document with those tokens; stored mockup HTML is not mutated by theme injection.\n";
+            $md .= "- `theme=none` disables the overlay for verification. If a mockup must work without a theme, keep only the required fallback CSS local to that mockup.\n";
             $md .= "- Keep local mockup CSS focused on semantic structure, one-off layout, and state-specific affordances.\n";
             $md .= "- Do not duplicate broad component styling for cards, panels, buttons, tables, grids, badges, or theme-like color tokens across mockups; put reusable visual differentiation in theme `raw_css`, CSS tokens, and design notes instead.\n\n";
 

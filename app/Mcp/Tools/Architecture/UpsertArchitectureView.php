@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive(false)]
-#[Description('Create or update an architecture view and optionally sync the concerns it addresses. Before generating architecture artifacts, inspect stakeholders, concerns, requirements, existing views/elements, and source citations so the view captures useful agent-facing design context.')]
+#[Description('Create or update an architecture view and optionally sync the concerns it addresses. The viewpoint must be either a project custom viewpoint or one of the built-ins returned by list-architecture-viewpoints. Before generating architecture artifacts, inspect stakeholders, concerns, requirements, existing views/elements, and source citations so the view captures useful agent-facing design context.')]
 class UpsertArchitectureView extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -70,7 +70,7 @@ class UpsertArchitectureView extends Tool
         return [
             'id' => $schema->string()->description('Existing architecture view ULID. Omit to create.'),
             'project_id' => $schema->string()->description('Project ULID')->required(),
-            'viewpoint' => $schema->string()->description('Built-in or custom viewpoint name')->required(),
+            'viewpoint' => $schema->string()->description('Built-in viewpoint name returned by list-architecture-viewpoints, or a project custom viewpoint name')->required(),
             'name' => $schema->string()->description('Human label for this view')->required(),
             'description' => $schema->string()->description('Agent-facing design context for this view, grounded in relevant concerns, requirements, sources, or existing architecture'),
             'addresses_concern_ids' => $schema->array()->description('Concern ULIDs this view addresses'),
