@@ -2,6 +2,7 @@
 
 use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Tools\Plan\CompleteWorkItem;
+use App\Mcp\Tools\Plan\ResetWorkItem;
 use App\Mcp\Tools\Plan\StartWorkItem;
 use App\Mcp\Tools\Plan\UpsertWorkItems;
 use App\Models\Project;
@@ -78,6 +79,35 @@ it('completes an in_progress work item and records a transition', function () {
         ->and($transition->reason)->toBe('Shipped');
 });
 
+it('resets an in_progress work item back to todo and records a transition', function () {
+    $item = ($this->makeItem)('in_progress');
+
+    PlanningServer::tool(ResetWorkItem::class, ['work_item_id' => $item->id, 'reason' => 'Queued by mistake'])
+        ->assertOk()
+        ->assertStructuredContent(function ($json) use ($item) {
+            $json->where('work_item_id', $item->id)
+                ->where('from_status', 'in_progress')
+                ->where('to_status', 'todo')
+                ->etc();
+        });
+
+    expect($item->fresh()->status)->toBe('todo');
+
+    $transition = StatusTransition::query()->sole();
+    expect($transition->to_status)->toBe('todo')
+        ->and($transition->reason)->toBe('Queued by mistake');
+});
+
+it('rejects resetting a work item that is not in_progress', function () {
+    $item = ($this->makeItem)('todo');
+
+    PlanningServer::tool(ResetWorkItem::class, ['work_item_id' => $item->id])
+        ->assertHasErrors(['Cannot reset a work item that is todo.']);
+
+    expect($item->fresh()->status)->toBe('todo');
+    expect(StatusTransition::count())->toBe(0);
+});
+
 it('rejects completing a work item that is not in_progress', function () {
     $item = ($this->makeItem)('todo');
 
@@ -100,7 +130,7 @@ it('rejects status passed to upsert-work-items with a pointer to the transition 
         ->assertOk()
         ->assertStructuredContent(function ($json) {
             $json->where('items.0.ok', false)
-                ->where('items.0.errors.status.0', 'Work item status is not set here. Use the work item transition tools (start, complete, block, unblock, cancel, reopen) to move status through validated transitions.')
+                ->where('items.0.errors.status.0', 'Work item status is not set here. Use the work item transition tools (start, complete, block, unblock, reset, cancel, reopen) to move status through validated transitions.')
                 ->etc();
         });
 
