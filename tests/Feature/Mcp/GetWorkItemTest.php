@@ -60,6 +60,7 @@ it('returns full work item details by id', function () {
         'name' => 'Build telemetry dashboard',
         'description' => 'Render operational telemetry.',
         'needs_mockups' => true,
+        'sort_order' => 7,
     ]);
     $child = WorkItem::create([
         'project_id' => $this->project->id,
@@ -86,6 +87,7 @@ it('returns full work item details by id', function () {
         ->assertStructuredContent(function ($json) use ($workItem, $parent, $role, $consulted, $requirement, $milestone, $dependency, $child) {
             $json->where('id', $workItem->id)
                 ->where('reference', $workItem->reference())
+                ->where('sort_order', 7)
                 ->where('name', 'Build telemetry dashboard')
                 ->where('description', 'Render operational telemetry.')
                 ->where('needs_mockups', true)

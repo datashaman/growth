@@ -27,11 +27,12 @@ class WorkItem extends Model
 
     protected $fillable = [
         'project_id', 'parent_id', 'responsible_role_id', 'kind',
-        'name', 'description', 'status', 'needs_mockups',
+        'name', 'description', 'status', 'needs_mockups', 'sort_order',
     ];
 
     protected $casts = [
         'number' => 'integer',
+        'sort_order' => 'integer',
         'needs_mockups' => 'boolean',
     ];
 
@@ -40,6 +41,10 @@ class WorkItem extends Model
         static::creating(function (WorkItem $workItem): void {
             if ($workItem->number === null) {
                 $workItem->number = $workItem->nextNumberForProject();
+            }
+
+            if ($workItem->sort_order === null) {
+                $workItem->sort_order = $workItem->number;
             }
         });
 
@@ -78,15 +83,17 @@ class WorkItem extends Model
     }
 
     /**
-     * Stable WBS reading order. The per-project WI number is the only ordering
-     * signal Growth currently stores, so status must not reorder the plan tree.
+     * Stable WBS reading order. Manual sort_order controls display sequence
+     * without changing the immutable WI number; old rows fall back to number.
      *
      * @param  Builder<WorkItem>  $query
      * @return Builder<WorkItem>
      */
     public function scopeInWbsOrder(Builder $query): Builder
     {
-        return $query->orderBy('number')->orderBy('name');
+        return $query->orderByRaw('COALESCE(sort_order, number)')
+            ->orderBy('number')
+            ->orderBy('name');
     }
 
     /**

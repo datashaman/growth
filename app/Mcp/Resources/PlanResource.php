@@ -64,6 +64,7 @@ class PlanResource extends Resource implements HasUriTemplate
                 'id' => $workItem->id,
                 'kind' => $workItem->kind,
                 'name' => $workItem->name,
+                'sort_order' => $workItem->sort_order,
                 'status' => $workItem->status,
                 'responsible_role' => $workItem->responsibleRole?->name,
                 'covers' => $workItem->requirements->pluck('id')->values()->all(),

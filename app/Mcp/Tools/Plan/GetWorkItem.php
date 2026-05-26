@@ -38,6 +38,7 @@ class GetWorkItem extends Tool
             'project_id' => $workItem->project_id,
             'number' => $workItem->number,
             'reference' => $workItem->reference(),
+            'sort_order' => $workItem->sort_order,
             'kind' => $workItem->kind,
             'name' => $workItem->name,
             'description' => $workItem->description,
@@ -110,6 +111,7 @@ class GetWorkItem extends Tool
             'project_id' => $schema->string()->required(),
             'number' => $schema->integer()->required(),
             'reference' => $schema->string()->required(),
+            'sort_order' => $schema->integer(),
             'kind' => $schema->string()->required(),
             'name' => $schema->string()->required(),
             'description' => $schema->string(),
@@ -160,14 +162,14 @@ class GetWorkItem extends Tool
     private function relations(): array
     {
         return [
-            'parent:id,project_id,number,kind,name,status',
-            'children:id,project_id,parent_id,number,kind,name,status',
+            'parent:id,project_id,number,sort_order,kind,name,status',
+            'children:id,project_id,parent_id,number,sort_order,kind,name,status',
             'responsibleRole:id,name',
             'raciRoles:id,name',
             'requirements:id,project_id,number,doc,type,text,priority',
             'milestones:id,name,status',
-            'dependencies:id,project_id,number,kind,name,status',
-            'dependents:id,project_id,number,kind,name,status',
+            'dependencies:id,project_id,number,sort_order,kind,name,status',
+            'dependents:id,project_id,number,sort_order,kind,name,status',
             'deliveryLinks:id,work_item_id,type,ref,url,description',
             'mockups:id,owner_type,owner_id,name',
         ];
@@ -183,7 +185,7 @@ class GetWorkItem extends Tool
     }
 
     /**
-     * @return array{id:string,reference:string,kind:string,name:string,status:string}|null
+     * @return array{id:string,reference:string,sort_order:?int,kind:string,name:string,status:string}|null
      */
     private function workItemSummary(?WorkItem $workItem): ?array
     {
@@ -194,6 +196,7 @@ class GetWorkItem extends Tool
         return [
             'id' => $workItem->id,
             'reference' => $workItem->reference(),
+            'sort_order' => $workItem->sort_order,
             'kind' => $workItem->kind,
             'name' => $workItem->name,
             'status' => $workItem->status,

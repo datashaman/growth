@@ -108,26 +108,30 @@ it('matches work items by reference in the text query', function (string $query)
     'bare number' => '1',
 ]);
 
-it('returns work items in WI reference order instead of kind, name, or status order', function () {
+it('returns work items in explicit WBS display order instead of WI reference, kind, name, or status order', function () {
     $first = WorkItem::create([
         'project_id' => $this->project->id,
         'kind' => 'task',
         'name' => 'Zulu done task',
         'status' => 'done',
+        'sort_order' => 20,
     ]);
     $second = WorkItem::create([
         'project_id' => $this->project->id,
         'kind' => 'deliverable',
         'name' => 'Alpha todo deliverable',
         'status' => 'todo',
+        'sort_order' => 10,
     ]);
 
     PlanningServer::tool(ListWorkItems::class, [
         'project_id' => $this->project->id,
     ])->assertOk()
         ->assertStructuredContent(fn ($json) => $json
-            ->where('results.0.id', $first->id)
-            ->where('results.1.id', $second->id)
+            ->where('results.0.id', $second->id)
+            ->where('results.0.sort_order', 10)
+            ->where('results.1.id', $first->id)
+            ->where('results.1.sort_order', 20)
             ->etc());
 });
 
@@ -179,6 +183,7 @@ it('documents the mockup discovery filters in the tool schema', function () {
 
     expect($tool)->not->toBeNull()
         ->and($tool['description'] ?? '')->toContain('needs_mockups')
+        ->and($tool['description'] ?? '')->toContain('sort_order')
         ->and($tool['description'] ?? '')->toContain('mockups_count')
         ->and($tool['inputSchema']['properties'] ?? [])->toHaveKeys(['needs_mockups', 'has_mockups'])
         ->and($tool['inputSchema']['properties']['q']['description'] ?? '')->toContain('WI-019');

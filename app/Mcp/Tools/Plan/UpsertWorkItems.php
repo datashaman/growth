@@ -65,6 +65,7 @@ class UpsertWorkItems extends Tool
                 'id' => $workItem->id,
                 'number' => $workItem->number,
                 'reference' => $workItem->reference(),
+                'sort_order' => $workItem->sort_order,
                 'kind' => $workItem->kind,
                 'name' => $workItem->name,
                 'parent_id' => $workItem->parent_id,
@@ -93,6 +94,7 @@ class UpsertWorkItems extends Tool
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'needs_mockups' => 'sometimes|boolean',
+            'sort_order' => 'nullable|integer|min:0',
             'status' => 'prohibited',
         ];
     }
@@ -120,6 +122,7 @@ class UpsertWorkItems extends Tool
                     'name' => $s->string()->description('Short label')->required(),
                     'description' => $s->string()->description('Optional details or acceptance notes. For an existing work item, preserve relevant context from its implementation brief.'),
                     'needs_mockups' => $s->boolean()->description('Whether this work item requires one or more spec mockups before it is ready. Defaults to false.'),
+                    'sort_order' => $s->integer()->description('Optional WBS display order. Lower values appear first within the same parent; omitted values keep the existing order or default to the WI number on create.'),
                 ]))
                 ->min(1)
                 ->max(100)

@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('List work items for a project. Filterable by kind, status, responsible_role_id, parent_id, needs_mockups, mockup presence, and substring/reference query. "root_only=true" returns only top-level deliverables. Result rows include needs_mockups and mockups_count for UI/mockup discovery without per-item detail reads. For the requirements, milestones, and roles a work item is linked to, use `trace-query` with the work-item id. When architecture context is available, inspect `list-architecture-views` and `list-architecture-elements` before implementing work items.')]
+#[Description('List work items for a project in WBS display order. Filterable by kind, status, responsible_role_id, parent_id, needs_mockups, mockup presence, and substring/reference query. "root_only=true" returns only top-level deliverables. Result rows include sort_order, needs_mockups, and mockups_count for UI/mockup discovery without per-item detail reads. For the requirements, milestones, and roles a work item is linked to, use `trace-query` with the work-item id. When architecture context is available, inspect `list-architecture-views` and `list-architecture-elements` before implementing work items.')]
 class ListWorkItems extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -80,7 +80,7 @@ class ListWorkItems extends Tool
             ->limit($limit)
             ->offset($offset)
             ->get([
-                'id', 'number', 'kind', 'name', 'status', 'parent_id', 'responsible_role_id', 'needs_mockups',
+                'id', 'number', 'sort_order', 'kind', 'name', 'status', 'parent_id', 'responsible_role_id', 'needs_mockups',
             ]);
 
         return Response::structured([
@@ -91,6 +91,7 @@ class ListWorkItems extends Tool
                 'id' => $w->id,
                 'number' => $w->number,
                 'reference' => $w->reference(),
+                'sort_order' => $w->sort_order,
                 'kind' => $w->kind,
                 'name' => $w->name,
                 'status' => $w->status,
