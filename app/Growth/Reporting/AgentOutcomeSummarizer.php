@@ -32,6 +32,7 @@ class AgentOutcomeSummarizer
         'reopen-anomaly',
         'reopen-finding',
         'reopen-work-item',
+        'reset-work-item',
         'reopen-feedback',
         'roll-back-deployment',
     ];

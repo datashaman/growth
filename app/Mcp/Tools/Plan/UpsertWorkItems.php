@@ -16,7 +16,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 use Throwable;
 
 #[IsDestructive(false)]
-#[Description('Create or update up to 100 work items in one call. Before updating an existing work item, read its implementation brief (`growth://work-items/{work_item}/implementation-brief`) so the artifact reflects linked requirements, architecture, dependencies, mockups, and evidence. For new work items, use `plan-slice` and project planning context first. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items. Status is not set here: new items start as todo and move only through the work item transition tools (start, complete, block, unblock, cancel, reopen).')]
+#[Description('Create or update up to 100 work items in one call. Before updating an existing work item, read its implementation brief (`growth://work-items/{work_item}/implementation-brief`) so the artifact reflects linked requirements, architecture, dependencies, mockups, and evidence. For new work items, use `plan-slice` and project planning context first. Each item is committed independently — per-item validation or runtime failures are reported alongside successes without aborting the batch and without rolling back already-applied items. Status is not set here: new items start as todo and move only through the work item transition tools (start, complete, block, unblock, reset, cancel, reopen).')]
 class UpsertWorkItems extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -105,7 +105,7 @@ class UpsertWorkItems extends Tool
     private function itemMessages(): array
     {
         return [
-            'status.prohibited' => 'Work item status is not set here. Use the work item transition tools (start, complete, block, unblock, cancel, reopen) to move status through validated transitions.',
+            'status.prohibited' => 'Work item status is not set here. Use the work item transition tools (start, complete, block, unblock, reset, cancel, reopen) to move status through validated transitions.',
         ];
     }
 

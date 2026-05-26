@@ -2,6 +2,7 @@
 
 use App\Growth\Transitions\CompleteWorkItem;
 use App\Growth\Transitions\IllegalTransitionException;
+use App\Growth\Transitions\ResetWorkItem;
 use App\Growth\Transitions\StartWorkItem;
 use App\Models\Project;
 use App\Models\StatusTransition;
@@ -56,6 +57,28 @@ it('records a null actor when no user is supplied', function () {
 
     expect($transition->transitioned_by_user_id)->toBeNull()
         ->and($item->fresh()->status)->toBe('done');
+});
+
+it('resets an in_progress work item back to todo and records an audit row', function () {
+    $item = ($this->makeItem)('in_progress');
+
+    $transition = (new ResetWorkItem)->apply($item, $this->user, 'Started by mistake');
+
+    expect($item->fresh()->status)->toBe('todo')
+        ->and($transition->from_status)->toBe('in_progress')
+        ->and($transition->to_status)->toBe('todo')
+        ->and($transition->reason)->toBe('Started by mistake')
+        ->and($transition->transitioned_by_user_id)->toBe($this->user->id);
+});
+
+it('rejects resetting a work item that is not in_progress', function () {
+    $item = ($this->makeItem)('blocked');
+
+    expect(fn () => (new ResetWorkItem)->apply($item))
+        ->toThrow(IllegalTransitionException::class, 'Cannot reset a work item that is blocked.');
+
+    expect($item->fresh()->status)->toBe('blocked')
+        ->and(StatusTransition::count())->toBe(0);
 });
 
 it('rolls a parent work package to done when every direct child is done', function () {

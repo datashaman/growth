@@ -106,6 +106,7 @@ use App\Mcp\Tools\Plan\MarkRiskRealized;
 use App\Mcp\Tools\Plan\PromoteRelease;
 use App\Mcp\Tools\Plan\RecordUnattributedEvent;
 use App\Mcp\Tools\Plan\ReopenWorkItem;
+use App\Mcp\Tools\Plan\ResetWorkItem;
 use App\Mcp\Tools\Plan\ResolveWorkItemByBranch;
 use App\Mcp\Tools\Plan\ResolveWorkItemByReference;
 use App\Mcp\Tools\Plan\RevertMockup;
@@ -199,6 +200,7 @@ class PlanningServer extends Server
         CompleteWorkItem::class,
         BlockWorkItem::class,
         UnblockWorkItem::class,
+        ResetWorkItem::class,
         CancelWorkItem::class,
         ReopenWorkItem::class,
         LinkWorkItemToRequirements::class,
