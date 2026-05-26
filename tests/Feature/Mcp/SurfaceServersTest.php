@@ -407,6 +407,11 @@ it('returns usable prompt messages from role servers', function () {
         'rigor_level' => 2,
     ])->assertOk()
         ->assertSee('upsert-project')
+        ->assertSee('Create a dedicated folder')
+        ->assertSee('Create the GitHub repository')
+        ->assertSee('scaffold-github-sync')
+        ->assertSee('.github/workflows/growth-sync.yml')
+        ->assertSee('php artisan growth-sync:install')
         ->assertSee('growth://playbook')
         ->assertSee('TodoMVC');
 
