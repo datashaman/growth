@@ -2,8 +2,6 @@
 
 use App\Concerns\ProjectScoped;
 use App\Models\WorkItem;
-use App\Support\BadgeVariant;
-use App\Support\EnumLabel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -11,7 +9,8 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Plan')] class extends Component {
+new #[Title('Plan')] class extends Component
+{
     use ProjectScoped;
 
     private const WORK_ITEM_BRANCH_LIMIT = 100;
@@ -80,7 +79,7 @@ new #[Title('Plan')] class extends Component {
      * expanded direct children are loaded, with caps at both branch and page
      * levels so large projects do not render thousands of DOM rows.
      *
-     * @return \Illuminate\Support\Collection<int,array{item:WorkItem,depth:int,has_more_siblings:bool,hidden_siblings:int,limit_reached:bool}>
+     * @return Collection<int,array{item:WorkItem,depth:int,has_more_siblings:bool,hidden_siblings:int,limit_reached:bool}>
      */
     #[Computed]
     public function workItemRows(): Collection
@@ -110,6 +109,17 @@ new #[Title('Plan')] class extends Component {
         unset($this->workItemRows);
     }
 
+    /**
+     * @return list<string>
+     */
+    #[Computed]
+    public function expandableWorkItemIds(): array
+    {
+        return $this->selectedProject
+            ? $this->selectedProject->workItems()->has('children')->pluck('id')->all()
+            : [];
+    }
+
     public function workItemBranchLimit(): int
     {
         return self::WORK_ITEM_BRANCH_LIMIT;
@@ -126,7 +136,7 @@ new #[Title('Plan')] class extends Component {
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int,array{item:WorkItem,depth:int,has_more_siblings:bool,hidden_siblings:int,limit_reached:bool}>
+     * @return Collection<int,array{item:WorkItem,depth:int,has_more_siblings:bool,hidden_siblings:int,limit_reached:bool}>
      */
     private function filteredWorkItemRows(): Collection
     {
@@ -289,7 +299,6 @@ new #[Title('Plan')] class extends Component {
             ? $plan->baselines()->with(['baselinedByUser', 'baselinedByAgent'])->orderByDesc('version')->get()
             : collect();
     }
-
 }; ?>
 
 <div class="flex h-full w-full flex-1 flex-col gap-6">
@@ -298,7 +307,7 @@ new #[Title('Plan')] class extends Component {
         :description="__('Milestones, work items, and baselines for delivery control.')">
         @if ($this->selectedProject !== null && $this->projectPlan)
             <x-slot:actions>
-                <flux:badge :color="BadgeVariant::planStatus($this->projectPlan->status)" size="sm">{{ EnumLabel::lower($this->projectPlan->status) }}</flux:badge>
+                <flux:badge :color="\App\Support\BadgeVariant::planStatus($this->projectPlan->status)" size="sm">{{ \App\Support\EnumLabel::lower($this->projectPlan->status) }}</flux:badge>
             </x-slot:actions>
         @endif
     </x-project-page-header>
@@ -326,7 +335,7 @@ new #[Title('Plan')] class extends Component {
                         <flux:table.row>
                             <flux:table.cell class="font-medium">{{ $milestone->name }}</flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge :color="BadgeVariant::milestoneStatus($milestone->status)" size="sm">{{ EnumLabel::lower($milestone->status) }}</flux:badge>
+                                <flux:badge :color="\App\Support\BadgeVariant::milestoneStatus($milestone->status)" size="sm">{{ \App\Support\EnumLabel::lower($milestone->status) }}</flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>{{ \Illuminate\Support\Str::limit($milestone->exit_criteria ?? '—', 100) }}</flux:table.cell>
                         </flux:table.row>
@@ -335,6 +344,53 @@ new #[Title('Plan')] class extends Component {
             </flux:table>
         </x-data-table>
 
+        <div
+            x-data="{
+                expandedWorkItemIds: @entangle('expandedWorkItemIds').live,
+                storageKey: 'growth.plan.workItemTree.expanded.{{ $this->selectedProject->id }}',
+                init() {
+                    const stored = this.readExpandedWorkItemIds();
+
+                    if (stored !== null) {
+                        this.expandedWorkItemIds = stored;
+                    }
+
+                    this.$watch('expandedWorkItemIds', (value) => {
+                        this.writeExpandedWorkItemIds(value);
+                    });
+                },
+                readExpandedWorkItemIds() {
+                    try {
+                        const value = JSON.parse(localStorage.getItem(this.storageKey) ?? 'null');
+
+                        return Array.isArray(value) ? this.normalizedExpandedWorkItemIds(value) : null;
+                    } catch {
+                        return null;
+                    }
+                },
+                writeExpandedWorkItemIds(value) {
+                    try {
+                        localStorage.setItem(this.storageKey, JSON.stringify(this.normalizedExpandedWorkItemIds(value)));
+                    } catch {}
+                },
+                normalizedExpandedWorkItemIds(value) {
+                    return [...new Set((Array.isArray(value) ? value : []).filter((id) => typeof id === 'string'))];
+                },
+                isExpanded(id) {
+                    return this.expandedWorkItemIds.includes(id);
+                },
+                toggle(id) {
+                    this.expandedWorkItemIds = this.isExpanded(id)
+                        ? this.expandedWorkItemIds.filter((expandedId) => expandedId !== id)
+                        : [...this.expandedWorkItemIds, id];
+                },
+                expandAll(ids) {
+                    this.expandedWorkItemIds = this.normalizedExpandedWorkItemIds([...this.expandedWorkItemIds, ...ids]);
+                },
+                collapseAll() {
+                    this.expandedWorkItemIds = [];
+                },
+            }">
         <x-data-table
             :count="$this->workItemCount"
             :count-label="__('items')"
@@ -349,6 +405,17 @@ new #[Title('Plan')] class extends Component {
                         </flux:text>
                     </div>
                     <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                        @if (! $this->isWorkItemFiltered() && $this->workItemCount > 0)
+                            <div class="flex items-center gap-2 text-xs" data-test="work-item-tree-bulk-controls">
+                                <button type="button" x-on:click="expandAll(@js($this->expandableWorkItemIds))" class="text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300" data-test="work-item-tree-expand-all">
+                                    {{ __('Expand all') }}
+                                </button>
+                                <span aria-hidden="true" class="text-zinc-300 dark:text-zinc-700">/</span>
+                                <button type="button" x-on:click="collapseAll()" class="text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300" data-test="work-item-tree-collapse-all">
+                                    {{ __('Collapse all') }}
+                                </button>
+                            </div>
+                        @endif
                         <flux:input
                             wire:model.live.debounce.200ms="workItemFilter"
                             size="sm"
@@ -390,8 +457,8 @@ new #[Title('Plan')] class extends Component {
                         <flux:table.cell>
                             <div class="grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-2" @style(['padding-left: '.($row['depth'] * 1.5).'rem' => $row['depth'] > 0])>
                                 @if ($item->children_count > 0 && ! $this->isWorkItemFiltered())
-                                    <button type="button" wire:click="toggleWorkItem('{{ $item->id }}')" class="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-zinc-200 text-xs text-zinc-500 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100" aria-label="{{ in_array($item->id, $expandedWorkItemIds, true) ? __('Collapse :name', ['name' => $item->name]) : __('Expand :name', ['name' => $item->name]) }}" data-test="work-item-tree-toggle">
-                                        {{ in_array($item->id, $expandedWorkItemIds, true) ? '−' : '+' }}
+                                    <button type="button" x-on:click="toggle('{{ $item->id }}')" class="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-zinc-200 text-xs text-zinc-500 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100" x-bind:aria-label="isExpanded('{{ $item->id }}') ? @js(__('Collapse :name', ['name' => $item->name])) : @js(__('Expand :name', ['name' => $item->name]))" data-test="work-item-tree-toggle">
+                                        <span x-text="isExpanded('{{ $item->id }}') ? '−' : '+'">{{ in_array($item->id, $expandedWorkItemIds, true) ? '−' : '+' }}</span>
                                     </button>
                                 @else
                                     <span aria-hidden="true" class="h-5 w-5 shrink-0"></span>
@@ -404,11 +471,11 @@ new #[Title('Plan')] class extends Component {
                             </div>
                         </flux:table.cell>
                         <flux:table.cell>
-                            <flux:badge :color="BadgeVariant::workItemKind($item->kind)" size="sm">{{ str_replace('_', ' ', $item->kind) }}</flux:badge>
+                            <flux:badge :color="\App\Support\BadgeVariant::workItemKind($item->kind)" size="sm">{{ str_replace('_', ' ', $item->kind) }}</flux:badge>
                         </flux:table.cell>
                         <flux:table.cell>
                             <span title="{{ __('Workflow status set by the team. The Dashboard Implementation table shows the evidence-derived delivery State alongside it.') }}">
-                                <flux:badge :color="BadgeVariant::workItemStatus($item->status)" size="sm">{{ str_replace('_', ' ', $item->status) }}</flux:badge>
+                                <flux:badge :color="\App\Support\BadgeVariant::workItemStatus($item->status)" size="sm">{{ str_replace('_', ' ', $item->status) }}</flux:badge>
                             </span>
                         </flux:table.cell>
                         <flux:table.cell>
@@ -448,6 +515,7 @@ new #[Title('Plan')] class extends Component {
                 </flux:table.rows>
             </flux:table>
         </x-data-table>
+        </div>
 
         <x-data-table
             :title="__('Baselines')"
