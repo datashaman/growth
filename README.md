@@ -123,11 +123,15 @@ The quickest path is the `scaffold-github-sync` MCP tool. Given a project, it re
 To wire it up by hand instead:
 
 1. Copy [`actions/growth-sync/workflow.example.yml`](actions/growth-sync/workflow.example.yml) to `.github/workflows/growth-sync.yml` in the repository you want to track.
-2. Mint a Passport personal access token with the `mcp:use` scope for the Growth user the sync should act as.
-3. Add the token as the `GROWTH_MCP_TOKEN` repository secret.
-4. Set the workflow's `growth-url` input to your Growth instance URL. A `${{ vars.GROWTH_URL }}` repository variable keeps the URL out of the repo.
-5. In Growth, set the project's `github_repo` field to the repository in `owner/repo` form so deployment and release events resolve to it.
-6. If your CI runs on GitHub Actions, edit the `workflow_run.workflows` list in the copied workflow to name your CI workflow or workflows.
+2. Ask the Growth operator to install the repository secret and variable:
+
+   ```bash
+   php artisan growth-sync:install <project-id> <sync-user-email> --growth-url=https://growth.example.com
+   ```
+
+   The command mints a workspace-bound Passport token with the `mcp:use` scope and writes it directly to `GROWTH_MCP_TOKEN` in GitHub Secrets without printing it. It also writes `GROWTH_URL` as a repository variable.
+3. In Growth, set the project's `github_repo` field to the repository in `owner/repo` form so deployment and release events resolve to it.
+4. If your CI runs on GitHub Actions, edit the `workflow_run.workflows` list in the copied workflow to name your CI workflow or workflows.
 
 ### CI sync
 

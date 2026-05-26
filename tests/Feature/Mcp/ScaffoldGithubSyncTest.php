@@ -38,6 +38,10 @@ it('scaffolds a current workflow for a repo-bound project', function () {
                     && str_contains($yaml, 'Actions can only resolve it'))
                 ->has('setup_steps', 5)
                 ->where('setup_steps.1.id', 'action_access')
+                ->where('setup_steps.2.id', 'mcp_token')
+                ->where('setup_steps.2.description', fn (string $description) => str_contains($description, 'php artisan growth-sync:install '.$this->project->id.' <sync-user-email> --growth-url=<growth-url>')
+                    && str_contains($description, 'writes it directly to the repository as GROWTH_MCP_TOKEN')
+                    && str_contains($description, 'Do not generate or return this token through MCP'))
                 ->where('setup_steps.4.id', 'repo_binding')
                 ->where('setup_steps.4.done', true);
         });

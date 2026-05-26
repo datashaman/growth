@@ -137,7 +137,7 @@ class ScaffoldGithubSync extends Tool
             [
                 'id' => 'mcp_token',
                 'label' => 'Add the GROWTH_MCP_TOKEN secret',
-                'description' => 'Mint a Passport personal access token with the mcp:use scope and add it as the GROWTH_MCP_TOKEN repository secret.',
+                'description' => 'Ask the Growth operator to run `php artisan growth-sync:install '.$project->id.' <sync-user-email> --growth-url=<growth-url>`. The command mints a workspace-bound Passport token with the mcp:use scope and writes it directly to the repository as GROWTH_MCP_TOKEN, then writes GROWTH_URL as a repository variable. Do not generate or return this token through MCP, because the model and transcript would see it.',
                 'done' => false,
             ],
             [
