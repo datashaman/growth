@@ -60,6 +60,10 @@ test('the Plan work-items table nests children under their work package in WBS o
         ->assertSee($package->reference())
         ->assertDontSee($child->reference())
         ->assertSeeHtml('data-test="work-item-tree-toggle"')
+        ->assertSeeHtml('data-test="work-item-tree-bulk-controls"')
+        ->assertSeeHtml('data-test="work-item-tree-expand-all"')
+        ->assertSeeHtml('data-test="work-item-tree-collapse-all"')
+        ->assertSee('growth.plan.workItemTree.expanded.'.$this->project->id, false)
         ->call('toggleWorkItem', $package->id)
         ->assertSeeInOrder([$package->reference(), $child->reference()])
         ->assertSeeHtml('data-test="work-item-tree-list"')
@@ -145,6 +149,7 @@ test('the Plan work-items tree can be filtered by nested work item name', functi
         ->set('workItemFilter', 'throttle')
         ->assertSeeInOrder([$package->reference(), $child->reference()])
         ->assertSee('Calibrate throttle')
+        ->assertDontSeeHtml('data-test="work-item-tree-bulk-controls"')
         ->assertDontSee('Wire the descent engine');
 });
 
