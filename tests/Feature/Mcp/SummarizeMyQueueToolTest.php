@@ -88,6 +88,37 @@ it('groups every routed kind into its own bucket', function () {
             ->etc());
 });
 
+it('unions queue contents across every project role the caller holds', function () {
+    $this->actor->roles()->attach($this->otherRole);
+
+    ($this->approvedChange)($this->role->id);
+    ($this->approvedChange)($this->otherRole->id);
+    ($this->blockedItem)($this->role->id);
+    ($this->blockedItem)($this->otherRole->id);
+    DecisionRequest::factory()->create([
+        'project_id' => $this->project->id,
+        'target_role_id' => $this->role->id,
+        'status' => 'open',
+    ]);
+    DecisionRequest::factory()->create([
+        'project_id' => $this->project->id,
+        'target_role_id' => $this->otherRole->id,
+        'status' => 'open',
+    ]);
+
+    $digest = app(WhatNeedsMeDigest::class)->for($this->project, $this->actor);
+
+    expect($digest['change_requests'])->toHaveCount(2)
+        ->and($digest['blocked_work_items'])->toHaveCount(2)
+        ->and($digest['decision_requests'])->toHaveCount(2)
+        ->and(collect($digest['change_requests'])->flatMap(fn (array $item) => collect($item['queue_roles'])->pluck('name'))->unique()->values()->all())
+        ->toEqualCanonicalizing(['Product Owner', 'Architect'])
+        ->and(collect($digest['blocked_work_items'])->flatMap(fn (array $item) => collect($item['queue_roles'])->pluck('name'))->unique()->values()->all())
+        ->toEqualCanonicalizing(['Product Owner', 'Architect'])
+        ->and(collect($digest['decision_requests'])->flatMap(fn (array $item) => collect($item['queue_roles'])->pluck('name'))->unique()->values()->all())
+        ->toEqualCanonicalizing(['Product Owner', 'Architect']);
+});
+
 it('omits change requests requested by a role the caller does not hold', function () {
     ($this->approvedChange)($this->otherRole->id);
 
