@@ -201,6 +201,36 @@ it('serves a requirement verification brief', function () {
         ->assertSee('Expired cards can submit.');
 });
 
+it('documents the theme token injection contract in mockup design briefs', function () {
+    $requirement = Requirement::create([
+        'project_id' => $this->project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The checkout shall render a themed payment form.',
+        'renders_ui' => true,
+    ]);
+    Theme::create([
+        'project_id' => $this->project->id,
+        'name' => 'Mission Control',
+        'slug' => 'mission-control',
+        'css_tokens' => ['accent' => '#22c55e'],
+        'raw_css' => '.button { color: var(--accent); }',
+        'is_default' => true,
+    ]);
+
+    readResource(ReadonlyServer::class, "growth://owners/requirement/{$requirement->id}/mockup-design-brief")
+        ->assertOk()
+        ->assertSee('Mockup Design Brief')
+        ->assertSee('Mission Control')
+        ->assertSee('CSS tokens:** accent')
+        ->assertSee('Growth overlays the selected theme at preview time')
+        ->assertSee('Theme `css_tokens` are emitted as normalized `:root` custom properties')
+        ->assertSee('mockup HTML may reference them with `var(--token-name)`')
+        ->assertSee('Theme `raw_css` is injected into the preview document')
+        ->assertSee('stored mockup HTML is not mutated by theme injection')
+        ->assertSee('`theme=none` disables the overlay for verification');
+});
+
 it('serves a review brief', function () {
     $requirement = Requirement::create([
         'project_id' => $this->project->id,

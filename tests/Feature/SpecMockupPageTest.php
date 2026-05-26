@@ -58,6 +58,8 @@ it('uses assigned themes by default and supports non-persistent query preview ov
         'project_id' => $this->project->id,
         'name' => 'Checkout Warmth',
         'slug' => 'checkout-warmth',
+        'css_tokens' => ['accent' => '#f97316'],
+        'raw_css' => '.checkout-shell { color: var(--accent); }',
     ]);
     ThemeAssignment::create([
         'project_id' => $this->project->id,
@@ -82,6 +84,14 @@ it('uses assigned themes by default and supports non-persistent query preview ov
         ->assertOk()
         ->assertSee('data-current-theme="mission-control"', false)
         ->assertSee('theme=mission-control', false);
+
+    $this->actingAs($this->user)
+        ->withHeader('Sec-Fetch-Dest', 'iframe')
+        ->get(route('mockups.raw', ['mockup' => $this->mockup, 'theme' => $assignedTheme->slug]))
+        ->assertOk()
+        ->assertSee('data-growth-theme="checkout-warmth"', false)
+        ->assertSee('--accent: #f97316;', false)
+        ->assertSee('.checkout-shell { color: var(--accent); }', false);
 });
 
 it('prefers mockup scoped theme assignments on the detail page', function () {
@@ -181,8 +191,8 @@ it('injects selected theme css into raw mockup html without changing stored html
         'project_id' => $this->project->id,
         'name' => 'Mission Control',
         'slug' => 'mission-control',
-        'css_tokens' => ['surface' => '#101418'],
-        'raw_css' => 'body { background: var(--surface); }',
+        'css_tokens' => ['--surface' => '#101418', 'accent color' => '#22c55e'],
+        'raw_css' => 'body { background: var(--surface); color: var(--accent-color); }',
     ]);
 
     $response = $this->actingAs($this->user)
@@ -191,7 +201,8 @@ it('injects selected theme css into raw mockup html without changing stored html
         ->assertOk()
         ->assertSee('data-growth-theme="mission-control"', false)
         ->assertSee('--surface: #101418;', false)
-        ->assertSee('body { background: var(--surface); }', false)
+        ->assertSee('--accent-color: #22c55e;', false)
+        ->assertSee('body { background: var(--surface); color: var(--accent-color); }', false)
         ->assertSee('Checkout mockup', false);
 
     expect($response->getContent())->toMatch('/<style>body \{ background: hotpink; \}<\/style>.*<style data-growth-theme="mission-control">/s');
@@ -199,6 +210,15 @@ it('injects selected theme css into raw mockup html without changing stored html
     expect($this->mockup->currentRevision->fresh()->html)
         ->not->toContain('data-growth-theme')
         ->and($this->mockup->currentRevision->fresh()->html)->toContain('Checkout mockup');
+
+    $this->actingAs($this->user)
+        ->withHeader('Sec-Fetch-Dest', 'iframe')
+        ->get(route('mockups.raw', ['mockup' => $this->mockup, 'theme' => 'none']))
+        ->assertOk()
+        ->assertDontSee('data-growth-theme', false)
+        ->assertDontSee('--surface: #101418;', false)
+        ->assertDontSee('var(--accent-color)', false)
+        ->assertSee('Checkout mockup', false);
 });
 
 it('ignores a theme slug from another project when serving raw mockup html', function () {
