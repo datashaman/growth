@@ -19,7 +19,7 @@ use App\Mcp\Tools\Common\MarkNotificationRead;
 use App\Mcp\Tools\Common\ReplyToNotification;
 use App\Mcp\Tools\Common\SendNotification;
 use App\Mcp\Tools\Common\WhoAmI;
-use App\Mcp\Tools\Concerns\DeleteConcern;
+use App\Mcp\Tools\Concerns\DeleteConcerns;
 use App\Mcp\Tools\Concerns\UpsertConcerns;
 use App\Mcp\Tools\Dashboard\ShowRequirementExplorer;
 use App\Mcp\Tools\Dashboard\SummarizeMyQueue;
@@ -40,7 +40,7 @@ use App\Mcp\Tools\Projects\DeleteProject;
 use App\Mcp\Tools\Projects\ListProjects;
 use App\Mcp\Tools\Projects\MoveProject;
 use App\Mcp\Tools\Projects\UpsertProject;
-use App\Mcp\Tools\Requirements\DeleteRequirement;
+use App\Mcp\Tools\Requirements\DeleteRequirements;
 use App\Mcp\Tools\Requirements\ListRequirements;
 use App\Mcp\Tools\Requirements\UpsertRequirements;
 use App\Mcp\Tools\Search\Search;
@@ -94,7 +94,7 @@ class IntakeServer extends Server
         UpsertStakeholder::class,
         DeleteStakeholder::class,
         UpsertConcerns::class,
-        DeleteConcern::class,
+        DeleteConcerns::class,
         UpsertSource::class,
         ListSources::class,
         DeleteSource::class,
@@ -105,7 +105,7 @@ class IntakeServer extends Server
         UncitArtifact::class,
         UpsertRequirements::class,
         ListRequirements::class,
-        DeleteRequirement::class,
+        DeleteRequirements::class,
         LookupTerm::class,
         LintProject::class,
         TraceQuery::class,

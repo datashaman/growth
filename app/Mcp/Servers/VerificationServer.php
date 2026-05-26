@@ -45,7 +45,7 @@ use App\Mcp\Tools\Search\Search;
 use App\Mcp\Tools\Trace\TraceQuery;
 use App\Mcp\Tools\Verification\CloseAnomaly;
 use App\Mcp\Tools\Verification\DeleteAnomaly;
-use App\Mcp\Tools\Verification\DeleteVerificationCase;
+use App\Mcp\Tools\Verification\DeleteVerificationCases;
 use App\Mcp\Tools\Verification\DeleteVerificationPlan;
 use App\Mcp\Tools\Verification\DeleteVerificationRun;
 use App\Mcp\Tools\Verification\LinkVerificationRunEvidence;
@@ -99,7 +99,7 @@ class VerificationServer extends Server
         DeleteVerificationPlan::class,
         UpsertVerificationCases::class,
         ListVerificationCases::class,
-        DeleteVerificationCase::class,
+        DeleteVerificationCases::class,
         LogVerificationRun::class,
         LinkVerificationRunEvidence::class,
         ListVerificationRuns::class,
