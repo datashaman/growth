@@ -402,6 +402,7 @@ new #[Title('Dashboard')] class extends Component {
                                 <flux:table.cell><flux:badge color="amber" size="sm">{{ __('change request') }}</flux:badge></flux:table.cell>
                                 <flux:table.cell>
                                     <a href="{{ route('change-requests.show', $item['id']) }}" wire:navigate class="font-medium hover:underline">{{ $item['reference'] }} — {{ $item['title'] }}</a>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('for :roles', ['roles' => collect($item['queue_roles'] ?? [])->pluck('name')->join(', ') ?: '—']) }}</div>
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <flux:badge :color="BadgeVariant::priority($item['priority'])" size="sm">{{ EnumLabel::lower($item['priority']) }}</flux:badge>
@@ -413,6 +414,7 @@ new #[Title('Dashboard')] class extends Component {
                                 <flux:table.cell><flux:badge color="sky" size="sm">{{ __('review') }}</flux:badge></flux:table.cell>
                                 <flux:table.cell>
                                     <a href="{{ route('reviews.show', $item['id']) }}" wire:navigate class="font-medium hover:underline">{{ $item['title'] }}</a>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('for :roles', ['roles' => collect($item['queue_roles'] ?? [])->pluck('name')->join(', ') ?: '—']) }}</div>
                                     <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('as :role', ['role' => str_replace('_', ' ', (string) $item['responsibility'])]) }}</div>
                                 </flux:table.cell>
                                 <flux:table.cell>
@@ -425,6 +427,7 @@ new #[Title('Dashboard')] class extends Component {
                                 <flux:table.cell><flux:badge color="zinc" size="sm">{{ __('work item') }}</flux:badge></flux:table.cell>
                                 <flux:table.cell>
                                     <a href="{{ route('work-items.show', $item['id']) }}" wire:navigate class="font-medium hover:underline">{{ $item['reference'] }} — {{ $item['name'] }}</a>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('for :roles', ['roles' => collect($item['queue_roles'] ?? [])->pluck('name')->join(', ') ?: '—']) }}</div>
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <flux:badge :color="BadgeVariant::workItemStatus('blocked')" size="sm">{{ __('blocked') }}</flux:badge>
@@ -436,7 +439,7 @@ new #[Title('Dashboard')] class extends Component {
                                 <flux:table.cell><flux:badge color="purple" size="sm">{{ __('decision') }}</flux:badge></flux:table.cell>
                                 <flux:table.cell>
                                     <div class="font-medium">{{ \Illuminate\Support\Str::limit($item['question'], 100) }}</div>
-                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('routed to :role', ['role' => $item['target_role'] ?? '—']) }}</div>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('for :roles', ['roles' => collect($item['queue_roles'] ?? [])->pluck('name')->join(', ') ?: ($item['target_role'] ?? '—')]) }}</div>
                                 </flux:table.cell>
                                 <flux:table.cell class="text-xs text-zinc-500 dark:text-zinc-400">
                                     {{ $item['deadline'] ? __('by :date', ['date' => \Illuminate\Support\Carbon::parse($item['deadline'])->format('Y-m-d')]) : '—' }}
@@ -455,6 +458,7 @@ new #[Title('Dashboard')] class extends Component {
                                     @else
                                         <div class="font-medium">{{ $item['message'] }}</div>
                                     @endif
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('for :roles', ['roles' => collect($item['queue_roles'] ?? [])->pluck('name')->join(', ') ?: '—']) }}</div>
                                     <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ str_replace('_', ' ', (string) $item['subject_type']) }}</div>
                                 </flux:table.cell>
                                 <flux:table.cell class="text-xs text-zinc-500 dark:text-zinc-400">{{ EnumLabel::findingRule($item['rule']) }}</flux:table.cell>

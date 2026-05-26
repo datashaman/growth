@@ -89,12 +89,16 @@ class WhatNeedsMeDigest
         $roleIds = $user
             ? $user->roles()->where('roles.project_id', $project->id)->pluck('roles.id')->all()
             : [];
+        $roleNames = Role::query()
+            ->whereIn('id', $roleIds)
+            ->pluck('name', 'id')
+            ->all();
 
-        $changeRequests = $this->changeRequests($project, $roleIds);
-        $reviews = $this->reviews($project, $roleIds);
-        $blockedWorkItems = $this->blockedWorkItems($project, $roleIds);
-        $decisionRequests = $this->decisionRequests($roleIds);
-        [$lintFindings, $unownedLintFindings] = $this->lintFindings($project, $roleIds);
+        $changeRequests = $this->changeRequests($project, $roleIds, $roleNames);
+        $reviews = $this->reviews($project, $roleIds, $roleNames);
+        $blockedWorkItems = $this->blockedWorkItems($project, $roleIds, $roleNames);
+        $decisionRequests = $this->decisionRequests($roleIds, $roleNames);
+        [$lintFindings, $unownedLintFindings] = $this->lintFindings($project, $roleIds, $roleNames);
 
         return [
             'change_requests' => $changeRequests,
@@ -117,7 +121,7 @@ class WhatNeedsMeDigest
      * @param  list<string>  $roleIds
      * @return list<array<string, mixed>>
      */
-    private function changeRequests(Project $project, array $roleIds): array
+    private function changeRequests(Project $project, array $roleIds, array $roleNames): array
     {
         if ($roleIds === []) {
             return [];
@@ -133,6 +137,7 @@ class WhatNeedsMeDigest
                 'reference' => $change->reference(),
                 'title' => $change->title,
                 'priority' => $change->priority,
+                'queue_roles' => $this->queueRoles([$change->requester_role_id], $roleNames),
             ])
             ->all();
     }
@@ -143,7 +148,7 @@ class WhatNeedsMeDigest
      * @param  list<string>  $roleIds
      * @return list<array<string, mixed>>
      */
-    private function reviews(Project $project, array $roleIds): array
+    private function reviews(Project $project, array $roleIds, array $roleNames): array
     {
         if ($roleIds === []) {
             return [];
@@ -163,6 +168,7 @@ class WhatNeedsMeDigest
                 'title' => $participant->review?->title,
                 'status' => $participant->review?->status,
                 'responsibility' => $participant->responsibility,
+                'queue_roles' => $this->queueRoles([$participant->role_id], $roleNames),
             ])
             ->all();
     }
@@ -176,7 +182,7 @@ class WhatNeedsMeDigest
      * @param  list<string>  $roleIds
      * @return list<array<string, mixed>>
      */
-    private function blockedWorkItems(Project $project, array $roleIds): array
+    private function blockedWorkItems(Project $project, array $roleIds, array $roleNames): array
     {
         if ($roleIds === []) {
             return [];
@@ -190,21 +196,33 @@ class WhatNeedsMeDigest
                     ->whereIn('roles.id', $roleIds)
                     ->whereIn('raci_assignments.raci', ['r', 'a'])))
             ->orderBy('name')
-            ->with('consultedRoles:id,name')
+            ->with('consultedRoles:id,name', 'raciRoles:id,name')
             ->get()
-            ->map(fn (WorkItem $workItem): array => [
-                'id' => $workItem->id,
-                'reference' => $workItem->reference(),
-                'name' => $workItem->name,
-                'kind' => $workItem->kind,
-                'consult_with' => $workItem->consultedRoles
-                    ->map(fn (Role $role): array => [
-                        'id' => $role->id,
-                        'name' => $role->name,
-                    ])
-                    ->values()
-                    ->all(),
-            ])
+            ->map(function (WorkItem $workItem) use ($roleIds, $roleNames): array {
+                $raciRoleIds = $workItem->raciRoles
+                    ->filter(fn (Role $role): bool => in_array($role->id, $roleIds, true)
+                        && in_array($role->pivot->raci, ['r', 'a'], true))
+                    ->pluck('id')
+                    ->all();
+
+                return [
+                    'id' => $workItem->id,
+                    'reference' => $workItem->reference(),
+                    'name' => $workItem->name,
+                    'kind' => $workItem->kind,
+                    'queue_roles' => $this->queueRoles([
+                        $workItem->responsible_role_id,
+                        ...$raciRoleIds,
+                    ], $roleNames),
+                    'consult_with' => $workItem->consultedRoles
+                        ->map(fn (Role $role): array => [
+                            'id' => $role->id,
+                            'name' => $role->name,
+                        ])
+                        ->values()
+                        ->all(),
+                ];
+            })
             ->all();
     }
 
@@ -214,7 +232,7 @@ class WhatNeedsMeDigest
      * @param  list<string>  $roleIds
      * @return list<array<string, mixed>>
      */
-    private function decisionRequests(array $roleIds): array
+    private function decisionRequests(array $roleIds, array $roleNames): array
     {
         if ($roleIds === []) {
             return [];
@@ -230,6 +248,7 @@ class WhatNeedsMeDigest
                 'id' => $decisionRequest->id,
                 'question' => $decisionRequest->question,
                 'target_role' => $decisionRequest->targetRole?->name,
+                'queue_roles' => $this->queueRoles([$decisionRequest->target_role_id], $roleNames),
                 'deadline' => $decisionRequest->deadline?->toIso8601String(),
             ])
             ->all();
@@ -245,7 +264,7 @@ class WhatNeedsMeDigest
      * @param  list<string>  $roleIds
      * @return array{0: list<array<string, mixed>>, 1: list<array<string, mixed>>}
      */
-    private function lintFindings(Project $project, array $roleIds): array
+    private function lintFindings(Project $project, array $roleIds, array $roleNames): array
     {
         $errors = array_filter(
             $this->allFindings($project),
@@ -271,6 +290,7 @@ class WhatNeedsMeDigest
             }
 
             if (in_array($ownerRoleId, $roleIds, true)) {
+                $finding['queue_roles'] = $this->queueRoles([$ownerRoleId], $roleNames);
                 $mine[] = $finding;
             }
         }
@@ -338,5 +358,23 @@ class WhatNeedsMeDigest
         }
 
         return $owners;
+    }
+
+    /**
+     * @param  array<int, mixed>  $roleIds
+     * @param  array<string, string>  $roleNames
+     * @return list<array{id:string,name:string}>
+     */
+    private function queueRoles(array $roleIds, array $roleNames): array
+    {
+        return collect($roleIds)
+            ->filter(fn (mixed $roleId): bool => is_string($roleId) && isset($roleNames[$roleId]))
+            ->unique()
+            ->map(fn (string $roleId): array => [
+                'id' => $roleId,
+                'name' => $roleNames[$roleId],
+            ])
+            ->values()
+            ->all();
     }
 }

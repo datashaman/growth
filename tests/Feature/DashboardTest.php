@@ -307,7 +307,8 @@ test('dashboard my queue panel lists items routed to the viewer', function () {
         ->get('/dashboard?project='.$project->id)
         ->assertOk()
         ->assertSee('My Queue')
-        ->assertSee('Wire the descent engine');
+        ->assertSee('Wire the descent engine')
+        ->assertSee('for Builder');
 });
 
 test('dashboard my queue panel always shows and lists unowned lint errors', function () {
