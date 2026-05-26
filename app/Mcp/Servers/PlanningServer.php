@@ -76,7 +76,7 @@ use App\Mcp\Tools\Plan\DeleteRelease;
 use App\Mcp\Tools\Plan\DeleteRisk;
 use App\Mcp\Tools\Plan\DeleteRole;
 use App\Mcp\Tools\Plan\DeleteTheme;
-use App\Mcp\Tools\Plan\DeleteWorkItem;
+use App\Mcp\Tools\Plan\DeleteWorkItems;
 use App\Mcp\Tools\Plan\GetMockup;
 use App\Mcp\Tools\Plan\GetTheme;
 use App\Mcp\Tools\Plan\GetWorkItem;
@@ -194,7 +194,7 @@ class PlanningServer extends Server
         UpsertWorkItems::class,
         ListWorkItems::class,
         GetWorkItem::class,
-        DeleteWorkItem::class,
+        DeleteWorkItems::class,
         StartWorkItem::class,
         CompleteWorkItem::class,
         BlockWorkItem::class,

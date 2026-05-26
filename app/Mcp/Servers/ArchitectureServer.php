@@ -8,7 +8,7 @@ use App\Mcp\Resources\ProjectIndexResource;
 use App\Mcp\Resources\RequirementsResource;
 use App\Mcp\Resources\RigorLevelsResource;
 use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
-use App\Mcp\Tools\Architecture\DeleteArchitectureElement;
+use App\Mcp\Tools\Architecture\DeleteArchitectureElements;
 use App\Mcp\Tools\Architecture\DeleteArchitectureView;
 use App\Mcp\Tools\Architecture\DeleteArchitectureViewpoint;
 use App\Mcp\Tools\Architecture\ListArchitectureElements;
@@ -85,7 +85,7 @@ class ArchitectureServer extends Server
         DeleteArchitectureView::class,
         UpsertArchitectureElements::class,
         ListArchitectureElements::class,
-        DeleteArchitectureElement::class,
+        DeleteArchitectureElements::class,
         BulkLink::class,
         LintProject::class,
         TraceQuery::class,
