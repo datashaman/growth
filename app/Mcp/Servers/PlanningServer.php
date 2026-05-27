@@ -24,6 +24,7 @@ use App\Mcp\Resources\ThemedMockupRevisionScreenshotResource;
 use App\Mcp\Resources\ThemeResource;
 use App\Mcp\Resources\WorkItemImplementationBriefResource;
 use App\Mcp\Servers\Concerns\SurfaceServerDefaults;
+use App\Mcp\Tools\Changes\DeleteChangeRequestDeliveryLink;
 use App\Mcp\Tools\Changes\GetChangeRequest;
 use App\Mcp\Tools\Changes\ListChangeRequestDeliveryLinks;
 use App\Mcp\Tools\Changes\ResolveChangeRequestByBranch;
@@ -220,6 +221,7 @@ class PlanningServer extends Server
         UnassignWorkItemRaci::class,
         UpsertDeliveryLink::class,
         UpsertChangeRequestDeliveryLink::class,
+        DeleteChangeRequestDeliveryLink::class,
         ListChangeRequestDeliveryLinks::class,
         ListDeliveryLinks::class,
         UpsertMockup::class,
