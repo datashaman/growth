@@ -4,6 +4,7 @@ namespace App\Mcp\Tools\Plan;
 
 use App\Models\UnattributedGithubEvent;
 use App\Models\WorkItemDeliveryLink;
+use Closure;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -23,7 +24,16 @@ class UpsertDeliveryLink extends Tool
             'work_item_id' => 'required|string|owned_work_item',
             'type' => 'required|in:'.implode(',', WorkItemDeliveryLink::TYPES),
             'ref' => 'required|string|max:255',
-            'url' => 'nullable|url|max:2048',
+            'url' => [
+                'nullable',
+                'string',
+                'max:2048',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if (! is_string($value) || ! $this->isSafeDeliveryLinkUrl($value)) {
+                        $fail('The '.$attribute.' must be a fully qualified http(s) URL or a safe root-relative /evidence/... URL.');
+                    }
+                },
+            ],
             'description' => 'nullable|string',
         ]);
 
@@ -129,6 +139,40 @@ class UpsertDeliveryLink extends Tool
         return true;
     }
 
+    private function isSafeDeliveryLinkUrl(string $url): bool
+    {
+        $url = trim($url);
+
+        if (preg_match('/\Ahttps?:\/\/\S+\z/i', $url) === 1) {
+            $scheme = parse_url($url, PHP_URL_SCHEME);
+
+            return in_array(strtolower((string) $scheme), ['http', 'https'], true)
+                && filter_var($url, FILTER_VALIDATE_URL) !== false;
+        }
+
+        if (! str_starts_with($url, '/evidence/') || str_starts_with($url, '//')) {
+            return false;
+        }
+
+        if (preg_match('/\s/', $url) === 1 || str_contains($url, '\\')) {
+            return false;
+        }
+
+        $parts = parse_url($url);
+
+        if ($parts === false || isset($parts['scheme']) || isset($parts['host'])) {
+            return false;
+        }
+
+        $path = rawurldecode($parts['path'] ?? '');
+
+        if (! str_starts_with($path, '/evidence/')) {
+            return false;
+        }
+
+        return collect(explode('/', $path))->doesntContain('..');
+    }
+
     public function schema(JsonSchema $schema): array
     {
         return [
@@ -136,7 +180,7 @@ class UpsertDeliveryLink extends Tool
             'work_item_id' => $schema->string()->description('Work item ULID')->required(),
             'type' => $schema->string()->description('Delivery link type')->enum(WorkItemDeliveryLink::TYPES)->required(),
             'ref' => $schema->string()->description('Commit SHA, branch name, or pull request ref — for a pull request use the canonical `#<number>` form (a bare number, `PR-<n>`, or a `.../pull/<n>` URL are accepted and normalised). For an evidence link, the pull request ref the gallery belongs to.')->required(),
-            'url' => $schema->string()->description('Optional URL to the commit, pull request, branch, or evidence gallery'),
+            'url' => $schema->string()->description('Optional URL to the commit, pull request, branch, or evidence gallery. Accepts fully qualified http(s) URLs and safe root-relative Growth evidence URLs under `/evidence/...`; rejects filesystem-looking paths such as `docs/evidence/...`, `evidence/...`, `../...`, and protocol-relative URLs.'),
             'description' => $schema->string()->description('Optional delivery evidence notes'),
         ];
     }

@@ -73,6 +73,39 @@ it('accepts a visual-evidence gallery link from the sync action', function () {
         ->toBe(1);
 });
 
+it('accepts a safe root-relative Growth evidence URL', function () {
+    PlanningServer::tool(UpsertDeliveryLink::class, [
+        'work_item_id' => $this->workItem->id,
+        'type' => 'evidence',
+        'ref' => '#42',
+        'url' => '/evidence/work-items/WI-42/gallery?shot=1#current',
+    ])->assertOk()->assertStructuredContent(function ($json) {
+        $json->where('url', '/evidence/work-items/WI-42/gallery?shot=1#current')->etc();
+    });
+
+    expect(WorkItemDeliveryLink::where('work_item_id', $this->workItem->id)->value('url'))
+        ->toBe('/evidence/work-items/WI-42/gallery?shot=1#current');
+});
+
+it('rejects unsafe or filesystem-looking evidence URLs', function (string $url) {
+    PlanningServer::tool(UpsertDeliveryLink::class, [
+        'work_item_id' => $this->workItem->id,
+        'type' => 'evidence',
+        'ref' => '#42',
+        'url' => $url,
+    ])->assertHasErrors(['safe root-relative /evidence/... URL']);
+
+    expect(WorkItemDeliveryLink::where('work_item_id', $this->workItem->id)->exists())
+        ->toBeFalse();
+})->with([
+    'docs/evidence/gallery.html',
+    'evidence/gallery.html',
+    '../evidence/gallery.html',
+    '//host/evidence/gallery.html',
+    '/evidence/../docs/gallery.html',
+    '/evidence/%2e%2e/docs/gallery.html',
+]);
+
 it('resolves every pull-request ref form to one canonical row', function (string $ref) {
     PlanningServer::tool(UpsertDeliveryLink::class, [
         'work_item_id' => $this->workItem->id,
@@ -371,4 +404,20 @@ it('upserts the same pull request ref across synchronize and merge events', func
 
     expect(WorkItemDeliveryLink::where('work_item_id', $this->workItem->id)->where('ref', '#42')->count())
         ->toBe(1);
+});
+
+it('documents safe root-relative evidence URLs in the tool schema', function () {
+    $tools = $this->postJson('/mcp/planning', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+    ])->assertOk()->json('result.tools');
+
+    $tool = collect($tools)->firstWhere('name', 'upsert-delivery-link');
+    $urlDescription = $tool['inputSchema']['properties']['url']['description'] ?? '';
+
+    expect($tool)->not->toBeNull()
+        ->and($urlDescription)->toContain('fully qualified http(s) URLs')
+        ->and($urlDescription)->toContain('/evidence/...')
+        ->and($urlDescription)->toContain('protocol-relative URLs');
 });
