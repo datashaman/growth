@@ -281,7 +281,13 @@ new #[Title('Dashboard')] class extends Component {
             'anomaly' => [Anomaly::class, 'summary', 'anomalies.show', null],
             'milestone' => [Milestone::class, 'name', null, 'plan'],
             'work_item' => [WorkItem::class, 'name', 'work-items.show', null],
-            'project_plan' => [ProjectPlan::class, 'name', null, 'plan'],
+            'project_plan' => [
+                ProjectPlan::class,
+                'status',
+                null,
+                'plan',
+                fn (ProjectPlan $plan): string => 'PMP ('.$plan->status.')',
+            ],
             'review' => [Review::class, 'title', 'reviews.show', null],
             'risk' => [Risk::class, 'title', 'risks.show', null],
             'change_request' => [ChangeRequest::class, 'title', 'change-requests.show', null],
@@ -295,14 +301,16 @@ new #[Title('Dashboard')] class extends Component {
 
         $result = [];
         foreach ($idsByType as $type => $ids) {
-            [$modelClass, $field, $routeName, $indexRouteName] = $map[$type];
+            [$modelClass, $field, $routeName, $indexRouteName, $labelResolver] = array_pad($map[$type], 5, null);
             $fallbackRoute = $indexRouteName && $lens->reveals($indexRouteName) ? route($indexRouteName) : null;
             $modelClass::query()
                 ->whereIn('id', $ids)
                 ->get(['id', $field])
-                ->each(function ($row) use (&$result, $type, $field, $routeName, $fallbackRoute): void {
+                ->each(function ($row) use (&$result, $type, $field, $routeName, $fallbackRoute, $labelResolver): void {
+                    $label = $labelResolver ? $labelResolver($row) : $row->{$field};
+
                     $result[$type.':'.$row->id] = [
-                        'label' => (string) str((string) $row->{$field})->limit(80),
+                        'label' => (string) str((string) $label)->limit(80),
                         'route' => $routeName ? route($routeName, $row->id) : $fallbackRoute,
                     ];
                 });
