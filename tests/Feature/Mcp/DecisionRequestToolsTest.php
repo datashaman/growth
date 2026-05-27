@@ -5,6 +5,7 @@ use App\Mcp\Tools\Decisions\AnswerDecisionRequest;
 use App\Mcp\Tools\Decisions\CancelDecisionRequest;
 use App\Mcp\Tools\Decisions\CreateDecisionRequest;
 use App\Mcp\Tools\Decisions\ListDecisionQueue;
+use App\Mcp\Tools\Decisions\UpdateDecisionRequest;
 use App\Models\ChangeRequest;
 use App\Models\DecisionRequest;
 use App\Models\DecisionRequestOption;
@@ -257,6 +258,126 @@ it('filters the decision queue by status', function () {
             ->where('status', 'answered')
             ->where('decision_requests.0.id', $answered->id)
             ->etc());
+});
+
+it('updates an open decision request without changing its id or queue placement', function () {
+    $this->actor->roles()->attach($this->role);
+    $decisionRequest = ($this->makeRequest)([
+        'requester_user_id' => $this->actor->id,
+        'question' => 'Which venue should we book?',
+        'deadline' => now()->addDay(),
+    ]);
+    DecisionRequestOption::factory()->for($decisionRequest)->create(['label' => 'Stadium', 'position' => 0]);
+    DecisionRequestOption::factory()->for($decisionRequest)->create(['label' => 'Park', 'position' => 1]);
+    $originalId = $decisionRequest->id;
+
+    ReadonlyServer::tool(UpdateDecisionRequest::class, [
+        'decision_request_id' => $decisionRequest->id,
+        'question' => 'Which venue should we reserve?',
+        'deadline' => now()->addDays(2)->toIso8601String(),
+        'options' => ['Arena', 'Riverside'],
+    ])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('id', $decisionRequest->id)
+            ->where('updated', true)
+            ->where('changed_fields', ['question', 'deadline', 'options'])
+            ->where('status', 'open')
+            ->where('target_role_id', $this->role->id)
+            ->where('question', 'Which venue should we reserve?')
+            ->where('options.0.label', 'Arena')
+            ->where('options.1.label', 'Riverside')
+            ->etc());
+
+    $decisionRequest->refresh();
+
+    expect($decisionRequest->id)->toBe($originalId)
+        ->and($decisionRequest->status)->toBe('open')
+        ->and($decisionRequest->target_role_id)->toBe($this->role->id)
+        ->and($decisionRequest->question)->toBe('Which venue should we reserve?')
+        ->and($decisionRequest->options->pluck('label')->all())->toBe(['Arena', 'Riverside']);
+
+    ReadonlyServer::tool(ListDecisionQueue::class, [])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('count', 1)
+            ->where('decision_requests.0.id', $decisionRequest->id)
+            ->where('decision_requests.0.target_role_id', $this->role->id)
+            ->where('decision_requests.0.question', 'Which venue should we reserve?')
+            ->etc());
+});
+
+it('records an auditable update while preserving existing status history', function () {
+    $decisionRequest = ($this->makeRequest)(['requester_user_id' => $this->actor->id]);
+    $existingTransition = $decisionRequest->statusTransitions()->create([
+        'from_status' => null,
+        'to_status' => 'open',
+        'reason' => 'Raised',
+        'transitioned_by_user_id' => $this->actor->id,
+        'transitioned_at' => now()->subMinute(),
+    ]);
+
+    ReadonlyServer::tool(UpdateDecisionRequest::class, [
+        'decision_request_id' => $decisionRequest->id,
+        'question' => 'Corrected question?',
+    ])->assertOk();
+
+    expect($decisionRequest->statusTransitions()->whereKey($existingTransition->id)->exists())->toBeTrue()
+        ->and($decisionRequest->statusTransitions()->count())->toBe(2);
+
+    $audit = $decisionRequest->statusTransitions()->latest('transitioned_at')->first();
+    expect($audit->from_status)->toBe('open')
+        ->and($audit->to_status)->toBe('open')
+        ->and($audit->reason)->toBe('Updated decision request fields: question.')
+        ->and($audit->transitioned_by_user_id)->toBe($this->actor->id);
+});
+
+it('reports unchanged decision request updates without writing audit history', function () {
+    $decisionRequest = ($this->makeRequest)([
+        'requester_user_id' => $this->actor->id,
+        'question' => 'Which venue?',
+        'deadline' => now()->addDay(),
+    ]);
+    DecisionRequestOption::factory()->for($decisionRequest)->create(['label' => 'Stadium', 'position' => 0]);
+    DecisionRequestOption::factory()->for($decisionRequest)->create(['label' => 'Park', 'position' => 1]);
+
+    ReadonlyServer::tool(UpdateDecisionRequest::class, [
+        'decision_request_id' => $decisionRequest->id,
+        'question' => 'Which venue?',
+        'deadline' => $decisionRequest->deadline->toIso8601String(),
+        'options' => ['Stadium', 'Park'],
+    ])
+        ->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('updated', false)
+            ->where('changed_fields', [])
+            ->etc());
+
+    expect($decisionRequest->statusTransitions()->count())->toBe(0);
+});
+
+it('rejects decision request updates from non requesters and non open states', function () {
+    $other = User::factory()->create();
+    $foreignRequest = ($this->makeRequest)(['requester_user_id' => $other->id]);
+
+    ReadonlyServer::tool(UpdateDecisionRequest::class, [
+        'decision_request_id' => $foreignRequest->id,
+        'question' => 'Changed?',
+    ])->assertHasErrors();
+
+    foreach (['answered', 'cancelled', 'expired'] as $status) {
+        $decisionRequest = ($this->makeRequest)([
+            'requester_user_id' => $this->actor->id,
+            'status' => $status,
+        ]);
+
+        ReadonlyServer::tool(UpdateDecisionRequest::class, [
+            'decision_request_id' => $decisionRequest->id,
+            'question' => 'Changed?',
+        ])->assertHasErrors();
+
+        expect($decisionRequest->fresh()->question)->not->toBe('Changed?');
+    }
 });
 
 it('answers a decision request and notifies the requester', function () {
