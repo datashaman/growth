@@ -80,6 +80,7 @@ use App\Mcp\Tools\Feedback\GetFeedback;
 use App\Mcp\Tools\Feedback\ListToolInvocations;
 use App\Mcp\Tools\Feedback\SearchFeedback;
 use App\Mcp\Tools\Feedback\SendFeedback;
+use App\Mcp\Tools\Feedback\UpdateFeedback;
 use App\Mcp\Tools\Glossary\LookupTerm;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Plan\GetTheme;
@@ -142,6 +143,7 @@ class ReadonlyServer extends Server
         SearchFeedback::class,
         CommentFeedback::class,
         SendFeedback::class,
+        UpdateFeedback::class,
         ListProjects::class,
         ListRequirements::class,
         ListSources::class,

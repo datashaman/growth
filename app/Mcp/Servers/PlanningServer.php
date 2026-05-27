@@ -51,6 +51,7 @@ use App\Mcp\Tools\Feedback\ResolveFeedback;
 use App\Mcp\Tools\Feedback\SearchFeedback;
 use App\Mcp\Tools\Feedback\SendFeedback;
 use App\Mcp\Tools\Feedback\TriageFeedback;
+use App\Mcp\Tools\Feedback\UpdateFeedback;
 use App\Mcp\Tools\Lint\LintProject;
 use App\Mcp\Tools\Plan\AcceptRisk;
 use App\Mcp\Tools\Plan\AchieveMilestone;
@@ -169,6 +170,7 @@ class PlanningServer extends Server
         SearchFeedback::class,
         CommentFeedback::class,
         SendFeedback::class,
+        UpdateFeedback::class,
         TriageFeedback::class,
         ResolveFeedback::class,
         ReopenFeedback::class,
