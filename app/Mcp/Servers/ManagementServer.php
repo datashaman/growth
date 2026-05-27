@@ -46,6 +46,7 @@ use App\Mcp\Tools\Projects\MoveProject;
 use App\Mcp\Tools\Projects\ResolveProjectByRepo;
 use App\Mcp\Tools\Projects\RestoreProject;
 use App\Mcp\Tools\Projects\ScaffoldGithubSync;
+use App\Mcp\Tools\Projects\SupersedeProject;
 use App\Mcp\Tools\Projects\UpdateProject;
 use App\Mcp\Tools\Projects\UpsertProject;
 use App\Mcp\Tools\Search\Search;
@@ -93,6 +94,7 @@ class ManagementServer extends Server
         ArchiveProject::class,
         CloseProject::class,
         RestoreProject::class,
+        SupersedeProject::class,
         DeleteProject::class,
         MoveProject::class,
         ApplyManifest::class,
