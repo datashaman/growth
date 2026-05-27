@@ -1,6 +1,7 @@
 <?php
 
 use App\Mcp\Servers\PlanningServer;
+use App\Mcp\Tools\Changes\DeleteChangeRequestDeliveryLink;
 use App\Mcp\Tools\Changes\ListChangeRequestDeliveryLinks;
 use App\Mcp\Tools\Changes\UpsertChangeRequestDeliveryLink;
 use App\Models\ChangeRequest;
@@ -142,6 +143,90 @@ it('keeps unattributed events when the branch is still ambiguous for work items'
     ])->assertOk();
 
     expect(UnattributedGithubEvent::where('branch', 'feature/contested')->exists())->toBeTrue();
+});
+
+it('deletes a change request delivery link by id', function () {
+    $link = ChangeRequestDeliveryLink::create([
+        'change_request_id' => $this->changeRequest->id,
+        'type' => 'pull_request',
+        'ref' => '#42',
+        'url' => 'https://github.com/datashaman/growth/pull/42',
+    ]);
+
+    PlanningServer::tool(DeleteChangeRequestDeliveryLink::class, [
+        'id' => $link->id,
+    ])->assertOk()->assertStructuredContent(function ($json) use ($link) {
+        $json->where('id', $link->id)
+            ->where('change_request_id', $this->changeRequest->id)
+            ->where('type', 'pull_request')
+            ->where('ref', '#42')
+            ->where('deleted', true);
+    });
+
+    expect(ChangeRequestDeliveryLink::whereKey($link->id)->exists())->toBeFalse();
+});
+
+it('does not delete a work item delivery link with the same ref', function () {
+    $workItem = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => WorkItem::KINDS[0],
+        'name' => 'Implement telemetry',
+    ]);
+    $workItemLink = WorkItemDeliveryLink::create([
+        'work_item_id' => $workItem->id,
+        'type' => 'pull_request',
+        'ref' => '#42',
+    ]);
+    $changeRequestLink = ChangeRequestDeliveryLink::create([
+        'change_request_id' => $this->changeRequest->id,
+        'type' => 'pull_request',
+        'ref' => '#42',
+    ]);
+
+    PlanningServer::tool(DeleteChangeRequestDeliveryLink::class, [
+        'id' => $changeRequestLink->id,
+    ])->assertOk();
+
+    expect(ChangeRequestDeliveryLink::whereKey($changeRequestLink->id)->exists())->toBeFalse()
+        ->and(WorkItemDeliveryLink::whereKey($workItemLink->id)->exists())->toBeTrue();
+});
+
+it('rejects deleting a change request delivery link from another workspace', function () {
+    $otherUser = User::factory()->create();
+    $otherProject = Project::create([
+        'workspace_id' => $otherUser->active_workspace_id,
+        'name' => 'Other Growth',
+        'rigor_level' => 2,
+    ]);
+    $otherChangeRequest = ChangeRequest::create([
+        'project_id' => $otherProject->id,
+        'title' => 'Other change',
+        'category' => 'scope',
+    ]);
+    $foreignLink = ChangeRequestDeliveryLink::create([
+        'change_request_id' => $otherChangeRequest->id,
+        'type' => 'branch',
+        'ref' => 'feature/foreign',
+    ]);
+
+    PlanningServer::tool(DeleteChangeRequestDeliveryLink::class, [
+        'id' => $foreignLink->id,
+    ])->assertHasErrors();
+
+    expect(ChangeRequestDeliveryLink::withoutGlobalScopes()->whereKey($foreignLink->id)->exists())->toBeTrue();
+});
+
+it('exposes the delete change request delivery link tool on write surfaces', function () {
+    foreach (['/mcp/planning', '/mcp/governance'] as $endpoint) {
+        $tools = $this->postJson($endpoint, [
+            'jsonrpc' => '2.0',
+            'id' => 1,
+            'method' => 'tools/list',
+            'params' => ['per_page' => 300],
+        ])->assertOk()->json('result.tools');
+
+        expect(collect($tools)->pluck('name')->all())->toContain('delete-change-request-delivery-link');
+    }
 });
 
 it('lists change request delivery links by change request', function () {

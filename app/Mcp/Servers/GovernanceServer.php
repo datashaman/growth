@@ -23,6 +23,7 @@ use App\Mcp\Tools\Changes\ApproveChangeRequest;
 use App\Mcp\Tools\Changes\CancelChangeRequest;
 use App\Mcp\Tools\Changes\DeferChangeRequest;
 use App\Mcp\Tools\Changes\DeleteChangeRequest;
+use App\Mcp\Tools\Changes\DeleteChangeRequestDeliveryLink;
 use App\Mcp\Tools\Changes\GetChangeRequest;
 use App\Mcp\Tools\Changes\ListArtifactRelations;
 use App\Mcp\Tools\Changes\ListChangeApprovalEvents;
@@ -152,6 +153,7 @@ class GovernanceServer extends Server
         SubscribeChangeRequest::class,
         UnsubscribeChangeRequest::class,
         DeleteChangeRequest::class,
+        DeleteChangeRequestDeliveryLink::class,
         AssessReleaseReadiness::class,
         ReportEvidenceGaps::class,
         ScanContradictions::class,
