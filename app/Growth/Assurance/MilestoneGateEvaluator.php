@@ -78,7 +78,8 @@ class MilestoneGateEvaluator
                 $findings[] = [
                     'rule' => 'milestone.work_item.not_done',
                     'severity' => 'error',
-                    'message' => "Member work item is {$row['status']}, not done.",
+                    'lifecycle_state' => 'not_achievable_yet',
+                    'message' => "Milestone is not achievable yet; member work item is {$row['status']}.",
                     'subject_type' => 'work_item',
                     'subject_id' => $item->id,
                 ];

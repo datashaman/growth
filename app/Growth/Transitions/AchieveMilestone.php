@@ -62,7 +62,7 @@ class AchieveMilestone extends Transition
         }
 
         if ($count = $byRule['milestone.work_item.not_done'] ?? 0) {
-            $clauses[] = $count.' member work item'.($count === 1 ? ' is' : 's are').' not done';
+            $clauses[] = $count.' member work item'.($count === 1 ? ' is' : 's are').' still in progress or todo, so the milestone is not achievable yet';
         }
 
         if ($count = $byRule['milestone.work_item.failed_checks'] ?? 0) {

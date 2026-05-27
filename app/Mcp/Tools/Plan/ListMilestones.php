@@ -76,6 +76,7 @@ class ListMilestones extends Tool
                         'status' => $gate['status'],
                         'errors' => $gate['errors'],
                         'warnings' => $gate['warnings'],
+                        'findings' => $gate['findings'],
                     ],
                 ];
             })->all(),
