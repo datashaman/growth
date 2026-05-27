@@ -417,6 +417,26 @@ test('#363 my queue resolves project-scoped lint findings to the Plan page', fun
     expect($subjects['project:'.$project->id]['route'])->toBe(route('plan'));
 });
 
+test('my queue resolves project plan lint findings without a name column', function () {
+    $user = User::factory()->create();
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+    $plan = $project->projectPlan()->create([
+        'status' => 'draft',
+    ]);
+    session(['selected_project_id' => $project->id]);
+
+    $this->actingAs($user);
+    $subjects = Livewire::test('pages::dashboard')->instance()->queueLintSubjects;
+
+    expect($subjects)->toHaveKey('project_plan:'.$plan->id);
+    expect($subjects['project_plan:'.$plan->id]['label'])->toBe('PMP (draft)');
+    expect($subjects['project_plan:'.$plan->id]['route'])->toBe(route('plan'));
+});
+
 test('#363 implementation panel previews the top work items and links to the full list', function () {
     $user = User::factory()->create();
     $project = Project::create([
