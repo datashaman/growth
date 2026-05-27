@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Resource;
 use Laravel\Mcp\Support\UriTemplate;
 
 #[Name('Work Item Implementation Brief')]
-#[Description('Context bundle for implementing a work item: requirements, architecture, dependencies, RACI, mockups, and delivery evidence.')]
+#[Description('Context bundle for implementing a work item: requirements, architecture, dependencies, RACI, mockups, and any delivery evidence already produced.')]
 #[MimeType('text/markdown')]
 class WorkItemImplementationBriefResource extends Resource implements HasUriTemplate
 {
@@ -188,7 +188,7 @@ class WorkItemImplementationBriefResource extends Resource implements HasUriTemp
 
         $md .= "## Delivery Evidence\n\n";
         if ($workItem->deliveryLinks->isEmpty()) {
-            $md .= "_No delivery evidence is linked yet._\n\n";
+            $md .= "_No delivery evidence is linked yet. Produce evidence through the implementation itself: commits, pull requests, CI checks, deployments, verification runs, and screenshots where applicable. Growth sync may attach standard delivery links automatically._\n\n";
         } else {
             foreach ($workItem->deliveryLinks as $link) {
                 $md .= "- **{$link->type}:** {$link->ref}";
@@ -204,6 +204,7 @@ class WorkItemImplementationBriefResource extends Resource implements HasUriTemp
                     $md .= "\n";
                 }
             }
+            $md .= "\nThese links are existing context for deciding what remains to implement or verify. New evidence should come from real implementation activity; do not create manual delivery links unless sync cannot capture the artifact.\n";
             $md .= "\n";
         }
 
@@ -212,6 +213,7 @@ class WorkItemImplementationBriefResource extends Resource implements HasUriTemp
         $md .= "- Respect architecture context where it affects component boundaries, data flow, or user-facing behavior.\n";
         $md .= "- Apply theme guidance when changing user-facing UI; browser-local preview selection is not server state, so use the project default or an explicitly requested theme slug.\n";
         $md .= "- Consider dependencies, RACI, mockups, and existing delivery evidence before changing code.\n";
+        $md .= "- Produce implementation evidence through real delivery activity: commits, pull requests, CI checks, deployments, verification runs, and screenshots where applicable; rely on sync to attach standard delivery links when available.\n";
 
         return Response::text($md);
     }
