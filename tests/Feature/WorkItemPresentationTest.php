@@ -173,6 +173,92 @@ test('the Plan work-items tree can be filtered by work item reference', function
         ->assertDontSee('Wire the descent engine');
 });
 
+test('the Plan work-items tree can be filtered by responsible role', function () {
+    $guidance = Role::create([
+        'project_id' => $this->project->id,
+        'name' => 'Guidance Engineer',
+    ]);
+    $guidanceItem = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Tune guidance loop',
+        'status' => 'todo',
+        'responsible_role_id' => $guidance->id,
+    ]);
+    $unassigned = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Unassigned checklist',
+        'status' => 'todo',
+    ]);
+
+    Livewire::test('pages::plan')
+        ->assertSeeHtml('data-test="work-item-tree-role-filter"')
+        ->assertSee('All roles')
+        ->assertSee('Unassigned')
+        ->set('workItemRoleFilter', $guidance->id)
+        ->assertSee($guidanceItem->reference())
+        ->assertSee('Tune guidance loop')
+        ->assertDontSee('Wire the descent engine')
+        ->assertDontSee($unassigned->reference())
+        ->assertDontSeeHtml('data-test="work-item-tree-bulk-controls"');
+});
+
+test('the Plan work-items tree can be filtered to unassigned work items while preserving ancestors', function () {
+    $package = $this->project->workItems()->create([
+        'kind' => 'work_package',
+        'name' => 'Descent phase',
+        'status' => 'in_progress',
+        'responsible_role_id' => $this->role->id,
+    ]);
+    $child = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Calibrate throttle',
+        'status' => 'todo',
+        'parent_id' => $package->id,
+    ]);
+
+    Livewire::test('pages::plan')
+        ->set('workItemRoleFilter', '__unassigned')
+        ->assertSeeInOrder([$package->reference(), $child->reference()])
+        ->assertSee('Calibrate throttle')
+        ->assertDontSee('Wire the descent engine');
+});
+
+test('the Plan work-items role filter composes with the text filter', function () {
+    $guidance = Role::create([
+        'project_id' => $this->project->id,
+        'name' => 'Guidance Engineer',
+    ]);
+    $matching = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Tune guidance loop',
+        'status' => 'todo',
+        'responsible_role_id' => $guidance->id,
+    ]);
+    $sameRoleWrongText = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Review flight software',
+        'status' => 'todo',
+        'responsible_role_id' => $guidance->id,
+    ]);
+    $sameTextWrongRole = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Tune descent loop',
+        'status' => 'todo',
+        'responsible_role_id' => $this->role->id,
+    ]);
+
+    Livewire::test('pages::plan')
+        ->set('workItemRoleFilter', $guidance->id)
+        ->set('workItemFilter', 'tune')
+        ->assertSee($matching->reference())
+        ->assertSee('Tune guidance loop')
+        ->assertDontSee($sameRoleWrongText->reference())
+        ->assertDontSee($sameTextWrongRole->reference())
+        ->assertDontSee('Wire the descent engine')
+        ->set('workItemFilter', 'missing')
+        ->assertSee('No work items match the current filter.');
+});
+
 test('clearing the Plan work-items tree filter restores the collapsed tree', function () {
     $package = $this->project->workItems()->create([
         'kind' => 'work_package',
@@ -192,6 +278,28 @@ test('clearing the Plan work-items tree filter restores the collapsed tree', fun
         ->call('clearWorkItemFilter')
         ->assertDontSee($child->reference())
         ->assertSee($package->reference())
+        ->assertSee('Wire the descent engine');
+});
+
+test('clearing the Plan work-items filters resets text and role filters', function () {
+    $guidance = Role::create([
+        'project_id' => $this->project->id,
+        'name' => 'Guidance Engineer',
+    ]);
+    $guidanceItem = $this->project->workItems()->create([
+        'kind' => 'task',
+        'name' => 'Tune guidance loop',
+        'status' => 'todo',
+        'responsible_role_id' => $guidance->id,
+    ]);
+
+    Livewire::test('pages::plan')
+        ->set('workItemRoleFilter', $guidance->id)
+        ->set('workItemFilter', 'tune')
+        ->assertSee($guidanceItem->reference())
+        ->call('clearWorkItemFilter')
+        ->assertSet('workItemFilter', '')
+        ->assertSet('workItemRoleFilter', '')
         ->assertSee('Wire the descent engine');
 });
 

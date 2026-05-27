@@ -1,6 +1,7 @@
 <?php
 
 use App\Concerns\ProjectScoped;
+use App\Models\Role;
 use App\Models\WorkItem;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -24,6 +25,8 @@ new #[Title('Plan')] class extends Component
 
     public string $workItemFilter = '';
 
+    public string $workItemRoleFilter = '';
+
     /**
      * @return array<string,string>
      */
@@ -34,7 +37,7 @@ new #[Title('Plan')] class extends Component
 
     public function onProjectDataChanged(): void
     {
-        unset($this->workItemRows, $this->workItemCount, $this->milestones, $this->projectPlan);
+        unset($this->workItemRows, $this->workItemCount, $this->workItemRoleOptions, $this->milestones, $this->projectPlan);
     }
 
     public function updatedWorkItemFilter(): void
@@ -42,9 +45,15 @@ new #[Title('Plan')] class extends Component
         unset($this->workItemRows);
     }
 
+    public function updatedWorkItemRoleFilter(): void
+    {
+        unset($this->workItemRows);
+    }
+
     public function clearWorkItemFilter(): void
     {
         $this->workItemFilter = '';
+        $this->workItemRoleFilter = '';
 
         unset($this->workItemRows);
     }
@@ -61,6 +70,18 @@ new #[Title('Plan')] class extends Component
         return $this->selectedProject?->milestones()
             ->orderBy('name')
             ->get()
+            ?? collect();
+    }
+
+    /**
+     * @return Collection<int,Role>
+     */
+    #[Computed]
+    public function workItemRoleOptions(): Collection
+    {
+        return $this->selectedProject?->roles()
+            ->orderBy('name')
+            ->get(['id', 'name'])
             ?? collect();
     }
 
@@ -88,7 +109,7 @@ new #[Title('Plan')] class extends Component
             return collect();
         }
 
-        if ($this->isWorkItemFiltered()) {
+        if ($this->hasActiveWorkItemFilters()) {
             return $this->filteredWorkItemRows();
         }
 
@@ -130,9 +151,24 @@ new #[Title('Plan')] class extends Component
         return $this->normalizedWorkItemFilter() !== '';
     }
 
+    public function isWorkItemRoleFiltered(): bool
+    {
+        return $this->normalizedWorkItemRoleFilter() !== '';
+    }
+
+    public function hasActiveWorkItemFilters(): bool
+    {
+        return $this->isWorkItemFiltered() || $this->isWorkItemRoleFiltered();
+    }
+
     private function normalizedWorkItemFilter(): string
     {
         return Str::of($this->workItemFilter)->squish()->lower()->toString();
+    }
+
+    private function normalizedWorkItemRoleFilter(): string
+    {
+        return Str::of($this->workItemRoleFilter)->squish()->toString();
     }
 
     /**
@@ -152,7 +188,7 @@ new #[Title('Plan')] class extends Component
         $includedIds = [];
 
         foreach ($items as $item) {
-            if (! $this->workItemMatchesFilter($item, $filter)) {
+            if (! $this->workItemMatchesFilters($item, $filter)) {
                 continue;
             }
 
@@ -176,6 +212,27 @@ new #[Title('Plan')] class extends Component
     {
         return str_contains(Str::lower($item->name), $filter)
             || str_contains(Str::lower($item->reference()), $filter);
+    }
+
+    private function workItemMatchesFilters(WorkItem $item, string $filter): bool
+    {
+        return ($filter === '' || $this->workItemMatchesFilter($item, $filter))
+            && $this->workItemMatchesRoleFilter($item);
+    }
+
+    private function workItemMatchesRoleFilter(WorkItem $item): bool
+    {
+        $roleFilter = $this->normalizedWorkItemRoleFilter();
+
+        if ($roleFilter === '') {
+            return true;
+        }
+
+        if ($roleFilter === '__unassigned') {
+            return $item->responsible_role_id === null;
+        }
+
+        return $item->responsible_role_id === $roleFilter;
     }
 
     /**
@@ -405,7 +462,7 @@ new #[Title('Plan')] class extends Component
                         </flux:text>
                     </div>
                     <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                        @if (! $this->isWorkItemFiltered() && $this->workItemCount > 0)
+                        @if (! $this->hasActiveWorkItemFilters() && $this->workItemCount > 0)
                             <div class="flex items-center gap-2 text-xs" data-test="work-item-tree-bulk-controls">
                                 <button type="button" x-on:click="expandAll(@js($this->expandableWorkItemIds))" class="text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-300" data-test="work-item-tree-expand-all">
                                     {{ __('Expand all') }}
@@ -416,6 +473,13 @@ new #[Title('Plan')] class extends Component
                                 </button>
                             </div>
                         @endif
+                        <flux:select wire:model.live="workItemRoleFilter" size="sm" class="w-full sm:w-48" data-test="work-item-tree-role-filter">
+                            <flux:select.option value="">{{ __('All roles') }}</flux:select.option>
+                            <flux:select.option value="__unassigned">{{ __('Unassigned') }}</flux:select.option>
+                            @foreach ($this->workItemRoleOptions as $role)
+                                <flux:select.option value="{{ $role->id }}">{{ $role->name }}</flux:select.option>
+                            @endforeach
+                        </flux:select>
                         <flux:input
                             wire:model.live.debounce.200ms="workItemFilter"
                             size="sm"
@@ -423,7 +487,7 @@ new #[Title('Plan')] class extends Component
                             :placeholder="__('Filter work items')"
                             class="w-full sm:w-72"
                             data-test="work-item-tree-filter" />
-                        @if ($this->isWorkItemFiltered())
+                        @if ($this->hasActiveWorkItemFilters())
                             <flux:button wire:click="clearWorkItemFilter" size="sm" variant="subtle" data-test="work-item-tree-clear-filter">
                                 {{ __('Clear') }}
                             </flux:button>
@@ -439,7 +503,7 @@ new #[Title('Plan')] class extends Component
                     <flux:table.column>{{ __('Role') }}</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
-                @if ($this->isWorkItemFiltered() && $this->workItemRows->isEmpty())
+                @if ($this->hasActiveWorkItemFilters() && $this->workItemRows->isEmpty())
                     <flux:table.row>
                         <flux:table.cell>
                             <span class="text-sm text-zinc-500 dark:text-zinc-400">
@@ -456,7 +520,7 @@ new #[Title('Plan')] class extends Component
                     <flux:table.row>
                         <flux:table.cell>
                             <div class="grid min-w-0 grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-2" @style(['padding-left: '.($row['depth'] * 1.5).'rem' => $row['depth'] > 0])>
-                                @if ($item->children_count > 0 && ! $this->isWorkItemFiltered())
+                                @if ($item->children_count > 0 && ! $this->hasActiveWorkItemFilters())
                                     <button type="button" x-on:click="toggle('{{ $item->id }}')" class="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-zinc-200 text-xs text-zinc-500 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100" x-bind:aria-label="isExpanded('{{ $item->id }}') ? @js(__('Collapse :name', ['name' => $item->name])) : @js(__('Expand :name', ['name' => $item->name]))" data-test="work-item-tree-toggle">
                                         <span x-text="isExpanded('{{ $item->id }}') ? '−' : '+'">{{ in_array($item->id, $expandedWorkItemIds, true) ? '−' : '+' }}</span>
                                     </button>
