@@ -68,6 +68,7 @@ use App\Mcp\Tools\Plan\CloseRisk;
 use App\Mcp\Tools\Plan\ComparePlanBaseline;
 use App\Mcp\Tools\Plan\CompleteWorkItem;
 use App\Mcp\Tools\Plan\DeleteAgent;
+use App\Mcp\Tools\Plan\DeleteDeliveryLink;
 use App\Mcp\Tools\Plan\DeleteDeployment;
 use App\Mcp\Tools\Plan\DeleteMilestone;
 use App\Mcp\Tools\Plan\DeleteMockup;
@@ -220,6 +221,7 @@ class PlanningServer extends Server
         AssignWorkItemRaci::class,
         UnassignWorkItemRaci::class,
         UpsertDeliveryLink::class,
+        DeleteDeliveryLink::class,
         UpsertChangeRequestDeliveryLink::class,
         DeleteChangeRequestDeliveryLink::class,
         ListChangeRequestDeliveryLinks::class,
