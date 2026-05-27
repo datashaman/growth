@@ -4,6 +4,7 @@ use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Tools\Common\WhoAmI;
 use App\Mcp\Tools\Plan\AssignRole;
 use App\Mcp\Tools\Plan\UnassignRole;
+use App\Models\Agent;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
@@ -96,4 +97,118 @@ it('detaches a self-assigned role through unassign-role with the user id', funct
             ->etc());
 
     expect($role->users()->whereKey($user->id)->exists())->toBeFalse();
+});
+
+it('batch assigns one assignee to many roles and reports idempotent repeats', function () {
+    $user = User::factory()->create();
+    Passport::actingAs($user, ['mcp:use']);
+
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+    $thermal = Role::create(['project_id' => $project->id, 'name' => 'Thermal Lead']);
+    $guidance = Role::create(['project_id' => $project->id, 'name' => 'Guidance Lead']);
+
+    PlanningServer::tool(AssignRole::class, [
+        'role_ids' => [$thermal->id, $guidance->id],
+        'assignee_type' => 'user',
+        'assignee_id' => $user->id,
+    ])->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('results.0.status', 'attached')
+            ->where('results.1.status', 'attached')
+            ->etc());
+
+    PlanningServer::tool(AssignRole::class, [
+        'role_ids' => [$thermal->id, $guidance->id],
+        'assignee_type' => 'user',
+        'assignee_id' => $user->id,
+    ])->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('results.0.status', 'already_assigned')
+            ->where('results.0.attached', false)
+            ->where('results.1.status', 'already_assigned')
+            ->where('results.1.attached', false)
+            ->etc());
+
+    expect($thermal->users()->whereKey($user->id)->exists())->toBeTrue()
+        ->and($guidance->users()->whereKey($user->id)->exists())->toBeTrue();
+});
+
+it('batch assigns mixed explicit user and agent pairs without aborting bad pairs', function () {
+    $user = User::factory()->create();
+    Passport::actingAs($user, ['mcp:use']);
+
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+    $thermal = Role::create(['project_id' => $project->id, 'name' => 'Thermal Lead']);
+    $software = Role::create(['project_id' => $project->id, 'name' => 'Software Lead']);
+    $agent = Agent::create([
+        'project_id' => $project->id,
+        'name' => 'Build Agent',
+        'kind' => 'automation',
+    ]);
+
+    PlanningServer::tool(AssignRole::class, [
+        'pairs' => [
+            ['role_id' => $thermal->id, 'assignee_type' => 'user', 'assignee_id' => $user->id],
+            ['role_id' => $software->id, 'assignee_type' => 'agent', 'assignee_id' => $agent->id],
+            ['role_id' => 'missing-role', 'assignee_type' => 'user', 'assignee_id' => $user->id],
+        ],
+    ])->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('results.0.ok', true)
+            ->where('results.0.status', 'attached')
+            ->where('results.1.ok', true)
+            ->where('results.1.status', 'attached')
+            ->where('results.2.ok', false)
+            ->where('results.2.status', 'error')
+            ->etc());
+
+    expect($thermal->users()->whereKey($user->id)->exists())->toBeTrue()
+        ->and($software->agents()->whereKey($agent->id)->exists())->toBeTrue();
+});
+
+it('batch unassigns independently and reports not-assigned pairs', function () {
+    $user = User::factory()->create();
+    Passport::actingAs($user, ['mcp:use']);
+
+    $project = Project::create([
+        'workspace_id' => $user->active_workspace_id,
+        'name' => 'Lunar Lander',
+        'rigor_level' => 2,
+    ]);
+    $thermal = Role::create(['project_id' => $project->id, 'name' => 'Thermal Lead']);
+    $guidance = Role::create(['project_id' => $project->id, 'name' => 'Guidance Lead']);
+    $agent = Agent::create([
+        'project_id' => $project->id,
+        'name' => 'Build Agent',
+        'kind' => 'automation',
+    ]);
+    $thermal->users()->attach($user->id);
+    $thermal->agents()->attach($agent->id);
+
+    PlanningServer::tool(UnassignRole::class, [
+        'pairs' => [
+            ['role_id' => $thermal->id, 'assignee_type' => 'user', 'assignee_id' => $user->id],
+            ['role_id' => $guidance->id, 'assignee_type' => 'user', 'assignee_id' => $user->id],
+            ['role_id' => $thermal->id, 'assignee_type' => 'agent', 'assignee_id' => $agent->id],
+        ],
+    ])->assertOk()
+        ->assertStructuredContent(fn ($json) => $json
+            ->where('results.0.status', 'detached')
+            ->where('results.0.detached', true)
+            ->where('results.1.status', 'not_assigned')
+            ->where('results.1.detached', false)
+            ->where('results.2.status', 'detached')
+            ->where('results.2.detached', true)
+            ->etc());
+
+    expect($thermal->users()->whereKey($user->id)->exists())->toBeFalse()
+        ->and($thermal->agents()->whereKey($agent->id)->exists())->toBeFalse();
 });
