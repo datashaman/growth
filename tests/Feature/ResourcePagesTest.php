@@ -191,7 +191,7 @@ test('evidence page renders releases, deployments, and delivery links', function
     $link = $workItem->deliveryLinks()->create([
         'type' => 'pull_request',
         'ref' => 'PR-42',
-        'url' => 'https://example.test/pr/42',
+        'url' => '/evidence/work-items/WI-42/gallery',
     ]);
     $link->checkRuns()->create([
         'provider' => 'github',
@@ -207,7 +207,13 @@ test('evidence page renders releases, deployments, and delivery links', function
         ->assertSee('1.0.0')
         ->assertSee('production')
         ->assertSee('PR-42')
-        ->assertSee('unit-tests');
+        ->assertSee('unit-tests')
+        ->assertSee('href="/evidence/work-items/WI-42/gallery"', false);
+
+    $this->actingAs($this->user)
+        ->get('/work-items/'.$workItem->id)
+        ->assertOk()
+        ->assertSee('href="/evidence/work-items/WI-42/gallery"', false);
 });
 
 test('resource pages redirect guests to login', function () {
