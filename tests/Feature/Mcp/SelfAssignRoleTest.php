@@ -2,8 +2,8 @@
 
 use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Tools\Common\WhoAmI;
-use App\Mcp\Tools\Plan\AssignRole;
-use App\Mcp\Tools\Plan\UnassignRole;
+use App\Mcp\Tools\Plan\AssignRoles;
+use App\Mcp\Tools\Plan\UnassignRoles;
 use App\Models\Agent;
 use App\Models\Project;
 use App\Models\Role;
@@ -29,16 +29,16 @@ it('lets an unbound MCP user self-assign a role using their who-am-i user id', f
             ->where('roles', [])
             ->etc());
 
-    // That same value must be accepted by assign-role as assignee_id.
-    PlanningServer::tool(AssignRole::class, [
-        'role_id' => $role->id,
+    // That same value must be accepted by assign-roles as assignee_id.
+    PlanningServer::tool(AssignRoles::class, [
+        'role_ids' => [$role->id],
         'assignee_type' => 'user',
         'assignee_id' => $user->id,
     ])->assertOk()
         ->assertStructuredContent(fn ($json) => $json
-            ->where('role_id', $role->id)
-            ->where('assignee_type', 'user')
-            ->where('attached', true)
+            ->where('results.0.role_id', $role->id)
+            ->where('results.0.assignee_type', 'user')
+            ->where('results.0.attached', true)
             ->etc());
 
     expect($role->users()->whereKey($user->id)->exists())->toBeTrue();
@@ -62,9 +62,9 @@ it('accepts the integer user id over the JSON-RPC wire path', function () {
         'id' => 1,
         'method' => 'tools/call',
         'params' => [
-            'name' => 'assign-role',
+            'name' => 'assign-roles',
             'arguments' => [
-                'role_id' => $role->id,
+                'role_ids' => [$role->id],
                 'assignee_type' => 'user',
                 'assignee_id' => $user->id,
             ],
@@ -75,7 +75,7 @@ it('accepts the integer user id over the JSON-RPC wire path', function () {
         ->and($role->users()->whereKey($user->id)->exists())->toBeTrue();
 });
 
-it('detaches a self-assigned role through unassign-role with the user id', function () {
+it('detaches a self-assigned role through unassign-roles with the user id', function () {
     $user = User::factory()->create();
     Passport::actingAs($user, ['mcp:use']);
 
@@ -87,13 +87,13 @@ it('detaches a self-assigned role through unassign-role with the user id', funct
     $role = Role::create(['project_id' => $project->id, 'name' => 'Thermal Lead']);
     $user->roles()->attach($role->id);
 
-    PlanningServer::tool(UnassignRole::class, [
-        'role_id' => $role->id,
+    PlanningServer::tool(UnassignRoles::class, [
+        'role_ids' => [$role->id],
         'assignee_type' => 'user',
         'assignee_id' => $user->id,
     ])->assertOk()
         ->assertStructuredContent(fn ($json) => $json
-            ->where('detached', true)
+            ->where('results.0.detached', true)
             ->etc());
 
     expect($role->users()->whereKey($user->id)->exists())->toBeFalse();
@@ -111,7 +111,7 @@ it('batch assigns one assignee to many roles and reports idempotent repeats', fu
     $thermal = Role::create(['project_id' => $project->id, 'name' => 'Thermal Lead']);
     $guidance = Role::create(['project_id' => $project->id, 'name' => 'Guidance Lead']);
 
-    PlanningServer::tool(AssignRole::class, [
+    PlanningServer::tool(AssignRoles::class, [
         'role_ids' => [$thermal->id, $guidance->id],
         'assignee_type' => 'user',
         'assignee_id' => $user->id,
@@ -121,7 +121,7 @@ it('batch assigns one assignee to many roles and reports idempotent repeats', fu
             ->where('results.1.status', 'attached')
             ->etc());
 
-    PlanningServer::tool(AssignRole::class, [
+    PlanningServer::tool(AssignRoles::class, [
         'role_ids' => [$thermal->id, $guidance->id],
         'assignee_type' => 'user',
         'assignee_id' => $user->id,
@@ -154,7 +154,7 @@ it('batch assigns mixed explicit user and agent pairs without aborting bad pairs
         'kind' => 'automation',
     ]);
 
-    PlanningServer::tool(AssignRole::class, [
+    PlanningServer::tool(AssignRoles::class, [
         'pairs' => [
             ['role_id' => $thermal->id, 'assignee_type' => 'user', 'assignee_id' => $user->id],
             ['role_id' => $software->id, 'assignee_type' => 'agent', 'assignee_id' => $agent->id],
@@ -193,7 +193,7 @@ it('batch unassigns independently and reports not-assigned pairs', function () {
     $thermal->users()->attach($user->id);
     $thermal->agents()->attach($agent->id);
 
-    PlanningServer::tool(UnassignRole::class, [
+    PlanningServer::tool(UnassignRoles::class, [
         'pairs' => [
             ['role_id' => $thermal->id, 'assignee_type' => 'user', 'assignee_id' => $user->id],
             ['role_id' => $guidance->id, 'assignee_type' => 'user', 'assignee_id' => $user->id],

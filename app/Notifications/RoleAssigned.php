@@ -9,7 +9,7 @@ use App\Models\Role;
  *
  * Payload: the role the recipient was assigned to.
  * Recipients: the assigned user (a personal event — sent only to them).
- * Emitted by the AssignRole tool when a user is newly attached to a role.
+ * Emitted by the AssignRoles tool when a user is newly attached to a role.
  */
 class RoleAssigned extends WorkspaceNotification
 {

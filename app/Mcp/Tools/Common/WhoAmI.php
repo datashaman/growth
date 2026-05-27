@@ -92,7 +92,7 @@ class WhoAmI extends Tool
         return [
             'authenticated' => $schema->boolean()->required(),
             'user_id' => $schema->integer()
-                ->description('Integer id of the authenticated user. Pass this as assign-role\'s `assignee_id` (with assignee_type=user) to self-assign a project role.'),
+                ->description('Integer id of the authenticated user. Pass this as the assign-roles `assignee_id` (with assignee_type=user) to self-assign project roles.'),
             'email' => $schema->string(),
             'name' => $schema->string(),
             'active_workspace' => $schema->object(),
