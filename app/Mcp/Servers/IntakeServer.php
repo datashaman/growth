@@ -27,6 +27,7 @@ use App\Mcp\Tools\Decisions\AnswerDecisionRequest;
 use App\Mcp\Tools\Decisions\CancelDecisionRequest;
 use App\Mcp\Tools\Decisions\CreateDecisionRequest;
 use App\Mcp\Tools\Decisions\ListDecisionQueue;
+use App\Mcp\Tools\Decisions\UpdateDecisionRequest;
 use App\Mcp\Tools\Feedback\CommentFeedback;
 use App\Mcp\Tools\Feedback\GetFeedback;
 use App\Mcp\Tools\Feedback\ReopenFeedback;
@@ -69,6 +70,7 @@ class IntakeServer extends Server
         AdoptRole::class,
         WhoAmI::class,
         CreateDecisionRequest::class,
+        UpdateDecisionRequest::class,
         ListDecisionQueue::class,
         SummarizeMyQueue::class,
         AnswerDecisionRequest::class,
