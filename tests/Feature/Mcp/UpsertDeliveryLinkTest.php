@@ -1,12 +1,15 @@
 <?php
 
 use App\Mcp\Servers\PlanningServer;
+use App\Mcp\Tools\Plan\DeleteDeliveryLink;
 use App\Mcp\Tools\Plan\UpsertDeliveryLink;
+use App\Models\EvidenceAsset;
 use App\Models\Project;
 use App\Models\UnattributedGithubEvent;
 use App\Models\User;
 use App\Models\WorkItem;
 use App\Models\WorkItemDeliveryLink;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Passport\Passport;
 
 beforeEach(function () {
@@ -268,6 +271,86 @@ it('keeps unattributed events when a branch is bound to more than one work item'
     ])->assertOk();
 
     expect(UnattributedGithubEvent::where('branch', 'feature/contested')->exists())->toBeTrue();
+});
+
+it('deletes a work item delivery link by id', function () {
+    $link = WorkItemDeliveryLink::create([
+        'work_item_id' => $this->workItem->id,
+        'type' => 'pull_request',
+        'ref' => '#42',
+        'url' => 'https://github.com/datashaman/growth/pull/42',
+    ]);
+
+    PlanningServer::tool(DeleteDeliveryLink::class, [
+        'id' => $link->id,
+    ])->assertOk()->assertStructuredContent(function ($json) use ($link) {
+        $json->where('id', $link->id)
+            ->where('work_item_id', $this->workItem->id)
+            ->where('type', 'pull_request')
+            ->where('ref', '#42')
+            ->where('deleted', true);
+    });
+
+    expect(WorkItemDeliveryLink::whereKey($link->id)->exists())->toBeFalse();
+});
+
+it('rejects deleting a work item delivery link from another workspace', function () {
+    $otherUser = User::factory()->create();
+    $otherProject = Project::create([
+        'workspace_id' => $otherUser->active_workspace_id,
+        'name' => 'Other Delivery',
+        'rigor_level' => 2,
+    ]);
+    $otherWorkItem = WorkItem::create([
+        'project_id' => $otherProject->id,
+        'kind' => WorkItem::KINDS[0],
+        'name' => 'Foreign work',
+    ]);
+    $foreignLink = WorkItemDeliveryLink::create([
+        'work_item_id' => $otherWorkItem->id,
+        'type' => 'branch',
+        'ref' => 'feature/foreign',
+    ]);
+
+    PlanningServer::tool(DeleteDeliveryLink::class, [
+        'id' => $foreignLink->id,
+    ])->assertHasErrors();
+
+    expect(WorkItemDeliveryLink::withoutGlobalScopes()->whereKey($foreignLink->id)->exists())->toBeTrue();
+});
+
+it('deletes dependent evidence assets through the model layer', function () {
+    Storage::fake(EvidenceAsset::DISK);
+
+    $link = WorkItemDeliveryLink::create([
+        'work_item_id' => $this->workItem->id,
+        'type' => 'evidence',
+        'ref' => '#42',
+    ]);
+    Storage::disk(EvidenceAsset::DISK)->put('evidence-assets/delete-me.png', 'fake-png-bytes');
+    $asset = $link->evidenceAssets()->create([
+        'path' => 'evidence-assets/delete-me.png',
+        'caption' => 'before deletion',
+        'content_type' => 'image/png',
+    ]);
+
+    PlanningServer::tool(DeleteDeliveryLink::class, [
+        'id' => $link->id,
+    ])->assertOk();
+
+    expect(EvidenceAsset::whereKey($asset->id)->exists())->toBeFalse();
+    Storage::disk(EvidenceAsset::DISK)->assertMissing($asset->path);
+});
+
+it('exposes the delete delivery link tool on the planning surface', function () {
+    $tools = $this->postJson('/mcp/planning', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/list',
+        'params' => ['per_page' => 300],
+    ])->assertOk()->json('result.tools');
+
+    expect(collect($tools)->pluck('name')->all())->toContain('delete-delivery-link');
 });
 
 it('upserts the same pull request ref across synchronize and merge events', function () {
