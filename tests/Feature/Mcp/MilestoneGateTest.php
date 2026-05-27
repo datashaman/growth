@@ -69,15 +69,17 @@ it('passes the gate when every member is done with delivery evidence', function 
     expect(($this->gate)()['status'])->toBe('pass');
 });
 
-it('fails the gate when a member work item is not done', function () {
+it('presents unfinished member work as a not-achievable-yet lifecycle state', function () {
     ($this->addWorkItem)('done');
-    ($this->addWorkItem)('in_progress');
+    ($this->addWorkItem)('todo');
 
     $gate = ($this->gate)();
+    $finding = collect($gate['findings'])->firstWhere('rule', 'milestone.work_item.not_done');
 
     expect($gate['status'])->toBe('fail')
         ->and($gate['errors'])->toBe(1)
-        ->and(collect($gate['findings'])->pluck('rule'))->toContain('milestone.work_item.not_done');
+        ->and($finding['lifecycle_state'])->toBe('not_achievable_yet')
+        ->and($finding['message'])->toBe('Milestone is not achievable yet; member work item is todo.');
 });
 
 it('fails the gate when a done member has failed checks', function () {
@@ -177,7 +179,7 @@ it('rejects achieving a milestone with an unfinished member', function () {
     ($this->addWorkItem)('blocked');
 
     PlanningServer::tool(AchieveMilestone::class, ['milestone_id' => $this->milestone->id])
-        ->assertHasErrors(['Cannot achieve a milestone until its gate passes: 1 member work item is not done.']);
+        ->assertHasErrors(['Cannot achieve a milestone until its gate passes: 1 member work item is still in progress or todo, so the milestone is not achievable yet.']);
 
     expect($this->milestone->fresh()->status)->toBe('pending');
 });
@@ -243,6 +245,9 @@ it('exposes each milestone\'s gate on list-milestones', function () {
             $json->where('results.0.gate.status', 'fail')
                 ->where('results.0.gate.errors', 1)
                 ->where('results.0.gate.warnings', 0)
+                ->where('results.0.gate.findings.0.rule', 'milestone.work_item.not_done')
+                ->where('results.0.gate.findings.0.lifecycle_state', 'not_achievable_yet')
+                ->where('results.0.gate.findings.0.subject_id', $this->milestone->workItems()->first()->id)
                 ->etc();
         });
 });
