@@ -141,3 +141,93 @@ it('surfaces the ui_no_mockup finding in the planning gate without counting it',
         ->and($gate['warnings'])->toBe($findings->where('severity', 'warning')->count())
         ->and($gate['errors'])->toBe($findings->where('severity', 'error')->count());
 });
+
+function noImplementationWorkFindings(Project $project): Collection
+{
+    return collect(app(PmpLinter::class)->check($project->fresh()))
+        ->where('rule', 'pmp.wbs.no_implementation_work')
+        ->values();
+}
+
+function softwareRequirement(Project $project): Requirement
+{
+    return Requirement::create([
+        'project_id' => $project->id,
+        'doc' => 'srs',
+        'type' => 'functional',
+        'text' => 'The platform shall let vendors manage orders.',
+    ]);
+}
+
+it('flags a software project whose WBS is documentation only', function () {
+    softwareRequirement($this->project);
+    WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'task',
+        'name' => 'Write implementation runbook',
+        'description' => 'Document the deployment checklist and support process.',
+    ]);
+    WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'task',
+        'name' => 'Define launch acceptance checklist',
+        'description' => 'Capture go/no-go criteria for launch readiness.',
+    ]);
+
+    $findings = noImplementationWorkFindings($this->project);
+
+    expect($findings)->toHaveCount(1)
+        ->and($findings->first())->toMatchArray([
+            'rule' => 'pmp.wbs.no_implementation_work',
+            'severity' => 'error',
+            'subject_type' => 'project',
+            'subject_id' => $this->project->id,
+        ]);
+});
+
+it('does not flag a software project with a code-producing implementation slice', function () {
+    softwareRequirement($this->project);
+    WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'task',
+        'name' => 'Write rollout notes',
+        'description' => 'Document deployment steps.',
+    ]);
+    WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'task',
+        'name' => 'Implement vendor order dashboard',
+        'description' => 'Build the Livewire page and persistence for vendor order management.',
+    ]);
+
+    expect(noImplementationWorkFindings($this->project))->toBeEmpty();
+});
+
+it('does not flag a software project with a requirement-linked delivery slice', function () {
+    $requirement = softwareRequirement($this->project);
+    $workItem = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'deliverable',
+        'name' => 'Deliver primary action',
+    ]);
+    $workItem->requirements()->attach($requirement);
+
+    expect(noImplementationWorkFindings($this->project))->toBeEmpty();
+});
+
+it('surfaces a documentation-only software WBS in the planning gate', function () {
+    softwareRequirement($this->project);
+    WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'task',
+        'name' => 'Prepare launch runbook',
+        'description' => 'Document the launch checklist.',
+    ]);
+
+    $gate = collect(app(ReadinessGateEvaluator::class)->evaluate($this->project->fresh())['gates'])
+        ->firstWhere('id', 'planning');
+    $findings = collect($gate['findings']);
+
+    expect($findings->firstWhere('rule', 'pmp.wbs.no_implementation_work'))->not->toBeNull()
+        ->and($gate['status'])->toBe('fail');
+});

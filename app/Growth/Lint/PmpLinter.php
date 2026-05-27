@@ -86,6 +86,14 @@ class PmpLinter
             );
         }
 
+        if ($workItems->isNotEmpty() && $this->isSoftwareProject($project) && ! $this->hasImplementationWork($workItems)) {
+            $findings[] = $this->finding(
+                'pmp.wbs.no_implementation_work', 'error',
+                'Software project WBS has no code-producing implementation work',
+                'project', $project->id,
+            );
+        }
+
         foreach ($this->detectDependencyCycles($workItems) as $cycleNode) {
             $findings[] = $this->finding(
                 'pmp.wbs.cycle', 'error',
@@ -239,5 +247,65 @@ class PmpLinter
         return $workItems
             ->filter(fn ($item) => isset($cycleIds[$item->id]))
             ->values();
+    }
+
+    private function isSoftwareProject(Project $project): bool
+    {
+        if ($project->requirements()->where('doc', 'srs')->exists()) {
+            return true;
+        }
+
+        $project->loadMissing('projectPlan');
+        $text = $this->normalizedText([
+            $project->name,
+            $project->description,
+            $project->projectPlan?->scope_summary,
+            $project->projectPlan?->deliverables_summary,
+            $project->projectPlan?->approach,
+        ]);
+
+        return preg_match('/\b(software|application|app|platform|webapp|api|service|frontend|backend|database)\b/', $text) === 1;
+    }
+
+    /**
+     * @param  Collection<int,WorkItem>  $workItems
+     */
+    private function hasImplementationWork(Collection $workItems): bool
+    {
+        return $workItems->contains(fn (WorkItem $item): bool => $this->looksImplementationProducing($item));
+    }
+
+    private function looksImplementationProducing(WorkItem $item): bool
+    {
+        $text = $this->normalizedText([$item->name, $item->description]);
+
+        $hasCodeSignal = preg_match(
+            '/\b(build|built|building|code|coding|deliver|delivering|delivered|develop|developing|developed|wire|wiring|integrate|integrating|api|endpoint|frontend|backend|ui|page|screen|component|controller|service|database|schema|migration|persist|persistence|feature)\b/',
+            $text,
+        ) === 1 || preg_match('/\bimplement(?!ation\b)(ed|ing|s)?\b/', $text) === 1;
+
+        if (! $hasCodeSignal) {
+            return false;
+        }
+
+        $docOnlySignal = preg_match(
+            '/\b(document|documentation|spec|specification|define|checklist|runbook|plan|planning|review|notes|matrix|report|guide|policy|procedure|go\/no-go)\b/',
+            $text,
+        ) === 1;
+
+        $strongCodeArtifact = preg_match(
+            '/\b(api|endpoint|frontend|backend|ui|page|screen|component|controller|service|database|schema|migration|persist|persistence|feature)\b/',
+            $text,
+        ) === 1;
+
+        return ! $docOnlySignal || $strongCodeArtifact;
+    }
+
+    /**
+     * @param  list<?string>  $parts
+     */
+    private function normalizedText(array $parts): string
+    {
+        return strtolower(implode(' ', array_filter($parts, fn (?string $part): bool => trim((string) $part) !== '')));
     }
 }
