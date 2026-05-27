@@ -16,13 +16,27 @@ class Project extends Model
 {
     use HasUlids;
 
-    public const STATUSES = ['draft', 'active', 'archived', 'closed'];
+    public const STATUSES = ['draft', 'active', 'archived', 'closed', 'superseded'];
 
-    protected $fillable = ['workspace_id', 'created_by_user_id', 'name', 'description', 'github_repo', 'rigor_level', 'status', 'adopted_at'];
+    protected $fillable = [
+        'workspace_id',
+        'created_by_user_id',
+        'name',
+        'description',
+        'github_repo',
+        'rigor_level',
+        'status',
+        'adopted_at',
+        'superseded_by_project_id',
+        'superseded_by_user_id',
+        'superseded_at',
+        'supersession_reason',
+    ];
 
     protected $casts = [
         'rigor_level' => 'integer',
         'adopted_at' => 'datetime',
+        'superseded_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -95,6 +109,21 @@ class Project extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function supersededByProject(): BelongsTo
+    {
+        return $this->belongsTo(Project::class, 'superseded_by_project_id');
+    }
+
+    public function supersededProjects(): HasMany
+    {
+        return $this->hasMany(Project::class, 'superseded_by_project_id');
+    }
+
+    public function supersededByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'superseded_by_user_id');
     }
 
     public function requirements(): HasMany
