@@ -35,9 +35,20 @@ class UpsertDeliveryLink extends Tool
         // resolve to the same row instead of creating duplicates.
         $data['ref'] = WorkItemDeliveryLink::canonicalRef($data['type'], $data['ref']);
 
-        $link = $id
-            ? tap(WorkItemDeliveryLink::findOrFail($id))->update($data)
-            : WorkItemDeliveryLink::updateOrCreate(
+        $status = 'upserted';
+
+        if ($id) {
+            $link = WorkItemDeliveryLink::findOrFail($id);
+            $existing = $this->findExistingTarget($data, $id);
+
+            if ($existing) {
+                $status = $this->matchesSuppliedPayload($existing, $data) ? 'idempotent' : 'conflict';
+                $link = $existing;
+            } else {
+                $link->update($data);
+            }
+        } else {
+            $link = WorkItemDeliveryLink::updateOrCreate(
                 [
                     'work_item_id' => $data['work_item_id'],
                     'type' => $data['type'],
@@ -45,6 +56,7 @@ class UpsertDeliveryLink extends Tool
                 ],
                 $data,
             );
+        }
 
         if ($link->type === 'branch') {
             $this->clearResolvedBranchEvents($link);
@@ -57,6 +69,9 @@ class UpsertDeliveryLink extends Tool
             'ref' => $link->ref,
             'url' => $link->url,
             'created' => $link->wasRecentlyCreated,
+            'status' => $status,
+            'conflict' => $status === 'conflict',
+            'existing_id' => $status === 'conflict' ? $link->id : null,
         ]);
     }
 
@@ -87,6 +102,33 @@ class UpsertDeliveryLink extends Tool
         }
     }
 
+    /**
+     * @param  array{work_item_id:string,type:string,ref:string,url?:string|null,description?:string|null}  $data
+     */
+    private function findExistingTarget(array $data, string $exceptId): ?WorkItemDeliveryLink
+    {
+        return WorkItemDeliveryLink::query()
+            ->where('work_item_id', $data['work_item_id'])
+            ->where('type', $data['type'])
+            ->where('ref', $data['ref'])
+            ->whereKeyNot($exceptId)
+            ->first();
+    }
+
+    /**
+     * @param  array{work_item_id:string,type:string,ref:string,url?:string|null,description?:string|null}  $data
+     */
+    private function matchesSuppliedPayload(WorkItemDeliveryLink $link, array $data): bool
+    {
+        foreach (['work_item_id', 'type', 'ref', 'url', 'description'] as $field) {
+            if (array_key_exists($field, $data) && $link->{$field} !== $data[$field]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function schema(JsonSchema $schema): array
     {
         return [
@@ -108,6 +150,9 @@ class UpsertDeliveryLink extends Tool
             'ref' => $schema->string()->required(),
             'url' => $schema->string(),
             'created' => $schema->boolean()->required(),
+            'status' => $schema->string()->description('upserted, idempotent, or conflict')->required(),
+            'conflict' => $schema->boolean()->required(),
+            'existing_id' => $schema->string()->description('Existing delivery link ULID when status is conflict'),
         ];
     }
 }
