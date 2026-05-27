@@ -5,7 +5,7 @@ use App\Growth\Transitions\ApproveChangeRequest;
 use App\Growth\Transitions\HoldReview;
 use App\Mcp\Servers\PlanningServer;
 use App\Mcp\Servers\VerificationServer;
-use App\Mcp\Tools\Plan\AssignRole;
+use App\Mcp\Tools\Plan\AssignRoles;
 use App\Mcp\Tools\Verification\UpsertAnomaly;
 use App\Models\ChangeRequest;
 use App\Models\Project;
@@ -104,8 +104,8 @@ test('assigning a user to a role notifies that user', function () {
     Passport::actingAs($this->actor, ['mcp:use']);
     Notification::fake();
 
-    PlanningServer::tool(AssignRole::class, [
-        'role_id' => $role->id,
+    PlanningServer::tool(AssignRoles::class, [
+        'role_ids' => [$role->id],
         'assignee_type' => 'user',
         'assignee_id' => (string) $this->member->id,
     ])->assertOk();

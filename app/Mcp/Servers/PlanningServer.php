@@ -58,7 +58,7 @@ use App\Mcp\Tools\Plan\AcceptRisk;
 use App\Mcp\Tools\Plan\AchieveMilestone;
 use App\Mcp\Tools\Plan\ActivatePlan;
 use App\Mcp\Tools\Plan\AssessRisk;
-use App\Mcp\Tools\Plan\AssignRole;
+use App\Mcp\Tools\Plan\AssignRoles;
 use App\Mcp\Tools\Plan\AssignWorkItemRaci;
 use App\Mcp\Tools\Plan\BaselinePlan;
 use App\Mcp\Tools\Plan\BlockWorkItem;
@@ -119,7 +119,7 @@ use App\Mcp\Tools\Plan\StartDeployment;
 use App\Mcp\Tools\Plan\StartRiskMitigation;
 use App\Mcp\Tools\Plan\StartWorkItem;
 use App\Mcp\Tools\Plan\SummarizeImplementationStatus;
-use App\Mcp\Tools\Plan\UnassignRole;
+use App\Mcp\Tools\Plan\UnassignRoles;
 use App\Mcp\Tools\Plan\UnassignWorkItemRaci;
 use App\Mcp\Tools\Plan\UnblockWorkItem;
 use App\Mcp\Tools\Plan\UnlinkWorkItemDependency;
@@ -196,8 +196,8 @@ class PlanningServer extends Server
         UpsertAgent::class,
         ListAgents::class,
         DeleteAgent::class,
-        AssignRole::class,
-        UnassignRole::class,
+        AssignRoles::class,
+        UnassignRoles::class,
         UpsertWorkItems::class,
         ListWorkItems::class,
         GetWorkItem::class,

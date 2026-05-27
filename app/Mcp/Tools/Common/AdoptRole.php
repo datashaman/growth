@@ -15,7 +15,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
 
 #[IsDestructive(false)]
-#[Description('Adopt a project role for the rest of this session. Call this first, before doing project work: it pins the role, returns its persona — what the role is accountable for, the judgement it brings, what is routine versus what needs your user\'s confirmation — and stamps the role onto everything the session records. You must already be assigned to the role (see assign-role). The persona is advisory: you decide whether to honour it.')]
+#[Description('Adopt a project role for the rest of this session. Call this first, before doing project work: it pins the role, returns its persona — what the role is accountable for, the judgement it brings, what is routine versus what needs your user\'s confirmation — and stamps the role onto everything the session records. You must already be assigned to the role (see assign-roles). The persona is advisory: you decide whether to honour it.')]
 class AdoptRole extends Tool
 {
     public function handle(Request $request): ResponseFactory
@@ -57,8 +57,8 @@ class AdoptRole extends Tool
         if (! $assigned) {
             throw ValidationException::withMessages([
                 'role_id' => $agent !== null
-                    ? "Agent {$agent->name} is not assigned to this role — use assign-role first."
-                    : 'You are not assigned to this role — use assign-role first.',
+                    ? "Agent {$agent->name} is not assigned to this role — use assign-roles first."
+                    : 'You are not assigned to this role — use assign-roles first.',
             ]);
         }
     }

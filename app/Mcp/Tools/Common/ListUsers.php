@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[IsReadOnly]
-#[Description('List the members of the active workspace — their user_id, name, email, and workspace role. Use this to find the user_id for send-notification or assign-role.')]
+#[Description('List the members of the active workspace — their user_id, name, email, and workspace role. Use this to find the user_id for send-notification or assign-roles.')]
 class ListUsers extends Tool
 {
     public function handle(Request $request): ResponseFactory
