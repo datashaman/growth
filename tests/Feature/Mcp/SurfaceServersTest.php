@@ -34,6 +34,7 @@ it('exposes role-specific MCP metadata surfaces', function () {
         'jsonrpc' => '2.0',
         'id' => 2,
         'method' => 'tools/list',
+        'params' => ['per_page' => 300],
     ])->assertOk()->json('result.tools');
 
     $resources = $this->postJson('/mcp/readonly', [
@@ -42,9 +43,13 @@ it('exposes role-specific MCP metadata surfaces', function () {
         'method' => 'resources/templates/list',
     ])->assertOk()->json('result.resourceTemplates');
 
+    $completeWorkItemDescription = collect($planningTools)->firstWhere('name', 'complete-work-item')['description'] ?? '';
+
     expect(collect($intakeTools)->pluck('name')->all())->toContain('upsert-citation', 'upsert-requirements')
         ->and(collect($planningTools)->pluck('name')->all())->toContain('upsert-work-items')
-        ->and(collect($resources)->pluck('uriTemplate')->all())->toContain('growth://projects/{project}/requirements');
+        ->and(collect($resources)->pluck('uriTemplate')->all())->toContain('growth://projects/{project}/requirements')
+        ->and($completeWorkItemDescription)->toContain('real implementation activity has produced appropriate evidence')
+        ->and($completeWorkItemDescription)->toContain('manual link entry is not the completion work');
 });
 
 it('exposes the doctor tool on every role server', function (string $endpoint) {

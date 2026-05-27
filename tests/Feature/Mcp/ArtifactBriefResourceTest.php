@@ -129,7 +129,11 @@ it('serves a work item implementation brief', function () {
         ->assertSee('Beta')
         ->assertSee('growth://mockups/')
         ->assertSee('#42')
-        ->assertSee('tests: completed / success');
+        ->assertSee('tests: completed / success')
+        ->assertSee('These links are existing context for deciding what remains to implement or verify.')
+        ->assertSee('New evidence should come from real implementation activity')
+        ->assertSee('Produce implementation evidence through real delivery activity: commits, pull requests, CI checks, deployments, verification runs, and screenshots where applicable')
+        ->assertSee('rely on sync to attach standard delivery links when available');
 });
 
 it('serves a requirement verification brief', function () {
