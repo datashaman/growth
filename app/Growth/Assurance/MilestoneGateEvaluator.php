@@ -34,6 +34,7 @@ class MilestoneGateEvaluator
     {
         $milestone->loadMissing([
             'project',
+            'workItems.children:id,parent_id',
             'workItems.deliveryLinks.checkRuns',
             'workItems.deliveryLinks.deployments',
             'workItems.responsibleRole',
