@@ -32,6 +32,12 @@ class ReleaseReadinessAssessor
         if ($readiness['status'] === 'fail') {
             $blockers[] = 'readiness_gates_failed';
         }
+        if ($this->hasFinding($readiness, 'pmp.wbs.no_implementation_work')) {
+            $blockers[] = 'no_implementation_work';
+        }
+        if ($deliveryLinks->isEmpty()) {
+            $blockers[] = 'no_delivery_evidence';
+        }
         if ($risks->isNotEmpty()) {
             $blockers[] = 'high_exposure_risks_open';
         }
@@ -66,5 +72,15 @@ class ReleaseReadinessAssessor
                 'mitigated' => trim((string) $risk->mitigation_plan) !== '',
             ])->all(),
         ];
+    }
+
+    /**
+     * @param  array<string,mixed>  $readiness
+     */
+    private function hasFinding(array $readiness, string $rule): bool
+    {
+        return collect($readiness['gates'] ?? [])
+            ->flatMap(fn (array $gate): array => $gate['findings'] ?? [])
+            ->contains(fn (array $finding): bool => ($finding['rule'] ?? null) === $rule);
     }
 }
