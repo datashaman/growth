@@ -71,6 +71,76 @@ it('canonicalises pull-request refs and upserts one row', function () {
         ->toBe(1);
 });
 
+it('returns a structured conflict when an explicit update targets an existing change-request delivery link identity', function () {
+    $existing = ChangeRequestDeliveryLink::create([
+        'change_request_id' => $this->changeRequest->id,
+        'type' => 'pull_request',
+        'ref' => '#42',
+        'url' => 'https://github.com/datashaman/growth/pull/42',
+        'description' => 'canonical pull request',
+    ]);
+    $link = ChangeRequestDeliveryLink::create([
+        'change_request_id' => $this->changeRequest->id,
+        'type' => 'pull_request',
+        'ref' => '#7',
+        'url' => 'https://github.com/datashaman/growth/pull/7',
+        'description' => 'stale pull request',
+    ]);
+
+    PlanningServer::tool(UpsertChangeRequestDeliveryLink::class, [
+        'id' => $link->id,
+        'change_request_id' => $this->changeRequest->id,
+        'type' => 'pull_request',
+        'ref' => 'PR-42',
+        'url' => 'https://github.com/datashaman/growth/pull/42',
+        'description' => 'manual repair with new notes',
+    ])->assertOk()->assertStructuredContent(function ($json) use ($existing) {
+        $json->where('id', $existing->id)
+            ->where('ref', '#42')
+            ->where('status', 'conflict')
+            ->where('conflict', true)
+            ->where('existing_id', $existing->id)
+            ->etc();
+    });
+
+    expect($link->fresh()->ref)->toBe('#7')
+        ->and(ChangeRequestDeliveryLink::where('change_request_id', $this->changeRequest->id)->count())->toBe(2);
+});
+
+it('treats an explicit update to an existing matching change-request delivery link identity as idempotent', function () {
+    $existing = ChangeRequestDeliveryLink::create([
+        'change_request_id' => $this->changeRequest->id,
+        'type' => 'pull_request',
+        'ref' => '#42',
+        'url' => 'https://github.com/datashaman/growth/pull/42',
+        'description' => 'canonical pull request',
+    ]);
+    $link = ChangeRequestDeliveryLink::create([
+        'change_request_id' => $this->changeRequest->id,
+        'type' => 'pull_request',
+        'ref' => '#7',
+    ]);
+
+    PlanningServer::tool(UpsertChangeRequestDeliveryLink::class, [
+        'id' => $link->id,
+        'change_request_id' => $this->changeRequest->id,
+        'type' => 'pull_request',
+        'ref' => 'https://github.com/datashaman/growth/pull/42',
+        'url' => 'https://github.com/datashaman/growth/pull/42',
+        'description' => 'canonical pull request',
+    ])->assertOk()->assertStructuredContent(function ($json) use ($existing) {
+        $json->where('id', $existing->id)
+            ->where('ref', '#42')
+            ->where('status', 'idempotent')
+            ->where('conflict', false)
+            ->where('existing_id', null)
+            ->etc();
+    });
+
+    expect($link->fresh()->ref)->toBe('#7')
+        ->and(ChangeRequestDeliveryLink::where('change_request_id', $this->changeRequest->id)->count())->toBe(2);
+});
+
 it('stores branch and commit refs exactly as supplied', function (string $type, string $ref) {
     PlanningServer::tool(UpsertChangeRequestDeliveryLink::class, [
         'change_request_id' => $this->changeRequest->id,

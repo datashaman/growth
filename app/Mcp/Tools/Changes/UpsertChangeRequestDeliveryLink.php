@@ -33,9 +33,20 @@ class UpsertChangeRequestDeliveryLink extends Tool
 
         $data['ref'] = ChangeRequestDeliveryLink::canonicalRef($data['type'], $data['ref']);
 
-        $link = $id
-            ? tap(ChangeRequestDeliveryLink::findOrFail($id))->update($data)
-            : ChangeRequestDeliveryLink::updateOrCreate(
+        $status = 'upserted';
+
+        if ($id) {
+            $link = ChangeRequestDeliveryLink::findOrFail($id);
+            $existing = $this->findExistingTarget($data, $id);
+
+            if ($existing) {
+                $status = $this->matchesSuppliedPayload($existing, $data) ? 'idempotent' : 'conflict';
+                $link = $existing;
+            } else {
+                $link->update($data);
+            }
+        } else {
+            $link = ChangeRequestDeliveryLink::updateOrCreate(
                 [
                     'change_request_id' => $data['change_request_id'],
                     'type' => $data['type'],
@@ -43,6 +54,7 @@ class UpsertChangeRequestDeliveryLink extends Tool
                 ],
                 $data,
             );
+        }
 
         if ($link->type === 'branch') {
             $this->clearResolvedBranchEvents($link);
@@ -55,6 +67,9 @@ class UpsertChangeRequestDeliveryLink extends Tool
             'ref' => $link->ref,
             'url' => $link->url,
             'created' => $link->wasRecentlyCreated,
+            'status' => $status,
+            'conflict' => $status === 'conflict',
+            'existing_id' => $status === 'conflict' ? $link->id : null,
         ]);
     }
 
@@ -84,6 +99,33 @@ class UpsertChangeRequestDeliveryLink extends Tool
         }
     }
 
+    /**
+     * @param  array{change_request_id:string,type:string,ref:string,url?:string|null,description?:string|null}  $data
+     */
+    private function findExistingTarget(array $data, string $exceptId): ?ChangeRequestDeliveryLink
+    {
+        return ChangeRequestDeliveryLink::query()
+            ->where('change_request_id', $data['change_request_id'])
+            ->where('type', $data['type'])
+            ->where('ref', $data['ref'])
+            ->whereKeyNot($exceptId)
+            ->first();
+    }
+
+    /**
+     * @param  array{change_request_id:string,type:string,ref:string,url?:string|null,description?:string|null}  $data
+     */
+    private function matchesSuppliedPayload(ChangeRequestDeliveryLink $link, array $data): bool
+    {
+        foreach (['change_request_id', 'type', 'ref', 'url', 'description'] as $field) {
+            if (array_key_exists($field, $data) && $link->{$field} !== $data[$field]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public function schema(JsonSchema $schema): array
     {
         return [
@@ -105,6 +147,9 @@ class UpsertChangeRequestDeliveryLink extends Tool
             'ref' => $schema->string()->required(),
             'url' => $schema->string(),
             'created' => $schema->boolean()->required(),
+            'status' => $schema->string()->description('upserted, idempotent, or conflict')->required(),
+            'conflict' => $schema->boolean()->required(),
+            'existing_id' => $schema->string()->description('Existing change-request delivery link ULID when status is conflict'),
         ];
     }
 }

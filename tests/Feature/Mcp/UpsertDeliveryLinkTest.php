@@ -117,6 +117,76 @@ it('canonicalises the ref on the explicit-id update path too', function () {
     expect($link->fresh()->ref)->toBe('#14');
 });
 
+it('returns a structured conflict when an explicit update targets an existing delivery link identity', function () {
+    $existing = WorkItemDeliveryLink::create([
+        'work_item_id' => $this->workItem->id,
+        'type' => 'pull_request',
+        'ref' => '#42',
+        'url' => 'https://github.com/datashaman/growth/pull/42',
+        'description' => 'canonical pull request',
+    ]);
+    $link = WorkItemDeliveryLink::create([
+        'work_item_id' => $this->workItem->id,
+        'type' => 'pull_request',
+        'ref' => '#7',
+        'url' => 'https://github.com/datashaman/growth/pull/7',
+        'description' => 'stale pull request',
+    ]);
+
+    PlanningServer::tool(UpsertDeliveryLink::class, [
+        'id' => $link->id,
+        'work_item_id' => $this->workItem->id,
+        'type' => 'pull_request',
+        'ref' => 'PR-42',
+        'url' => 'https://github.com/datashaman/growth/pull/42',
+        'description' => 'manual repair with new notes',
+    ])->assertOk()->assertStructuredContent(function ($json) use ($existing) {
+        $json->where('id', $existing->id)
+            ->where('ref', '#42')
+            ->where('status', 'conflict')
+            ->where('conflict', true)
+            ->where('existing_id', $existing->id)
+            ->etc();
+    });
+
+    expect($link->fresh()->ref)->toBe('#7')
+        ->and(WorkItemDeliveryLink::where('work_item_id', $this->workItem->id)->count())->toBe(2);
+});
+
+it('treats an explicit update to an existing matching delivery link identity as idempotent', function () {
+    $existing = WorkItemDeliveryLink::create([
+        'work_item_id' => $this->workItem->id,
+        'type' => 'pull_request',
+        'ref' => '#42',
+        'url' => 'https://github.com/datashaman/growth/pull/42',
+        'description' => 'canonical pull request',
+    ]);
+    $link = WorkItemDeliveryLink::create([
+        'work_item_id' => $this->workItem->id,
+        'type' => 'pull_request',
+        'ref' => '#7',
+    ]);
+
+    PlanningServer::tool(UpsertDeliveryLink::class, [
+        'id' => $link->id,
+        'work_item_id' => $this->workItem->id,
+        'type' => 'pull_request',
+        'ref' => 'https://github.com/datashaman/growth/pull/42',
+        'url' => 'https://github.com/datashaman/growth/pull/42',
+        'description' => 'canonical pull request',
+    ])->assertOk()->assertStructuredContent(function ($json) use ($existing) {
+        $json->where('id', $existing->id)
+            ->where('ref', '#42')
+            ->where('status', 'idempotent')
+            ->where('conflict', false)
+            ->where('existing_id', null)
+            ->etc();
+    });
+
+    expect($link->fresh()->ref)->toBe('#7')
+        ->and(WorkItemDeliveryLink::where('work_item_id', $this->workItem->id)->count())->toBe(2);
+});
+
 it('canonicalises an evidence ref that is a pull-request ref', function () {
     PlanningServer::tool(UpsertDeliveryLink::class, [
         'work_item_id' => $this->workItem->id,
