@@ -3,18 +3,21 @@
 namespace App\Growth\Execution;
 
 use App\Growth\Assurance\MilestoneGateEvaluator;
+use App\Growth\WorkItems\WorkItemEvidenceResolver;
 use App\Models\Project;
 use App\Models\WorkItem;
 
 class ImplementationStatusSummarizer
 {
+    public function __construct(private readonly WorkItemEvidenceResolver $evidenceResolver) {}
+
     /**
      * @return array<string,mixed>
      */
     public function summarize(Project $project): array
     {
         $items = $project->workItems()
-            ->with(['deliveryLinks.checkRuns', 'deliveryLinks.deployments', 'responsibleRole'])
+            ->with(['children:id,parent_id', 'deliveryLinks.checkRuns', 'deliveryLinks.deployments', 'responsibleRole'])
             ->inWbsOrder()
             ->get();
 
@@ -39,15 +42,17 @@ class ImplementationStatusSummarizer
      * and the derived implementation state. Public so the milestone gate can
      * reuse the same per-item facts (see {@see MilestoneGateEvaluator}).
      *
-     * Expects `deliveryLinks.checkRuns` and `deliveryLinks.deployments` to be
-     * loaded; the caller is responsible for eager-loading them.
+     * Direct delivery evidence should be eager-loaded by callers that already
+     * have it, but aggregate parent items also inherit descendant evidence so
+     * rollup containers do not need duplicate PR/check/deployment links.
      *
      * @return array<string,mixed>
      */
     public function summarizeItem(WorkItem $item): array
     {
-        $checks = $item->deliveryLinks->flatMap->checkRuns;
-        $deployments = $item->deliveryLinks->flatMap->deployments->unique('id');
+        $deliveryLinks = $this->evidenceResolver->deliveryLinksFor($item);
+        $checks = $deliveryLinks->flatMap->checkRuns;
+        $deployments = $deliveryLinks->flatMap->deployments->unique('id');
 
         return [
             'id' => $item->id,
@@ -56,17 +61,17 @@ class ImplementationStatusSummarizer
             'name' => $item->name,
             'status' => $item->status,
             'responsible_role_name' => $item->responsibleRole?->name,
-            'delivery_links' => $item->deliveryLinks->count(),
+            'delivery_links' => $deliveryLinks->count(),
             'checks' => $checks->count(),
             'successful_checks' => $checks->where('conclusion', 'success')->count(),
             'failed_checks' => $checks->whereIn('conclusion', ['failure', 'timed_out', 'action_required'])->count(),
             'deployments' => $deployments->count(),
             'successful_deployments' => $deployments->where('status', 'succeeded')->count(),
-            'implementation_state' => $this->implementationState($item, $checks, $deployments),
+            'implementation_state' => $this->implementationState($item, $deliveryLinks, $checks, $deployments),
         ];
     }
 
-    private function implementationState(WorkItem $item, $checks, $deployments): string
+    private function implementationState(WorkItem $item, $deliveryLinks, $checks, $deployments): string
     {
         if ($deployments->where('status', 'succeeded')->isNotEmpty()) {
             return 'deployed';
@@ -80,7 +85,7 @@ class ImplementationStatusSummarizer
             return 'validated';
         }
 
-        if ($item->deliveryLinks->isNotEmpty()) {
+        if ($deliveryLinks->isNotEmpty()) {
             return 'implemented';
         }
 

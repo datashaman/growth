@@ -1,9 +1,13 @@
 <?php
 
+use App\Growth\Transitions\BlockWorkItem;
+use App\Growth\Transitions\CancelWorkItem;
 use App\Growth\Transitions\CompleteWorkItem;
 use App\Growth\Transitions\IllegalTransitionException;
+use App\Growth\Transitions\ReopenWorkItem;
 use App\Growth\Transitions\ResetWorkItem;
 use App\Growth\Transitions\StartWorkItem;
+use App\Growth\Transitions\UnblockWorkItem;
 use App\Models\Project;
 use App\Models\StatusTransition;
 use App\Models\User;
@@ -141,8 +145,101 @@ it('does not roll a parent work package to done while any direct child remains o
 
     (new CompleteWorkItem)->apply($lastChild, $this->user, 'One child shipped');
 
-    expect($parent->fresh()->status)->toBe('todo');
-    expect(StatusTransition::query()->where('transitionable_id', $parent->id)->exists())->toBeFalse();
+    expect($parent->fresh()->status)->toBe('in_progress');
+    expect(StatusTransition::query()
+        ->where('transitionable_id', $parent->id)
+        ->where('to_status', 'in_progress')
+        ->exists())->toBeTrue();
+});
+
+it('rolls parent status from direct child states', function (array $children, string $trigger, string $initialParentStatus, string $expected, string $reason) {
+    $parent = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'work_package',
+        'name' => 'Parent package',
+        'status' => $initialParentStatus,
+    ]);
+    $triggerChild = null;
+
+    foreach ($children as $index => $status) {
+        $child = WorkItem::create([
+            'project_id' => $this->project->id,
+            'parent_id' => $parent->id,
+            'kind' => 'deliverable',
+            'name' => 'Child '.$index,
+            'status' => $status,
+        ]);
+
+        if ($index === 0) {
+            $triggerChild = $child;
+        }
+    }
+
+    match ($trigger) {
+        'start' => (new StartWorkItem)->apply($triggerChild, $this->user),
+        'reset' => (new ResetWorkItem)->apply($triggerChild, $this->user),
+        'block' => (new BlockWorkItem)->apply($triggerChild, $this->user, 'Blocked downstream'),
+        'unblock' => (new UnblockWorkItem)->apply($triggerChild, $this->user),
+        'complete' => (new CompleteWorkItem)->apply($triggerChild, $this->user),
+        'reopen' => (new ReopenWorkItem)->apply($triggerChild, $this->user),
+        'cancel' => (new CancelWorkItem)->apply($triggerChild, $this->user),
+    };
+
+    expect($parent->fresh()->status)->toBe($expected);
+
+    $parentTransition = StatusTransition::query()
+        ->where('transitionable_id', $parent->id)
+        ->sole();
+
+    expect($parentTransition->to_status)->toBe($expected)
+        ->and($parentTransition->reason)->toBe($reason);
+})->with([
+    'all done' => [['in_progress', 'done'], 'complete', 'todo', 'done', 'All child work items are done.'],
+    'all cancelled' => [['blocked', 'cancelled'], 'cancel', 'done', 'cancelled', 'Child work item statuses rolled up to cancelled.'],
+    'all todo' => [['in_progress', 'todo'], 'reset', 'done', 'todo', 'Child work item statuses rolled up to todo.'],
+    'any blocked' => [['in_progress', 'done'], 'block', 'done', 'blocked', 'Child work item statuses rolled up to blocked.'],
+    'any in progress' => [['todo', 'todo'], 'start', 'todo', 'in_progress', 'Child work item statuses rolled up to in progress.'],
+    'done and todo' => [['in_progress', 'todo'], 'complete', 'done', 'in_progress', 'Child work item statuses rolled up to in progress.'],
+    'done and cancelled' => [['in_progress', 'cancelled'], 'complete', 'todo', 'done', 'All child work items are done.'],
+    'cancelled and todo' => [['cancelled', 'todo'], 'reopen', 'done', 'todo', 'Child work item statuses rolled up to todo.'],
+]);
+
+it('propagates rollup changes through ancestors', function () {
+    $root = WorkItem::create([
+        'project_id' => $this->project->id,
+        'kind' => 'work_package',
+        'name' => 'Root',
+        'status' => 'todo',
+    ]);
+    $parent = WorkItem::create([
+        'project_id' => $this->project->id,
+        'parent_id' => $root->id,
+        'kind' => 'work_package',
+        'name' => 'Parent',
+        'status' => 'todo',
+    ]);
+    $child = WorkItem::create([
+        'project_id' => $this->project->id,
+        'parent_id' => $parent->id,
+        'kind' => 'deliverable',
+        'name' => 'Child',
+        'status' => 'todo',
+    ]);
+
+    (new StartWorkItem)->apply($child, $this->user);
+
+    expect($parent->fresh()->status)->toBe('in_progress')
+        ->and($root->fresh()->status)->toBe('in_progress');
+
+    (new CompleteWorkItem)->apply($child->fresh(), $this->user);
+
+    expect($parent->fresh()->status)->toBe('done')
+        ->and($root->fresh()->status)->toBe('done');
+
+    (new ReopenWorkItem)->apply($child->fresh(), $this->user);
+
+    expect($parent->fresh()->status)->toBe('todo')
+        ->and($root->fresh()->status)->toBe('todo');
 });
 
 // ---- page access ----

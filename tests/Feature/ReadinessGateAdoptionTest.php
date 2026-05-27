@@ -1,9 +1,11 @@
 <?php
 
+use App\Growth\Assurance\EvidenceGapReporter;
 use App\Growth\Assurance\ReadinessGateEvaluator;
 use App\Models\Project;
 use App\Models\User;
 use App\Models\WorkItem;
+use App\Models\WorkItemDeliveryLink;
 
 beforeEach(function () {
     $this->user = User::factory()->create();
@@ -120,4 +122,59 @@ it('keeps an informational gap from moving the implementation gate off pass', fu
 
     expect($gate['status'])->toBe('pass')
         ->and($gate['warnings'])->toBe(0);
+});
+
+it('does not report a rollup parent as missing evidence when its child has delivery evidence', function () {
+    $project = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Rollup evidence',
+        'rigor_level' => 2,
+    ]);
+    $parent = WorkItem::create([
+        'project_id' => $project->id,
+        'kind' => 'work_package',
+        'name' => 'Parent package',
+        'status' => 'done',
+    ]);
+    $child = WorkItem::create([
+        'project_id' => $project->id,
+        'parent_id' => $parent->id,
+        'kind' => 'deliverable',
+        'name' => 'Implemented child',
+        'status' => 'done',
+    ]);
+    WorkItemDeliveryLink::create([
+        'work_item_id' => $child->id,
+        'type' => 'pull_request',
+        'ref' => '#10',
+    ]);
+
+    expect(($this->evidenceGap)($project, $parent))->toBeNull()
+        ->and(app(EvidenceGapReporter::class)->report($project)['findings'])->toBe([]);
+});
+
+it('still reports a rollup parent when neither it nor its children have delivery evidence', function () {
+    $project = Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'Rollup evidence gap',
+        'rigor_level' => 2,
+    ]);
+    $parent = WorkItem::create([
+        'project_id' => $project->id,
+        'kind' => 'work_package',
+        'name' => 'Parent package',
+        'status' => 'done',
+    ]);
+    $child = WorkItem::create([
+        'project_id' => $project->id,
+        'parent_id' => $parent->id,
+        'kind' => 'deliverable',
+        'name' => 'Unevidenced child',
+        'status' => 'done',
+    ]);
+
+    expect(($this->evidenceGap)($project, $parent)['severity'])->toBe('warning')
+        ->and(($this->evidenceGap)($project, $child)['severity'])->toBe('warning')
+        ->and(collect(app(EvidenceGapReporter::class)->report($project)['findings'])->pluck('subject_id')->all())
+        ->toContain($parent->id, $child->id);
 });

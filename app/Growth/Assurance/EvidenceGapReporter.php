@@ -2,10 +2,13 @@
 
 namespace App\Growth\Assurance;
 
+use App\Growth\WorkItems\WorkItemEvidenceResolver;
 use App\Models\Project;
 
 class EvidenceGapReporter
 {
+    public function __construct(private readonly WorkItemEvidenceResolver $evidenceResolver) {}
+
     /**
      * @return array<string,mixed>
      */
@@ -34,6 +37,7 @@ class EvidenceGapReporter
             ->where('status', 'done')
             ->doesntHave('deliveryLinks')
             ->get()
+            ->reject(fn ($item): bool => $this->evidenceResolver->hasDeliveryEvidence($item))
             ->map(fn ($item): array => $this->finding(
                 'evidence.work_item.done_without_delivery',
                 'warning',
