@@ -11,13 +11,21 @@ new class extends Component {
     public function mount(): void
     {
         $this->selectedProjectId = session('selected_project_id')
-            ?? Project::query()->orderBy('created_at')->value('id');
+            ?? $this->orderedProjectsQuery()->value('id');
     }
 
     #[Computed]
     public function projects()
     {
-        return Project::query()->orderBy('created_at')->get(['id', 'name']);
+        return $this->orderedProjectsQuery()->get(['id', 'name']);
+    }
+
+    private function orderedProjectsQuery()
+    {
+        return Project::query()
+            ->orderByRaw('lower(projects.name)')
+            ->orderBy('projects.name')
+            ->orderBy('projects.id');
     }
 
     public function updatedSelectedProjectId(?string $value): void
