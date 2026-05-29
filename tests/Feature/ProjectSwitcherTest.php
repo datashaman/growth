@@ -50,6 +50,19 @@ test('switcher falls back to first project when nothing in session', function ()
         ->assertSet('selectedProjectId', $this->alpha->id);
 });
 
+test('switcher lists projects alphabetically', function () {
+    Project::create([
+        'workspace_id' => $this->user->active_workspace_id,
+        'name' => 'aardvark',
+        'rigor_level' => 1,
+    ]);
+
+    $this->actingAs($this->user);
+
+    Livewire::test('project-switcher')
+        ->assertSeeInOrder(['aardvark', 'Alpha', 'Beta']);
+});
+
 test('project scoped pages read the session selection', function () {
     $this->actingAs($this->user);
     session(['selected_project_id' => $this->beta->id]);

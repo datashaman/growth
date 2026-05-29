@@ -29,7 +29,9 @@ new class extends Component
         $user = auth()->user();
 
         return $user->workspaces()
-            ->orderBy('name')
+            ->orderByRaw('lower(workspaces.name)')
+            ->orderBy('workspaces.name')
+            ->orderBy('workspaces.id')
             ->get(['workspaces.id', 'workspaces.name']);
     }
 
